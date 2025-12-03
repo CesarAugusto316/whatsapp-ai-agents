@@ -1,0 +1,46 @@
+{
+  "sessionId": "fbd4f9e89513b2d0481e140cf71e1af79448df97336a890fe95812e5faacbfe1",
+  "event": "messages.received",
+  "data": {
+    "messages": {
+      "key": {
+        "fromMe": false,
+        "id": "ACB96CEAF26A86B02853551D959AEA5A",
+        "remoteJid": "130584336703660@lid",
+        "senderPn": "593969711306@s.whatsapp.net",
+        "cleanedSenderPn": "593969711306",
+        "senderLid": "130584336703660@lid",
+        "addressingMode": "lid"
+      },
+      "broadcast": false,
+      "pushName": "Maria Miranda",
+      "message": {
+        "extendedTextMessage": {
+          "text": "Hello",
+          "previewType": "NONE",
+          "contextInfo": {
+            "ephemeralSettingTimestamp": "1719265535",
+            "disappearingMode": {
+              "initiator": "CHANGED_IN_CHAT",
+              "trigger": "UNKNOWN"
+            },
+            "expiration": 0
+          },
+          "inviteLinkGroupTypeV2": "DEFAULT"
+        },
+        "messageContextInfo": {
+          "deviceListMetadata": {
+            "recipientKeyHash": "z13OsFQLKac+Rg==",
+            "recipientTimestamp": "1764217329"
+          },
+          "messageSecret": "XiX38DwvPe9SZNefEmf7tTVr5G+wanh5ZCXe6ocHQRM=",
+          "deviceListMetadataVersion": 2
+        }
+      },
+      "messageBody": "Hello",
+      "remoteJid": "130584336703660@lid",
+      "id": "ACB96CEAF26A86B02853551D959AEA5A",
+      "messageTimestamp": 1764255815
+    }
+  }
+}

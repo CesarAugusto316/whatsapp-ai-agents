@@ -1,0 +1,23 @@
+{
+  "name": "payload-api",
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "@payloadcms/db-sqlite": "^3.65.0",
+    "@payloadcms/richtext-lexical": "^3.65.0",
+    "@payloadcms/translations": "^3.65.0",
+    "hono": "^4.10.7",
+    "payload": "^3.65.0"
+  },
+  "packageManager": "pnpm@10.24.0+sha512.01ff8ae71b4419903b65c60fb2dc9d34cf8bb6e06d03bde112ef38f7a34d6904c424ba66bea5cdcf12890230bf39f9580473140ed9c946fef328b6e5238a345a",
+  "scripts": {
+    "dev": "bun run --disable-transpile --hot ./src/index.ts",
+    "dev:node": "tsx ./src/main.ts",
+    "turso:dev": "turso dev --db-file local.db -p 8080",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio:dev": "drizzle-kit studio --port 4984",
+    "db:studio:prod": "NODE_ENV=production drizzle-kit studio --port 4984",
+    "payload": "PAYLOAD_CONFIG_PATH=src/payload.config.ts payload"
+  },
+  "type": "module"
+}
