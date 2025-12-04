@@ -5,7 +5,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
-COPY package.json bun.lock ./
+COPY package.json bun.lock* ./
 RUN --mount=type=cache,id=bun,target=/root/.bun \
   bun install --frozen-lockfile
 

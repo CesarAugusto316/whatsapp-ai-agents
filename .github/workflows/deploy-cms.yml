@@ -29,7 +29,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: cms
           file: cms/Dockerfile
           push: true
           tags: |
