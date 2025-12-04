@@ -2,6 +2,7 @@ import { withPayload } from "@payloadcms/next/withPayload";
 
 export default withPayload(
   {
+    output: "standalone",
     // turbopack: {
     //   resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.mts', '.cjs', '.cts'],
     // },
