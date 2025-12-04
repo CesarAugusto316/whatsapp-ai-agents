@@ -7,17 +7,17 @@
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "devsafe": "rm -rf .next && rm -rf .open-next && cross-env NODE_OPTIONS=--no-deprecation next dev",
-    "db:schema": "pnpm run payload generate:db-schema",
-    "db:migrate": "pnpm run payload migrate",
-    "db:migrate:create": "pnpm run payload migrate:create",
+    "db:schema": "bun run payload generate:db-schema",
+    "db:migrate": "bun run payload migrate",
+    "db:migrate:create": "bun run payload migrate:create",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types:payload": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
-    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
-    "ii": "pnpm install --ignore-workspace",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload --disable-transpile",
+    "ii": "bun install --ignore-workspace",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
-    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
-    "test": "pnpm run test:int && pnpm run test:e2e",
+    "test": "bun run test:int && pnpm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --no-experimental-strip-types\" pnpm exec playwright test",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
   },
@@ -51,14 +51,15 @@
   },
   "engines": {
     "node": "^18.20.2 || >=20.9.0",
-    "pnpm": "^9 || ^10"
+    "pnpm": "^9 || ^10",
+    "bun": "^1.0.0"
   },
-  "pnpm": {
+  "bun": {
     "onlyBuiltDependencies": [
       "sharp",
       "esbuild",
       "unrs-resolver"
     ]
   },
-  "packageManager": "pnpm@10.24.0+sha512.01ff8ae71b4419903b65c60fb2dc9d34cf8bb6e06d03bde112ef38f7a34d6904c424ba66bea5cdcf12890230bf39f9580473140ed9c946fef328b6e5238a345a"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
