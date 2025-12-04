@@ -5,11 +5,5 @@
   "private": true,
   "scripts": {
     "dev": "docker run -it --env-file \"$(pwd)/.env\" -v \"$(pwd)/sessions:/app/.sessions\" -e \"WHATSAPP_DEFAULT_ENGINE=GOWS\" --rm -p 3000:3000 --name waha devlikeapro/waha:arm"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   }
 }

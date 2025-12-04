@@ -63,6 +63,7 @@ whatsapp-api/node_modules/
 
 # misc
 */.DS_Store
+**/*sqlite3
 
 */.dev.vars*
 */!.dev.vars.example
