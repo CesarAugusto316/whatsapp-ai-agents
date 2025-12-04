@@ -170,8 +170,71 @@ export const Business: CollectionConfig = {
       },
     },
     {
-      type: "row",
+      type: "array",
+      name: "dates",
+      label: {
+        en: "Working Hours",
+        es: "Horario de trabajo",
+      },
+      labels: {
+        plural: {
+          en: "Days",
+          es: "Días",
+        },
+        singular: {
+          en: "Day",
+          es: "Día",
+        },
+      },
+      admin: {
+        // readOnly: true,
+        // syle:
+      },
+
+      defaultValue: [
+        {
+          // activate: true,
+          startTime: "2000-01-01T08:00:00.000",
+          endTime: "2000-01-01T17:00:00.000",
+        },
+        {
+          // activate: true,
+          startTime: "2000-01-01T08:00:00.000",
+          endTime: "2000-01-01T17:00:00.000",
+        },
+        {
+          // activate: true,
+          startTime: "2000-01-01T08:00:00.000",
+          endTime: "2000-01-01T17:00:00.000",
+        },
+        {
+          // activate: true,
+          startTime: "2000-01-01T08:00:00.000",
+          endTime: "2000-01-01T17:00:00.000",
+        },
+        {
+          // activate: true,
+          startTime: "2000-01-01T08:00:00.000",
+          endTime: "2000-01-01T17:00:00.000",
+        },
+        {
+          // activate: true,
+          startTime: "2000-01-01T08:00:00.000",
+          endTime: "2000-01-01T17:00:00.000",
+        },
+        {
+          // activate: true,
+          startTime: "2000-01-01T08:00:00.000",
+          endTime: "2000-01-01T17:00:00.000",
+        },
+      ],
+      // label: () => "Probando",
       fields: [
+        // {
+        //   type: "checkbox",
+        //   name: "activate",
+        //   defaultValue: true,
+        // },
         {
           name: "startTime",
           type: "date",
@@ -208,76 +271,116 @@ export const Business: CollectionConfig = {
         },
       ],
     },
-    {
-      type: "row",
-      required: true,
-      fields: [
-        {
-          name: "monday",
-          type: "checkbox",
-          label: {
-            en: "Monday",
-            es: "Lunes",
-          },
+    // {
+    //   type: "array",
+    //   name: "workingHours",
+    //   fields: [
+    //     {
+    //       name: "startTime",
+    //       type: "date",
+    //       label: {
+    //         en: "Start Time",
+    //         es: "Hora de inicio",
+    //       },
+    //       required: true,
+    //       defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+    //       admin: {
+    //         date: {
+    //           pickerAppearance: "timeOnly",
+    //           timeFormat: "HH:mm",
+    //           displayFormat: "HH:mm",
+    //         },
+    //       },
+    //     },
+    //     {
+    //       name: "endTime",
+    //       type: "date",
+    //       label: {
+    //         en: "End Time",
+    //         es: "Hora de fin",
+    //       },
+    //       required: true,
+    //       defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+    //       admin: {
+    //         date: {
+    //           pickerAppearance: "timeOnly",
+    //           timeFormat: "HH:mm",
+    //           displayFormat: "HH:mm",
+    //         },
+    //       },
+    //     },
+    //   ],
+    // },
+    // {
+    //   type: "row",
+    //   required: true,
+    //   fields: [
+    //     {
+    //       name: "monday",
+    //       type: "checkbox",
+    //       label: {
+    //         en: "Monday",
+    //         es: "Lunes",
+    //       },
 
-          defaultValue: true,
-        },
-        {
-          name: "tuesday",
-          type: "checkbox",
-          label: {
-            en: "Tuesday",
-            es: "Martes",
-          },
-          defaultValue: true,
-        },
-        {
-          name: "wednesday",
-          type: "checkbox",
-          label: {
-            en: "Wednesday",
-            es: "Miércoles",
-          },
-          defaultValue: true,
-        },
-        {
-          name: "thursday",
-          type: "checkbox",
-          label: {
-            en: "Thursday",
-            es: "Jueves",
-          },
-          defaultValue: true,
-        },
-        {
-          name: "friday",
-          type: "checkbox",
-          label: {
-            en: "Friday",
-            es: "Viernes",
-          },
-          defaultValue: true,
-        },
-        {
-          name: "saturday",
-          type: "checkbox",
-          label: {
-            en: "Saturday",
-            es: "Sábado",
-          },
-          defaultValue: true,
-        },
-        {
-          name: "sunday",
-          type: "checkbox",
-          label: {
-            en: "Sunday",
-            es: "Domingo",
-          },
-          defaultValue: true,
-        },
-      ],
-    },
+    //       defaultValue: true,
+    //     },
+    //     {
+    //       name: "tuesday",
+    //       type: "checkbox",
+    //       label: {
+    //         en: "Tuesday",
+    //         es: "Martes",
+    //       },
+    //       defaultValue: true,
+    //     },
+    //     {
+    //       name: "wednesday",
+    //       type: "checkbox",
+    //       label: {
+    //         en: "Wednesday",
+    //         es: "Miércoles",
+    //       },
+    //       defaultValue: true,
+    //     },
+    //     {
+    //       name: "thursday",
+    //       type: "checkbox",
+    //       label: {
+    //         en: "Thursday",
+    //         es: "Jueves",
+    //       },
+    //       defaultValue: true,
+    //     },
+    //     {
+    //       name: "friday",
+    //       type: "checkbox",
+    //       label: {
+    //         en: "Friday",
+    //         es: "Viernes",
+    //       },
+    //       defaultValue: true,
+    //     },
+    //     {
+    //       name: "saturday",
+    //       type: "checkbox",
+    //       label: {
+    //         en: "Saturday",
+    //         es: "Sábado",
+    //       },
+    //       defaultValue: true,
+    //     },
+    //     {
+    //       name: "sunday",
+    //       type: "checkbox",
+    //       label: {
+    //         en: "Sunday",
+    //         es: "Domingo",
+    //       },
+    //       defaultValue: true,
+    //     },
+    //   ],
+    // },
   ],
 };
 

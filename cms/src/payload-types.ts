@@ -181,15 +181,13 @@ export interface Business {
   user: string | User;
   timezone: 'America/Lima' | 'America/New_York' | 'Europe/London' | 'Asia/Tokyo' | 'Europe/Paris' | 'Europe/Madrid';
   averageTime: number;
-  startTime: string;
-  endTime: string;
-  monday?: boolean | null;
-  tuesday?: boolean | null;
-  wednesday?: boolean | null;
-  thursday?: boolean | null;
-  friday?: boolean | null;
-  saturday?: boolean | null;
-  sunday?: boolean | null;
+  dates?:
+    | {
+        startTime: string;
+        endTime: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -357,15 +355,13 @@ export interface BusinessesSelect<T extends boolean = true> {
   user?: T;
   timezone?: T;
   averageTime?: T;
-  startTime?: T;
-  endTime?: T;
-  monday?: T;
-  tuesday?: T;
-  wednesday?: T;
-  thursday?: T;
-  friday?: T;
-  saturday?: T;
-  sunday?: T;
+  dates?:
+    | T
+    | {
+        startTime?: T;
+        endTime?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
