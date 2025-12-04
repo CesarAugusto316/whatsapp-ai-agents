@@ -33,5 +33,5 @@ jobs:
           file: cms/Dockerfile
           push: true
           tags: |
-            dokploy/cms:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/cms:latest
           platforms: linux/amd64
