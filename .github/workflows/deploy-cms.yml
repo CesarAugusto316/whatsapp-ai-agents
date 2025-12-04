@@ -33,5 +33,5 @@ jobs:
           file: cms/Dockerfile
           push: true
           tags: |
-            cesarrivera316/apps:latest
+            cesarrivera316/cms:latest
           platforms: linux/amd64

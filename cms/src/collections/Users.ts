@@ -2,10 +2,6 @@ import type { Access, CollectionConfig } from "payload";
 
 const isAdmin: Access = ({ req }) => req?.user?.role === "admin";
 
-/**
- *
- * I18N: https://payloadcms.com/docs/configuration/i18n
- */
 export const Users: CollectionConfig = {
   slug: "users",
   timestamps: true,
