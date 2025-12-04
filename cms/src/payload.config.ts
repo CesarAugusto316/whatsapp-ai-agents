@@ -1,4 +1,3 @@
-// MORE INFO: https://payloadcms.com/docs/database/sqlite
 import { es } from "@payloadcms/translations/languages/es";
 import { en } from "@payloadcms/translations/languages/en";
 import path from "path";
