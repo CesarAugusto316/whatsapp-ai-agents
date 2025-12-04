@@ -5,6 +5,9 @@ on:
       - main
     paths:
       - "cms/**"
+      - "!cms/**/*.md" # ignorar cambios en READMEs
+      - "cms/Dockerfile"
+      - "cms/package.json"
       # 'whatsapp-api/**'
       # 'chat-agent/**'
   workflow_dispatch:
