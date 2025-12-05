@@ -180,7 +180,7 @@ export interface Business {
     name: string;
     businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
     user: string | User;
-    timezone: 'Europe/Madrid' | 'America/Lima' | 'America/New_York' | 'Europe/London' | 'Asia/Tokyo' | 'Europe/Paris';
+    timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
   };
   schedule: {
     averageTime: number;

@@ -147,6 +147,14 @@ export const Business: CollectionConfig = {
                   value: "Europe/Madrid",
                 },
                 {
+                  label: { en: "Paris (UTC+1)", es: "París (UTC+1)" },
+                  value: "Europe/Paris",
+                },
+                {
+                  label: { en: "London (UTC+0)", es: "Londres (UTC+0)" },
+                  value: "Europe/London",
+                },
+                {
                   label: { en: "Lima (UTC-5)", es: "Lima (UTC-5)" },
                   value: "America/Lima",
                 },
@@ -155,16 +163,8 @@ export const Business: CollectionConfig = {
                   value: "America/New_York",
                 },
                 {
-                  label: { en: "London (UTC+0)", es: "Londres (UTC+0)" },
-                  value: "Europe/London",
-                },
-                {
                   label: { en: "Tokyo (UTC+9)", es: "Tokio (UTC+9)" },
                   value: "Asia/Tokyo",
-                },
-                {
-                  label: { en: "Paris (UTC+1)", es: "París (UTC+1)" },
-                  value: "Europe/Paris",
                 },
               ],
             },
@@ -195,6 +195,20 @@ export const Business: CollectionConfig = {
                 {
                   type: "array",
                   name: "monday",
+                  label: {
+                    en: "Monday",
+                    es: "Lunes",
+                  },
+                  labels: {
+                    singular: {
+                      en: "Block",
+                      es: "Bloque",
+                    },
+                    plural: {
+                      en: "Blocks",
+                      es: "Bloques",
+                    },
+                  },
                   minRows: 0,
                   maxRows: 2,
                   defaultValue: [
@@ -254,6 +268,20 @@ export const Business: CollectionConfig = {
                   name: "tuesday",
                   minRows: 0,
                   maxRows: 2,
+                  label: {
+                    en: "Tuesday",
+                    es: "Martes",
+                  },
+                  labels: {
+                    singular: {
+                      en: "Block",
+                      es: "Bloque",
+                    },
+                    plural: {
+                      en: "Blocks",
+                      es: "Bloques",
+                    },
+                  },
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
@@ -311,6 +339,20 @@ export const Business: CollectionConfig = {
                   name: "wednesday",
                   minRows: 0,
                   maxRows: 2,
+                  label: {
+                    en: "Wednesday",
+                    es: "Miércoles",
+                  },
+                  labels: {
+                    singular: {
+                      en: "Block",
+                      es: "Bloque",
+                    },
+                    plural: {
+                      en: "Blocks",
+                      es: "Bloques",
+                    },
+                  },
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
@@ -368,6 +410,20 @@ export const Business: CollectionConfig = {
                   name: "thursday",
                   minRows: 0,
                   maxRows: 2,
+                  label: {
+                    en: "Thursday",
+                    es: "Jueves",
+                  },
+                  labels: {
+                    singular: {
+                      en: "Block",
+                      es: "Bloque",
+                    },
+                    plural: {
+                      en: "Blocks",
+                      es: "Bloques",
+                    },
+                  },
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
@@ -425,6 +481,20 @@ export const Business: CollectionConfig = {
                   name: "friday",
                   minRows: 0,
                   maxRows: 2,
+                  label: {
+                    en: "Friday",
+                    es: "Viernes",
+                  },
+                  labels: {
+                    singular: {
+                      en: "Block",
+                      es: "Bloque",
+                    },
+                    plural: {
+                      en: "Blocks",
+                      es: "Bloques",
+                    },
+                  },
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
@@ -482,6 +552,20 @@ export const Business: CollectionConfig = {
                   name: "saturday",
                   minRows: 0,
                   maxRows: 2,
+                  label: {
+                    en: "Saturday",
+                    es: "Sábado",
+                  },
+                  labels: {
+                    singular: {
+                      en: "Block",
+                      es: "Bloque",
+                    },
+                    plural: {
+                      en: "Blocks",
+                      es: "Bloques",
+                    },
+                  },
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
@@ -535,6 +619,20 @@ export const Business: CollectionConfig = {
                   name: "sunday",
                   minRows: 0,
                   maxRows: 2,
+                  label: {
+                    en: "Sunday",
+                    es: "Domingo",
+                  },
+                  labels: {
+                    singular: {
+                      en: "Block",
+                      es: "Bloque",
+                    },
+                    plural: {
+                      en: "Blocks",
+                      es: "Bloques",
+                    },
+                  },
                   fields: [
                     {
                       type: "row",
