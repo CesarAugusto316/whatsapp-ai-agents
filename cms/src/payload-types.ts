@@ -167,29 +167,75 @@ export interface Appointment {
  */
 export interface Business {
   id: string;
-  phoneNumber?: string | null;
-  /**
-   * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
-   */
-  isActive?: boolean | null;
-  /**
-   * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
-   */
-  requireAppointmentApproval?: boolean | null;
-  name: string;
-  businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
-  user: string | User;
-  timezone: 'America/Lima' | 'America/New_York' | 'Europe/London' | 'Asia/Tokyo' | 'Europe/Paris' | 'Europe/Madrid';
-  averageTime: number;
-  startTime: string;
-  endTime: string;
-  monday?: boolean | null;
-  tuesday?: boolean | null;
-  wednesday?: boolean | null;
-  thursday?: boolean | null;
-  friday?: boolean | null;
-  saturday?: boolean | null;
-  sunday?: boolean | null;
+  general: {
+    phoneNumber?: string | null;
+    /**
+     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
+     */
+    isActive?: boolean | null;
+    /**
+     * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
+     */
+    requireAppointmentApproval?: boolean | null;
+    name: string;
+    businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
+    tables?: number | null;
+    description?: string | null;
+    user: string | User;
+    timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
+  };
+  schedule: {
+    averageTime: number;
+    monday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    tuesday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    wednesday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    thursday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    friday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    saturday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    sunday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -349,23 +395,73 @@ export interface CustomersSelect<T extends boolean = true> {
  * via the `definition` "businesses_select".
  */
 export interface BusinessesSelect<T extends boolean = true> {
-  phoneNumber?: T;
-  isActive?: T;
-  requireAppointmentApproval?: T;
-  name?: T;
-  businessType?: T;
-  user?: T;
-  timezone?: T;
-  averageTime?: T;
-  startTime?: T;
-  endTime?: T;
-  monday?: T;
-  tuesday?: T;
-  wednesday?: T;
-  thursday?: T;
-  friday?: T;
-  saturday?: T;
-  sunday?: T;
+  general?:
+    | T
+    | {
+        phoneNumber?: T;
+        isActive?: T;
+        requireAppointmentApproval?: T;
+        name?: T;
+        businessType?: T;
+        tables?: T;
+        description?: T;
+        user?: T;
+        timezone?: T;
+      };
+  schedule?:
+    | T
+    | {
+        averageTime?: T;
+        monday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        tuesday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        wednesday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        thursday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        friday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        saturday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        sunday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+      };
   updatedAt?: T;
   createdAt?: T;
 }

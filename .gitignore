@@ -64,6 +64,8 @@ whatsapp-api/node_modules/
 # misc
 */.DS_Store
 **/*sqlite3
+/whatsapp-api/sessions
+/whatsapp-api/media
 
 */.dev.vars*
 */!.dev.vars.example

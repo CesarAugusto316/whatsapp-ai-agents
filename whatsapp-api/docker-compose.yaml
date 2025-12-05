@@ -7,7 +7,7 @@ services:
     # WAHA Core
     # image: devlikeapro/waha-plus
     # image: devlikeapro/waha:arm
-    image: devlikeapro/waha:gows:arm
+    image: devlikeapro/waha:arm
 
     # Add "dns" if you have a problem with resolving "web.whatsapp.com"
     dns:
