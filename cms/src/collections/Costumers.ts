@@ -13,6 +13,7 @@ export const Customers: CollectionConfig = {
       es: "Clientes",
     },
   },
+  
   admin: {
     useAsTitle: "name", // header title is taken from "name" field
   },
@@ -22,7 +23,7 @@ export const Customers: CollectionConfig = {
     },
     read: async ({ req }) => {
       // Si el usuario es un administrador, permite el acceso a todos los documentos.
-      if (!req.user) {
+      if (!req?.user) {
         return false;
       }
       if (req.user?.role === "admin") {

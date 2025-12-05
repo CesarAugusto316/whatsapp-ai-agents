@@ -8,6 +8,7 @@ import { Appointments } from "./collections/Appointments";
 import { Customers } from "./collections/Costumers";
 import { Business } from "./collections/Businesses";
 import { postgresAdapter } from "@payloadcms/db-postgres";
+import { resendAdapter } from "@payloadcms/email-resend";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -32,11 +33,16 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
   },
+  email: resendAdapter({
+    defaultFromAddress: "admin@oist4s.com",
+    defaultFromName: "Payload CMS",
+    apiKey: process.env.RESEND_API_KEY || "",
+  }),
   // database-adapter-config-start
   db: postgresAdapter({
     idType: "uuid",
     pool: {
-      connectionString: process.env.DATABASE_URI,
+      connectionString: process.env.DATABASE_URI!,
     },
   }),
 });

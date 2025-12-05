@@ -15,18 +15,18 @@ export const Business: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
-      return req.user && req.user?.role === "admin";
+      return req?.user && req.user?.role === "admin";
     },
     read: ({ req }) => {
       // Si el usuario es un administrador, permite el acceso a todos los documentos.
-      if (req.user?.role === "admin") {
+      if (req?.user?.role === "admin") {
         return true;
       }
       // Para otros usuarios, devuelve una consulta que filtra los documentos
       // donde el campo 'user' coincide con el ID del usuario actual.
       return {
         user: {
-          equals: req.user?.id,
+          equals: req?.user?.id,
         },
       };
     },
@@ -48,9 +48,9 @@ export const Business: CollectionConfig = {
             {
               name: "phoneNumber",
               type: "text",
-              required: false,
-              defaultValue: "+34",
+              required: true,
               unique: true,
+              defaultValue: "+34",
               minLength: 7,
               maxLength: 20,
               label: {
@@ -113,9 +113,10 @@ export const Business: CollectionConfig = {
             {
               type: "number",
               name: "tables",
+              defaultValue: 1,
               admin: {
                 condition: (data) =>
-                  data.general?.businessType === "restaurant",
+                  data?.general?.businessType === "restaurant",
               },
               label: { en: "Tables Number", es: "Número de Mesas" },
               min: 1,
@@ -239,11 +240,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [
@@ -310,11 +311,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [
@@ -381,11 +382,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [
@@ -452,11 +453,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [
@@ -523,11 +524,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [

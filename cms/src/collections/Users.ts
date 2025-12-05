@@ -52,9 +52,8 @@ export const Users: CollectionConfig = {
       options: [
         { label: "Admin", value: "admin" },
         { label: "Business", value: "business" },
-        // { label: "Bot", value: "bot" },
       ],
-      defaultValue: "admin",
+      defaultValue: "business",
       required: true,
       saveToJWT: true,
       label: {

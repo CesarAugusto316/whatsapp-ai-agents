@@ -33,7 +33,7 @@ export const Appointments: CollectionConfig = {
       if (user?.role === "business") {
         return {
           "business.user": {
-            equals: user.id,
+            equals: user?.id,
           },
         };
       }
@@ -42,7 +42,7 @@ export const Appointments: CollectionConfig = {
       //    Podrías añadir lógica para que los clientes vean las suyas si fuera necesario.
       return false;
     },
-    create: ({ req }) => req.user?.role === "admin", // bot
+    create: ({ req }) => req?.user?.role === "admin", // bot
   },
   fields: [
     {
@@ -55,7 +55,7 @@ export const Appointments: CollectionConfig = {
       required: true,
       relationTo: Business.slug as CollectionSlug,
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => req?.user?.role === "admin",
       },
     },
     {
@@ -68,7 +68,7 @@ export const Appointments: CollectionConfig = {
       required: true,
       relationTo: Customers.slug as CollectionSlug,
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => req?.user?.role === "admin",
       },
     },
     {
@@ -84,7 +84,7 @@ export const Appointments: CollectionConfig = {
           required: true,
           defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
           access: {
-            update: ({ req }) => req.user?.role === "admin",
+            update: ({ req }) => req?.user?.role === "admin",
           },
           admin: {
             date: {

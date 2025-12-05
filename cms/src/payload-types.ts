@@ -168,7 +168,7 @@ export interface Appointment {
 export interface Business {
   id: string;
   general: {
-    phoneNumber?: string | null;
+    phoneNumber: string;
     /**
      * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
      */
