@@ -140,7 +140,12 @@ export const Business: CollectionConfig = {
               type: "select",
               required: true,
               label: { en: "Timezone", es: "Zona Horaria" },
+              defaultValue: "Europe/Madrid",
               options: [
+                {
+                  label: { en: "Madrid (UTC+1)", es: "Madrid (UTC+1)" },
+                  value: "Europe/Madrid",
+                },
                 {
                   label: { en: "Lima (UTC-5)", es: "Lima (UTC-5)" },
                   value: "America/Lima",
@@ -160,10 +165,6 @@ export const Business: CollectionConfig = {
                 {
                   label: { en: "Paris (UTC+1)", es: "París (UTC+1)" },
                   value: "Europe/Paris",
-                },
-                {
-                  label: { en: "Madrid (UTC+1)", es: "Madrid (UTC+1)" },
-                  value: "Europe/Madrid",
                 },
               ],
             },
@@ -191,12 +192,12 @@ export const Business: CollectionConfig = {
             },
             {
               type: "array",
-              name: "dates",
+              name: "days",
+              minRows: 1,
               maxRows: 7,
               admin: {
                 isSortable: false,
               },
-              minRows: 1,
               label: {
                 en: "Working Hours (Monday - Sunday)",
                 es: "Horario de trabajo (Lunes - Domingo)",
@@ -254,21 +255,6 @@ export const Business: CollectionConfig = {
                   fields: [
                     {
                       name: "day",
-                      // Solo permite seleccionar días no repetidos
-                      filterOptions: ({ data, options }) => {
-                        const days = data.schedule.dates.map(
-                          (date: { day: string }) => date.day,
-                        );
-                        return options.filter(
-                          (option) =>
-                            !days.includes((option as any)?.value ?? ""),
-                        );
-                      },
-                      type: "select",
-                      label: {
-                        en: "Day",
-                        es: "Día",
-                      },
                       options: [
                         {
                           label: { en: "Monday", es: "Lunes" },
@@ -299,6 +285,27 @@ export const Business: CollectionConfig = {
                           value: "sunday",
                         },
                       ],
+                      /**
+                       *
+                       * @description Solo permite seleccionar días no únicos sin repetirse
+                       * @returns
+                       */
+                      filterOptions: ({ data, options }) => {
+                        const days = data.schedule.dates.map(
+                          (date: { day: string }) => date.day,
+                        );
+                        return options.filter(
+                          (option) =>
+                            !days.includes(
+                              (option as Record<string, string>)?.value ?? "",
+                            ),
+                        );
+                      },
+                      type: "select",
+                      label: {
+                        en: "Day",
+                        es: "Día",
+                      },
                       required: true,
                     },
                     {
@@ -339,97 +346,6 @@ export const Business: CollectionConfig = {
                 },
               ],
             },
-
-            // {
-            //   type: "array",
-            //   name: "dates",
-            //   maxRows: 7,
-            //   minRows: 1,
-            //   label: {
-            //     en: "Working Hours (Monday - Sunday)",
-            //     es: "Horario de trabajo (Lunes - Domingo)",
-            //   },
-            //   labels: {
-            //     plural: {
-            //       en: "Days",
-            //       es: "Días",
-            //     },
-            //     singular: {
-            //       en: "Day",
-            //       es: "Día",
-            //     },
-            //   },
-            //   admin: {
-            //     isSortable: false,
-            //   },
-            //   defaultValue: [
-            //     {
-            //       startTime: "2000-01-01T08:00:00.000",
-            //       endTime: "2000-01-01T17:00:00.000",
-            //     },
-            //     {
-            //       startTime: "2000-01-01T08:00:00.000",
-            //       endTime: "2000-01-01T17:00:00.000",
-            //     },
-            //     {
-            //       startTime: "2000-01-01T08:00:00.000",
-            //       endTime: "2000-01-01T17:00:00.000",
-            //     },
-            //     {
-            //       startTime: "2000-01-01T08:00:00.000",
-            //       endTime: "2000-01-01T17:00:00.000",
-            //     },
-            //     {
-            //       startTime: "2000-01-01T08:00:00.000",
-            //       endTime: "2000-01-01T17:00:00.000",
-            //     },
-            //     {
-            //       startTime: "2000-01-01T08:00:00.000",
-            //       endTime: "2000-01-01T17:00:00.000",
-            //     },
-            //   ],
-            //   fields: [
-            //     {
-            //       type: "row",
-            //       fields: [
-            //         {
-            //           name: "startTime",
-            //           type: "date",
-            //           label: {
-            //             en: "Start Time",
-            //             es: "Hora de inicio",
-            //           },
-            //           required: true,
-            //           defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
-            //           admin: {
-            //             date: {
-            //               pickerAppearance: "timeOnly",
-            //               timeFormat: "HH:mm",
-            //               displayFormat: "HH:mm",
-            //             },
-            //           },
-            //         },
-            //         {
-            //           name: "endTime",
-            //           type: "date",
-            //           label: {
-            //             en: "End Time",
-            //             es: "Hora de fin",
-            //           },
-            //           required: true,
-            //           defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
-            //           admin: {
-            //             date: {
-            //               pickerAppearance: "timeOnly",
-            //               timeFormat: "HH:mm",
-            //               displayFormat: "HH:mm",
-            //             },
-            //           },
-            //         },
-            //       ],
-            //     },
-            //   ],
-            // },
           ],
         },
       ],
