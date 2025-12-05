@@ -13,9 +13,6 @@ export const Business: CollectionConfig = {
       es: "Negocios",
     },
   },
-  // admin: {
-  //   useAsTitle: "name", // header title is taken from "name" field
-  // },
   access: {
     create: ({ req }) => {
       return req.user && req.user?.role === "admin";
@@ -198,8 +195,8 @@ export const Business: CollectionConfig = {
               maxRows: 7,
               minRows: 1,
               label: {
-                en: "Working Hours",
-                es: "Horario de trabajo",
+                en: "Working Hours (Monday - Sunday)",
+                es: "Horario de trabajo (Lunes - Domingo)",
               },
               labels: {
                 plural: {
@@ -213,46 +210,33 @@ export const Business: CollectionConfig = {
               },
               admin: {
                 isSortable: false,
-                // position: "sidebar",
               },
               defaultValue: [
                 {
-                  // activate: true,
                   startTime: "2000-01-01T08:00:00.000",
                   endTime: "2000-01-01T17:00:00.000",
                 },
                 {
-                  // activate: true,
                   startTime: "2000-01-01T08:00:00.000",
                   endTime: "2000-01-01T17:00:00.000",
                 },
                 {
-                  // activate: true,
                   startTime: "2000-01-01T08:00:00.000",
                   endTime: "2000-01-01T17:00:00.000",
                 },
                 {
-                  // activate: true,
                   startTime: "2000-01-01T08:00:00.000",
                   endTime: "2000-01-01T17:00:00.000",
                 },
                 {
-                  // activate: true,
                   startTime: "2000-01-01T08:00:00.000",
                   endTime: "2000-01-01T17:00:00.000",
                 },
                 {
-                  // activate: true,
                   startTime: "2000-01-01T08:00:00.000",
                   endTime: "2000-01-01T17:00:00.000",
                 },
-                // {
-                //   // activate: true,
-                //   startTime: "2000-01-01T08:00:00.000",
-                //   endTime: "2000-01-01T17:00:00.000",
-                // },
               ],
-              // label: () => "Probando",
               fields: [
                 {
                   type: "row",
