@@ -179,6 +179,8 @@ export interface Business {
     requireAppointmentApproval?: boolean | null;
     name: string;
     businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
+    tables?: number | null;
+    description?: string | null;
     user: string | User;
     timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
   };
@@ -401,6 +403,8 @@ export interface BusinessesSelect<T extends boolean = true> {
         requireAppointmentApproval?: T;
         name?: T;
         businessType?: T;
+        tables?: T;
+        description?: T;
         user?: T;
         timezone?: T;
       };

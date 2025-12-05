@@ -96,6 +96,7 @@ export const Business: CollectionConfig = {
               type: "select",
               required: true,
               label: { en: "Business Type", es: "Tipo de Negocio" },
+              defaultValue: "restaurant",
               options: [
                 {
                   label: { en: "Restaurant", es: "Restaurante" },
@@ -108,6 +109,30 @@ export const Business: CollectionConfig = {
                   value: "real_estate",
                 },
               ],
+            },
+            {
+              type: "number",
+              name: "tables",
+              admin: {
+                condition: (data) =>
+                  data.general?.businessType === "restaurant",
+              },
+              label: { en: "Tables Number", es: "Número de Mesas" },
+              min: 1,
+              max: 50,
+            },
+            {
+              type: "textarea",
+              name: "description",
+              label: { en: "Description", es: "Descripción" },
+              admin: {
+                placeholder: {
+                  en: "Enter a description",
+                  es: "Ingrese una descripción",
+                },
+              },
+              minLength: 0,
+              maxLength: 500,
             },
             {
               name: "user",
