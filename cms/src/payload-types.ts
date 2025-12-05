@@ -180,11 +180,11 @@ export interface Business {
     name: string;
     businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
     user: string | User;
-    timezone: 'America/Lima' | 'America/New_York' | 'Europe/London' | 'Asia/Tokyo' | 'Europe/Paris' | 'Europe/Madrid';
+    timezone: 'Europe/Madrid' | 'America/Lima' | 'America/New_York' | 'Europe/London' | 'Asia/Tokyo' | 'Europe/Paris';
   };
   schedule: {
     averageTime: number;
-    dates?:
+    days?:
       | {
           day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
           startTime: string;
@@ -367,7 +367,7 @@ export interface BusinessesSelect<T extends boolean = true> {
     | T
     | {
         averageTime?: T;
-        dates?:
+        days?:
           | T
           | {
               day?: T;

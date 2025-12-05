@@ -290,13 +290,13 @@ export const Business: CollectionConfig = {
                        * @description Solo permite seleccionar días no únicos sin repetirse
                        * @returns
                        */
-                      filterOptions: ({ data, options }) => {
-                        const days = data.schedule.dates.map(
-                          (date: { day: string }) => date.day,
+                      filterOptions: ({ data, options = [] }) => {
+                        const days = data?.schedule?.dates?.map(
+                          (date: { day: string }) => date?.day,
                         );
-                        return options.filter(
+                        return options?.filter(
                           (option) =>
-                            !days.includes(
+                            !days?.includes(
                               (option as Record<string, string>)?.value ?? "",
                             ),
                         );
