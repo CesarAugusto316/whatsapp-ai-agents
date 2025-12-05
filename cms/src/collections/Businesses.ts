@@ -177,7 +177,6 @@ export const Business: CollectionConfig = {
             es: "Horario de trabajo",
           },
           fields: [
-            // WORKING HOURS
             {
               name: "averageTime",
               type: "number",
@@ -191,157 +190,390 @@ export const Business: CollectionConfig = {
               },
             },
             {
-              type: "array",
-              name: "days",
-              minRows: 1,
-              maxRows: 7,
-              admin: {
-                isSortable: true,
-              },
-              label: {
-                en: "Working Hours (Monday - Sunday)",
-                es: "Horario de trabajo (Lunes - Domingo)",
-              },
-              labels: {
-                plural: {
-                  en: "Days",
-                  es: "Días",
-                },
-                singular: {
-                  en: "Day",
-                  es: "Día",
-                },
-              },
-              defaultValue: [
-                {
-                  day: "monday",
-                  startTime: "2000-01-01T08:00:00.000",
-                  endTime: "2000-01-01T17:00:00.000",
-                },
-                {
-                  day: "tuesday",
-                  startTime: "2000-01-01T08:00:00.000",
-                  endTime: "2000-01-01T17:00:00.000",
-                },
-                {
-                  day: "wednesday",
-                  startTime: "2000-01-01T08:00:00.000",
-                  endTime: "2000-01-01T17:00:00.000",
-                },
-                {
-                  day: "thursday",
-                  startTime: "2000-01-01T08:00:00.000",
-                  endTime: "2000-01-01T17:00:00.000",
-                },
-                {
-                  day: "friday",
-                  startTime: "2000-01-01T08:00:00.000",
-                  endTime: "2000-01-01T17:00:00.000",
-                },
-                {
-                  day: "saturday",
-                  startTime: "2000-01-01T08:00:00.000",
-                  endTime: "2000-01-01T17:00:00.000",
-                },
-                {
-                  day: "sunday",
-                  startTime: "2000-01-01T08:00:00.000",
-                  endTime: "2000-01-01T17:00:00.000",
-                },
-              ],
+              type: "group",
               fields: [
                 {
-                  type: "row",
+                  type: "array",
+                  name: "monday",
+                  minRows: 0,
+                  maxRows: 2,
+                  defaultValue: [
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                  ],
                   fields: [
                     {
-                      name: "day",
-                      options: [
+                      type: "row",
+                      fields: [
                         {
-                          label: { en: "Monday", es: "Lunes" },
-                          value: "monday",
+                          name: "startTime",
+                          type: "date",
+                          label: {
+                            en: "Start Time",
+                            es: "Hora de inicio",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
                         },
                         {
-                          label: { en: "Tuesday", es: "Martes" },
-                          value: "tuesday",
-                        },
-                        {
-                          label: { en: "Wednesday", es: "Miércoles" },
-                          value: "wednesday",
-                        },
-                        {
-                          label: { en: "Thursday", es: "Jueves" },
-                          value: "thursday",
-                        },
-                        {
-                          label: { en: "Friday", es: "Viernes" },
-                          value: "friday",
-                        },
-                        {
-                          label: { en: "Saturday", es: "Sábado" },
-                          value: "saturday",
-                        },
-                        {
-                          label: { en: "Sunday", es: "Domingo" },
-                          value: "sunday",
+                          name: "endTime",
+                          type: "date",
+                          label: {
+                            en: "End Time",
+                            es: "Hora de fin",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
                         },
                       ],
-                      /**
-                       *
-                       * @description Solo permite seleccionar días no únicos sin repetirse
-                       * @returns
-                       */
-                      filterOptions: ({ data, options = [] }) => {
-                        // "days" must matche the field's name
-                        const days = data?.schedule?.["days"]?.map(
-                          (date: { day: string }) => date?.day,
-                        );
-                        return options?.filter(
-                          (option) =>
-                            !days?.includes(
-                              (option as Record<string, string>)?.value ?? "",
-                            ),
-                        );
-                      },
-                      type: "select",
-                      label: {
-                        en: "Day",
-                        es: "Día",
-                      },
-                      required: true,
+                    },
+                  ],
+                },
+                {
+                  type: "array",
+                  name: "tuesday",
+                  minRows: 0,
+                  maxRows: 2,
+                  defaultValue: [
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
                     },
                     {
-                      name: "startTime",
-                      type: "date",
-                      label: {
-                        en: "Start Time",
-                        es: "Hora de inicio",
-                      },
-                      required: true,
-                      defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
-                      admin: {
-                        date: {
-                          pickerAppearance: "timeOnly",
-                          timeFormat: "HH:mm",
-                          displayFormat: "HH:mm",
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                  ],
+                  fields: [
+                    {
+                      type: "row",
+                      fields: [
+                        {
+                          name: "startTime",
+                          type: "date",
+                          label: {
+                            en: "Start Time",
+                            es: "Hora de inicio",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
                         },
-                      },
+                        {
+                          name: "endTime",
+                          type: "date",
+                          label: {
+                            en: "End Time",
+                            es: "Hora de fin",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  type: "array",
+                  name: "wednesday",
+                  minRows: 0,
+                  maxRows: 2,
+                  defaultValue: [
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
                     },
                     {
-                      name: "endTime",
-                      type: "date",
-                      label: {
-                        en: "End Time",
-                        es: "Hora de fin",
-                      },
-                      required: true,
-                      defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
-                      admin: {
-                        date: {
-                          pickerAppearance: "timeOnly",
-                          timeFormat: "HH:mm",
-                          displayFormat: "HH:mm",
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                  ],
+                  fields: [
+                    {
+                      type: "row",
+                      fields: [
+                        {
+                          name: "startTime",
+                          type: "date",
+                          label: {
+                            en: "Start Time",
+                            es: "Hora de inicio",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
                         },
-                      },
+                        {
+                          name: "endTime",
+                          type: "date",
+                          label: {
+                            en: "End Time",
+                            es: "Hora de fin",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  type: "array",
+                  name: "thursday",
+                  minRows: 0,
+                  maxRows: 2,
+                  defaultValue: [
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                  ],
+                  fields: [
+                    {
+                      type: "row",
+                      fields: [
+                        {
+                          name: "startTime",
+                          type: "date",
+                          label: {
+                            en: "Start Time",
+                            es: "Hora de inicio",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                        {
+                          name: "endTime",
+                          type: "date",
+                          label: {
+                            en: "End Time",
+                            es: "Hora de fin",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  type: "array",
+                  name: "friday",
+                  minRows: 0,
+                  maxRows: 2,
+                  defaultValue: [
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                  ],
+                  fields: [
+                    {
+                      type: "row",
+                      fields: [
+                        {
+                          name: "startTime",
+                          type: "date",
+                          label: {
+                            en: "Start Time",
+                            es: "Hora de inicio",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                        {
+                          name: "endTime",
+                          type: "date",
+                          label: {
+                            en: "End Time",
+                            es: "Hora de fin",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  type: "array",
+                  name: "saturday",
+                  minRows: 0,
+                  maxRows: 2,
+                  defaultValue: [
+                    {
+                      startTime: "2000-01-01T08:00:00.000",
+                      endTime: "2000-01-01T17:00:00.000",
+                    },
+                  ],
+                  fields: [
+                    {
+                      type: "row",
+                      fields: [
+                        {
+                          name: "startTime",
+                          type: "date",
+                          label: {
+                            en: "Start Time",
+                            es: "Hora de inicio",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                        {
+                          name: "endTime",
+                          type: "date",
+                          label: {
+                            en: "End Time",
+                            es: "Hora de fin",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  type: "array",
+                  name: "sunday",
+                  minRows: 0,
+                  maxRows: 2,
+                  fields: [
+                    {
+                      type: "row",
+                      fields: [
+                        {
+                          name: "startTime",
+                          type: "date",
+                          label: {
+                            en: "Start Time",
+                            es: "Hora de inicio",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                        {
+                          name: "endTime",
+                          type: "date",
+                          label: {
+                            en: "End Time",
+                            es: "Hora de fin",
+                          },
+                          required: true,
+                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          admin: {
+                            date: {
+                              pickerAppearance: "timeOnly",
+                              timeFormat: "HH:mm",
+                              displayFormat: "HH:mm",
+                            },
+                          },
+                        },
+                      ],
                     },
                   ],
                 },

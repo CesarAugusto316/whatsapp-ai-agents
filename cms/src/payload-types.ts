@@ -184,9 +184,50 @@ export interface Business {
   };
   schedule: {
     averageTime: number;
-    days?:
+    monday?:
       | {
-          day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    tuesday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    wednesday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    thursday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    friday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    saturday?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+    sunday?:
+      | {
           startTime: string;
           endTime: string;
           id?: string | null;
@@ -367,10 +408,51 @@ export interface BusinessesSelect<T extends boolean = true> {
     | T
     | {
         averageTime?: T;
-        days?:
+        monday?:
           | T
           | {
-              day?: T;
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        tuesday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        wednesday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        thursday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        friday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        saturday?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
+        sunday?:
+          | T
+          | {
               startTime?: T;
               endTime?: T;
               id?: T;
