@@ -1,7 +1,5 @@
-import { CollectionConfig, CollectionSlug, RowLabelComponent } from "payload";
+import { CollectionConfig, CollectionSlug } from "payload";
 import { Users } from "./Users";
-import { RowLabelProps } from "@payloadcms/ui";
-import { da } from "@payloadcms/translations/languages/da";
 
 export const Business: CollectionConfig = {
   slug: "businesses",
@@ -195,6 +193,9 @@ export const Business: CollectionConfig = {
               type: "array",
               name: "dates",
               maxRows: 7,
+              admin: {
+                isSortable: false,
+              },
               minRows: 1,
               label: {
                 en: "Working Hours (Monday - Sunday)",
@@ -210,43 +211,6 @@ export const Business: CollectionConfig = {
                   es: "Día",
                 },
               },
-              // validate: (val) => {
-              //   if (!val) {
-              //     return true;
-              //   }
-              //   const days = val.map((item) => item.day);
-              //   const uniqueDays = new Set(days);
-              //   if (days.length !== uniqueDays.size) {
-              //     return {
-              //       en: "You can't have duplicate days.",
-              //       es: "No puedes tener días duplicados.",
-              //     };
-              //   }
-              //   return true;
-              // },
-              admin: {
-                // components: {
-                //   RowLabel: ((ct) => {
-                //     console.log(ctx)
-                //     // const dayOptions = [
-                //     //   { label: "Lunes", value: "monday" },
-                //     //   { label: "Martes", value: "tuesday" },
-                //     //   { label: "Miércoles", value: "wednesday" },
-                //     //   { label: "Jueves", value: "thursday" },
-                //     //   { label: "Viernes", value: "friday" },
-                //     //   { label: "Sábado", value: "saturday" },
-                //     //   { label: "Domingo", value: "sunday" },
-                //     // ];
-                //     // const day = dayOptions.find(
-                //     //   (d) => d.value === data.day,
-                //     // return day || `Día ${String(index).padStart(2, "0")}`;
-                //     // )?.label;
-                //     //
-                //     return ""
-                //   }) as unknown as RowLabelComponent,
-                // },
-              },
-              // validate: ()=>,
               defaultValue: [
                 {
                   day: "monday",
