@@ -196,7 +196,7 @@ export const Business: CollectionConfig = {
               minRows: 1,
               maxRows: 7,
               admin: {
-                isSortable: false,
+                isSortable: true,
               },
               label: {
                 en: "Working Hours (Monday - Sunday)",
@@ -291,7 +291,8 @@ export const Business: CollectionConfig = {
                        * @returns
                        */
                       filterOptions: ({ data, options = [] }) => {
-                        const days = data?.schedule?.dates?.map(
+                        // "days" must matche the field's name
+                        const days = data?.schedule?.["days"]?.map(
                           (date: { day: string }) => date?.day,
                         );
                         return options?.filter(
