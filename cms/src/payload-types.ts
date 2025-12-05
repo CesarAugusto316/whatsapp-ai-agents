@@ -167,27 +167,31 @@ export interface Appointment {
  */
 export interface Business {
   id: string;
-  phoneNumber?: string | null;
-  /**
-   * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
-   */
-  isActive?: boolean | null;
-  /**
-   * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
-   */
-  requireAppointmentApproval?: boolean | null;
-  name: string;
-  businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
-  user: string | User;
-  timezone: 'America/Lima' | 'America/New_York' | 'Europe/London' | 'Asia/Tokyo' | 'Europe/Paris' | 'Europe/Madrid';
-  averageTime: number;
-  dates?:
-    | {
-        startTime: string;
-        endTime: string;
-        id?: string | null;
-      }[]
-    | null;
+  general: {
+    phoneNumber?: string | null;
+    /**
+     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
+     */
+    isActive?: boolean | null;
+    /**
+     * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
+     */
+    requireAppointmentApproval?: boolean | null;
+    name: string;
+    businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
+    user: string | User;
+    timezone: 'America/Lima' | 'America/New_York' | 'Europe/London' | 'Asia/Tokyo' | 'Europe/Paris' | 'Europe/Madrid';
+  };
+  schedule: {
+    averageTime: number;
+    dates?:
+      | {
+          startTime: string;
+          endTime: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -347,20 +351,28 @@ export interface CustomersSelect<T extends boolean = true> {
  * via the `definition` "businesses_select".
  */
 export interface BusinessesSelect<T extends boolean = true> {
-  phoneNumber?: T;
-  isActive?: T;
-  requireAppointmentApproval?: T;
-  name?: T;
-  businessType?: T;
-  user?: T;
-  timezone?: T;
-  averageTime?: T;
-  dates?:
+  general?:
     | T
     | {
-        startTime?: T;
-        endTime?: T;
-        id?: T;
+        phoneNumber?: T;
+        isActive?: T;
+        requireAppointmentApproval?: T;
+        name?: T;
+        businessType?: T;
+        user?: T;
+        timezone?: T;
+      };
+  schedule?:
+    | T
+    | {
+        averageTime?: T;
+        dates?:
+          | T
+          | {
+              startTime?: T;
+              endTime?: T;
+              id?: T;
+            };
       };
   updatedAt?: T;
   createdAt?: T;
