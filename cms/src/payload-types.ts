@@ -186,6 +186,7 @@ export interface Business {
     averageTime: number;
     dates?:
       | {
+          day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
           startTime: string;
           endTime: string;
           id?: string | null;
@@ -369,6 +370,7 @@ export interface BusinessesSelect<T extends boolean = true> {
         dates?:
           | T
           | {
+              day?: T;
               startTime?: T;
               endTime?: T;
               id?: T;
