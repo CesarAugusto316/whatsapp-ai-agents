@@ -170,10 +170,6 @@ export interface Business {
   general: {
     phoneNumber: string;
     /**
-     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
-     */
-    isActive?: boolean | null;
-    /**
      * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
      */
     requireAppointmentApproval?: boolean | null;
@@ -183,6 +179,17 @@ export interface Business {
     description?: string | null;
     user: string | User;
     timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
+    /**
+     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
+     */
+    isActive?: boolean | null;
+    nextHoliday?:
+      | {
+          startDate: string;
+          endDate: string;
+          id?: string | null;
+        }[]
+      | null;
   };
   schedule: {
     averageTime: number;
@@ -399,7 +406,6 @@ export interface BusinessesSelect<T extends boolean = true> {
     | T
     | {
         phoneNumber?: T;
-        isActive?: T;
         requireAppointmentApproval?: T;
         name?: T;
         businessType?: T;
@@ -407,6 +413,14 @@ export interface BusinessesSelect<T extends boolean = true> {
         description?: T;
         user?: T;
         timezone?: T;
+        isActive?: T;
+        nextHoliday?:
+          | T
+          | {
+              startDate?: T;
+              endDate?: T;
+              id?: T;
+            };
       };
   schedule?:
     | T

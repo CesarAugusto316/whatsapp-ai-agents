@@ -13,7 +13,7 @@ export const Customers: CollectionConfig = {
       es: "Clientes",
     },
   },
-  
+
   admin: {
     useAsTitle: "name", // header title is taken from "name" field
   },
@@ -29,11 +29,15 @@ export const Customers: CollectionConfig = {
       if (req.user?.role === "admin") {
         return true;
       }
-      return {
-        "business.user": {
-          equals: req.user?.id,
-        },
-      };
+      // if (req.user?.role === "business") {
+      //   // req.user.collection
+      //   return {
+      //     "business.user": {
+      //       equals: req.user?.id,
+      //     },
+      //   };
+      // }
+      return true;
     },
   },
   timestamps: true,

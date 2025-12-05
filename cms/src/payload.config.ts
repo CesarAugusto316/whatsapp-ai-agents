@@ -40,6 +40,7 @@ export default buildConfig({
   }),
   // database-adapter-config-start
   db: postgresAdapter({
+    // push: false,
     idType: "uuid",
     pool: {
       connectionString: process.env.DATABASE_URI!,

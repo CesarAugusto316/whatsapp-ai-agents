@@ -20,27 +20,26 @@ export const Appointments: CollectionConfig = {
   timestamps: true,
   access: {
     // --- CAMBIO AQUÍ ---
-    read: ({ req }) => {
+    read: async ({ req }) => {
       const { user } = req;
-
       // 1. Si el usuario es un administrador, puede ver todas las citas.
       if (user?.role === "admin") {
         return true;
       }
-
       // 2. Si es un usuario de negocio, filtra las citas para mostrar solo
       //    aquellas que pertenecen a sus negocios.
-      if (user?.role === "business") {
-        return {
-          "business.user": {
-            equals: user?.id,
-          },
-        };
-      }
+      // const userBusinesses = await req.payload.find({
 
+      // if (user?.role === "business") {
+      //   return {
+      //     "business.user": {
+      //       equals: user?.id,
+      //     },
+      //   };
+      // }
       // 3. Para cualquier otro caso, no se muestran citas.
       //    Podrías añadir lógica para que los clientes vean las suyas si fuera necesario.
-      return false;
+      return true;
     },
     create: ({ req }) => req?.user?.role === "admin", // bot
   },

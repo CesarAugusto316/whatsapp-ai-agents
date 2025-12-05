@@ -17,18 +17,30 @@ export const Business: CollectionConfig = {
     create: ({ req }) => {
       return req?.user && req.user?.role === "admin";
     },
-    read: ({ req }) => {
+    read: async ({ req }) => {
       // Si el usuario es un administrador, permite el acceso a todos los documentos.
       if (req?.user?.role === "admin") {
         return true;
       }
-      // Para otros usuarios, devuelve una consulta que filtra los documentos
-      // donde el campo 'user' coincide con el ID del usuario actual.
-      return {
-        user: {
-          equals: req?.user?.id,
-        },
-      };
+      // const userBusinesses = await req.payload.find({
+      //   collection: "businesses",
+      //   where: {
+      //     user: {
+      //       equals: req?.user?.id,
+      //     },
+      //   },
+      // });
+      // if (req.user.role === "business") {
+      //   // console.log({ data, req });
+      //   // Para otros usuarios, devuelve una consulta que filtra los documentos
+      //   // donde el campo 'user' coincide con el ID del usuario actual.
+      //   return {
+      //     "general.user": {
+      //       equals: req?.user?.id,
+      //     },
+      //   };
+      // }
+      return true;
     },
   },
   timestamps: true,
@@ -56,18 +68,6 @@ export const Business: CollectionConfig = {
               label: {
                 en: "Phone Number",
                 es: "Número de teléfono",
-              },
-            },
-            {
-              type: "checkbox",
-              name: "isActive",
-              label: { en: "Active", es: "Activo" },
-              defaultValue: true,
-              admin: {
-                description: {
-                  en: "Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.",
-                  es: "Indica si el negocio está activo o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente. Usalo para feriados, etc.",
-                },
               },
             },
             {
@@ -191,6 +191,75 @@ export const Business: CollectionConfig = {
                 {
                   label: { en: "Tokyo (UTC+9)", es: "Tokio (UTC+9)" },
                   value: "Asia/Tokyo",
+                },
+              ],
+            },
+            {
+              type: "checkbox",
+              name: "isActive",
+              label: { en: "Active", es: "Activo" },
+              defaultValue: true,
+              admin: {
+                description: {
+                  en: "Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.",
+                  es: "Indica si el negocio está activo o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente. Usalo para vaciones de ultimo minuto, etc.",
+                },
+              },
+            },
+            {
+              type: "array",
+              name: "nextHoliday",
+              label: {
+                en: "Next Holiday",
+                es: "Vacaciones próximas",
+              },
+              labels: {
+                singular: {
+                  en: "Holiday",
+                  es: "Vacaciones",
+                },
+                plural: {
+                  en: "Holidays",
+                  es: "Vacaciones",
+                },
+              },
+              minRows: 0,
+              maxRows: 2,
+              fields: [
+                {
+                  type: "row",
+                  fields: [
+                    {
+                      name: "startDate",
+                      type: "date",
+                      label: {
+                        en: "Start Date",
+                        es: "Fecha de inicio",
+                      },
+                      required: true,
+                      defaultValue: new Date().toISOString(),
+                      admin: {
+                        date: {
+                          pickerAppearance: "dayOnly",
+                        },
+                      },
+                    },
+                    {
+                      name: "endDate",
+                      type: "date",
+                      label: {
+                        en: "End Date",
+                        es: "Fech de fin",
+                      },
+                      required: true,
+                      defaultValue: new Date().toISOString(),
+                      admin: {
+                        date: {
+                          pickerAppearance: "dayOnly",
+                        },
+                      },
+                    },
+                  ],
                 },
               ],
             },
