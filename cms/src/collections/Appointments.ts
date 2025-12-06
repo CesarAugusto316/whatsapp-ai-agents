@@ -15,7 +15,7 @@ export const Appointments: CollectionConfig = {
     },
   },
   admin: {
-    useAsTitle: "startDateTime", // header title is taken from "name" field
+    useAsTitle: "customer", // header title is taken from "name" field
   },
   timestamps: true,
   access: {
@@ -49,7 +49,7 @@ export const Appointments: CollectionConfig = {
         };
       }
       return false;
-    }
+    },
   },
   fields: [
     {

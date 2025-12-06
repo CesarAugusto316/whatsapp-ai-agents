@@ -46,10 +46,19 @@ export const Business: CollectionConfig = {
       return false; // o false, según lo que necesites
     },
   },
+  admin: {
+    useAsTitle: "name",
+  },
   timestamps: true,
   disableDuplicate: true,
   trash: false,
   fields: [
+    {
+      name: "name",
+      type: "text",
+      required: true,
+      label: { en: "Business Name", es: "Nombre del Negocio" },
+    },
     {
       type: "tabs",
       tabs: [
@@ -87,12 +96,6 @@ export const Business: CollectionConfig = {
                   es: "Usa este campo para indicar si el negocio requiere aprobación de citas o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente.",
                 },
               },
-            },
-            {
-              name: "name",
-              type: "text",
-              required: true,
-              label: { en: "Business Name", es: "Nombre del Negocio" },
             },
             {
               name: "businessType",

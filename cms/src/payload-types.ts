@@ -167,13 +167,13 @@ export interface Appointment {
  */
 export interface Business {
   id: string;
+  name: string;
   general: {
     phoneNumber: string;
     /**
      * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
      */
     requireAppointmentApproval?: boolean | null;
-    name: string;
     businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
     tables?: number | null;
     description?: string | null;
@@ -402,12 +402,12 @@ export interface CustomersSelect<T extends boolean = true> {
  * via the `definition` "businesses_select".
  */
 export interface BusinessesSelect<T extends boolean = true> {
+  name?: T;
   general?:
     | T
     | {
         phoneNumber?: T;
         requireAppointmentApproval?: T;
-        name?: T;
         businessType?: T;
         tables?: T;
         description?: T;
