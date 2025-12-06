@@ -15,6 +15,7 @@
     "db:migrate": "bun payload migrate",
     "db:migrate:create": "bun payload migrate:create",
     "db:status": "bun payload migrate:status",
+    "db:push": "bun payload migrate:push",
     "db:down": "bun payload migrate:down",
     "db:fresh": "bun payload migrate:fresh",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
