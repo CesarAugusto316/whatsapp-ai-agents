@@ -13,7 +13,6 @@ export const Customers: CollectionConfig = {
       es: "Clientes",
     },
   },
-
   admin: {
     useAsTitle: "name", // header title is taken from "name" field
   },
@@ -29,15 +28,28 @@ export const Customers: CollectionConfig = {
       if (req.user?.role === "admin") {
         return true;
       }
-      // if (req.user?.role === "business") {
-      //   // req.user.collection
-      //   return {
-      //     "business.user": {
-      //       equals: req.user?.id,
-      //     },
-      //   };
-      // }
-      return true;
+      if (req.user?.role === "business") {
+        // En lugar de hacer una consulta, filtramos por "negocios del usuario actual"
+        // Esto requiere que la relación "business" esté configurada correctamente
+        return {
+          or: [
+            {
+              // Filtra por negocios que tengan este usuario como propietario
+              // (Requiere que Payload pueda hacer joins en las queries)
+              "business.general.user": {
+                equals: req.user.id,
+              },
+            },
+            // Permite ver interfaz aunque no tenga citas
+            {
+              id: {
+                exists: false,
+              },
+            },
+          ],
+        };
+      }
+      return false;
     },
   },
   timestamps: true,

@@ -22,25 +22,28 @@ export const Business: CollectionConfig = {
       if (req?.user?.role === "admin") {
         return true;
       }
-      // const userBusinesses = await req.payload.find({
-      //   collection: "businesses",
-      //   where: {
-      //     user: {
-      //       equals: req?.user?.id,
-      //     },
-      //   },
-      // });
-      // if (req.user.role === "business") {
-      //   // console.log({ data, req });
-      //   // Para otros usuarios, devuelve una consulta que filtra los documentos
-      //   // donde el campo 'user' coincide con el ID del usuario actual.
-      //   return {
-      //     "general.user": {
-      //       equals: req?.user?.id,
-      //     },
-      //   };
-      // }
-      return true;
+      // Para usuarios con rol "business", deben poder ver sus negocios
+      // Incluso si actualmente no tienen ninguno
+      if (req?.user?.role === "business") {
+        return {
+          or: [
+            {
+              "general.user": {
+                equals: req?.user?.id,
+              },
+            },
+            // Esto asegura que puedan ver la interfaz para crear nuevos
+            // cuando no tienen documentos existentes
+            {
+              id: {
+                exists: false, // Condición siempre falsa, pero necesaria para estructura
+              },
+            },
+          ],
+        };
+      }
+      // Para otros roles o usuarios no autenticados
+      return false; // o false, según lo que necesites
     },
   },
   timestamps: true,

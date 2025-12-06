@@ -19,29 +19,37 @@ export const Appointments: CollectionConfig = {
   },
   timestamps: true,
   access: {
-    // --- CAMBIO AQUÍ ---
+    create: ({ req }) => req?.user?.role === "admin", // bot
+    // Función read corregida:
     read: async ({ req }) => {
       const { user } = req;
-      // 1. Si el usuario es un administrador, puede ver todas las citas.
+
       if (user?.role === "admin") {
         return true;
       }
-      // 2. Si es un usuario de negocio, filtra las citas para mostrar solo
-      //    aquellas que pertenecen a sus negocios.
-      // const userBusinesses = await req.payload.find({
-
-      // if (user?.role === "business") {
-      //   return {
-      //     "business.user": {
-      //       equals: user?.id,
-      //     },
-      //   };
-      // }
-      // 3. Para cualquier otro caso, no se muestran citas.
-      //    Podrías añadir lógica para que los clientes vean las suyas si fuera necesario.
-      return true;
-    },
-    create: ({ req }) => req?.user?.role === "admin", // bot
+      if (user?.role === "business") {
+        // En lugar de hacer una consulta, filtramos por "negocios del usuario actual"
+        // Esto requiere que la relación "business" esté configurada correctamente
+        return {
+          or: [
+            {
+              // Filtra por negocios que tengan este usuario como propietario
+              // (Requiere que Payload pueda hacer joins en las queries)
+              "business.general.user": {
+                equals: user.id,
+              },
+            },
+            // Permite ver interfaz aunque no tenga citas
+            {
+              id: {
+                exists: false,
+              },
+            },
+          ],
+        };
+      }
+      return false;
+    }
   },
   fields: [
     {
