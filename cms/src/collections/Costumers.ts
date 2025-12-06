@@ -22,17 +22,34 @@ export const Customers: CollectionConfig = {
     },
     read: async ({ req }) => {
       // Si el usuario es un administrador, permite el acceso a todos los documentos.
-      if (!req.user) {
+      if (!req?.user) {
         return false;
       }
       if (req.user?.role === "admin") {
         return true;
       }
-      return {
-        "business.user": {
-          equals: req.user?.id,
-        },
-      };
+      if (req.user?.role === "business") {
+        // En lugar de hacer una consulta, filtramos por "negocios del usuario actual"
+        // Esto requiere que la relación "business" esté configurada correctamente
+        return {
+          or: [
+            {
+              // Filtra por negocios que tengan este usuario como propietario
+              // (Requiere que Payload pueda hacer joins en las queries)
+              "business.general.user": {
+                equals: req.user.id,
+              },
+            },
+            // Permite ver interfaz aunque no tenga citas
+            {
+              id: {
+                exists: false,
+              },
+            },
+          ],
+        };
+      }
+      return false;
     },
   },
   timestamps: true,

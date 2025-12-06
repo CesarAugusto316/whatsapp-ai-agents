@@ -167,22 +167,29 @@ export interface Appointment {
  */
 export interface Business {
   id: string;
+  name: string;
   general: {
-    phoneNumber?: string | null;
-    /**
-     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
-     */
-    isActive?: boolean | null;
+    phoneNumber: string;
     /**
      * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
      */
     requireAppointmentApproval?: boolean | null;
-    name: string;
     businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
     tables?: number | null;
     description?: string | null;
     user: string | User;
     timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
+    /**
+     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
+     */
+    isActive?: boolean | null;
+    nextHoliday?:
+      | {
+          startDate: string;
+          endDate: string;
+          id?: string | null;
+        }[]
+      | null;
   };
   schedule: {
     averageTime: number;
@@ -395,18 +402,25 @@ export interface CustomersSelect<T extends boolean = true> {
  * via the `definition` "businesses_select".
  */
 export interface BusinessesSelect<T extends boolean = true> {
+  name?: T;
   general?:
     | T
     | {
         phoneNumber?: T;
-        isActive?: T;
         requireAppointmentApproval?: T;
-        name?: T;
         businessType?: T;
         tables?: T;
         description?: T;
         user?: T;
         timezone?: T;
+        isActive?: T;
+        nextHoliday?:
+          | T
+          | {
+              startDate?: T;
+              endDate?: T;
+              id?: T;
+            };
       };
   schedule?:
     | T

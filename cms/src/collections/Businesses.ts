@@ -15,26 +15,50 @@ export const Business: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
-      return req.user && req.user?.role === "admin";
+      return req?.user && req.user?.role === "admin";
     },
-    read: ({ req }) => {
+    read: async ({ req }) => {
       // Si el usuario es un administrador, permite el acceso a todos los documentos.
-      if (req.user?.role === "admin") {
+      if (req?.user?.role === "admin") {
         return true;
       }
-      // Para otros usuarios, devuelve una consulta que filtra los documentos
-      // donde el campo 'user' coincide con el ID del usuario actual.
-      return {
-        user: {
-          equals: req.user?.id,
-        },
-      };
+      // Para usuarios con rol "business", deben poder ver sus negocios
+      // Incluso si actualmente no tienen ninguno
+      if (req?.user?.role === "business") {
+        return {
+          or: [
+            {
+              "general.user": {
+                equals: req?.user?.id,
+              },
+            },
+            // Esto asegura que puedan ver la interfaz para crear nuevos
+            // cuando no tienen documentos existentes
+            {
+              id: {
+                exists: false, // Condición siempre falsa, pero necesaria para estructura
+              },
+            },
+          ],
+        };
+      }
+      // Para otros roles o usuarios no autenticados
+      return false; // o false, según lo que necesites
     },
+  },
+  admin: {
+    useAsTitle: "name",
   },
   timestamps: true,
   disableDuplicate: true,
   trash: false,
   fields: [
+    {
+      name: "name",
+      type: "text",
+      required: true,
+      label: { en: "Business Name", es: "Nombre del Negocio" },
+    },
     {
       type: "tabs",
       tabs: [
@@ -48,26 +72,14 @@ export const Business: CollectionConfig = {
             {
               name: "phoneNumber",
               type: "text",
-              required: false,
-              defaultValue: "+34",
+              required: true,
               unique: true,
+              defaultValue: "+34",
               minLength: 7,
               maxLength: 20,
               label: {
                 en: "Phone Number",
                 es: "Número de teléfono",
-              },
-            },
-            {
-              type: "checkbox",
-              name: "isActive",
-              label: { en: "Active", es: "Activo" },
-              defaultValue: true,
-              admin: {
-                description: {
-                  en: "Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.",
-                  es: "Indica si el negocio está activo o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente. Usalo para feriados, etc.",
-                },
               },
             },
             {
@@ -84,12 +96,6 @@ export const Business: CollectionConfig = {
                   es: "Usa este campo para indicar si el negocio requiere aprobación de citas o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente.",
                 },
               },
-            },
-            {
-              name: "name",
-              type: "text",
-              required: true,
-              label: { en: "Business Name", es: "Nombre del Negocio" },
             },
             {
               name: "businessType",
@@ -113,9 +119,10 @@ export const Business: CollectionConfig = {
             {
               type: "number",
               name: "tables",
+              defaultValue: 1,
               admin: {
                 condition: (data) =>
-                  data.general?.businessType === "restaurant",
+                  data?.general?.businessType === "restaurant",
               },
               label: { en: "Tables Number", es: "Número de Mesas" },
               min: 1,
@@ -193,6 +200,75 @@ export const Business: CollectionConfig = {
                 },
               ],
             },
+            {
+              type: "checkbox",
+              name: "isActive",
+              label: { en: "Active", es: "Activo" },
+              defaultValue: true,
+              admin: {
+                description: {
+                  en: "Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.",
+                  es: "Indica si el negocio está activo o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente. Usalo para vaciones de ultimo minuto, etc.",
+                },
+              },
+            },
+            {
+              type: "array",
+              name: "nextHoliday",
+              label: {
+                en: "Next Holiday",
+                es: "Vacaciones próximas",
+              },
+              labels: {
+                singular: {
+                  en: "Holiday",
+                  es: "Vacaciones",
+                },
+                plural: {
+                  en: "Holidays",
+                  es: "Vacaciones",
+                },
+              },
+              minRows: 0,
+              maxRows: 2,
+              fields: [
+                {
+                  type: "row",
+                  fields: [
+                    {
+                      name: "startDate",
+                      type: "date",
+                      label: {
+                        en: "Start Date",
+                        es: "Fecha de inicio",
+                      },
+                      required: true,
+                      defaultValue: new Date().toISOString(),
+                      admin: {
+                        date: {
+                          pickerAppearance: "dayOnly",
+                        },
+                      },
+                    },
+                    {
+                      name: "endDate",
+                      type: "date",
+                      label: {
+                        en: "End Date",
+                        es: "Fech de fin",
+                      },
+                      required: true,
+                      defaultValue: new Date().toISOString(),
+                      admin: {
+                        date: {
+                          pickerAppearance: "dayOnly",
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
           ],
         },
         {
@@ -239,11 +315,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [
@@ -310,11 +386,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [
@@ -381,11 +457,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [
@@ -452,11 +528,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [
@@ -523,11 +599,11 @@ export const Business: CollectionConfig = {
                   defaultValue: [
                     {
                       startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      endTime: "2000-01-01T12:00:00.000",
                     },
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: "2000-01-01T14:00:00.000",
+                      endTime: "2000-01-01T20:00:00.000",
                     },
                   ],
                   fields: [

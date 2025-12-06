@@ -30,18 +30,21 @@ export const enum_appointments_status = pgEnum("enum_appointments_status", [
   "cancelled",
   "completed",
 ]);
-export const enum_businesses_business_type = pgEnum(
-  "enum_businesses_business_type",
+export const enum_businesses_general_business_type = pgEnum(
+  "enum_businesses_general_business_type",
   ["restaurant", "medical", "legal", "real_estate"],
 );
-export const enum_businesses_timezone = pgEnum("enum_businesses_timezone", [
-  "America/Lima",
-  "America/New_York",
-  "Europe/London",
-  "Asia/Tokyo",
-  "Europe/Paris",
-  "Europe/Madrid",
-]);
+export const enum_businesses_general_timezone = pgEnum(
+  "enum_businesses_general_timezone",
+  [
+    "Europe/Madrid",
+    "Europe/Paris",
+    "Europe/London",
+    "America/Lima",
+    "America/New_York",
+    "Asia/Tokyo",
+  ],
+);
 
 export const users_sessions = pgTable(
   "users_sessions",
@@ -75,7 +78,7 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    role: enum_users_role("role").notNull().default("admin"),
+    role: enum_users_role("role").notNull().default("business"),
     name: varchar("name").notNull().default(""),
     phoneNumber: varchar("phone_number").default("+34"),
     updatedAt: timestamp("updated_at", {
@@ -173,7 +176,7 @@ export const customers = pgTable(
   "customers",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    phoneNumber: varchar("phone_number").notNull(),
+    phoneNumber: varchar("phone_number").notNull().default("+34"),
     business: uuid("business_id")
       .notNull()
       .references(() => businesses.id, {
@@ -198,33 +201,52 @@ export const customers = pgTable(
       .notNull(),
   },
   (columns) => [
-    uniqueIndex("customers_phone_number_idx").on(columns.phoneNumber),
     index("customers_business_idx").on(columns.business),
     index("customers_updated_at_idx").on(columns.updatedAt),
     index("customers_created_at_idx").on(columns.createdAt),
   ],
 );
 
-export const businesses = pgTable(
-  "businesses",
+export const businesses_general_next_holiday = pgTable(
+  "businesses_general_next_holiday",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    phoneNumber: varchar("phone_number").default("+34"),
-    isActive: boolean("is_active").default(true),
-    requireAppointmentApproval: boolean("require_appointment_approval").default(
-      true,
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    startDate: timestamp("start_date", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2025-12-06T05:15:40.635Z"),
+    endDate: timestamp("end_date", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2025-12-06T05:15:40.635Z"),
+  },
+  (columns) => [
+    index("businesses_general_next_holiday_order_idx").on(columns._order),
+    index("businesses_general_next_holiday_parent_id_idx").on(
+      columns._parentID,
     ),
-    name: varchar("name").notNull(),
-    businessType: enum_businesses_business_type("business_type").notNull(),
-    user: uuid("user_id")
-      .notNull()
-      .references(() => users.id, {
-        onDelete: "set null",
-      }),
-    timezone: enum_businesses_timezone("timezone").notNull(),
-    averageTime: numeric("average_time", { mode: "number" })
-      .notNull()
-      .default(1),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_general_next_holiday_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses_schedule_monday = pgTable(
+  "businesses_schedule_monday",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
     startTime: timestamp("start_time", {
       mode: "string",
       withTimezone: true,
@@ -239,13 +261,240 @@ export const businesses = pgTable(
     })
       .notNull()
       .default("2000-01-01T17:00:00.000"),
-    monday: boolean("monday").default(true),
-    tuesday: boolean("tuesday").default(true),
-    wednesday: boolean("wednesday").default(true),
-    thursday: boolean("thursday").default(true),
-    friday: boolean("friday").default(true),
-    saturday: boolean("saturday").default(true),
-    sunday: boolean("sunday").default(true),
+  },
+  (columns) => [
+    index("businesses_schedule_monday_order_idx").on(columns._order),
+    index("businesses_schedule_monday_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_schedule_monday_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses_schedule_tuesday = pgTable(
+  "businesses_schedule_tuesday",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    startTime: timestamp("start_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T08:00:00.000"),
+    endTime: timestamp("end_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T17:00:00.000"),
+  },
+  (columns) => [
+    index("businesses_schedule_tuesday_order_idx").on(columns._order),
+    index("businesses_schedule_tuesday_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_schedule_tuesday_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses_schedule_wednesday = pgTable(
+  "businesses_schedule_wednesday",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    startTime: timestamp("start_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T08:00:00.000"),
+    endTime: timestamp("end_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T17:00:00.000"),
+  },
+  (columns) => [
+    index("businesses_schedule_wednesday_order_idx").on(columns._order),
+    index("businesses_schedule_wednesday_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_schedule_wednesday_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses_schedule_thursday = pgTable(
+  "businesses_schedule_thursday",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    startTime: timestamp("start_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T08:00:00.000"),
+    endTime: timestamp("end_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T17:00:00.000"),
+  },
+  (columns) => [
+    index("businesses_schedule_thursday_order_idx").on(columns._order),
+    index("businesses_schedule_thursday_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_schedule_thursday_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses_schedule_friday = pgTable(
+  "businesses_schedule_friday",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    startTime: timestamp("start_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T08:00:00.000"),
+    endTime: timestamp("end_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T17:00:00.000"),
+  },
+  (columns) => [
+    index("businesses_schedule_friday_order_idx").on(columns._order),
+    index("businesses_schedule_friday_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_schedule_friday_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses_schedule_saturday = pgTable(
+  "businesses_schedule_saturday",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    startTime: timestamp("start_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T08:00:00.000"),
+    endTime: timestamp("end_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T17:00:00.000"),
+  },
+  (columns) => [
+    index("businesses_schedule_saturday_order_idx").on(columns._order),
+    index("businesses_schedule_saturday_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_schedule_saturday_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses_schedule_sunday = pgTable(
+  "businesses_schedule_sunday",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    startTime: timestamp("start_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T08:00:00.000"),
+    endTime: timestamp("end_time", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .notNull()
+      .default("2000-01-01T17:00:00.000"),
+  },
+  (columns) => [
+    index("businesses_schedule_sunday_order_idx").on(columns._order),
+    index("businesses_schedule_sunday_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_schedule_sunday_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses = pgTable(
+  "businesses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: varchar("name").notNull(),
+    general_phoneNumber: varchar("general_phone_number")
+      .notNull()
+      .default("+34"),
+    general_requireAppointmentApproval: boolean(
+      "general_require_appointment_approval",
+    ).default(true),
+    general_businessType: enum_businesses_general_business_type(
+      "general_business_type",
+    )
+      .notNull()
+      .default("restaurant"),
+    general_tables: numeric("general_tables", { mode: "number" }).default(1),
+    general_description: varchar("general_description"),
+    general_user: uuid("general_user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "set null",
+      }),
+    general_timezone: enum_businesses_general_timezone("general_timezone")
+      .notNull()
+      .default("Europe/Madrid"),
+    general_isActive: boolean("general_is_active").default(true),
+    schedule_averageTime: numeric("schedule_average_time", { mode: "number" })
+      .notNull()
+      .default(1),
     updatedAt: timestamp("updated_at", {
       mode: "string",
       withTimezone: true,
@@ -262,8 +511,10 @@ export const businesses = pgTable(
       .notNull(),
   },
   (columns) => [
-    uniqueIndex("businesses_phone_number_idx").on(columns.phoneNumber),
-    index("businesses_user_idx").on(columns.user),
+    uniqueIndex("businesses_general_general_phone_number_idx").on(
+      columns.general_phoneNumber,
+    ),
+    index("businesses_general_general_user_idx").on(columns.general_user),
     index("businesses_updated_at_idx").on(columns.updatedAt),
     index("businesses_created_at_idx").on(columns.createdAt),
   ],
@@ -476,11 +727,115 @@ export const relations_customers = relations(customers, ({ one }) => ({
     relationName: "business",
   }),
 }));
-export const relations_businesses = relations(businesses, ({ one }) => ({
-  user: one(users, {
-    fields: [businesses.user],
+export const relations_businesses_general_next_holiday = relations(
+  businesses_general_next_holiday,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_general_next_holiday._parentID],
+      references: [businesses.id],
+      relationName: "general_nextHoliday",
+    }),
+  }),
+);
+export const relations_businesses_schedule_monday = relations(
+  businesses_schedule_monday,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_schedule_monday._parentID],
+      references: [businesses.id],
+      relationName: "schedule_monday",
+    }),
+  }),
+);
+export const relations_businesses_schedule_tuesday = relations(
+  businesses_schedule_tuesday,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_schedule_tuesday._parentID],
+      references: [businesses.id],
+      relationName: "schedule_tuesday",
+    }),
+  }),
+);
+export const relations_businesses_schedule_wednesday = relations(
+  businesses_schedule_wednesday,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_schedule_wednesday._parentID],
+      references: [businesses.id],
+      relationName: "schedule_wednesday",
+    }),
+  }),
+);
+export const relations_businesses_schedule_thursday = relations(
+  businesses_schedule_thursday,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_schedule_thursday._parentID],
+      references: [businesses.id],
+      relationName: "schedule_thursday",
+    }),
+  }),
+);
+export const relations_businesses_schedule_friday = relations(
+  businesses_schedule_friday,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_schedule_friday._parentID],
+      references: [businesses.id],
+      relationName: "schedule_friday",
+    }),
+  }),
+);
+export const relations_businesses_schedule_saturday = relations(
+  businesses_schedule_saturday,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_schedule_saturday._parentID],
+      references: [businesses.id],
+      relationName: "schedule_saturday",
+    }),
+  }),
+);
+export const relations_businesses_schedule_sunday = relations(
+  businesses_schedule_sunday,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_schedule_sunday._parentID],
+      references: [businesses.id],
+      relationName: "schedule_sunday",
+    }),
+  }),
+);
+export const relations_businesses = relations(businesses, ({ one, many }) => ({
+  general_user: one(users, {
+    fields: [businesses.general_user],
     references: [users.id],
-    relationName: "user",
+    relationName: "general_user",
+  }),
+  general_nextHoliday: many(businesses_general_next_holiday, {
+    relationName: "general_nextHoliday",
+  }),
+  schedule_monday: many(businesses_schedule_monday, {
+    relationName: "schedule_monday",
+  }),
+  schedule_tuesday: many(businesses_schedule_tuesday, {
+    relationName: "schedule_tuesday",
+  }),
+  schedule_wednesday: many(businesses_schedule_wednesday, {
+    relationName: "schedule_wednesday",
+  }),
+  schedule_thursday: many(businesses_schedule_thursday, {
+    relationName: "schedule_thursday",
+  }),
+  schedule_friday: many(businesses_schedule_friday, {
+    relationName: "schedule_friday",
+  }),
+  schedule_saturday: many(businesses_schedule_saturday, {
+    relationName: "schedule_saturday",
+  }),
+  schedule_sunday: many(businesses_schedule_sunday, {
+    relationName: "schedule_sunday",
   }),
 }));
 export const relations_payload_kv = relations(payload_kv, () => ({}));
@@ -553,12 +908,20 @@ export const relations_payload_migrations = relations(
 type DatabaseSchema = {
   enum_users_role: typeof enum_users_role;
   enum_appointments_status: typeof enum_appointments_status;
-  enum_businesses_business_type: typeof enum_businesses_business_type;
-  enum_businesses_timezone: typeof enum_businesses_timezone;
+  enum_businesses_general_business_type: typeof enum_businesses_general_business_type;
+  enum_businesses_general_timezone: typeof enum_businesses_general_timezone;
   users_sessions: typeof users_sessions;
   users: typeof users;
   appointments: typeof appointments;
   customers: typeof customers;
+  businesses_general_next_holiday: typeof businesses_general_next_holiday;
+  businesses_schedule_monday: typeof businesses_schedule_monday;
+  businesses_schedule_tuesday: typeof businesses_schedule_tuesday;
+  businesses_schedule_wednesday: typeof businesses_schedule_wednesday;
+  businesses_schedule_thursday: typeof businesses_schedule_thursday;
+  businesses_schedule_friday: typeof businesses_schedule_friday;
+  businesses_schedule_saturday: typeof businesses_schedule_saturday;
+  businesses_schedule_sunday: typeof businesses_schedule_sunday;
   businesses: typeof businesses;
   payload_kv: typeof payload_kv;
   payload_locked_documents: typeof payload_locked_documents;
@@ -570,6 +933,14 @@ type DatabaseSchema = {
   relations_users: typeof relations_users;
   relations_appointments: typeof relations_appointments;
   relations_customers: typeof relations_customers;
+  relations_businesses_general_next_holiday: typeof relations_businesses_general_next_holiday;
+  relations_businesses_schedule_monday: typeof relations_businesses_schedule_monday;
+  relations_businesses_schedule_tuesday: typeof relations_businesses_schedule_tuesday;
+  relations_businesses_schedule_wednesday: typeof relations_businesses_schedule_wednesday;
+  relations_businesses_schedule_thursday: typeof relations_businesses_schedule_thursday;
+  relations_businesses_schedule_friday: typeof relations_businesses_schedule_friday;
+  relations_businesses_schedule_saturday: typeof relations_businesses_schedule_saturday;
+  relations_businesses_schedule_sunday: typeof relations_businesses_schedule_sunday;
   relations_businesses: typeof relations_businesses;
   relations_payload_kv: typeof relations_payload_kv;
   relations_payload_locked_documents_rels: typeof relations_payload_locked_documents_rels;
