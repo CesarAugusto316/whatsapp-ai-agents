@@ -1,0 +1,109 @@
+services:
+  cloudflared:
+    image: "cloudflare/cloudflared:latest"
+    environment:
+      # Don't forget to set this in your Dokploy Environment
+      - "TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}"
+    restart: unless-stopped
+    networks:
+      - dokploy-network # Añade esta línea
+    command: [
+        "tunnel",
+
+        # More tunnel run parameters here:
+        # https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/configure-tunnels/tunnel-run-parameters/
+        "--no-autoupdate",
+        #"--protocol", "http2",
+
+        "run",
+      ]
+
+# Definición de redes
+networks:
+  dokploy-network: # Nombre de la red
+    external: true # ✅ INDISPENSABLE: Le dice a Docker que la red YA EXISTE
+
+
+# ------------------------------------------------------------------------------
+#  DOKPLOY TUNNEL
+#  En tu computadora local, ejecuta: (tunnel SSH)
+#  ssh -L 3000:localhost:3000 cesar@168.119.115.194
+#  Remote server
+#  sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# brew install cloudflared &&
+# docker run cloudflare/cloudflared:latest tunnel --no-autoupdate run --token eyJhIjoiNmQxZTg2YWZmMDNjYTMwZjQ2YWUzNDdiZTU2ODFmYjEiLCJ0IjoiZmMwMTY0OTMtMGRjZi00OWY4LTkxODYtNGZhNjA3OTEyNjRkIiwicyI6Ill6SmxNV0ZqWWpFdFl6QmhPUzAwWW1FeUxUZ3haRGN0TlRRMVpUUm1ZV0U0WWpSaCJ9
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# START CLOUDFLARED TUNNEL
+# cloudflared access tcp --hostname pg-tunnel.osit4s.com --url localhost:15432
+#
+# LOCAL DB CONNECTION
+# psql "postgresql://cms-db:d8db4b24069cad76594e50def5debc67@localhost:15432/cms-db"
+#
+# MORE ABOUT CLOUDFLARE TUNNELS: https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# SSL CERTIFICATES
+#
+# ABOUT SSL TYPES: https://developers.cloudflare.com/ssl/
+# HOW TO CREATE SSL CERTIFICATE: https://developers.cloudflare.com/ssl/origin-configuration/
+
+# -----BEGIN CERTIFICATE-----
+# MIIEoDCCA4igAwIBAgIUc5OFS78xgj9wR+pPe9h0DvdYXdUwDQYJKoZIhvcNAQEL
+# BQAwgYsxCzAJBgNVBAYTAlVTMRkwFwYDVQQKExBDbG91ZEZsYXJlLCBJbmMuMTQw
+# MgYDVQQLEytDbG91ZEZsYXJlIE9yaWdpbiBTU0wgQ2VydGlmaWNhdGUgQXV0aG9y
+# aXR5MRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRMwEQYDVQQIEwpDYWxpZm9ybmlh
+# MB4XDTI1MTIwNzE5MDAwMFoXDTQwMTIwMzE5MDAwMFowYjEZMBcGA1UEChMQQ2xv
+# dWRGbGFyZSwgSW5jLjEdMBsGA1UECxMUQ2xvdWRGbGFyZSBPcmlnaW4gQ0ExJjAk
+# BgNVBAMTHUNsb3VkRmxhcmUgT3JpZ2luIENlcnRpZmljYXRlMIIBIjANBgkqhkiG
+# 9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnZaJaoBJdpalQhh9TJCxOGOkJxpCzvCyztKN
+# g+Z0tTpn5iB1H3n5E99DJ2UBglZRxwcrjj2RADyKQBJ6QaQkjiOK8nizsaIAy7ug
+# Sb43YSmQ2QCKHg30IaQxtPh3PBkZfgStSDVJIGveIUwjSl24o3+C/q/o3bCnWUsP
+# kkfMnidGDKfdma4sS6e3pFoRLptA+7HYkayW0noSrvJi2ANy+CpdvpoAD8JeIUkj
+# tD5SK6o0hqrOh+9NsarWmoFgGcs9xasSaOLLwXDJlyTbSNCdcSb7i7SYgCyd+beu
+# t4H/5fF6qBhZV7PziLSzJTQuqAzTD51UQKogcHQXy9xE1uG26wIDAQABo4IBIjCC
+# AR4wDgYDVR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD
+# ATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBR/cgAOvmBQuR2ysRoSca/MhWWjcDAf
+# BgNVHSMEGDAWgBQk6FNXXXw0QIep65TbuuEWePwppDBABggrBgEFBQcBAQQ0MDIw
+# MAYIKwYBBQUHMAGGJGh0dHA6Ly9vY3NwLmNsb3VkZmxhcmUuY29tL29yaWdpbl9j
+# YTAjBgNVHREEHDAaggwqLm9zaXQ0cy5jb22CCm9zaXQ0cy5jb20wOAYDVR0fBDEw
+# LzAtoCugKYYnaHR0cDovL2NybC5jbG91ZGZsYXJlLmNvbS9vcmlnaW5fY2EuY3Js
+# MA0GCSqGSIb3DQEBCwUAA4IBAQCT2sCVmhaFEBC0gSvf7XB5fvsZqD92Y1EroEHE
+# +Yyxbq69IE9p5ttqsFWN6tEW2aiEIZ5VseYtf7tCJtltj7crXeG8GtvlKDrTekaG
+# 1zl8ts9X9AIMlGyCbrD7nJAVdJh7Ksa1mc02qRRYzBphtLhF6JHmkotqEGLUa2J5
+# gJnO4KUPDW9tn9Lp64WWNsQ2L6z8A9Bg+Z8RT5qBoMG1V0t4YHwWl5A7mmLgWGGR
+# qISIktsxW7tl4Br/pE58WEtA9FfqteAiVgEBg7JLIw524JOujSUIPbVCvYpaQ+8A
+# /FHbvaHLCXmTBOBOb/UFkPrRoVMNzVpV7WQfccJmbWbmwEwI
+# -----END CERTIFICATE-----
+
+# -----BEGIN PRIVATE KEY-----
+# MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCdlolqgEl2lqVC
+# GH1MkLE4Y6QnGkLO8LLO0o2D5nS1OmfmIHUfefkT30MnZQGCVlHHByuOPZEAPIpA
+# EnpBpCSOI4ryeLOxogDLu6BJvjdhKZDZAIoeDfQhpDG0+Hc8GRl+BK1INUkga94h
+# TCNKXbijf4L+r+jdsKdZSw+SR8yeJ0YMp92ZrixLp7ekWhEum0D7sdiRrJbSehKu
+# 8mLYA3L4Kl2+mgAPwl4hSSO0PlIrqjSGqs6H702xqtaagWAZyz3FqxJo4svBcMmX
+# JNtI0J1xJvuLtJiALJ35t663gf/l8XqoGFlXs/OItLMlNC6oDNMPnVRAqiBwdBfL
+# 3ETW4bbrAgMBAAECggEATVCxi7R0FoAThUmRk/J7WFCelWavd2slNw6bSqbTBKUq
+# m3+6Jt7HYsYLYvUN1/30skKkzm0LSoPpSkUmgTUAkFIE1jB87P4wCMS9f+CYuA1W
+# GPlISjWLXMP7dS/gA/bGiIrP31jxTzxM56Y8vDweHe0t/jmc9MM6X7dRZPHgBIk4
+# GkME60Gv05TQxEOvPMyHQ4QF4MbXGjrIKieQg9pEkkz2zO9xiYGTP5JD87tlayqp
+# nKBiBFyuhvKkXIegOmpkPdvi58VvZyhgLfImRRsxNCSRbp77rT4AQqa+6X7AbI7q
+# +9jXaCPqC7kjJACeNfl+jxL+v8s73h/jQ/uNWqipDQKBgQDMJ8hbqcDOX5W0wisp
+# Hv88I3rjZ9yZvIH8U9tbk48Ia5Ra00RTBoRDxu6mg7XtzjFtdv6Fdpf1E0caoIIp
+# AKWlwJ/5JSMVg03TSMJR+XZVq7D4qB87bNGs7MkiDCec+4njbVhGOF2irvzrmbk1
+# nIACzwoklcv8DZEyfS/a4swllwKBgQDFm2SAC0mBFlq5Q5ek4R5LI5hEikiwyo5G
+# lsYZZ7IIgsnn2ZT16C4nRhcvBkjfHaUywiABU28/lvjI6sctj0VxnCVAScb4vzkf
+# AynBSI67+KQsWkNJcq0z9t2aLr7YW5lT7BfOzWI7sNxD+pTTvUSWcer2am/bnMxo
+# khl53QrrzQKBgQCuv6rHk0E/JSA+zikllKvCrVgGCSQR0AKvmpPcCi1XdsZRDB+i
+# taRHY6NpkroKKQG0AjQQx5eAppSpXRSsxioD/CKynzAtvOvD27bBdjftUv4ziaza
+# L+Y2D6SGaUMLI2A+9Jyn1p2HoCNMA5Q+KIyGWvQCptopEO/k+LUatiEqVwKBgQCq
+# ShBgm9l7KeWC9DHRf8KYZBNLNZQQ7m2PfU04BXmSBguzBnltNOnZJHjEKHlR9P0w
+# 8cOdAObE+PhqRJDivS3OCw67CRkzsa6rABHSpBGFAW+RXTPRLsb+Gga8YP5L+xv2
+# C2Y07B90ayRWXLI2ikt6Dq+6LN06dzRcBVN5BjjsHQKBgHnU0+UM+lK/d3zBOxDq
+# 70EL7kR2AJAfNYPdxYPAXpYtJtNyNgN5GU3Nm1m3HW0p8Hyh8IIFZnPmWK3GVg6s
+# vvEBbGZw8hwIjYwrzjRwY6+59lHTIOE0JM+eYvP63srHN1mohH4Ikx2XAmndAMgx
+# mjVUJuZC/j901EllZsle6pyB
+# -----END PRIVATE KEY-----
