@@ -11,6 +11,9 @@
     "binding": "ASSETS",
     "directory": "./public",
   },
+  "dev": {
+    "ip": "0.0.0.0",
+  },
   "observability": {
     "enabled": true,
     "logs": {
@@ -31,6 +34,13 @@
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
    */
   "placement": { "mode": "smart" },
+  "vpc_services": [
+    {
+      "binding": "VPC_SERVICE",
+      "service_id": "019affe6-8305-7092-bbe3-b12e98da53d6",
+      "remote": true,
+    },
+  ],
   /**
    * Bindings
    * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
@@ -58,7 +68,7 @@
    * Service Bindings (communicate between multiple Workers)
    * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
    */
-  "services": [
-    { "binding": "CMS_API", "service": "payload-cms", "remote": false },
-  ],
+  // "services": [
+  //   { "binding": "CMS_API", "service": "payload-cms", "remote": false },
+  // ],
 }

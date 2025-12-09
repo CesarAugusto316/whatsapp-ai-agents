@@ -1,72 +1,41 @@
 import { env } from "cloudflare:workers";
 import { Hono } from "hono";
-import { WhatsAppWebhookPayload } from "./types";
+import { WahaRecievedEvent } from "./types/received-event";
 
-const apiKey = env.WASENDER_API_KEY; // Session-specific API key
+const apiKey = env.WAHA_API_KEY; // waha API key
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 app.get("/hello", async (c) => {
-  const res = await fetch(
-    new Request("https://www.wasenderapi.com/api/send-message", {
+  return c.json({ hi: "Hello" });
+});
+
+app.post("/received-messages", async (c) => {
+  // if (!verifySignature(c.req.raw)) {
+  //   return c.json({ error: "Invalid signature" }, 401);
+  // }
+  const msgResponse = await c.req.json<WahaRecievedEvent>();
+
+  if (msgResponse.event !== "message") {
+    return c.json({ message: "Invalid event" });
+  }
+  const aiResponse = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
+    prompt: msgResponse.payload.body,
+  });
+  await fetch(
+    new Request("'http://localhost:3000/api/sendText'", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        to: "+593984393446",
-        text: "Hello from WasenderAPI César!",
+        text: aiResponse?.response?.toString() || "AI response",
+        to: `+${msgResponse.me.id.split("@").at(0)}`,
       }),
     }),
   );
-  return c.json(await res.json());
-});
-
-app.post("/message", async (c) => {
-  if (!verifySignature(c.req.raw)) {
-    return c.json({ error: "Invalid signature" }, 401);
-  }
-  // c.req.
-  const payload = (await c.req.json()) as WhatsAppWebhookPayload;
-
-  if (payload.event === "webhook.test") {
-    return c.json({ received: true, message: "API response test" });
-  }
-  if (payload.event === "messages.received") {
-    const messages = payload?.data?.messages;
-    const phoneNumber =
-      messages?.key?.cleanedSenderPn || messages?.key?.senderPn?.split("@")[0];
-
-    const sessionId = messages?.key?.id;
-    const name = messages?.pushName;
-    const messageTimestamp = messages?.messageTimestamp;
-
-    const messageContent =
-      messages?.messageBody || messages?.message?.extendedTextMessage?.text;
-    const response = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
-      prompt: messageContent,
-    });
-    const res = await fetch(
-      new Request("https://www.wasenderapi.com/api/send-message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          text: response?.response?.toString() || "AI response",
-          to: `+${phoneNumber}`,
-        }),
-      }),
-    );
-    return c.json({
-      received: true,
-      gtp: response,
-      wasenderRes: await res.json(),
-    });
-  }
-  return c.json({ received: true, message: "API response" });
+  return c.json({ received: true, message: "AI Agent Response" });
 });
 
 export default app;
