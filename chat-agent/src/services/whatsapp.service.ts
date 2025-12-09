@@ -15,14 +15,18 @@ const apiKey = env.WAHA_API_KEY; // waha API key
  *
  * If you get a new message via 🔄 Events and want to reply to that message,
  * you need to first send that you’ve seen the message (double green tick)
- * - read ⚠️ How to Avoid Blocking
+ *
+ * Read ⚠️ How to Avoid Blocking
+ * more info: https://waha.devlike.pro/docs/overview/%EF%B8%8F-how-to-avoid-blocking/
+ *
  * @description Waha API
  * more info: https://waha.devlike.pro/docs/how-to/send-messages/
  */
 class WhatsappService {
   private headers = {
+    Accept: "application/json",
     "Content-Type": "application/json",
-    Authorization: `Bearer ${apiKey}`,
+    "X-Api-Key": apiKey,
   };
 
   /**
@@ -61,8 +65,8 @@ class WhatsappService {
   }
 
   private randomTime() {
-    const min = 1_200;
-    const max = 2_200;
+    const min = 1_000;
+    const max = 2_000;
     return Math.floor(Math.random() * (max - min + 1)) + min / 2;
   }
 
@@ -72,15 +76,25 @@ class WhatsappService {
 
   public async beforeSend(
     args: SendSeenPayload,
-    callAi: () => Promise<string>,
+    callAI: () => Promise<string>,
   ) {
-    await this.timeOut();
-    await this.sendSeen({ session: args.session, chatId: args.chatId });
-    await this.timeOut();
-    await this.sendStartTyping({ session: args.session, chatId: args.chatId });
-    const [aiPromise] = await Promise.all([callAi(), this.timeOut()]);
-    await this.sendStopTyping({ session: args.session, chatId: args.chatId });
-    return aiPromise;
+    // send seen
+    await Promise.all([
+      this.sendSeen({ session: args.session, chatId: args.chatId }),
+      this.timeOut(),
+    ]);
+    // start typing
+    const [aiResponse] = await Promise.all([
+      callAI(),
+      this.sendStartTyping({ session: args.session, chatId: args.chatId }),
+      this.timeOut(),
+    ]);
+    // stop typing
+    await Promise.all([
+      this.sendStopTyping({ session: args.session, chatId: args.chatId }),
+      this.timeOut(),
+    ]);
+    return aiResponse;
   }
 
   public async sendText({ session, text, chatId }: SendMessagePayload) {
