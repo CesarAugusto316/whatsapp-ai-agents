@@ -25,6 +25,9 @@ export const whatsappService = {
           chatId,
           session,
           text,
+          reply_to: null,
+          linkPreview: true,
+          linkPreviewHighQuality: false,
         } as SendMessagePayload),
       }),
     );

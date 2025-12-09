@@ -36,7 +36,7 @@
   "placement": { "mode": "smart" },
   "vpc_services": [
     {
-      "binding": "VPC_SERVICE",
+      "binding": "VPC_CMS",
       "service_id": "019affe6-8305-7092-bbe3-b12e98da53d6",
       "remote": true,
     },
@@ -52,8 +52,7 @@
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    */
   "vars": {
-    "WASENDER_WEBHOOK_SECRET": "d3db4b24069cad76594e50def5debc51",
-    "WASENDER_API_KEY": "fbd4f9e89513b2d0481e140cf71e1af79448df97336a890fe95812e5faacbfe1",
+    //
   },
   /**
    * Note: Use secrets to store sensitive data.

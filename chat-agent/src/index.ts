@@ -6,25 +6,33 @@ import { whatsappService } from "@/services/whatsapp.service";
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 app.get("/hello", async (c) => {
-  return c.json({ hi: "Hello" });
+  await whatsappService.sendText({
+    // chatId: "593984393446@c.us",
+    chatId: "593969711306@c.us",
+    text: "Waha API",
+    session: "default",
+  });
+  return c.json({ received: true, message: "AI Agent Response" });
 });
 
-app.post("/received-messages/:id", async (c) => {
+app.post("/received-messages/:businessId", async (c) => {
   // if (!verifySignature(c.req.raw)) {
   //   return c.json({ error: "Invalid signature" }, 401);
-  const id = c.req.param("id");
+  const id = c.req.param("businessId");
   const msgResponse = await c.req.json<WahaRecievedEvent>();
 
   if (msgResponse.event !== "message") {
     return c.json({ message: "Invalid event" });
   }
+  console.log(msgResponse);
   const aiResponse = await c.env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
     prompt: msgResponse.payload.body,
   });
-  const message = aiResponse?.response?.toString() || "AI response";
+  const aiMessage = aiResponse?.response?.toString() || "AI response";
+  console.log({ aiMessage });
   await whatsappService.sendText({
-    chatId: msgResponse.id,
-    text: message,
+    chatId: msgResponse.payload.from || msgResponse.payload.id,
+    text: aiMessage,
     session: msgResponse.session,
   });
   return c.json({ received: true, message: "AI Agent Response" });
