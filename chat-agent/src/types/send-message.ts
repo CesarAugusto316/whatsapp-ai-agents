@@ -7,6 +7,13 @@ export interface SendMessagePayload {
   linkPreview?: boolean;
   linkPreviewHighQuality?: boolean;
   session: string;
+  messageIds?: string[];
+}
+
+export interface SendSeenPayload {
+  chatId: string;
+  session: string;
+  messageIds?: string[];
 }
 
 export interface SendMessageResponse extends WahaMessagePayload {
