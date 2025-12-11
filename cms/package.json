@@ -11,6 +11,7 @@
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "devsafe": "rm -rf .next && rm -rf .open-next && cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "db:tunnel": "cloudflared access tcp --hostname pg-tunnel.osit4s.com --url localhost:15432",
     "db:schema": "bun payload generate:db-schema",
     "db:migrate": "bun payload migrate",
     "db:migrate:create": "bun payload migrate:create",

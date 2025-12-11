@@ -7,9 +7,13 @@
   "name": "worker-ai",
   "main": "src/index.ts",
   "compatibility_date": "2025-11-27",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "binding": "ASSETS",
     "directory": "./public",
+  },
+  "dev": {
+    "ip": "0.0.0.0",
   },
   "observability": {
     "enabled": true,
@@ -31,6 +35,36 @@
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
    */
   "placement": { "mode": "smart" },
+  "vpc_services": [
+    {
+      "binding": "VPC_CMS",
+      "service_id": "019affe6-8305-7092-bbe3-b12e98da53d6",
+      "remote": true,
+    },
+    {
+      "binding": "VPC_WHATSAPP",
+      "service_id": "019b06bb-96e2-70a2-8886-209ae9034f59",
+      "remote": true,
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        // Required:
+        "name": "MyAgent", // How your Agent is called from your Worker
+        "class_name": "MyAgent", // Must match the class name of the Agent in your code
+        // Optional: set this if the Agent is defined in another Worker script
+        // "script_name": "the-other-worker"
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      // Mandatory for the Agent to store state
+      "new_sqlite_classes": ["MyAgent"],
+    },
+  ],
   /**
    * Bindings
    * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
@@ -42,8 +76,7 @@
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    */
   "vars": {
-    "WASENDER_WEBHOOK_SECRET": "d3db4b24069cad76594e50def5debc51",
-    "WASENDER_API_KEY": "fbd4f9e89513b2d0481e140cf71e1af79448df97336a890fe95812e5faacbfe1",
+    //
   },
   /**
    * Note: Use secrets to store sensitive data.
@@ -58,7 +91,7 @@
    * Service Bindings (communicate between multiple Workers)
    * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
    */
-  "services": [
-    { "binding": "CMS_API", "service": "payload-cms", "remote": false },
-  ],
+  // "services": [
+  //   { "binding": "CMS_API", "service": "payload-cms", "remote": false },
+  // ],
 }
