@@ -7,12 +7,9 @@ const weatherSchema = z.object({
   location: z.string().describe("The location to get the weather for"),
 });
 
-// Schema de entrada que preprocesa el string a objeto
-const weatherInputSchema = z.preprocess(parseInput, weatherSchema);
-
 export const weather = tool({
   name: "weather",
-  inputSchema: weatherInputSchema,
+  inputSchema: z.preprocess(parseInput, weatherSchema),
   description: "Get the weather for a given location",
   execute: async ({ location }) => {
     // const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${process.env.OPENWEATHERMAP_API_KEY}`);
