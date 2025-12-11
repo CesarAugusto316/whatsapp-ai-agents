@@ -2,21 +2,21 @@
   "name": "worker-ai",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
-    "db:tunnel": "cloudflared access tcp --hostname pg-tunnel.osit4s.com --url localhost:15432",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "dev": "bun run --hot ./src/index.ts",
+    "db:tunnel": "cloudflared access tcp --hostname pg-tunnel.osit4s.com --url localhost:15432"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.80",
-    "agents": "^0.2.31",
+    "@ai-sdk/openai-compatible": "^1.0.28",
     "ai": "^5.0.108",
-    "hono": "^4.10.7",
-    "workers-ai-provider": "^2.0.0",
+    "hono": "^4.10.8",
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "wrangler": "^4.51.0"
+    "@types/bun": "latest"
   },
-  "packageManager": "pnpm@10.24.0+sha512.01ff8ae71b4419903b65c60fb2dc9d34cf8bb6e06d03bde112ef38f7a34d6904c424ba66bea5cdcf12890230bf39f9580473140ed9c946fef328b6e5238a345a"
+  "module": "src/index.ts",
+  "private": true,
+  "peerDependencies": {
+    "typescript": "^5"
+  }
 }
