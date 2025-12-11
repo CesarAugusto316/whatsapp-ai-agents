@@ -6,10 +6,9 @@ import {
   SendMessageResponse,
   SendSeenPayload,
 } from "@/types/send-message";
-import { env } from "cloudflare:workers";
 
-const apiUrl = env.WAHA_API;
-const apiKey = env.WAHA_API_KEY; // waha API key
+const apiUrl = process.env.WAHA_API;
+const apiKey = process.env.WAHA_API_KEY; // waha API key
 
 /**
  *
@@ -26,7 +25,7 @@ class WhatsappService {
   private headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
-    "X-Api-Key": apiKey,
+    "X-Api-Key": apiKey || "",
   };
 
   /**
@@ -35,33 +34,27 @@ class WhatsappService {
    * @description Send a seen message to the chat always before sending a message
    */
   private sendSeen(args: SendSeenPayload) {
-    return fetch(
-      new Request<SendMessageResponse>(`${apiUrl}/sendSeen`, {
-        method: "POST",
-        headers: this.headers,
-        body: JSON.stringify(args),
-      }),
-    );
+    return fetch(`${apiUrl}/sendSeen`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(args),
+    });
   }
 
   private sendStartTyping(args: SendSeenPayload) {
-    return fetch(
-      new Request<SendMessageResponse>(`${apiUrl}/startTyping`, {
-        method: "POST",
-        headers: this.headers,
-        body: JSON.stringify(args),
-      }),
-    );
+    return fetch(`${apiUrl}/startTyping`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(args),
+    });
   }
 
   private sendStopTyping(args: SendSeenPayload) {
-    return fetch(
-      new Request<SendMessageResponse>(`${apiUrl}/stopTyping`, {
-        method: "POST",
-        headers: this.headers,
-        body: JSON.stringify(args),
-      }),
-    );
+    return fetch(`${apiUrl}/stopTyping`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(args),
+    });
   }
 
   private randomTime() {
@@ -98,50 +91,42 @@ class WhatsappService {
   }
 
   public async sendText({ session, text, chatId }: SendMessagePayload) {
-    return fetch(
-      new Request<SendMessageResponse>(`${apiUrl}/sendText`, {
-        method: "POST",
-        headers: this.headers,
-        body: JSON.stringify({
-          chatId,
-          session,
-          text,
-          reply_to: null,
-          linkPreview: true,
-          linkPreviewHighQuality: false,
-        } as SendMessagePayload),
-      }),
-    );
+    return fetch(`${apiUrl}/sendText`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify({
+        chatId,
+        session,
+        text,
+        reply_to: null,
+        linkPreview: true,
+        linkPreviewHighQuality: false,
+      } as SendMessagePayload),
+    });
   }
 
   public async sendContact(args: SendContactPayload) {
-    return fetch(
-      new Request<SendMessageResponse>(`${apiUrl}/sendContactVcard`, {
-        method: "POST",
-        headers: this.headers,
-        body: JSON.stringify(args),
-      }),
-    );
+    return fetch(`${apiUrl}/sendContactVcard`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(args),
+    });
   }
 
   public async sendLocation(args: SendLocationPayload) {
-    return fetch(
-      new Request<SendMessageResponse>(`${apiUrl}/sendLocation`, {
-        method: "POST",
-        headers: this.headers,
-        body: JSON.stringify(args),
-      }),
-    );
+    return fetch(`${apiUrl}/sendLocation`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(args),
+    });
   }
 
   public async sendEvent(args: SendEventPayload) {
-    return fetch(
-      new Request<SendMessageResponse>(`${apiUrl}/${args.session}/events`, {
-        method: "POST",
-        headers: this.headers,
-        body: JSON.stringify(args),
-      }),
-    );
+    return fetch(`${apiUrl}/${args.session}/events`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(args),
+    });
   }
 }
 

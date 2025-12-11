@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { WahaRecievedEvent } from "@/types/received-event";
-import { env } from "cloudflare:workers";
 import whatsappService from "@/services/whatsapp.service";
 import { cors } from "hono/cors";
+import { callAI } from "./services/ai.service";
 
 // AI SDK PROJECT EXAMPLE
 // https://github.com/gopinav/Next.js-AI-Tutorials/tree/main/src/app/api
-const app = new Hono<{ Bindings: CloudflareBindings }>();
+const app = new Hono();
 
 app.use(
   cors({
@@ -17,16 +17,13 @@ app.use(
 );
 
 app.post("/received-messages/:businessId", async (c) => {
-  // if (!verifySignature(c.req.raw)) {
-  //   return c.json({ error: "Invalid signature" }, 401);
-  const businessId = c.req.param("businessId");
+  // const businessId = c.req.param("businessId");
   const msgResponse = await c.req.json<WahaRecievedEvent>();
-  console.log({ msgResponse });
-  console.log({ _data: JSON.stringify(msgResponse.payload._data) });
+
   if (msgResponse.event !== "message") {
     return c.json({ message: "Invalid event" });
   }
-  const toChatId = msgResponse.payload.from || msgResponse.payload.id;
+  const toChatId = msgResponse.payload.from;
 
   const aiResponse = await whatsappService.beforeSend(
     {
@@ -35,7 +32,6 @@ app.post("/received-messages/:businessId", async (c) => {
     },
     async () => {
       // const res = await c.env.AI.run("@cf/ibm-granite/granite-4.0-h-micro", {
-      //   // prompt: msgResponse.payload.body,
       //   messages: [
       //     {
       //       role: "system",
@@ -45,12 +41,9 @@ app.post("/received-messages/:businessId", async (c) => {
       //   ],
       // });
       // console.log({ res });
-      // return res.response?.toString() || "AI response";
-      //
-      return "AI IBM response";
+      return "AI response";
     },
   );
-  console.log({ aiResponse });
 
   await whatsappService.sendText({
     chatId: toChatId,
@@ -61,12 +54,22 @@ app.post("/received-messages/:businessId", async (c) => {
   return c.json({ received: true, message: "AI Agent Response" });
 });
 
-export default app;
+app.post("/test-ai", async (c) => {
+  const { text } = await callAI("Cuantas mesas hay en el restaurante");
+
+  return c.json({ received: true, message: text });
+});
+
+// export default app;
+export default {
+  port: 3000,
+  fetch: app.fetch,
+};
 
 // Verify webhook signature to ensure it's from WasenderApi
 function verifySignature(req: Request) {
   const signature = req.headers.get("x-webhook-signature");
-  const webhookSecret = env.WAHA_API_KEY; // Store securely
+  const webhookSecret = process.env.WAHA_API_KEY; // Store securely
   if (!signature || !webhookSecret || signature !== webhookSecret) return false;
   return true;
 }
