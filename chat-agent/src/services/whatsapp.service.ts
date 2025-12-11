@@ -1,7 +1,10 @@
-import { SendEventPayload } from "@/types/send-appointment";
-import { SendContactPayload } from "@/types/send-contact";
-import { SendLocationPayload } from "@/types/send-location";
-import { SendMessagePayload, SendSeenPayload } from "@/types/send-message";
+import { SendEventPayload } from "@/types/whatsapp/send-appointment";
+import { SendContactPayload } from "@/types/whatsapp/send-contact";
+import { SendLocationPayload } from "@/types/whatsapp/send-location";
+import {
+  SendMessagePayload,
+  SendSeenPayload,
+} from "@/types/whatsapp/send-message";
 
 const apiUrl = process.env.WAHA_API;
 const apiKey = process.env.WAHA_API_KEY; // waha API key
