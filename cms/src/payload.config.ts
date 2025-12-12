@@ -9,6 +9,7 @@ import { Customers } from "./collections/Costumers";
 import { Business } from "./collections/Businesses";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { resendAdapter } from "@payloadcms/email-resend";
+import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -28,7 +29,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Appointments, Customers, Business],
+  collections: [Users, ThirdPartyAccess, Appointments, Customers, Business],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),

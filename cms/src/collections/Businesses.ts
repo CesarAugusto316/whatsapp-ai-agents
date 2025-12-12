@@ -15,9 +15,17 @@ export const Business: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
-      return req?.user && req.user?.role === "admin";
+      if (req.user?.collection === "users") {
+        return req?.user?.role === "admin";
+      }
+      if (req.user?.collection === "third-party-access") {
+        return true;
+      }
     },
     read: async ({ req }) => {
+      if (req.user?.collection === "third-party-access") {
+        return true;
+      }
       // Si el usuario es un administrador, permite el acceso a todos los documentos.
       if (req?.user?.role === "admin") {
         return true;

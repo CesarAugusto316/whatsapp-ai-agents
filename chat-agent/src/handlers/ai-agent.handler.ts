@@ -1,20 +1,34 @@
-// import { tools } from "@/ai-agents";
-// import { generateText, stepCountIs } from "ai";
 import { aiAgent } from "@/ai-agents/config";
-import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
+import businessService from "@/services/business.service";
 import whatsappService from "@/services/whatsapp.service";
+import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
+import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
 
 export const aiAgentTestHandler: Handler = async (c) => {
   const custumerMessage = await c.req.json<WahaRecievedEvent>();
-  const businessChatId = custumerMessage.session; // use CMS businessID on creation
-  const ownerId = c.req.param("ownerId"); // use CMS ownerId/userId on creation
+  const session = custumerMessage.session; // use CMS businessID on creation
+  const businessId = custumerMessage.metadata?.businessId;
+  const userId = custumerMessage.metadata?.userId;
+  // const ownerId = c.req.param("ownerId"); // use CMS ownerId/userId on creation
+
+  const business = await businessService.getBusinessById(businessId);
+
+  const messages: ModelMessage[] = [
+    {
+      role: "user",
+      content: custumerMessage.payload.body,
+    },
+  ];
 
   // PODEMOS LLAMAR A LA API DE CMS ANTES DEL AGENTE Y ASI TENER MAS CONTEXTO
-  const result = await aiAgent.generate({
-    prompt: custumerMessage.payload.body,
-  });
-  return c.json({ received: true, result });
+  const result = undefined;
+  //   await aiAgent.generate({
+  //   prompt: custumerMessage.payload.body,
+  //   // messages
+  // });
+
+  return c.json({ received: true, result, business });
 };
 
 export const aiAgentHandler: Handler = async (c) => {

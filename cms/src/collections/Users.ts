@@ -1,6 +1,13 @@
 import type { Access, CollectionConfig } from "payload";
 
-const isAdmin: Access = ({ req }) => req?.user?.role === "admin";
+const isAdmin: Access = ({ req }) => {
+  if (req.user?.collection === "users") {
+    return req?.user?.role === "admin";
+  }
+  if (req.user?.collection === "third-party-access") {
+    return true;
+  }
+};
 
 export const Users: CollectionConfig = {
   slug: "users",
@@ -18,7 +25,7 @@ export const Users: CollectionConfig = {
   admin: {
     // hide all the page if user is not admin
     hidden: ({ user }) => {
-      return user?.role !== "admin";
+      return user?.collection === "users" && user?.role !== "admin";
     },
     useAsTitle: "name", // header title is taken from "name" field
   },

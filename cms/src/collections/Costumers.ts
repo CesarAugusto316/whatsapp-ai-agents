@@ -18,9 +18,15 @@ export const Customers: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
-      return req.user?.role === "admin";
+      if (req?.user?.collection === "third-party-access") {
+        return true;
+      }
+      return req?.user?.collection === "users" && req?.user?.role === "admin";
     },
     read: async ({ req }) => {
+      if (req?.user?.collection === "third-party-access") {
+        return true;
+      }
       // Si el usuario es un administrador, permite el acceso a todos los documentos.
       if (!req?.user) {
         return false;
@@ -64,7 +70,14 @@ export const Customers: CollectionConfig = {
       minLength: 7,
       maxLength: 20,
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" && req?.user?.role === "admin"
+          );
+        },
       },
     },
     {
@@ -77,7 +90,14 @@ export const Customers: CollectionConfig = {
       relationTo: Business.slug as CollectionSlug,
       required: true,
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" && req?.user?.role === "admin"
+          );
+        },
       },
     },
     {
@@ -86,7 +106,14 @@ export const Customers: CollectionConfig = {
       required: true,
       label: { en: "Full Name", es: "Nombre Completo" },
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" && req?.user?.role === "admin"
+          );
+        },
       },
     },
     {
@@ -110,7 +137,14 @@ export const Customers: CollectionConfig = {
       type: "email",
       label: { en: "Email", es: "Correo Electrónico" },
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" && req?.user?.role === "admin"
+          );
+        },
       },
     },
   ],

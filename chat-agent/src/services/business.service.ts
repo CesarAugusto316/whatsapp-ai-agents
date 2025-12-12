@@ -1,11 +1,14 @@
 import { fetch } from "bun";
 
 const apiUrl = process.env.CMS_API;
+const slug = process.env.CMS_SLUG || "users";
+const apiKey = process.env.CMS_API_KEY;
 
 class BusinessService {
   private headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
+    Authorization: `${slug} API-Key ${apiKey}`,
   };
 
   public login({ email, password }: { email: string; password: string }) {

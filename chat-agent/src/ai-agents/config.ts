@@ -1,7 +1,6 @@
 import { Experimental_Agent as Agent, hasToolCall, stepCountIs } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { weather } from "./tools/weather.tool";
-// import { tools } from ".";
 
 /**
  *
@@ -58,5 +57,6 @@ export const aiAgent = new Agent({
   },
   onStepFinish({ text, toolCalls, toolResults, finishReason, usage }) {
     // your own logic, e.g. for saving the chat history or recording usage
+    // console.log({ text, toolCalls, toolResults, finishReason, usage });
   },
 });
