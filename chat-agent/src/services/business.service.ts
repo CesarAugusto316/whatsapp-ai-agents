@@ -6,18 +6,102 @@ class BusinessService {
     "Content-Type": "application/json",
   };
 
+  public login({ email, password }: { email: string; password: string }) {
+    return fetch(`${apiUrl}/users/login`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
   /**
    *
    * more info: https://waha.devlike.pro/docs/how-to/send-messages/
    * @description Send a seen message to the chat always before sending a message
    */
-  public getBusiness(args: Object) {
-    return fetch(`${apiUrl}/sendSeen`, {
+  public getBusinessById(id: string) {
+    return fetch(`${apiUrl}/businesses/${id}`, {
       method: "GET",
       headers: this.headers,
-      body: JSON.stringify(args),
+    });
+  }
+
+  public getAppointments(id: string, appointmentId: string) {
+    return fetch(`${apiUrl}/businesses/${id}/appointments/${appointmentId}`, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
+
+  public getAppointmentById(id: string, appointmentId: string) {
+    return fetch(`${apiUrl}/businesses/${id}/appointments/${appointmentId}`, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
+
+  public createAppointment(
+    id: string,
+    appointmentBody: Record<string, string>,
+  ) {
+    return fetch(`${apiUrl}/businesses/${id}/appointments`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(appointmentBody),
+    });
+  }
+
+  public updateAppointment(
+    id: string,
+    appointmentId: string,
+    appointmentBody: Record<string, string>,
+  ) {
+    return fetch(`${apiUrl}/businesses/${id}/appointments/${appointmentId}`, {
+      method: "PUT",
+      headers: this.headers,
+      body: JSON.stringify(appointmentBody),
+    });
+  }
+
+  public deleteAppointment(id: string, appointmentId: string) {
+    return fetch(`${apiUrl}/businesses/${id}/appointments/${appointmentId}`, {
+      method: "DELETE",
+      headers: this.headers,
+    });
+  }
+
+  // TODO phoneNumber as primary key
+  public getCostumerByPhone(id: string, phoneNumber: string) {
+    return fetch(`${apiUrl}/businesses/${id}/costumers/${phoneNumber}`, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
+
+  // public getCostumerById(id: string, customerId: string) {
+  //   return fetch(`${apiUrl}/businesses/${id}/costumers/${customerId}`, {
+  //     method: "GET",
+  //     headers: this.headers,
+  //   });
+  // }
+
+  public createCostumer(id: string, costumer: Record<string, string>) {
+    return fetch(`${apiUrl}/businesses/${id}/costumers`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(costumer),
+    });
+  }
+
+  public updateCostumer(
+    id: string,
+    costumerId: string,
+    costumerBody: Record<string, string>,
+  ) {
+    return fetch(`${apiUrl}/businesses/${id}/costumers/${costumerId}`, {
+      method: "PUT",
+      headers: this.headers,
+      body: JSON.stringify(costumerBody),
     });
   }
 }
-
-export default new BusinessService();
