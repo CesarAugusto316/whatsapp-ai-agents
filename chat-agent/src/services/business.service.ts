@@ -1,3 +1,5 @@
+import { fetch } from "bun";
+
 const apiUrl = process.env.CMS_API;
 
 class BusinessService {
@@ -105,3 +107,5 @@ class BusinessService {
     });
   }
 }
+
+export default new BusinessService();

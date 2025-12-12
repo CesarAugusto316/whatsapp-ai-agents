@@ -6,6 +6,8 @@ import { Handler } from "hono/types";
 
 export const aiAgentTestHandler: Handler = async (c) => {
   const custumerMessage = await c.req.json<WahaRecievedEvent>();
+  const businessChatId = custumerMessage.session; // use CMS businessID on creation
+  const ownerId = c.req.param("ownerId"); // use CMS ownerId/userId on creation
   const result = await generateText({
     model: model,
     system: "Eres un asistente que hacer reservas en restaurantes",
@@ -16,7 +18,7 @@ export const aiAgentTestHandler: Handler = async (c) => {
 };
 
 export const aiAgentHandler: Handler = async (c) => {
-  // const businessId = c.req.param("businessId");
+  // const businessId = c.req.param("ownerId");
   const custumerMessage = await c.req.json<WahaRecievedEvent>();
   const toPhoneNumber = custumerMessage.payload.from;
 

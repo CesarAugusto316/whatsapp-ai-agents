@@ -1,3 +1,4 @@
+import { GetChatMessagesQueryParams } from "@/types/whatsapp/get-message";
 import { SendEventPayload } from "@/types/whatsapp/send-appointment";
 import { SendContactPayload } from "@/types/whatsapp/send-contact";
 import { SendLocationPayload } from "@/types/whatsapp/send-location";
@@ -5,6 +6,7 @@ import {
   SendMessagePayload,
   SendSeenPayload,
 } from "@/types/whatsapp/send-message";
+import { fetch } from "bun";
 
 const apiUrl = process.env.WAHA_API;
 const apiKey = process.env.WAHA_API_KEY; // waha API key
@@ -26,6 +28,23 @@ class WhatsappService {
     "Content-Type": "application/json",
     "X-Api-Key": apiKey || "",
   };
+
+  public getMessages(
+    session: string,
+    chatId: string,
+    queryParams?: GetChatMessagesQueryParams,
+  ) {
+    const url = new URL(`${apiUrl}/${session}/chats/${chatId}/messages`);
+    if (queryParams) {
+      for (const [key, value] of Object.entries(queryParams)) {
+        url.searchParams.append(key, value);
+      }
+    }
+    return fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
 
   /**
    *
