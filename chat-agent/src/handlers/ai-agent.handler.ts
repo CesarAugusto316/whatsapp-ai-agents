@@ -1,6 +1,7 @@
 import { aiAgent } from "@/ai-agents/config";
 import businessService from "@/services/business.service";
 import whatsappService from "@/services/whatsapp.service";
+import { Business } from "@/types/business/cms-types";
 import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
 import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
@@ -12,7 +13,9 @@ export const aiAgentTestHandler: Handler = async (c) => {
   const userId = custumerMessage.metadata?.userId;
   // const ownerId = c.req.param("ownerId"); // use CMS ownerId/userId on creation
 
-  const business = await businessService.getBusinessById(businessId);
+  const res = await businessService.getBusinessById(businessId);
+  const business = (await res.json()) as Business;
+  // console.log({ res });
 
   const messages: ModelMessage[] = [
     {
@@ -27,7 +30,6 @@ export const aiAgentTestHandler: Handler = async (c) => {
   //   prompt: custumerMessage.payload.body,
   //   // messages
   // });
-
   return c.json({ received: true, result, business });
 };
 
@@ -39,7 +41,6 @@ export const aiAgentHandler: Handler = async (c) => {
   if (custumerMessage.event !== "message") {
     return c.json({ message: "Invalid event" });
   }
-
   // 1. Set message as seen & call the ai-agent & get AI response
   const aiResponse = await whatsappService.beforeSend(
     {

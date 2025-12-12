@@ -1,7 +1,7 @@
 import { fetch } from "bun";
 
 const apiUrl = process.env.CMS_API;
-const slug = process.env.CMS_SLUG || "users";
+const slug = process.env.CMS_SLUG || "third-party-access";
 const apiKey = process.env.CMS_API_KEY;
 
 class BusinessService {
@@ -10,14 +10,6 @@ class BusinessService {
     "Content-Type": "application/json",
     Authorization: `${slug} API-Key ${apiKey}`,
   };
-
-  public login({ email, password }: { email: string; password: string }) {
-    return fetch(`${apiUrl}/users/login`, {
-      method: "POST",
-      headers: this.headers,
-      body: JSON.stringify({ email, password }),
-    });
-  }
 
   /**
    *
