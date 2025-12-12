@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { parseInput } from "../config";
 import { tool } from "ai";
+import { parseInput } from "./helpers";
 
 // 1. Define tu esquema de validación separadamente
 const weatherSchema = z.object({

@@ -1,18 +1,18 @@
-import { model, tools } from "@/ai-agents";
-import whatsappService from "@/services/whatsapp.service";
+// import { tools } from "@/ai-agents";
+// import { generateText, stepCountIs } from "ai";
+import { aiAgent } from "@/ai-agents/config";
 import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
-import { generateText } from "ai";
+import whatsappService from "@/services/whatsapp.service";
 import { Handler } from "hono/types";
 
 export const aiAgentTestHandler: Handler = async (c) => {
   const custumerMessage = await c.req.json<WahaRecievedEvent>();
   const businessChatId = custumerMessage.session; // use CMS businessID on creation
   const ownerId = c.req.param("ownerId"); // use CMS ownerId/userId on creation
-  const result = await generateText({
-    model: model,
-    system: "Eres un asistente que hacer reservas en restaurantes",
+
+  // PODEMOS LLAMAR A LA API DE CMS ANTES DEL AGENTE Y ASI TENER MAS CONTEXTO
+  const result = await aiAgent.generate({
     prompt: custumerMessage.payload.body,
-    tools: tools,
   });
   return c.json({ received: true, result });
 };

@@ -1,4 +1,7 @@
+import { Experimental_Agent as Agent, hasToolCall, stepCountIs } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { weather } from "./tools/weather.tool";
+// import { tools } from ".";
 
 /**
  *
@@ -15,31 +18,45 @@ const provider = createOpenAICompatible({
   // includeUsage: true, // Include usage information in streaming responses
 });
 
-export const model = provider("@cf/ibm-granite/granite-4.0-h-micro");
-
 /**
  *
- * @description Parse input string to object
- * @param arg input schema from LLM that is passed to the ai-sdk for tool decision
- * @returns
+ * @description Configure the agent with the model, system prompt, tools, and stop conditions.
+ * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
  */
-export const parseInput = (arg: string | Record<string, string>) => {
-  if (typeof arg === "string") {
-    try {
-      // El modelo devuelve un string con comillas externas y JSON dentro.
-      // Primero, quitamos las comillas exteriores.
-      let str = arg.trim();
-      if (str.startsWith('"') && str.endsWith('"')) {
-        str = str.slice(1, -1);
-      }
-      // Parseamos el JSON interno
-      return JSON.parse(str);
-    } catch (error) {
-      // Si falla, devolvemos el argumento original para que la validación falle
-      console.error("Failed to parse input:", arg, error);
-      return {};
+export const aiAgent = new Agent({
+  model: provider("@cf/ibm-granite/granite-4.0-h-micro"),
+  maxOutputTokens: 1024, // 512, 1024
+  system: `
+    Eres un asistente que hacer reservas en restaurantes
+    Writing style:
+     - Use clear, simple language
+     - Avoid jargon unless necessary
+     - Structure information with headers and bullet points
+  `,
+  tools: {
+    weather,
+  },
+  // toolChoice: {
+  //   type: "tool",
+  //   toolName: "weather", // Force the weather tool to be used
+  // },
+  stopWhen: [
+    stepCountIs(20), // Maximum 20 steps
+    hasToolCall("weather"), // Stop after calling 'someTool'
+  ],
+  prepareStep: async ({ messages }) => {
+    // Keep only recent messages to stay within context limits
+    if (messages.length > 20) {
+      return {
+        messages: [
+          messages[0], // Keep system message
+          ...messages.slice(-10), // Keep last 10 messages
+        ],
+      };
     }
-  }
-  // Si no es string, lo devolvemos tal cual (debería ser objeto)
-  return arg;
-};
+    return {};
+  },
+  onStepFinish({ text, toolCalls, toolResults, finishReason, usage }) {
+    // your own logic, e.g. for saving the chat history or recording usage
+  },
+});
