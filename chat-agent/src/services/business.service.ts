@@ -17,31 +17,45 @@ class BusinessService {
    * @description Send a seen message to the chat always before sending a message
    */
   public getBusinessById(id: string) {
-    return fetch(`${apiUrl}/businesses/${id}`, {
+    return fetch(`${apiUrl}/businesses/${id}?depth=0`, {
       method: "GET",
       headers: this.headers,
     });
   }
 
-  public getAppointments(id: string, appointmentId: string) {
-    return fetch(`${apiUrl}/businesses/${id}/appointments/${appointmentId}`, {
+  /**
+   *
+   * @description Get all appointments for a business
+   * MORE INFO: https://payloadcms.com/docs/queries/overview
+   * MORE INFO: https://payloadcms.com/docs/queries/select
+   */
+  public getAppointments(businessId: string) {
+    // TODO: INCLUIR "day" en el where
+    const url = `${apiUrl}/appointments?where[business][equals]=${businessId}&depth=0`;
+    return fetch(url, {
       method: "GET",
       headers: this.headers,
     });
   }
 
-  public getAppointmentById(id: string, appointmentId: string) {
-    return fetch(`${apiUrl}/businesses/${id}/appointments/${appointmentId}`, {
+  // TODO:DEBE BUSCAR EL ULTIMO APPOINMENT asociado a un business
+  public getLastAppointment(businessId: string, costumerId: string) {
+    const url = `${apiUrl}/appointments?where[business][equals]=${businessId}&sort=-createdAt&depth=0`;
+    return fetch(url, {
       method: "GET",
       headers: this.headers,
     });
   }
 
-  public createAppointment(
-    id: string,
-    appointmentBody: Record<string, string>,
-  ) {
-    return fetch(`${apiUrl}/businesses/${id}/appointments`, {
+  public getAppointmentById(appointmentId: string, costumerId: string) {
+    return fetch(`${apiUrl}/appointments/${appointmentId}?depth=0`, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
+
+  public createAppointment(appointmentBody: Record<string, string>) {
+    return fetch(`${apiUrl}/appointments`, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify(appointmentBody),
@@ -49,27 +63,27 @@ class BusinessService {
   }
 
   public updateAppointment(
-    id: string,
+    businessId: string,
     appointmentId: string,
     appointmentBody: Record<string, string>,
   ) {
-    return fetch(`${apiUrl}/businesses/${id}/appointments/${appointmentId}`, {
+    return fetch(`${apiUrl}/appointments/${appointmentId}`, {
       method: "PUT",
       headers: this.headers,
       body: JSON.stringify(appointmentBody),
     });
   }
 
-  public deleteAppointment(id: string, appointmentId: string) {
-    return fetch(`${apiUrl}/businesses/${id}/appointments/${appointmentId}`, {
+  public deleteAppointment(businessId: string, appointmentId: string) {
+    return fetch(`${apiUrl}/appointments/${appointmentId}`, {
       method: "DELETE",
       headers: this.headers,
     });
   }
 
   // TODO phoneNumber as primary key
-  public getCostumerByPhone(id: string, phoneNumber: string) {
-    return fetch(`${apiUrl}/businesses/${id}/costumers/${phoneNumber}`, {
+  public getCostumerByPhone(businessId: string, phoneNumber: string) {
+    return fetch(`${apiUrl}/costumers/${phoneNumber}`, {
       method: "GET",
       headers: this.headers,
     });
@@ -82,8 +96,8 @@ class BusinessService {
   //   });
   // }
 
-  public createCostumer(id: string, costumer: Record<string, string>) {
-    return fetch(`${apiUrl}/businesses/${id}/costumers`, {
+  public createCostumer(costumer: Record<string, string>) {
+    return fetch(`${apiUrl}/costumers`, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify(costumer),
@@ -91,11 +105,10 @@ class BusinessService {
   }
 
   public updateCostumer(
-    id: string,
     costumerId: string,
     costumerBody: Record<string, string>,
   ) {
-    return fetch(`${apiUrl}/businesses/${id}/costumers/${costumerId}`, {
+    return fetch(`${apiUrl}/costumers/${costumerId}`, {
       method: "PUT",
       headers: this.headers,
       body: JSON.stringify(costumerBody),
