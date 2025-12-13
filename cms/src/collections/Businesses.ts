@@ -1,6 +1,7 @@
 import { CollectionConfig, CollectionSlug } from "payload";
 import { Users } from "./Users";
 
+// TODO: NORMALIZE DATES
 export const Business: CollectionConfig = {
   slug: "businesses",
   labels: {

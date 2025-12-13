@@ -43,7 +43,8 @@ export default buildConfig({
   db: postgresAdapter({
     // MORE INFO ABOUT PRODUCTION MIGRATIONS:
     // https://payloadcms.com/docs/database/migrations#running-migrations-in-production
-    push: process.env.NODE_ENV === "development",
+    // push: process.env.NODE_ENV === "development",
+    push: false,
     idType: "uuid",
     pool: {
       connectionString: process.env.DATABASE_URI!,

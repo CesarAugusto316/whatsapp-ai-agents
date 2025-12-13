@@ -2,6 +2,7 @@ import type { CollectionConfig, CollectionSlug } from "payload";
 import { Business } from "./Businesses";
 import { Customers } from "./Costumers";
 
+// TODO: NORMALIZE DATES
 export const Appointments: CollectionConfig = {
   slug: "appointments",
   labels: {
@@ -100,6 +101,34 @@ export const Appointments: CollectionConfig = {
           return (
             req?.user?.collection === "users" && req?.user?.role === "admin"
           );
+        },
+      },
+    },
+    {
+      name: "day",
+      type: "date",
+      label: {
+        en: "Day",
+        es: "Día",
+      },
+      required: true,
+      // defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+      defaultValue: new Date().toISOString(),
+      access: {
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" && req?.user?.role === "admin"
+          );
+        },
+      },
+      admin: {
+        date: {
+          pickerAppearance: "dayOnly",
+          // timeFormat: "HH:mm",
+          // displayFormat: "HH:mm",
         },
       },
     },
