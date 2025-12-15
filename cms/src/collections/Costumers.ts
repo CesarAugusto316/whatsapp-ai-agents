@@ -64,6 +64,7 @@ export const Customers: CollectionConfig = {
       name: "phoneNumber",
       type: "text",
       required: true,
+      index: true,
       unique: false, // un cliente puede el mismo numero y usar en negocios diferentes
       label: { en: "Phone Number", es: "Número de Teléfono" },
       defaultValue: "+34",

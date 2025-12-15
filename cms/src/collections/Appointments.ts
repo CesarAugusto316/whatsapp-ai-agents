@@ -67,6 +67,7 @@ export const Appointments: CollectionConfig = {
     {
       name: "business",
       type: "relationship",
+      index: true,
       label: {
         en: "Business",
         es: "Negocio",
@@ -86,6 +87,7 @@ export const Appointments: CollectionConfig = {
     },
     {
       name: "customer",
+      index: true,
       type: "relationship",
       label: {
         en: "Customer",
@@ -106,6 +108,7 @@ export const Appointments: CollectionConfig = {
     },
     {
       name: "day",
+      index: true,
       type: "date",
       label: {
         en: "Day",
@@ -137,6 +140,7 @@ export const Appointments: CollectionConfig = {
       fields: [
         {
           name: "startDateTime",
+          index: true,
           type: "date",
           label: {
             en: "Start Time",
@@ -164,6 +168,7 @@ export const Appointments: CollectionConfig = {
         },
         {
           name: "endDateTime",
+          index: true,
           type: "date",
           label: {
             en: "End Time",

@@ -1,8 +1,49 @@
+import { CreateAppointment, CreateCustomer } from "@/types/business/cms-types";
 import { fetch } from "bun";
 
 const apiUrl = process.env.CMS_API;
 const slug = process.env.CMS_SLUG || "third-party-access";
 const apiKey = process.env.CMS_API_KEY;
+
+export interface BusinessQueryParams {
+  limit?: number;
+  page?: number;
+  depth?: number;
+  // more info: https://payloadcms.com/docs/queries/sort
+  sort?: string; // -createdAt
+  "where[business][equals]"?: string; // businessId,
+  "where[customer][equals]"?: string; // businessId,
+  "where[day][equals]"?: string | Date; // 2024-03-15
+  "where[startDateTime][equals]"?: string | Date; // 2024-03-15
+  "where[endDateTime][equals]"?: string | Date; // 2024-03-15
+
+  // COSTUMER:
+  "where[phoneNumber][equals]"?: string | Date; // 2024-03-15
+  // "where[name][equals]"?: string | Date; // 2024-03-15
+  // "where[business][equals]"?: string; // businessId,
+}
+
+const defaultQueryParams = {
+  limit: 10,
+  page: 1,
+  depth: 0,
+};
+
+const generateUrl = (
+  path: string,
+  queryParams: BusinessQueryParams = defaultQueryParams,
+) => {
+  if (path.startsWith("/")) {
+    path = path.slice(1);
+  }
+  const url = new URL(`${apiUrl}/${path}`);
+  if (queryParams) {
+    for (const [key, value] of Object.entries(queryParams)) {
+      url.searchParams.append(key, value?.toString());
+    }
+  }
+  return url;
+};
 
 class BusinessService {
   private headers = {
@@ -17,7 +58,8 @@ class BusinessService {
    * @description Send a seen message to the chat always before sending a message
    */
   public getBusinessById(id: string) {
-    return fetch(`${apiUrl}/businesses/${id}?depth=0`, {
+    const url = generateUrl(`businesses/${id}`, { depth: 0 });
+    return fetch(url, {
       method: "GET",
       headers: this.headers,
     });
@@ -29,32 +71,32 @@ class BusinessService {
    * MORE INFO: https://payloadcms.com/docs/queries/overview
    * MORE INFO: https://payloadcms.com/docs/queries/select
    */
-  public getAppointments(businessId: string) {
-    // TODO: INCLUIR "day" en el where
-    const url = `${apiUrl}/appointments?where[business][equals]=${businessId}&depth=0`;
+  public getAppointments(queryParams?: BusinessQueryParams) {
+    return fetch(generateUrl("appointments", queryParams), {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
+
+  // // NEXT:
+  // // TODO:DEBE BUSCAR EL ULTIMO APPOINMENT asociado a un business
+  // public getLastAppointment(businessId: string, costumerId: string) {
+  //   const url = `${apiUrl}/appointments?where[business][equals]=${businessId}&sort=-createdAt&depth=0`;
+  //   return fetch(url, {
+  //     method: "GET",
+  //     headers: this.headers,
+  //   });
+  // }
+
+  public getAppointmentById(appointmentId: string) {
+    const url = generateUrl(`appointments/${appointmentId}`, { depth: 0 });
     return fetch(url, {
       method: "GET",
       headers: this.headers,
     });
   }
 
-  // TODO:DEBE BUSCAR EL ULTIMO APPOINMENT asociado a un business
-  public getLastAppointment(businessId: string, costumerId: string) {
-    const url = `${apiUrl}/appointments?where[business][equals]=${businessId}&sort=-createdAt&depth=0`;
-    return fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
-  }
-
-  public getAppointmentById(appointmentId: string, costumerId: string) {
-    return fetch(`${apiUrl}/appointments/${appointmentId}?depth=0`, {
-      method: "GET",
-      headers: this.headers,
-    });
-  }
-
-  public createAppointment(appointmentBody: Record<string, string>) {
+  public createAppointment(appointmentBody: CreateAppointment) {
     return fetch(`${apiUrl}/appointments`, {
       method: "POST",
       headers: this.headers,
@@ -63,9 +105,8 @@ class BusinessService {
   }
 
   public updateAppointment(
-    businessId: string,
     appointmentId: string,
-    appointmentBody: Record<string, string>,
+    appointmentBody: Partial<CreateAppointment>,
   ) {
     return fetch(`${apiUrl}/appointments/${appointmentId}`, {
       method: "PUT",
@@ -74,7 +115,7 @@ class BusinessService {
     });
   }
 
-  public deleteAppointment(businessId: string, appointmentId: string) {
+  public deleteAppointment(appointmentId: string) {
     return fetch(`${apiUrl}/appointments/${appointmentId}`, {
       method: "DELETE",
       headers: this.headers,
@@ -82,22 +123,35 @@ class BusinessService {
   }
 
   // TODO phoneNumber as primary key
-  public getCostumerByPhone(businessId: string, phoneNumber: string) {
-    return fetch(`${apiUrl}/costumers/${phoneNumber}`, {
+  public getCostumerByPhone(
+    queryParams: Pick<
+      BusinessQueryParams,
+      "where[phoneNumber][equals]" | "where[business][equals]" | "limit"
+    >, // where[phoneNumber][equals]=${phoneNumber}
+  ) {
+    const url = generateUrl(`customers`, queryParams);
+    return fetch(url, {
       method: "GET",
       headers: this.headers,
     });
   }
 
-  // public getCostumerById(id: string, customerId: string) {
-  //   return fetch(`${apiUrl}/businesses/${id}/costumers/${customerId}`, {
-  //     method: "GET",
-  //     headers: this.headers,
-  //   });
-  // }
+  public getCostumerById(
+    customerId: string,
+    queryParams?: Pick<
+      BusinessQueryParams,
+      "where[business][equals]" | "limit"
+    >,
+  ) {
+    const url = generateUrl(`customers/${customerId}`, queryParams);
+    return fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
 
-  public createCostumer(costumer: Record<string, string>) {
-    return fetch(`${apiUrl}/costumers`, {
+  public createCostumer(costumer: CreateCustomer) {
+    return fetch(`${apiUrl}/customers`, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify(costumer),
@@ -106,9 +160,9 @@ class BusinessService {
 
   public updateCostumer(
     costumerId: string,
-    costumerBody: Record<string, string>,
+    costumerBody: Partial<CreateCustomer>,
   ) {
-    return fetch(`${apiUrl}/costumers/${costumerId}`, {
+    return fetch(`${apiUrl}/customers/${costumerId}`, {
       method: "PUT",
       headers: this.headers,
       body: JSON.stringify(costumerBody),

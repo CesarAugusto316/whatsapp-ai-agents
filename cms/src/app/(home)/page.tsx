@@ -11,7 +11,7 @@ export default async function HomePage() {
   const payloadConfig = await config;
   const payload = await getPayload({ config: payloadConfig });
   const { user } = await payload.auth({ headers });
-  const userData = user.collection === "users" ? user : undefined;
+  const userData = user?.collection === "users" ? user : undefined;
   // const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`;
   return (
     <div className="home">

@@ -36,6 +36,12 @@ export interface Appointment {
   updatedAt: string;
   createdAt: string;
 }
+
+export type CreateAppointment = Omit<
+  Appointment,
+  "id" | "updatedAt" | "createdAt"
+>;
+
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "businesses".
@@ -144,3 +150,5 @@ export interface Customer {
   updatedAt: string;
   createdAt: string;
 }
+
+export type CreateCustomer = Omit<Customer, "id" | "updatedAt" | "createdAt">;
