@@ -21,6 +21,7 @@ export interface User {
     | null;
   password?: string | null;
 }
+
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointments".
@@ -29,6 +30,7 @@ export interface Appointment {
   id: string;
   business: string | Business;
   customer: string | Customer;
+  day: string;
   startDateTime: string;
   endDateTime: string;
   status: "pending" | "confirmed" | "cancelled" | "completed";

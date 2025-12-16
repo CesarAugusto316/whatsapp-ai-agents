@@ -14,6 +14,16 @@ export const ThirdPartyAccess: CollectionConfig = {
   auth: {
     useAPIKey: true,
   },
+  labels: {
+    singular: {
+      en: "Third Party Access",
+      es: "Acceso de Terceros",
+    },
+    plural: {
+      en: "Third Party Accesses",
+      es: "Accesos de Terceros",
+    },
+  },
   access: {
     read: isAdmin,
     update: isAdmin,

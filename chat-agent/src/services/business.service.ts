@@ -1,9 +1,14 @@
-import { CreateAppointment, CreateCustomer } from "@/types/business/cms-types";
-import { fetch } from "bun";
+import { redis } from "@/ai-agents/config";
+import {
+  Business,
+  CreateAppointment,
+  CreateCustomer,
+} from "@/types/business/cms-types";
+import { env, fetch } from "bun";
 
-const apiUrl = process.env.CMS_API;
-const slug = process.env.CMS_SLUG || "third-party-access";
-const apiKey = process.env.CMS_API_KEY;
+const apiUrl = env.CMS_API;
+const slug = env.CMS_SLUG || "third-party-access";
+const apiKey = env.CMS_API_KEY;
 
 export interface BusinessQueryParams {
   limit?: number;
@@ -57,12 +62,21 @@ class BusinessService {
    * more info: https://waha.devlike.pro/docs/how-to/send-messages/
    * @description Send a seen message to the chat always before sending a message
    */
-  public getBusinessById(id: string) {
+  public async getBusinessById(id: string) {
     const url = generateUrl(`businesses/${id}`, { depth: 0 });
-    return fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
+    const cache = await redis.get(`business:${id}`);
+    if (cache) {
+      return JSON.parse(cache) as Business;
+    }
+    const response = (await (
+      await fetch(url, {
+        method: "GET",
+        headers: this.headers,
+      })
+    ).json()) as Business;
+
+    redis.set(`business:${id}`, JSON.stringify(response), "EX", 60 * 60 * 24);
+    return response;
   }
 
   /**
@@ -72,7 +86,16 @@ class BusinessService {
    * MORE INFO: https://payloadcms.com/docs/queries/select
    */
   public getAppointments(queryParams?: BusinessQueryParams) {
-    return fetch(generateUrl("appointments", queryParams), {
+    const url = generateUrl("appointments", queryParams);
+    return fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
+
+  public checkAvailability(queryParams: BusinessQueryParams) {
+    const url = generateUrl("appointments", queryParams);
+    return fetch(url, {
       method: "GET",
       headers: this.headers,
     });
@@ -126,7 +149,10 @@ class BusinessService {
   public getCostumerByPhone(
     queryParams: Pick<
       BusinessQueryParams,
-      "where[phoneNumber][equals]" | "where[business][equals]" | "limit"
+      | "where[phoneNumber][equals]"
+      | "where[business][equals]"
+      | "limit"
+      | "depth"
     >, // where[phoneNumber][equals]=${phoneNumber}
   ) {
     const url = generateUrl(`customers`, queryParams);

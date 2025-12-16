@@ -6,10 +6,10 @@ import {
   SendMessagePayload,
   SendSeenPayload,
 } from "@/types/whatsapp/send-message";
-import { fetch } from "bun";
+import { env, fetch } from "bun";
 
-const apiUrl = process.env.WAHA_API;
-const apiKey = process.env.WAHA_API_KEY; // waha API key
+const apiUrl = env.WAHA_API;
+const apiKey = env.WAHA_API_KEY; // waha API key
 
 /**
  *

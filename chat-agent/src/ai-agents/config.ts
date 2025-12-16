@@ -1,6 +1,17 @@
-import { Experimental_Agent as Agent, hasToolCall, stepCountIs } from "ai";
+import {
+  Experimental_Agent as Agent,
+  hasToolCall,
+  stepCountIs,
+  tool,
+} from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { weather } from "./tools/weather.tool";
+import { env, RedisClient } from "bun";
+import {
+  getAppointments,
+  getCostumerInfoByPhoneNumber,
+} from "./tools/business.tool";
+
+export const redis = new RedisClient(env.REDIS_URL);
 
 /**
  *
@@ -25,15 +36,11 @@ const provider = createOpenAICompatible({
 export const aiAgent = new Agent({
   model: provider("@cf/ibm-granite/granite-4.0-h-micro"),
   maxOutputTokens: 1024, // 512, 1024
-  system: `
-    Eres un asistente que hacer reservas en restaurantes
-    Writing style:
-     - Use clear, simple language
-     - Avoid jargon unless necessary
-     - Structure information with headers and bullet points
-  `,
+  // system: ,
   tools: {
-    weather,
+    // getBusinessInfo,
+    getAppointments,
+    getCostumerInfoByPhoneNumber,
   },
   // toolChoice: {
   //   type: "tool",
@@ -41,11 +48,16 @@ export const aiAgent = new Agent({
   // },
   stopWhen: [
     stepCountIs(20), // Maximum 20 steps
-    hasToolCall("weather"), // Stop after calling 'someTool'
+    // hasToolCall("weather"), // Stop after calling 'someTool'
   ],
-  prepareStep: async ({ messages }) => {
+  prepareStep: async ({ messages, steps }) => {
+    // redisClient.lpush("chat:123", JSON.stringify({ cat: "cat 01" }))
+    // redisClient.rpush("chat:123", JSON.stringify({ cat: "cat 02" }));
+    // redisClient.expire("chat:123", 4000_000);
+    console.log({ messages, steps });
+    // messages.at(0).
     // Keep only recent messages to stay within context limits
-    if (messages.length > 20) {
+    if (messages.length > 30) {
       return {
         messages: [
           messages[0], // Keep system message
@@ -57,6 +69,9 @@ export const aiAgent = new Agent({
   },
   onStepFinish({ text, toolCalls, toolResults, finishReason, usage }) {
     // your own logic, e.g. for saving the chat history or recording usage
-    // console.log({ text, toolCalls, toolResults, finishReason, usage });
+    console.log({ finish: "finished" });
+    // redisClient.lpush("tasks:123", JSON.stringify({ cat: "cat 01" }));
+    // redisClient.rpush("tasks", JSON.stringify({ cat: "cat 02" }));
+    // redisClient.expire("tasks", 4000_000);
   },
 });
