@@ -7,18 +7,6 @@ const businessInfoSchema = z.object({
   businessId: z.uuid().describe("The uuid of the business"),
 });
 
-// export const getBusinessInfo = tool({
-//   description: "Get information about a business by providing its businessId",
-//   inputSchema: z.preprocess(parseInput, businessInfoSchema),
-//   execute: async ({ businessId }) => {
-//     const business = await businessService.getBusinessById(businessId);
-//     // Implement the logic to fetch business information using the businessId
-//     // Example: const businessInfo = await fetchBusinessInfo(businessId);
-//     // Return the business information as a string or object
-//     return business;
-//   },
-// });
-
 export const getAppointments = tool({
   // outputSchema
   // toModelOutput
@@ -40,9 +28,9 @@ export const getAppointments = tool({
   ),
   execute: async ({ businessId, day, startDateTime }) => {
     const appointments = await businessService.getAppointments({
-      "where[business][equals]": businessId,
-      "where[day][equals]": day,
-      "where[startDateTime][equals]": startDateTime,
+      "where[business][equals]": businessId ?? "",
+      "where[day][equals]": day ?? "",
+      "where[startDateTime][equals]": startDateTime ?? "",
       depth: 0,
     });
     // Implement the logic to fetch appointments using the businessId
@@ -52,9 +40,9 @@ export const getAppointments = tool({
   },
 });
 
-export const getCostumerInfoByPhoneNumber = tool({
+export const getUserInfoByPhoneNumber = tool({
   description:
-    "Get a costumer info/data by providing their phone number and businessId",
+    "Get a costumer/user info/profile by providing their phone number and businessId",
   inputSchema: z.preprocess(
     parseInput,
     businessInfoSchema.extend({
@@ -67,8 +55,8 @@ export const getCostumerInfoByPhoneNumber = tool({
   ),
   execute: async ({ customerPhoneNumber, businessId }) => {
     const costumer = await businessService.getCostumerByPhone({
-      "where[phoneNumber][equals]": customerPhoneNumber,
-      "where[business][equals]": businessId,
+      "where[phoneNumber][equals]": customerPhoneNumber ?? "",
+      "where[business][equals]": businessId ?? "",
       limit: 1,
       depth: 0,
     });
@@ -77,6 +65,8 @@ export const getCostumerInfoByPhoneNumber = tool({
     // Return the costumer information as a string or object
     return costumer.json();
   },
+  
+  // toModelOutput(),
 });
 
 export const checkAvailability = tool({

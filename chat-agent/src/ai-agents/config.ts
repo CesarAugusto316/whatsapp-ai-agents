@@ -8,7 +8,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env, RedisClient } from "bun";
 import {
   getAppointments,
-  getCostumerInfoByPhoneNumber,
+  getUserInfoByPhoneNumber,
 } from "./tools/business.tool";
 
 export const redis = new RedisClient(env.REDIS_URL);
@@ -36,11 +36,10 @@ const provider = createOpenAICompatible({
 export const aiAgent = new Agent({
   model: provider("@cf/ibm-granite/granite-4.0-h-micro"),
   maxOutputTokens: 1024, // 512, 1024
-  // system: ,
   tools: {
     // getBusinessInfo,
     getAppointments,
-    getCostumerInfoByPhoneNumber,
+    getCostumerInfoByPhoneNumber: getUserInfoByPhoneNumber,
   },
   // toolChoice: {
   //   type: "tool",
@@ -50,29 +49,5 @@ export const aiAgent = new Agent({
     stepCountIs(20), // Maximum 20 steps
     // hasToolCall("weather"), // Stop after calling 'someTool'
   ],
-  // pr
-  // prepareStep: async ({ messages, steps }) => {
-  //   // redisClient.lpush("chat:123", JSON.stringify({ cat: "cat 01" }))
-  //   // redisClient.rpush("chat:123", JSON.stringify({ cat: "cat 02" }));
-  //   // redisClient.expire("chat:123", 4000_000);
-  //   console.log({ messages, steps });
-  //   // messages.at(0).
-  //   // Keep only recent messages to stay within context limits
-  //   if (messages.length > 30) {
-  //     return {
-  //       messages: [
-  //         messages[0], // Keep system message
-  //         ...messages.slice(-10), // Keep last 10 messages
-  //       ],
-  //     };
-  //   }
-  //   return {};
-  // },
-  // onStepFinish({ text, toolCalls, toolResults, finishReason, usage }) {
-  //   // your own logic, e.g. for saving the chat history or recording usage
-  //   console.log({ finish: "finished" });
-  //   // redisClient.lpush("tasks:123", JSON.stringify({ cat: "cat 01" }));
-  //   // redisClient.rpush("tasks", JSON.stringify({ cat: "cat 02" }));
-  //   // redisClient.expire("tasks", 4000_000);
-  // },
+  onStepFinish: async ({ toolResults }) => {},
 });

@@ -38,7 +38,8 @@ export const aiAgentTestHandler: Handler = async (c) => {
   ];
   const result = await aiAgent.generate({
     system,
-    messages,
+    // prompt: customerMessage,
+    prompt: messages,
   });
   const assistantResponse: string = renderAssistantText(result);
   await chatHistoryService.save(chatKey, customerMessage, assistantResponse);

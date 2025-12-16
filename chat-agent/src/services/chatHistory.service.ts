@@ -10,7 +10,7 @@ type StoredMessage = {
   content: string;
   timestamp: number;
 };
-const MAX_MESSAGES = 30;
+const MAX_MESSAGES = 20;
 
 class ChatHistoryService {
   /**
@@ -23,13 +23,15 @@ class ChatHistoryService {
    */
   async get(chatKey: string) {
     const rawHistory = (await redis.lrange(chatKey, -MAX_MESSAGES, -1)) ?? [];
-    return rawHistory.map((item) => {
-      const msg: StoredMessage = JSON.parse(item);
-      return {
-        role: msg.role,
-        content: msg.content,
-      };
-    }) satisfies ModelMessage[];
+    return rawHistory
+      .map((item) => {
+        const msg: StoredMessage = JSON.parse(item);
+        return {
+          role: msg.role,
+          content: msg.content,
+        };
+      })
+      .filter((message) => message.role === "user") satisfies ModelMessage[];
   }
 
   async save(
