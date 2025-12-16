@@ -75,7 +75,7 @@ class BusinessService {
       })
     ).json()) as Business;
 
-    redis.set(`business:${id}`, JSON.stringify(response), "EX", 60 * 60 * 24);
+    redis.set(`business:${id}`, JSON.stringify(response), "EX", 60 * 60 * 12);
     return response;
   }
 

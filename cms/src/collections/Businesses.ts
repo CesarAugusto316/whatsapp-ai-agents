@@ -148,7 +148,7 @@ export const Business: CollectionConfig = {
                 },
               },
               minLength: 0,
-              maxLength: 500,
+              maxLength: 5000,
             },
             {
               name: "user",

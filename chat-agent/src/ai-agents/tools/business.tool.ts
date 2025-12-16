@@ -28,12 +28,12 @@ export const getAppointments = tool({
     parseInput,
     businessInfoSchema.extend({
       // day: z.enum(WEEK_DAYS).describe("Day of the appointment").optional(),
-      day: z.iso
-        .date()
+      day: z
+        .string()
         .describe("Day of the appointment in YYYY-MM-DD format")
         .optional(),
-      startDateTime: z.iso
-        .datetime()
+      startDateTime: z
+        .string()
         .describe("Date of the appointment in YYYY-MM-DDTHH:MM:SSZ format")
         .optional(),
     }),
@@ -53,7 +53,8 @@ export const getAppointments = tool({
 });
 
 export const getCostumerInfoByPhoneNumber = tool({
-  description: "Get a costumer by providing their phone number and businessId",
+  description:
+    "Get a costumer info/data by providing their phone number and businessId",
   inputSchema: z.preprocess(
     parseInput,
     businessInfoSchema.extend({
@@ -75,5 +76,37 @@ export const getCostumerInfoByPhoneNumber = tool({
     // Example: const costumerInfo = await fetchCostumerInfo(phoneNumber);
     // Return the costumer information as a string or object
     return costumer.json();
+  },
+});
+
+export const checkAvailability = tool({
+  description:
+    "Check the availability of a business for a specific day and time",
+  inputSchema: z.preprocess(
+    parseInput,
+    businessInfoSchema.extend({
+      day: z
+        .string()
+        .min(10)
+        .max(10)
+        .describe("Day of the appointment in YYYY-MM-DD format")
+        .optional(),
+      startDateTime: z
+        .string()
+        .describe("Date of the appointment in YYYY-MM-DDTHH:MM:SSZ format")
+        .optional(),
+    }),
+  ),
+  execute: async ({ businessId, day, startDateTime }) => {
+    const appointments = await businessService.getAppointments({
+      "where[business][equals]": businessId,
+      "where[day][equals]": day,
+      "where[startDateTime][equals]": startDateTime,
+      depth: 0,
+    });
+    // Implement the logic to check availability using the businessId, day, and startDateTime
+    // Example: const availability = await checkAvailability(businessId, day, startDateTime);
+    // Return the availability as a string or object
+    return true; // BOOLEAN
   },
 });
