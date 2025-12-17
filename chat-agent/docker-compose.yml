@@ -6,8 +6,8 @@ services:
     ports:
       - "6379:6379"
     command: redis-server
-    volumes:
-      - redis_data:/data
+    # volumes:
+    #   - redis_data:/data
     # command:
     #   redis-server
     # --save 60 1          # Guarda cada 60s si hay 1+ cambio[citation:2]
@@ -19,8 +19,8 @@ services:
       timeout: 3s
       retries: 3
 
-volumes:
-  redis_data:
+# volumes:
+#   redis_data:
 #     driver: local
 
 # networks:

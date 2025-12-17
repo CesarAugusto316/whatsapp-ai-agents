@@ -1,8 +1,9 @@
-import { redis } from "@/ai-agents/config";
+import { redis } from "@/ai-agents/ai-gent.config";
 import {
   Business,
   CreateAppointment,
   CreateCustomer,
+  Customer,
 } from "@/types/business/cms-types";
 import { env, fetch } from "bun";
 
@@ -23,7 +24,7 @@ export interface BusinessQueryParams {
   "where[endDateTime][equals]"?: string | Date; // 2024-03-15
 
   // COSTUMER:
-  "where[phoneNumber][equals]"?: string | Date; // 2024-03-15
+  "where[phoneNumber][like]"?: string | Date; // 2024-03-15
   // "where[name][equals]"?: string | Date; // 2024-03-15
   // "where[business][equals]"?: string; // businessId,
 }
@@ -62,11 +63,13 @@ class BusinessService {
    * more info: https://waha.devlike.pro/docs/how-to/send-messages/
    * @description Send a seen message to the chat always before sending a message
    */
-  public async getBusinessById(id: string) {
+  public async getBusinessById(id: string): Promise<Business> {
     const url = generateUrl(`businesses/${id}`, { depth: 0 });
-    const cache = await redis.get(`business:${id}`);
+    const key = `business:${id}`;
+    const cache = await redis.get(key);
+
     if (cache) {
-      return JSON.parse(cache) as Business;
+      return JSON.parse(cache) satisfies Business;
     }
     const response = (await (
       await fetch(url, {
@@ -75,24 +78,19 @@ class BusinessService {
       })
     ).json()) as Business;
 
-    redis.set(`business:${id}`, JSON.stringify(response), "EX", 60 * 60 * 12);
+    redis.set(key, JSON.stringify(response), "EX", 60 * 60 * 12);
     return response;
   }
 
   /**
    *
-   * @description Get all appointments for a business
+   * TODO: return a boolean
+   *
    * MORE INFO: https://payloadcms.com/docs/queries/overview
    * MORE INFO: https://payloadcms.com/docs/queries/select
+   * @param queryParams
+   * @returns boolean
    */
-  public getAppointments(queryParams?: BusinessQueryParams) {
-    const url = generateUrl("appointments", queryParams);
-    return fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
-  }
-
   public checkAvailability(queryParams: BusinessQueryParams) {
     const url = generateUrl("appointments", queryParams);
     return fetch(url, {
@@ -101,79 +99,34 @@ class BusinessService {
     });
   }
 
-  // // NEXT:
-  // // TODO:DEBE BUSCAR EL ULTIMO APPOINMENT asociado a un business
-  // public getLastAppointment(businessId: string, costumerId: string) {
-  //   const url = `${apiUrl}/appointments?where[business][equals]=${businessId}&sort=-createdAt&depth=0`;
-  //   return fetch(url, {
-  //     method: "GET",
-  //     headers: this.headers,
-  //   });
-  // }
-
-  public getAppointmentById(appointmentId: string) {
-    const url = generateUrl(`appointments/${appointmentId}`, { depth: 0 });
-    return fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
-  }
-
-  public createAppointment(appointmentBody: CreateAppointment) {
-    return fetch(`${apiUrl}/appointments`, {
-      method: "POST",
-      headers: this.headers,
-      body: JSON.stringify(appointmentBody),
-    });
-  }
-
-  public updateAppointment(
-    appointmentId: string,
-    appointmentBody: Partial<CreateAppointment>,
-  ) {
-    return fetch(`${apiUrl}/appointments/${appointmentId}`, {
-      method: "PUT",
-      headers: this.headers,
-      body: JSON.stringify(appointmentBody),
-    });
-  }
-
-  public deleteAppointment(appointmentId: string) {
-    return fetch(`${apiUrl}/appointments/${appointmentId}`, {
-      method: "DELETE",
-      headers: this.headers,
-    });
-  }
-
   // TODO phoneNumber as primary key
-  public getCostumerByPhone(
+  public async getCostumerByPhone(
     queryParams: Pick<
       BusinessQueryParams,
-      | "where[phoneNumber][equals]"
-      | "where[business][equals]"
-      | "limit"
-      | "depth"
+      "where[phoneNumber][like]" | "where[business][equals]" | "limit" | "depth"
     >, // where[phoneNumber][equals]=${phoneNumber}
-  ) {
-    const url = generateUrl(`customers`, queryParams);
-    return fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
-  }
+  ): Promise<Customer | undefined> {
+    const {
+      "where[business][equals]": businessId,
+      "where[phoneNumber][like]": phoneNumber,
+    } = queryParams;
 
-  public getCostumerById(
-    customerId: string,
-    queryParams?: Pick<
-      BusinessQueryParams,
-      "where[business][equals]" | "limit"
-    >,
-  ) {
-    const url = generateUrl(`customers/${customerId}`, queryParams);
-    return fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
+    const key = `business:${businessId}:phoneNumber:${phoneNumber}`;
+    const cache = await redis.get(key);
+
+    if (cache) {
+      return JSON.parse(cache) satisfies Customer;
+    }
+    const url = generateUrl(`customers`, queryParams);
+    const response = (await (
+      await fetch(url, {
+        method: "GET",
+        headers: this.headers,
+      })
+    ).json()) as { docs: Customer[] };
+    await redis.set(key, JSON.stringify(response), "EX", 60 * 60 * 24 * 7); // 7 days
+
+    return response.docs.at(0);
   }
 
   public createCostumer(costumer: CreateCustomer) {
@@ -194,6 +147,41 @@ class BusinessService {
       body: JSON.stringify(costumerBody),
     });
   }
+
+  public getAppointmentById(appointmentId: string) {
+    const url = generateUrl(`appointments/${appointmentId}`, { depth: 0 });
+    return fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
+
+  public createAppointment(appointmentBody: CreateAppointment) {
+    return fetch(`${apiUrl}/appointments`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(appointmentBody),
+    });
+  }
+
+  // UPDATE, to cancel or change the date
+  public updateAppointment(
+    appointmentId: string,
+    appointmentBody: Partial<CreateAppointment>,
+  ) {
+    return fetch(`${apiUrl}/appointments/${appointmentId}`, {
+      method: "PUT",
+      headers: this.headers,
+      body: JSON.stringify(appointmentBody),
+    });
+  }
+
+  // public deleteAppointment(appointmentId: string) {
+  //   return fetch(`${apiUrl}/appointments/${appointmentId}`, {
+  //     method: "DELETE",
+  //     headers: this.headers,
+  //   });
+  // }
 }
 
 export default new BusinessService();

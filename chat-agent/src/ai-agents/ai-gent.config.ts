@@ -1,17 +1,12 @@
-import {
-  Experimental_Agent as Agent,
-  hasToolCall,
-  stepCountIs,
-  tool,
-} from "ai";
+import { Experimental_Agent as Agent, hasToolCall, stepCountIs } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env, RedisClient } from "bun";
 import {
-  getAppointments,
-  getUserInfoByPhoneNumber,
+  isScheduleAvailable,
+  createNewCustomer,
+  createAppointment,
+  updateAppointment,
 } from "./tools/business.tool";
-
-export const redis = new RedisClient(env.REDIS_URL);
 
 /**
  *
@@ -21,9 +16,9 @@ export const redis = new RedisClient(env.REDIS_URL);
  */
 const provider = createOpenAICompatible({
   name: "cloudflare",
-  baseURL: `https://api.cloudflare.com/client/v4/accounts/${process.env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
+  baseURL: `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
   headers: {
-    Authorization: `Bearer ${process.env.CLOUDFLARE_AUTH_TOKEN}`,
+    Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
   },
   // includeUsage: true, // Include usage information in streaming responses
 });
@@ -35,11 +30,12 @@ const provider = createOpenAICompatible({
  */
 export const aiAgent = new Agent({
   model: provider("@cf/ibm-granite/granite-4.0-h-micro"),
-  maxOutputTokens: 1024, // 512, 1024
+  maxOutputTokens: 2048, // 512, 1024
   tools: {
-    // getBusinessInfo,
-    getAppointments,
-    getCostumerInfoByPhoneNumber: getUserInfoByPhoneNumber,
+    isScheduleAvailable,
+    createNewCustomer,
+    createAppointment,
+    updateAppointment,
   },
   // toolChoice: {
   //   type: "tool",
@@ -51,3 +47,5 @@ export const aiAgent = new Agent({
   ],
   onStepFinish: async ({ toolResults }) => {},
 });
+
+export const redis = new RedisClient(env.REDIS_URL);

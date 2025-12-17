@@ -1,4 +1,4 @@
-import { Business } from "@/types/business/cms-types";
+import { Business, Customer } from "@/types/business/cms-types";
 
 /**
  *
@@ -78,6 +78,7 @@ function formatSchedule(schedule: WeekDay, timezone: string): string {
 export function buildRestaurantSystemPrompt(
   business: Business,
   ctPhoneNumber: string,
+  ctProfile?: Customer,
 ): string {
   const { name, general, schedule } = business;
   const scheduleBlock = formatSchedule(schedule, general.timezone);
@@ -119,10 +120,18 @@ export function buildRestaurantSystemPrompt(
     Opening schedule:
      ${scheduleBlock}
 
+     ${
+       ctProfile
+         ? `
+      Current Customer's name: ${ctProfile.name}
+         `
+         : ""
+     }
+      Current Customer phone number: ${ctPhoneNumber}
+
     Operational context (do not mention this information to the customer, use only when calling TOOLS):
     This information is only for internal tool usage and identification. Use it at your discretion.
     - businessId: ${business.id}
-    - customerPhoneNumber: ${ctPhoneNumber}
     - currentDate: ${new Date().toDateString()}
     - currentTime: ${new Date().toLocaleTimeString()}
   `.trim();

@@ -1,4 +1,4 @@
-import { aiAgent, redis } from "@/ai-agents/config";
+import { aiAgent } from "@/ai-agents/ai-gent.config";
 import { buildRestaurantSystemPrompt } from "@/ai-agents/tools/helpers";
 import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
@@ -26,7 +26,18 @@ export const aiAgentTestHandler: Handler = async (c) => {
   const chatKey = `chat:${businessId}:${customerPhone}`;
   const chatHistory: ModelMessage[] = await chatHistoryService.get(chatKey);
   const business = await businessService.getBusinessById(businessId);
-  const system = buildRestaurantSystemPrompt(business, customerPhone);
+  const customer = await businessService.getCostumerByPhone({
+    "where[phoneNumber][like]": customerPhone,
+    "where[business][equals]": businessId,
+    limit: 1,
+    depth: 0,
+  });
+  if (customer) {
+    console.log({ customer });
+    // ADD CUSOMER CONTEXT TO THE SYSTEM PROMPT, IF CUSTUMER IS NOT FOUND, SHOULD BE CREATED
+    // BEFORE APPOINTMENT CREATION
+  }
+  const system = buildRestaurantSystemPrompt(business, customerPhone, customer);
 
   // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
   const messages: ModelMessage[] = [
