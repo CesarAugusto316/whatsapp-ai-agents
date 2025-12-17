@@ -5,7 +5,10 @@ import {
   isScheduleAvailable,
   createNewCustomer,
   createAppointment,
-  updateAppointment,
+  getCustomerProfile,
+  getAppointmentByCustomerIdAndDayTime,
+  getAppointmentById,
+  // updateAppointment,
 } from "./tools/business.tool";
 
 /**
@@ -33,9 +36,12 @@ export const aiAgent = new Agent({
   maxOutputTokens: 2048, // 512, 1024
   tools: {
     isScheduleAvailable,
-    createNewCustomer,
+    getAppointmentByCustomerIdAndDayTime,
+    getAppointmentById,
     createAppointment,
-    updateAppointment,
+    getCustomerProfile,
+    createNewCustomer,
+    // updateAppointment,
   },
   // toolChoice: {
   //   type: "tool",

@@ -53,11 +53,11 @@ class ChatHistoryService {
         content: customerMessage,
         timestamp: Date.now(),
       } satisfies StoredMessage),
-      // JSON.stringify({
-      //   role: "assistant", // TODO: try with "system"
-      //   content: assistantResponse,
-      //   timestamp: Date.now(),
-      // } satisfies StoredMessage),
+      JSON.stringify({
+        role: "assistant", // TODO: try with "system"
+        content: assistantResponse,
+        timestamp: Date.now(),
+      } satisfies StoredMessage),
     );
     await redis.ltrim(chatKey, -MAX_MESSAGES, -1);
     await redis.expire(chatKey, 60 * 60 * 24);

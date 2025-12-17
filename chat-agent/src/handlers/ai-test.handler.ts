@@ -44,9 +44,21 @@ export const aiAgentTestHandler: Handler = async (c) => {
     ...chatHistory,
     {
       role: "user",
-      content: customerMessage,
+      content: customer
+        ? [
+            {
+              text: `Mi nombre es ${customer?.name}`,
+              type: "text",
+            },
+            {
+              text: customerMessage,
+              type: "text",
+            },
+          ]
+        : customerMessage,
     },
   ];
+
   const result = await aiAgent.generate({
     system,
     // prompt: customerMessage,
@@ -54,8 +66,8 @@ export const aiAgentTestHandler: Handler = async (c) => {
   });
   const assistantResponse: string = renderAssistantText(result);
   await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-  console.log({ chatHistory });
-  return c.json({ received: true, text: assistantResponse, result });
+  // console.log({ messages: JSON.stringify(messages) });
+  return c.json({ received: true, text: assistantResponse, result, messages });
 };
 
 // const  w = await generateText({})

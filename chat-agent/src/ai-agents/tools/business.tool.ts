@@ -8,50 +8,45 @@ const businessInfoSchema = z.object({
   businessId: z.uuid().describe("The uuid of the business"),
 });
 
+const dateTime = {
+  day: z.string().describe("Day of the appointment in YYYY-MM-DD format"),
+  // .optional()
+  time: z
+    .string()
+    .describe("Date of the appointment in YYYY-MM-DDTHH:MM:SSZ format"),
+};
+
 export const BOOL = {
   YES: true,
   NO: false,
 } as const;
 
-export const isScheduleAvailable = tool({
-  // outputSchema
-  // toModelOutput
-  name: "isScheduleAvailable",
+// CUSTOMERS
+export const getCustomerProfile = tool({
+  name: "getCustomerProfile",
   description:
-    "Get appointments for a business by providing its businessId, day, and startDateTime",
+    "Get a costumer/user info/profile by providing their phone number and businessId",
   inputSchema: z.preprocess(
     parseInput,
     businessInfoSchema.extend({
-      // day: z.enum(WEEK_DAYS).describe("Day of the appointment").optional(),
-      day: z
-        .string()
-        .describe("Day of the appointment in YYYY-MM-DD format")
-        .optional(),
-      startDateTime: z
-        .string()
-        .describe("Date of the appointment in YYYY-MM-DDTHH:MM:SSZ format")
-        .optional(),
+      customerPhoneNumber: z.string().min(5).max(15),
     }),
   ),
-  execute: async ({ businessId, day, startDateTime }) => {
-    const appointments = await businessService.checkAvailability({
-      "where[business][equals]": businessId ?? "",
-      "where[day][equals]": day ?? "",
-      "where[startDateTime][equals]": startDateTime ?? "",
+  execute: async ({ businessId, customerPhoneNumber }) => {
+    const customer = await businessService.getCostumerByPhone({
+      "where[phoneNumber][like]": customerPhoneNumber,
+      "where[business][equals]": businessId,
+      limit: 1,
       depth: 0,
     });
-    const res = (await appointments.json()) as { docs: Appointment[] };
-    // Implement the logic to fetch appointments using the businessId
-    // Example: const appointments = await fetchAppointments(businessId);
-    // Return the appointments as a string or object
-    return res.docs.length === 0 ? BOOL.YES : BOOL.NO;
+    return customer;
   },
 });
 
 export const createNewCustomer = tool({
   name: "createNewCustomer",
   description:
-    "Get a costumer/user info/profile by providing their phone number and businessId",
+    "Create a new customer for a business by providing their name, phone number",
   inputSchema: z.preprocess(
     parseInput,
     businessInfoSchema.extend({
@@ -78,77 +73,138 @@ export const createNewCustomer = tool({
   },
   // toModelOutput(),
 });
+// CUSTOMERS
 
-export const createAppointment = tool({
-  name: "createAppointment",
-  description: "Create a new appointment for a customer at a specific business",
+// APPOINTMENTS
+export const isScheduleAvailable = tool({
+  // outputSchema
+  // toModelOutput
+  name: "isScheduleAvailable",
+  description:
+    "Check if a schedule is available for a business by providing its businessId, day, and time",
   inputSchema: z.preprocess(
     parseInput,
     businessInfoSchema.extend({
-      name: z.string().min(2).max(20).describe("Customer's name"),
-      customer: z.string().min(5).max(20).describe("Customer's ID"),
-      //   .max(15)
-      //   .describe("Customer's phone number"),
-      // email: z.email().describe("Customer's email").optional(),
-      day: z.string().min(2).max(20).describe("Appointment day"),
-      startDateTime: z
-        .string()
-        .min(2)
-        .max(20)
-        .describe("Appointment start time"),
+      ...dateTime,
     }),
   ),
-  execute: async ({ name, businessId, customer, day, startDateTime }) => {
+  execute: async ({ businessId, day, time }) => {
+    const appointments = await businessService.checkAvailability({
+      "where[business][equals]": businessId ?? "",
+      "where[day][equals]": day ?? "",
+      "where[startDateTime][equals]": time ?? "",
+      depth: 0,
+    });
+    const res = (await appointments.json()) as { docs: Appointment[] };
+    // Implement the logic to fetch appointments using the businessId
+    // Example: const appointments = await fetchAppointments(businessId);
+    // Return the appointments as a string or object
+    return res.docs.length === 0 ? BOOL.YES : BOOL.NO;
+  },
+});
+
+export const getAppointmentById = tool({
+  name: "getAppointmentById",
+  description: "Get an appointment by its ID",
+  inputSchema: z.preprocess(
+    parseInput,
+    businessInfoSchema.extend({
+      appointmentId: z.string().min(5).max(20).describe("Appointment ID"),
+    }),
+  ),
+  execute: async ({ appointmentId }) => {
+    const appointment = await businessService.getAppointmentById(appointmentId);
+    return appointment.json();
+  },
+});
+
+export const getAppointmentByCustomerIdAndDayTime = tool({
+  name: "getAppointmentByCustomerIdAndDate",
+  description: "Get an appointment by businessId, customerId, day, and time",
+  inputSchema: z.preprocess(
+    parseInput,
+    businessInfoSchema.extend({
+      customerId: z.string().min(5).max(20).describe("Customer's ID"),
+      ...dateTime,
+    }),
+  ),
+  execute: async ({ businessId, customerId, day, time }) => {
+    const appointment = await businessService.getAppointmentByCustomerIdAndDate(
+      {
+        "where[business][equals]": businessId,
+        "where[customer][equals]": customerId,
+        "where[day][equals]": day,
+        "where[startDateTime][equals]": time,
+        depth: 0,
+      },
+    );
+    const res = (await appointment.json()) as { docs: Appointment[] };
+    return res?.docs.at(0);
+  },
+});
+
+export const createAppointment = tool({
+  name: "createAppointment",
+  description:
+    "Create a new appointment for a customer by providing their customerId, phone number, day, and start time",
+  inputSchema: z.preprocess(
+    parseInput,
+    businessInfoSchema.extend({
+      customerId: z.string().min(5).max(20).describe("Customer's ID"),
+      ...dateTime,
+    }),
+  ),
+  execute: async ({ businessId, customerId, day, time }) => {
     const appointment = await businessService.createAppointment({
       business: businessId,
-      customer,
-      endDateTime: startDateTime + 60,
-      startDateTime,
+      customer: customerId,
+      endDateTime: time + 60,
+      startDateTime: time,
       day,
-      status: "pending",
+      status: "confirmed",
     });
     // Implement the logic to create an appointment using the provided information
     // Example: const appointmentInfo = await createAppointment(name, businessId, customerPhoneNumber, email, day, startDateTime);
     // Return the appointment information as a string or object
     return appointment.json();
   },
-  // toModelOutput(),
 });
 
-export const updateAppointment = tool({
-  name: "updateAppointment",
-  description:
-    "Update an existing appointment for a customer at a specific business",
-  inputSchema: z.preprocess(
-    parseInput,
-    businessInfoSchema.extend({
-      customer: z.string().min(5).max(20).describe("Customer's ID"),
-      appointmentId: z.string().min(5).max(20).describe("Appointment ID"),
-      day: z.string().min(2).max(20).describe("Appointment day"),
-      startDateTime: z
-        .string()
-        .min(2)
-        .max(20)
-        .describe("Appointment start time"),
-    }),
-  ),
-  execute: async ({
-    customer,
-    businessId,
-    appointmentId,
-    day,
-    startDateTime,
-  }) => {
-    const appointment = await businessService.updateAppointment(appointmentId, {
-      day,
-      startDateTime,
-      business: businessId,
-      customer,
-    });
-    // Implement the logic to update an appointment using the provided information
-    // Example: const appointmentInfo = await updateAppointment(appointmentId, day, startDateTime);
-    // Return the appointment information as a string or object
-    return appointment.json();
-  },
-  // toModelOutput(),
-});
+// export const updateAppointment = tool({
+//   name: "updateAppointment",
+//   description:
+//     "Update an existing appointment for a customer at a specific business",
+//   inputSchema: z.preprocess(
+//     parseInput,
+//     businessInfoSchema.extend({
+//       customer: z.string().min(5).max(20).describe("Customer's ID"),
+//       appointmentId: z.string().min(5).max(20).describe("Appointment ID"),
+//       day: z.string().min(2).max(20).describe("Appointment day"),
+//       startDateTime: z
+//         .string()
+//         .min(2)
+//         .max(20)
+//         .describe("Appointment start time"),
+//     }),
+//   ),
+//   execute: async ({
+//     customer,
+//     businessId,
+//     appointmentId,
+//     day,
+//     startDateTime,
+//   }) => {
+//     const appointment = await businessService.updateAppointment(appointmentId, {
+//       day,
+//       startDateTime,
+//       business: businessId,
+//       customer,
+//     });
+//     // Implement the logic to update an appointment using the provided information
+//     // Example: const appointmentInfo = await updateAppointment(appointmentId, day, startDateTime);
+//     // Return the appointment information as a string or object
+//     return appointment.json();
+//   },
+//   // toModelOutput(),
+// });
+// APPOINTMENTS

@@ -78,7 +78,9 @@ class BusinessService {
       })
     ).json()) as Business;
 
-    redis.set(key, JSON.stringify(response), "EX", 60 * 60 * 12);
+    if (response) {
+      redis.set(key, JSON.stringify(response), "EX", 60 * 60 * 12);
+    }
     return response;
   }
 
@@ -92,7 +94,7 @@ class BusinessService {
    * @returns boolean
    */
   public checkAvailability(queryParams: BusinessQueryParams) {
-    const url = generateUrl("appointments", queryParams);
+    const url = generateUrl("appointments", { depth: 0, ...queryParams });
     return fetch(url, {
       method: "GET",
       headers: this.headers,
@@ -117,20 +119,24 @@ class BusinessService {
     if (cache) {
       return JSON.parse(cache) satisfies Customer;
     }
-    const url = generateUrl(`customers`, queryParams);
+    const url = generateUrl(`customers`, { depth: 0, ...queryParams });
     const response = (await (
       await fetch(url, {
         method: "GET",
         headers: this.headers,
       })
     ).json()) as { docs: Customer[] };
-    await redis.set(key, JSON.stringify(response), "EX", 60 * 60 * 24 * 7); // 7 days
 
-    return response.docs.at(0);
+    const customer = response?.docs.at(0);
+    if (customer) {
+      await redis.set(key, JSON.stringify(customer), "EX", 60 * 60 * 24 * 7); // 7 days
+    }
+    return customer;
   }
 
   public createCostumer(costumer: CreateCustomer) {
-    return fetch(`${apiUrl}/customers`, {
+    const url = generateUrl(`customers`, { depth: 0 });
+    return fetch(url, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify(costumer),
@@ -141,7 +147,8 @@ class BusinessService {
     costumerId: string,
     costumerBody: Partial<CreateCustomer>,
   ) {
-    return fetch(`${apiUrl}/customers/${costumerId}`, {
+    const url = generateUrl(`customers/${costumerId}`, { depth: 0 });
+    return fetch(url, {
       method: "PUT",
       headers: this.headers,
       body: JSON.stringify(costumerBody),
@@ -156,8 +163,17 @@ class BusinessService {
     });
   }
 
+  public getAppointmentByCustomerIdAndDate(queryParams: BusinessQueryParams) {
+    const url = generateUrl(`appointments`, { depth: 0, ...queryParams });
+    return fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
+
   public createAppointment(appointmentBody: CreateAppointment) {
-    return fetch(`${apiUrl}/appointments`, {
+    const url = generateUrl("appointments", { depth: 0 });
+    return fetch(url, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify(appointmentBody),
@@ -169,7 +185,8 @@ class BusinessService {
     appointmentId: string,
     appointmentBody: Partial<CreateAppointment>,
   ) {
-    return fetch(`${apiUrl}/appointments/${appointmentId}`, {
+    const url = generateUrl(`appointments/${appointmentId}`, { depth: 0 });
+    return fetch(url, {
       method: "PUT",
       headers: this.headers,
       body: JSON.stringify(appointmentBody),
