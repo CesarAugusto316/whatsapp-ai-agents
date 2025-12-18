@@ -3,12 +3,10 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env, RedisClient } from "bun";
 import {
   isScheduleAvailable,
-  createNewCustomer,
-  createAppointment,
+  makeReservation,
   getCustomerProfile,
-  getAppointmentByCustomerIdAndDayTime,
-  getAppointmentById,
-  // updateAppointment,
+  getReservationInfoByCustomerIdAndDayTime,
+  getReservationInfoById,
 } from "./tools/business.tool";
 
 /**
@@ -36,16 +34,16 @@ export const aiAgent = new Agent({
   maxOutputTokens: 2048, // 512, 1024
   tools: {
     isScheduleAvailable,
-    getAppointmentByCustomerIdAndDayTime,
-    getAppointmentById,
-    createAppointment,
+    getReservationInfoByCustomerIdAndDayTime,
+    getReservationInfoById,
     getCustomerProfile,
-    createNewCustomer,
-    // updateAppointment,
+
+    makeReservation,
+    // createNewCustomer,
   },
   // toolChoice: {
   //   type: "tool",
-  //   toolName: "getCostumerInfoByPhoneNumber", // Force the weather tool to be used
+  //   toolName: "isScheduleAvailable", // Force the weather tool to be used
   // },
   stopWhen: [
     stepCountIs(20), // Maximum 20 steps

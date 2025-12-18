@@ -4,16 +4,16 @@ import z from "zod";
 import { parseInput } from "./helpers";
 import { Appointment } from "@/types/business/cms-types";
 
-const businessInfoSchema = z.object({
-  businessId: z.uuid().describe("The uuid of the business"),
+const restaurantInfoSchema = z.object({
+  restaurantId: z.uuid().describe("The restaurant's id"),
 });
 
 const dateTime = {
-  day: z.string().describe("Day of the appointment in YYYY-MM-DD format"),
+  day: z.string().describe("Day of the reservation in YYYY-MM-DD format"),
   // .optional()
   time: z
     .string()
-    .describe("Date of the appointment in YYYY-MM-DDTHH:MM:SSZ format"),
+    .describe("Date of the reservation in YYYY-MM-DDTHH:MM:SSZ format"),
 };
 
 export const BOOL = {
@@ -25,17 +25,17 @@ export const BOOL = {
 export const getCustomerProfile = tool({
   name: "getCustomerProfile",
   description:
-    "Get a costumer/user info/profile by providing their phone number and businessId",
+    "Get a costumer/user info by providing their phone number and restaurantId",
   inputSchema: z.preprocess(
     parseInput,
-    businessInfoSchema.extend({
+    restaurantInfoSchema.extend({
       customerPhoneNumber: z.string().min(5).max(15),
     }),
   ),
-  execute: async ({ businessId, customerPhoneNumber }) => {
+  execute: async ({ restaurantId, customerPhoneNumber }) => {
     const customer = await businessService.getCostumerByPhone({
       "where[phoneNumber][like]": customerPhoneNumber,
-      "where[business][equals]": businessId,
+      "where[business][equals]": restaurantId,
       limit: 1,
       depth: 0,
     });
@@ -46,10 +46,10 @@ export const getCustomerProfile = tool({
 export const createNewCustomer = tool({
   name: "createNewCustomer",
   description:
-    "Create a new customer for a business by providing their name, phone number",
+    "Create a new customer if not exists for a restaurant by providing their name, phone number",
   inputSchema: z.preprocess(
     parseInput,
-    businessInfoSchema.extend({
+    restaurantInfoSchema.extend({
       name: z.string().min(2).max(20).describe("Customer's name"),
       customerPhoneNumber: z
         .string()
@@ -59,9 +59,9 @@ export const createNewCustomer = tool({
       email: z.email().describe("Customer's email").optional(),
     }),
   ),
-  execute: async ({ name, businessId, customerPhoneNumber, email }) => {
+  execute: async ({ name, restaurantId, customerPhoneNumber, email }) => {
     const costumer = await businessService.createCostumer({
-      business: businessId,
+      business: restaurantId,
       name,
       phoneNumber: customerPhoneNumber,
       email,
@@ -81,16 +81,16 @@ export const isScheduleAvailable = tool({
   // toModelOutput
   name: "isScheduleAvailable",
   description:
-    "Check if a schedule is available for a business by providing its businessId, day, and time",
+    "Check if a schedule is available for reservation by providing its restaurantId, day, and time",
   inputSchema: z.preprocess(
     parseInput,
-    businessInfoSchema.extend({
+    restaurantInfoSchema.extend({
       ...dateTime,
     }),
   ),
-  execute: async ({ businessId, day, time }) => {
+  execute: async ({ restaurantId, day, time }) => {
     const appointments = await businessService.checkAvailability({
-      "where[business][equals]": businessId ?? "",
+      "where[business][equals]": restaurantId ?? "",
       "where[day][equals]": day ?? "",
       "where[startDateTime][equals]": time ?? "",
       depth: 0,
@@ -103,60 +103,61 @@ export const isScheduleAvailable = tool({
   },
 });
 
-export const getAppointmentById = tool({
-  name: "getAppointmentById",
-  description: "Get an appointment by its ID",
+export const getReservationInfoById = tool({
+  name: "getReservationInfoById",
+  description: "Get reservation info by its ID",
   inputSchema: z.preprocess(
     parseInput,
-    businessInfoSchema.extend({
-      appointmentId: z.string().min(5).max(20).describe("Appointment ID"),
+    restaurantInfoSchema.extend({
+      reservationId: z.string().min(5).max(20).describe("Reservation ID"),
     }),
   ),
-  execute: async ({ appointmentId }) => {
-    const appointment = await businessService.getAppointmentById(appointmentId);
-    return appointment.json();
+  execute: async ({ reservationId }) => {
+    const reservation = await businessService.getAppointmentById(reservationId);
+    return reservation.json();
   },
 });
 
-export const getAppointmentByCustomerIdAndDayTime = tool({
-  name: "getAppointmentByCustomerIdAndDate",
-  description: "Get an appointment by businessId, customerId, day, and time",
+export const getReservationInfoByCustomerIdAndDayTime = tool({
+  name: "getReservationInfoByCustomerIdAndDayTime",
+  description:
+    "Get reservation info by restaurantId, customerId, day, and time",
   inputSchema: z.preprocess(
     parseInput,
-    businessInfoSchema.extend({
+    restaurantInfoSchema.extend({
       customerId: z.string().min(5).max(20).describe("Customer's ID"),
       ...dateTime,
     }),
   ),
-  execute: async ({ businessId, customerId, day, time }) => {
-    const appointment = await businessService.getAppointmentByCustomerIdAndDate(
+  execute: async ({ restaurantId, customerId, day, time }) => {
+    const reservation = await businessService.getAppointmentByCustomerIdAndDate(
       {
-        "where[business][equals]": businessId,
+        "where[business][equals]": restaurantId,
         "where[customer][equals]": customerId,
         "where[day][equals]": day,
         "where[startDateTime][equals]": time,
         depth: 0,
       },
     );
-    const res = (await appointment.json()) as { docs: Appointment[] };
+    const res = (await reservation.json()) as { docs: Appointment[] };
     return res?.docs.at(0);
   },
 });
 
-export const createAppointment = tool({
-  name: "createAppointment",
+export const makeReservation = tool({
+  name: "makeReservation",
   description:
-    "Create a new appointment for a customer by providing their customerId, phone number, day, and start time",
+    "Make a reservation for a customer by providing their customerId, phone number, day, and start time",
   inputSchema: z.preprocess(
     parseInput,
-    businessInfoSchema.extend({
+    restaurantInfoSchema.extend({
       customerId: z.string().min(5).max(20).describe("Customer's ID"),
       ...dateTime,
     }),
   ),
-  execute: async ({ businessId, customerId, day, time }) => {
-    const appointment = await businessService.createAppointment({
-      business: businessId,
+  execute: async ({ restaurantId, customerId, day, time }) => {
+    const reservation = await businessService.createAppointment({
+      business: restaurantId,
       customer: customerId,
       endDateTime: time + 60,
       startDateTime: time,
@@ -166,7 +167,7 @@ export const createAppointment = tool({
     // Implement the logic to create an appointment using the provided information
     // Example: const appointmentInfo = await createAppointment(name, businessId, customerPhoneNumber, email, day, startDateTime);
     // Return the appointment information as a string or object
-    return appointment.json();
+    return reservation.json();
   },
 });
 

@@ -32,11 +32,9 @@ export const aiAgentTestHandler: Handler = async (c) => {
     limit: 1,
     depth: 0,
   });
-  if (customer) {
-    console.log({ customer });
-    // ADD CUSOMER CONTEXT TO THE SYSTEM PROMPT, IF CUSTUMER IS NOT FOUND, SHOULD BE CREATED
-    // BEFORE APPOINTMENT CREATION
-  }
+
+  // ADD CUSOMER CONTEXT TO THE SYSTEM PROMPT, IF CUSTUMER IS NOT FOUND, SHOULD BE CREATED
+  // BEFORE APPOINTMENT CREATION
   const system = buildRestaurantSystemPrompt(business, customerPhone, customer);
 
   // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
@@ -61,13 +59,12 @@ export const aiAgentTestHandler: Handler = async (c) => {
 
   const result = await aiAgent.generate({
     system,
-    // prompt: customerMessage,
     prompt: messages,
   });
   const assistantResponse: string = renderAssistantText(result);
   await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-  // console.log({ messages: JSON.stringify(messages) });
-  return c.json({ received: true, text: assistantResponse, result, messages });
+
+  return c.json({ received: true, text: assistantResponse, messages, result });
 };
 
 // const  w = await generateText({})
