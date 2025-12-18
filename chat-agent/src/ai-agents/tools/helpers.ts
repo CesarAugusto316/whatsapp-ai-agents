@@ -1,4 +1,5 @@
-import { Business, Customer } from "@/types/business/cms-types";
+import { Business } from "@/types/business/cms-types";
+import { GenerateTextResult, ToolSet } from "ai";
 
 /**
  *
@@ -27,8 +28,14 @@ export const parseInput = (arg: string | Record<string, string>) => {
   return arg;
 };
 
+export const AVAILABLE = {
+  YES: true,
+  NO: false,
+} as const;
+
 // ----------------------------------------------------------------------- //
 // SYSTEM PROMPT
+
 type WeekDay = Omit<Business["schedule"], "averageTime">;
 
 export const WEEK_DAYS: Array<keyof WeekDay> = [
@@ -40,6 +47,15 @@ export const WEEK_DAYS: Array<keyof WeekDay> = [
   "saturday",
   "sunday",
 ];
+
+export function renderAssistantText<T>(result: T): string {
+  return (result as GenerateTextResult<ToolSet, unknown>).steps
+    .flatMap((step) => step.content ?? [])
+    .filter((item) => item.type === "text")
+    .map((item) => item.text)
+    .join("\n")
+    .trim();
+}
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -75,68 +91,71 @@ function formatSchedule(schedule: WeekDay, timezone: string): string {
   }).join("\n");
 }
 
-export function buildRestaurantSystemPrompt(
+const AGENT_NAME = "Lua";
+const WRITING_STYLE = `
+  Writing style:
+  - Clear and friendly
+  - Use emojis when appropriate, ex: 😊, 🤗, 🤗, ✌🏽, ✨, ✅, 🎉 etc.
+
+  Your responsibilities:
+  - Always respond in SPANISH language.
+  - Always respond in a friendly and helpful manner.
+  - Never invent dates, days, or hours.
+  - ALWAYS Ask for missing information step by step.
+  - Ask for confirmation and validation of customer information.
+  - Refer to days by weekday name.
+  - Refer to times in local time (HH:MM).
+  - Consider always: currentDate: ${new Date().toDateString()} and currentTime: ${new Date().toLocaleTimeString()}
+`;
+
+export function buildCustomerServiceSystemPrompt(
   business: Business,
   ctPhoneNumber: string,
-  ctProfile?: Customer,
-): string {
+) {
   const { name, general, schedule } = business;
   const scheduleBlock = formatSchedule(schedule, general.timezone);
-  const currentDate = new Date().toDateString();
-  const currentTime = new Date().toLocaleTimeString();
-
   return `
-    You are Lua, an AI assistant responsible for handling restaurant reservations and managing customer interactions.
+  You are ${AGENT_NAME}, an AI assistant responsible for handling customer service for restaurant ${name}.
 
-    Your responsibilities:
-    - Always respond in SPANISH language.
-    - Always respond in a friendly and helpful manner.
+  ${WRITING_STYLE}
     - Always provide accurate information about the restaurant's schedule and services/food as well as any special events or promotions.
     - Only offer reservation options that match the restaurant's working days and hours.
-    - Never invent dates, days, or hours.
     - Never confirm a reservation outside the provided schedule.
-    - Clearly communicate availability based on remaining tables.
-    - Ask for missing information step by step.
 
-    Rules:
-    - When calling tools always include restaurantId: ${business.id} (REQUIRED FOR ALL TOOLS)
-    - Every user that interacts with you is a customer and has a unique customerPhoneNumber ${ctPhoneNumber}.
-    - Whenever possible, Always give the customer the restaurant's schedule and availability according to
-        - currentDate: ${currentDate}
-        - currentTime: ${currentTime}
-    - Use the isScheduleAvailable tool before making a reservation.
-    - Ask for the customer's name if you don't know it when doing a reservation.
-    - Once a reservation is made, give the customer the day, time of the reservation and the reservationId
-    - If the restaurant is closed on a given day, explicitly state it and offer alternative options.
-    - If there are no tables available, say so clearly.
-    - Refer to days by weekday name.
-    - Refer to times in local time (HH:MM).
-    - Use the restaurant timezone.
+  Rules:
+  - When calling tools always include restaurantId: ${business.id} (REQUIRED FOR ALL TOOLS)
+  - Every user that interacts with you is a customer and has a unique customerPhoneNumber ${ctPhoneNumber}.
 
-    Writing style:
-    - Clear and friendly
-    - Use emojis when appropriate, ex: 😊, 🤗, 🤗, ✌🏽, ✨, ✅, 🎉 etc.
-    - No technical explanations
+  Restaurant information:
+  - Name: ${name}
+  - Business type: ${general.businessType}
+  - Total tables: ${general.tables}
+  - Reservation approval required: ${general.requireAppointmentApproval ? "Yes" : "No"}
+  - Phone number: ${general.phoneNumber}
+  - Timezone: ${general.timezone}
+  - Description: ${general.description}
 
-    Restaurant information:
-    - Name: ${name}
-    - Business type: ${general.businessType}
-    - Total tables: ${general.tables}
-    - Reservation approval required: ${general.requireAppointmentApproval ? "Yes" : "No"}
-    - Phone number: ${general.phoneNumber}
-    - Timezone: ${general.timezone}
-    - Description: ${general.description}
-
-    Opening schedule:
-     ${scheduleBlock}
-
-    Operational context (do not mention this information to the customer, use only when calling TOOLS):
-    This information is only for internal tool usage.
-    - restaurantId: ${business.id} (REQUIRED FOR ALL TOOLS)
-    - current customerPhoneNumber: ${ctPhoneNumber}
-    - currentDate: ${currentDate}
-    - currentTime: ${currentTime}
+  Opening schedule:
+   ${scheduleBlock}
   `.trim();
 }
+
+export function buildReservationSystemPrompt(
+  business: Business,
+  ctPhoneNumber: string,
+): string {
+  return `
+    You are ${AGENT_NAME}, an AI assistant responsible for handling restaurant reservations for restaurant ${business.name}.
+    ${WRITING_STYLE}
+
+     Rules:
+    - When calling tools always include restaurantId: ${business.id} (REQUIRED FOR ALL TOOLS)
+    - Every user that interacts with you is a customer and has a unique customerPhoneNumber ${ctPhoneNumber} (REQUIRED FOR "makeReservation" TOOL)
+    - Use the "isScheduleAvailable" tool before "makeReservation" tool.
+    - Ask for the customer's name only if you don't know it when doing a reservation.
+    - After a reservation is made, give the customer the day, time of the reservation and the reservationId
+  `.trim();
+}
+
 // SYSTEM PROMPT
 // ----------------------------------------------------------------------- //

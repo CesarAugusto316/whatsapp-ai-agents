@@ -1,13 +1,20 @@
-import { Experimental_Agent as Agent, hasToolCall, stepCountIs } from "ai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { env, RedisClient } from "bun";
 import {
+  Experimental_Agent as Agent,
+  generateObject,
+  hasToolCall,
+  stepCountIs,
+} from "ai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { env } from "bun";
+import {
+  getReservationInfoByCustomerPhoneNumberAndDayTime,
+  getReservationInfoById,
   isScheduleAvailable,
   makeReservation,
-  getCustomerProfile,
-  getReservationInfoByCustomerIdAndDayTime,
-  getReservationInfoById,
-} from "./tools/business.tool";
+} from "./tools/restaurant/reservation.tools";
+import z from "zod";
+import { parseInput } from "./tools/helpers";
+import { optionalDateTime } from "./tools/restaurant/schemas";
 
 /**
  *
@@ -24,32 +31,104 @@ const provider = createOpenAICompatible({
   // includeUsage: true, // Include usage information in streaming responses
 });
 
+const config = {
+  model: provider("@cf/ibm-granite/granite-4.0-h-micro"),
+  maxOutputTokens: 2048, // 512, 1024
+};
+
 /**
  *
  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
  */
-export const aiAgent = new Agent({
-  model: provider("@cf/ibm-granite/granite-4.0-h-micro"),
-  maxOutputTokens: 2048, // 512, 1024
+export const makeReservationsAgent = new Agent({
+  ...config,
   tools: {
     isScheduleAvailable,
-    getReservationInfoByCustomerIdAndDayTime,
-    getReservationInfoById,
-    getCustomerProfile,
-
     makeReservation,
-    // createNewCustomer,
   },
-  // toolChoice: {
-  //   type: "tool",
-  //   toolName: "isScheduleAvailable", // Force the weather tool to be used
-  // },
   stopWhen: [
-    stepCountIs(20), // Maximum 20 steps
-    // hasToolCall("weather"), // Stop after calling 'someTool'
+    stepCountIs(10), // Maximum 10 steps
+    hasToolCall("makeReservation"), // Stop after calling 'someTool'
   ],
-  onStepFinish: async ({ toolResults }) => {},
+  prepareStep: async ({ stepNumber, steps }) => {
+    console.log({ stepNumber, steps });
+    return {};
+  },
+  onStepFinish: async ({ toolResults }) => {
+    console.log({ toolResults });
+  },
 });
 
-export const redis = new RedisClient(env.REDIS_URL);
+/**
+ *
+ * @description Configure the agent with the model, system prompt, tools, and stop conditions.
+ * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
+ */
+export const updateReservationsAgent = new Agent({
+  ...config,
+  tools: {
+    // isScheduleAvailable,
+    // updateReservation,
+  },
+  stopWhen: [
+    stepCountIs(10), // Maximum 10 steps
+    // hasToolCall("makeReservation"), // Stop after calling 'someTool'
+  ],
+  prepareStep: async ({ stepNumber, steps }) => {
+    console.log({ stepNumber, steps });
+    return {};
+  },
+  onStepFinish: async ({ toolResults }) => {
+    console.log({ toolResults });
+  },
+});
+
+/**
+ *
+ * @description Configure the agent with the model, system prompt, tools, and stop conditions.
+ * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
+ */
+export const infoReservationAgent = new Agent({
+  ...config,
+  tools: {
+    getReservationInfoById,
+    getReservationInfoByCustomerPhoneNumberAndDayTime,
+  },
+  stopWhen: [
+    stepCountIs(10), // Maximum 10 steps
+    // hasToolCall("makeReservation"), // Stop after calling 'someTool'
+  ],
+  prepareStep: async ({ stepNumber, steps }) => {
+    console.log({ stepNumber, steps });
+
+    return {};
+  },
+  onStepFinish: async ({ toolResults }) => {
+    console.log({ toolResults });
+  },
+});
+
+export function routerAgent() {
+  return generateObject({
+    ...config,
+    prompt: "",
+    schema: z.preprocess(
+      parseInput,
+      z.object({
+        actionType: z
+          .enum([
+            "infoReservation",
+            "makeReservation",
+            "updateReservation",
+            "cancelReservation",
+          ])
+          .describe("The type of action to perform"),
+        customerId: z.uuid().optional().describe("The ID of the customer"),
+        reservationId: z.uuid().optional(),
+        restaurantId: z.uuid().optional(),
+        ...optionalDateTime,
+      }),
+    ),
+  });
+}

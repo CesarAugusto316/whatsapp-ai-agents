@@ -1,4 +1,4 @@
-import { redis } from "@/ai-agents/ai-gent.config";
+import { redis } from "@/storage/storage.config";
 import { ModelMessage } from "ai";
 
 // COMMANDS REDDIS
@@ -54,11 +54,11 @@ class ChatHistoryService {
         content: customerMessage,
         timestamp: Date.now(),
       } satisfies StoredMessage),
-      // JSON.stringify({
-      //   role: "assistant", // TODO: try with "system"
-      //   content: assistantResponse,
-      //   timestamp: Date.now(),
-      // } satisfies StoredMessage),
+      JSON.stringify({
+        role: "assistant", // TODO: try with "system"
+        content: assistantResponse,
+        timestamp: Date.now(),
+      } satisfies StoredMessage),
     );
     await redis.ltrim(chatKey, -MAX_MESSAGES, -1);
     await redis.expire(chatKey, EXPIRATION_TIME);

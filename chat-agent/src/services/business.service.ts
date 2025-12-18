@@ -1,4 +1,4 @@
-import { redis } from "@/ai-agents/ai-gent.config";
+import { redis } from "@/storage/storage.config";
 import {
   Business,
   CreateAppointment,
@@ -16,7 +16,7 @@ export interface BusinessQueryParams {
   page?: number;
   depth?: number;
   // more info: https://payloadcms.com/docs/queries/sort
-  sort?: string; // -createdAt
+  sort?: "-createdAt"; // -createdAt
   "where[business][equals]"?: string; // businessId,
   "where[customer][equals]"?: string; // businessId,
   "where[day][equals]"?: string | Date; // 2024-03-15
@@ -149,7 +149,7 @@ class BusinessService {
   ) {
     const url = generateUrl(`customers/${costumerId}`, { depth: 0 });
     return fetch(url, {
-      method: "PUT",
+      method: "PATCH",
       headers: this.headers,
       body: JSON.stringify(costumerBody),
     });
@@ -187,18 +187,18 @@ class BusinessService {
   ) {
     const url = generateUrl(`appointments/${appointmentId}`, { depth: 0 });
     return fetch(url, {
-      method: "PUT",
+      method: "PATCH",
       headers: this.headers,
       body: JSON.stringify(appointmentBody),
     });
   }
 
-  // public deleteAppointment(appointmentId: string) {
-  //   return fetch(`${apiUrl}/appointments/${appointmentId}`, {
-  //     method: "DELETE",
-  //     headers: this.headers,
-  //   });
-  // }
+  public deleteAppointment(appointmentId: string) {
+    return fetch(`${apiUrl}/appointments/${appointmentId}`, {
+      method: "DELETE",
+      headers: this.headers,
+    });
+  }
 }
 
 export default new BusinessService();
