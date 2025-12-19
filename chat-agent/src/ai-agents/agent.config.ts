@@ -15,7 +15,7 @@ import {
 } from "./tools/restaurant/reservation.tools";
 import {
   buildInfoReservationsSystemPrompt,
-  buildMakeReservationSystemPrompt,
+  RESERVATION_SYSTEM_PROMPT,
   ROUTER_AGENT_PROMPT,
 } from "./tools/prompts";
 import z, { safeParse } from "zod";
@@ -79,7 +79,7 @@ function makeReservationsAgent({
 }: AgentArgs) {
   return generateText({
     ...config,
-    system: buildMakeReservationSystemPrompt(business),
+    system: RESERVATION_SYSTEM_PROMPT.CREATE,
     prompt: messages,
     tools: {
       makeReservation: makeReservation(business.id, customerPhone),
@@ -127,6 +127,12 @@ function infoReservationAgent({
   });
 }
 
+/**
+ *
+ * @description Router agent that routes the conversation to the appropriate agent based on the user's intent.
+ * @param messages
+ * @returns
+ */
 export async function routerAgent(messages: ModelMessage[]) {
   const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
   const headers = {
@@ -162,6 +168,11 @@ export async function routerAgent(messages: ModelMessage[]) {
   }
 }
 
+/**
+ *
+ * @see routerAgent
+ * @description options for the router agent
+ */
 export const agenticOptions = {
   infoReservation: infoReservationAgent,
   makeReservation: makeReservationsAgent,

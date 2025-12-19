@@ -99,12 +99,7 @@ export const makeReservation = (
     inputSchema: z.preprocess(
       parseInput,
       z.object({
-        customerName: z
-          .string()
-          .min(3)
-          .max(18)
-          .describe("Customer's name")
-          .optional(),
+        customerName: z.string().min(3).max(18).describe("Customer's name"),
         ...dateTime,
       }),
     ),

@@ -34,6 +34,10 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
   - Every user that interacts with you is a customer.
   - To confirm a reservation, the customer must explicitly write:
     ${RESERVATION.CREATE_TRIGGER}
+  - to confirm a change in a existing reservation, the customer must explicitly write:
+    ${RESERVATION.UPDATE_TRIGGER}
+    - to cancel a existing reservation, the customer must explicitly write:
+    ${RESERVATION.DELETE_TRIGGER}
 
   Restaurant information:
   - Name: ${name}
@@ -49,22 +53,103 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
   `.trim();
 }
 
-export function buildMakeReservationSystemPrompt(business: Business): string {
-  return `
-    You are ${AGENT_NAME}, an AI assistant responsible for handling restaurant reservations for restaurant ${business.name}.
-    ${WRITING_STYLE}
+type ReservationActionConfig = {
+  tool: string;
+  trigger: string;
+  arguments: string[];
+  extraRules: string;
+  successMessage: string;
+};
 
-     Rules:
-    - NEVER call the ${ROUTING_AGENT.MakeReservation} tool unless the user has explicitly written
-       the confirmation keyword ${RESERVATION.CREATE_TRIGGER}.
-    - Every user that interacts with you is a customer.
-    - Ask for the customer's name only if you don't know it when doing a reservation.
-    - After a reservation is made, give the customer the day, time of the reservation and the reservationId,
-      add the keyword ${RESERVATION.SUCCESS} ✅ to the end of the message.
-    - If the reservation is not made, give the customer a reason why the reservation could not be made.
-      add the keyword ${RESERVATION.FAILURE} ❌ to the end of the message.
+function buildReservationSystemPrompt(config: ReservationActionConfig): string {
+  return `
+    You are NOT a conversational agent.
+    You do NOT decide whether a reservation should be ${
+      config.tool === ROUTING_AGENT.MakeReservation
+        ? "made"
+        : config.tool === ROUTING_AGENT.UpdateReservation
+          ? "updated"
+          : "cancelled"
+    }.
+    You do NOT infer missing information.
+    You do NOT ask follow-up questions.
+    Your ONLY responsibility is to execute the ${config.tool} tool by
+    extracting and passing arguments from previous user or assistant messages.
+
+    Context:
+    - Every user is a customer.
+
+    STRICT RULES (MANDATORY):
+
+    1. You MUST call the ${config.tool} tool ONLY if the user has explicitly written
+       the exact confirmation keyword: ${config.trigger}
+
+    2. When calling the tool, you MUST pass ONLY these arguments:
+      ${config.arguments.map((arg) => `       - ${arg}`).join("\n")}
+
+      ${config.extraRules}
+
+    If the tool execution succeeds:
+       - ${config.successMessage}
+       - Append the keyword ${RESERVATION.SUCCESS} ✅ at the end
+
+    You MUST NOT output anything else.
+    No explanations. No confirmations. No extra text.
   `.trim();
 }
+
+export const RESERVATION_SYSTEM_PROMPT = {
+  CREATE: buildReservationSystemPrompt({
+    tool: ROUTING_AGENT.MakeReservation,
+    trigger: RESERVATION.CREATE_TRIGGER,
+    arguments: ["day", "time", "customerName"],
+    extraRules: `
+    3. All arguments MUST be extracted verbatim from prior user messages.
+       You MUST NOT invent, guess, normalize, or infer values.
+
+    4. If ANY required argument is missing or ambiguous:
+       - DO NOT call the tool
+       - Respond with a failure message
+       - Append the keyword ${RESERVATION.FAILURE} ❌ at the end
+    `,
+    successMessage: "Respond with the reservation day, time, and reservationId",
+  }),
+
+  UPDATE: buildReservationSystemPrompt({
+    tool: ROUTING_AGENT.UpdateReservation,
+    trigger: RESERVATION.UPDATE_TRIGGER,
+    arguments: ["reservationId", "day (optional)", "time (optional)"],
+    extraRules: `
+    3. reservationId is REQUIRED.
+       At least one of day or time MUST be present.
+
+    4. All arguments MUST be extracted verbatim from prior user messages.
+       You MUST NOT invent, guess, normalize, or infer values.
+
+    5. If reservationId is missing, or no updatable fields are provided:
+       - DO NOT call the tool
+       - Respond with a failure message
+       - Append the keyword ${RESERVATION.FAILURE} ❌ at the end
+    `,
+    successMessage: "Respond with the updated reservation details",
+  }),
+
+  DELETE: buildReservationSystemPrompt({
+    tool: ROUTING_AGENT.CancelReservation,
+    trigger: RESERVATION.DELETE_TRIGGER,
+    arguments: ["reservationId"],
+    extraRules: `
+    3. reservationId MUST be extracted verbatim from prior user messages.
+       You MUST NOT invent, guess, normalize, or infer values.
+
+    4. If reservationId is missing or ambiguous:
+       - DO NOT call the tool
+       - Respond with a failure message
+       - Append the keyword ${RESERVATION.FAILURE} ❌ at the end
+    `,
+    successMessage: "Respond confirming the reservation cancellation",
+  }),
+} as const;
 
 export const ROUTER_AGENT_PROMPT = `
   You are a routing classifier.
