@@ -1,9 +1,10 @@
 import businessService from "@/services/business.service";
 import { tool } from "ai";
 import z from "zod";
-import { AVAILABLE, parseInput } from "../helpers";
+import { parseInput } from "../helpers";
 import { Appointment, Customer } from "@/types/business/cms-types";
 import { dateTime, optionalDateTime } from "./schemas";
+import { AVAILABLE } from "@/ai-agents/agent.types";
 
 export const isScheduleAvailable = (restaurantId: string) =>
   tool({
@@ -53,9 +54,8 @@ export const getReservationInfoByDayTime = (
   customerPhoneNumber: string,
 ) =>
   tool({
-    name: "getReservationInfoByCustomerPhoneNumberAndDayTime",
-    description:
-      "Get reservation info by restaurantId, customerPhoneNumber, day, and time",
+    name: "getReservationInfoByDayTime",
+    description: "Get reservation info by day, and time",
     inputSchema: z.preprocess(
       parseInput,
       z.object({

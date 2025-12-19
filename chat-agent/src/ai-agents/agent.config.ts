@@ -14,13 +14,12 @@ import {
   makeReservation,
 } from "./tools/restaurant/reservation.tools";
 import {
-  buildCustomerServiceSystemPrompt,
-  buildReservationSystemPrompt,
+  buildInfoReservationsSystemPrompt,
+  buildMakeReservationSystemPrompt,
   ROUTER_AGENT_PROMPT,
-  ROUTING,
-} from "./tools/helpers";
+} from "./tools/prompts";
 import z, { safeParse } from "zod";
-import { Business, Customer } from "@/types/business/cms-types";
+import { AgentArgs, ROUTING_AGENT } from "./agent.types";
 
 /**
  *
@@ -47,68 +46,71 @@ const config = {
  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
  */
-export const updateReservationsAgent = new Agent({
-  ...config,
-  tools: {
-    // isScheduleAvailable,
-    // updateReservation,
-  },
-  stopWhen: [
-    stepCountIs(10), // Maximum 10 steps
-    // hasToolCall("makeReservation"), // Stop after calling 'someTool'
-  ],
-  prepareStep: async ({ stepNumber, steps }) => {
-    console.log({ stepNumber, steps });
-    return {};
-  },
-  onStepFinish: async ({ toolResults }) => {
-    console.log({ toolResults });
-  },
-});
+function updateReservationsAgent(args: AgentArgs) {
+  return new Agent({
+    ...config,
+    tools: {
+      // isScheduleAvailable,
+      // updateReservation,
+    },
+    stopWhen: [
+      stepCountIs(10), // Maximum 10 steps
+      // hasToolCall("makeReservation"), // Stop after calling 'someTool'
+    ],
+    prepareStep: async ({ stepNumber, steps }) => {
+      console.log({ stepNumber, steps });
+      return {};
+    },
+    onStepFinish: async ({ toolResults }) => {
+      console.log({ toolResults });
+    },
+  });
+}
 
 /**
  *
  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
  */
-export const makeReservationsAgent = (
-  messages: ModelMessage[],
-  business: Business,
-  customer: Customer,
-) =>
-  generateText({
+function makeReservationsAgent({
+  messages,
+  business,
+  customerPhone,
+}: AgentArgs) {
+  return generateText({
     ...config,
-    system: buildReservationSystemPrompt(business),
+    system: buildMakeReservationSystemPrompt(business),
     prompt: messages,
     tools: {
-      makeReservation: makeReservation(business.id, customer.phoneNumber),
+      makeReservation: makeReservation(business.id, customerPhone),
     },
     stopWhen: [
       stepCountIs(5), // Maximum 10 steps
       hasToolCall("makeReservation"), // Stop after calling 'someTool'
     ],
   });
+}
 
 /**
  *
  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
  */
-export const infoReservationAgent = (
-  messages: ModelMessage[],
-  business: Business,
-  customer: Customer,
-) =>
-  generateText({
+function infoReservationAgent({
+  messages,
+  business,
+  customerPhone,
+}: AgentArgs) {
+  return generateText({
     ...config,
-    system: buildCustomerServiceSystemPrompt(business),
+    system: buildInfoReservationsSystemPrompt(business),
     prompt: messages,
     tools: {
       isScheduleAvailable: isScheduleAvailable(business.id),
       getReservationInfoById: getReservationInfoById(),
       getReservationInfoByDayTime: getReservationInfoByDayTime(
         business.id,
-        customer.phoneNumber,
+        customerPhone,
       ),
     },
     stopWhen: [
@@ -123,6 +125,7 @@ export const infoReservationAgent = (
       console.log({ toolResults });
     },
   });
+}
 
 export async function routerAgent(messages: ModelMessage[]) {
   const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
@@ -146,15 +149,24 @@ export async function routerAgent(messages: ModelMessage[]) {
   const raw = response?.choices?.at(0)?.message?.content?.trim() ?? "";
   const { success, data } = safeParse(
     z.enum([
-      ROUTING.InfoReservation,
-      ROUTING.MakeReservation,
-      ROUTING.UpdateReservation,
-      ROUTING.CancelReservation,
+      ROUTING_AGENT.InfoReservation,
+      ROUTING_AGENT.MakeReservation,
+      ROUTING_AGENT.UpdateReservation,
+      ROUTING_AGENT.CancelReservation,
     ]),
     raw,
   );
   if (success) return data;
   else {
-    return ROUTING.InfoReservation;
+    return ROUTING_AGENT.InfoReservation;
   }
 }
+
+export const agenticOptions = {
+  infoReservation: infoReservationAgent,
+  makeReservation: makeReservationsAgent,
+  updateReservation: updateReservationsAgent,
+  cancelReservation: () => {
+    return Promise.resolve([]);
+  },
+};
