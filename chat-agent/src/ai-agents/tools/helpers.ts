@@ -123,10 +123,7 @@ const WRITING_STYLE = `
   - Consider always: currentDate: ${new Date().toDateString()} and currentTime: ${new Date().toLocaleTimeString()}
 `;
 
-export function buildCustomerServiceSystemPrompt(
-  business: Business,
-  ctPhoneNumber: string,
-) {
+export function buildCustomerServiceSystemPrompt(business: Business) {
   const { name, general, schedule } = business;
   const scheduleBlock = formatSchedule(schedule, general.timezone);
   return `
@@ -138,8 +135,7 @@ export function buildCustomerServiceSystemPrompt(
     - Never confirm a reservation outside the provided schedule.
 
   Rules:
-  - When calling tools always include restaurantId: ${business.id} (REQUIRED FOR ALL TOOLS)
-  - Every user that interacts with you is a customer and has a unique customerPhoneNumber ${ctPhoneNumber}.
+  - Every user that interacts with you is a customer.
   - To confirm a reservation, the customer must explicitly write:
     ${RESERVATION.CREATE_TRIGGER}
 
@@ -157,19 +153,15 @@ export function buildCustomerServiceSystemPrompt(
   `.trim();
 }
 
-export function buildReservationSystemPrompt(
-  business: Business,
-  ctPhoneNumber: string,
-): string {
+export function buildReservationSystemPrompt(business: Business): string {
   return `
     You are ${AGENT_NAME}, an AI assistant responsible for handling restaurant reservations for restaurant ${business.name}.
     ${WRITING_STYLE}
 
      Rules:
-    - NEVER call the "makeReservation" tool unless the user has explicitly written
+    - NEVER call the ${ROUTING.MakeReservation} tool unless the user has explicitly written
        the confirmation keyword ${RESERVATION.CREATE_TRIGGER}.
-    - When calling tools always include restaurantId: ${business.id} (REQUIRED)
-    - Every user that interacts with you is a customer and has a unique customerPhoneNumber ${ctPhoneNumber} (REQUIRED)
+    - Every user that interacts with you is a customer.
     - Ask for the customer's name only if you don't know it when doing a reservation.
     - After a reservation is made, give the customer the day, time of the reservation and the reservationId,
       add the keyword ${RESERVATION.SUCCESS} ✅ to the end of the message.
@@ -183,13 +175,12 @@ export const ROUTER_AGENT_PROMPT = `
 
   Your task is to output EXACTLY ONE string from the allowed list.
 
-  You must NOT:
-  - answer the user
-  - explain anything
-  - add punctuation
-  - add whitespace
-  - add quotes
-  - add any other text
+  IMPORTANT RULES:
+  - ${ROUTING.MakeReservation} MUST ONLY be selected if the user's message explicitly contains the confirmation keyword ${RESERVATION.CREATE_TRIGGER}.
+  - ${ROUTING.UpdateReservation} MUST ONLY be selected if the user's message explicitly contains the keyword ${RESERVATION.UPDATE_TRIGGER}.
+  - ${ROUTING.CancelReservation} MUST ONLY be selected if the user's message explicitly contains the keyword ${RESERVATION.DELETE_TRIGGER}.
+  - If the message does not contain enough information for a reservation confirmation, output ${ROUTING.InfoReservation} instead of attempting ${ROUTING.MakeReservation}.
+  - Always return exactly ONE of the allowed actionTypes with no extra punctuation, quotes, or whitespace.
 
   Allowed outputs:
   - ${ROUTING.InfoReservation}
@@ -197,23 +188,22 @@ export const ROUTER_AGENT_PROMPT = `
   - ${ROUTING.UpdateReservation}
   - ${ROUTING.CancelReservation}
 
-  Decision rules (apply in order):
+  Action selection rules:
+  - ${ROUTING.InfoReservation}:
+    Use when the user asks for information, or if more details are required before making a reservation confirmation.
+  - ${ROUTING.MakeReservation}:
+    Use ONLY if the message explicitly contains ${RESERVATION.CREATE_TRIGGER} AND all required reservation details (day, time) are provided.
+  - ${ROUTING.UpdateReservation}:
+    Use ONLY if the message explicitly contains ${RESERVATION.UPDATE_TRIGGER} AND the user wants to modify an existing reservation.
+  - ${ROUTING.CancelReservation}:
+    Use ONLY if the message explicitly contains ${RESERVATION.DELETE_TRIGGER} AND the user wants to cancel or delete an existing reservation.
 
-  1. If the message clearly requests cancellation or deletion of a reservation:
-     output ${ROUTING.CancelReservation}
-
-  2. If the message clearly requests a modification of an existing reservation
-     (date, time, number of people):
-     output ${ROUTING.UpdateReservation}
-
-  3. Output ${ROUTING.MakeReservation} ONLY IF the message explicitly contains
-     the exact confirmation keyword: ${RESERVATION.CREATE_TRIGGER}
-
-  4. Otherwise:
-     output ${ROUTING.InfoReservation}
+  Priority rules:
+  - Explicit cancellation > update > creation > information
+  - Modification requests always imply an existing reservation
 
   Final instruction:
-  Return ONLY one allowed output string. No exceptions.
+  - Return ONLY one allowed output string. No exceptions.
 `.trim();
 
 // SYSTEM PROMPT

@@ -3,34 +3,19 @@ import {
   makeReservationsAgent,
   routerAgent,
 } from "@/ai-agents/ai-gent.config";
-import {
-  buildCustomerServiceSystemPrompt,
-  buildReservationSystemPrompt,
-  renderAssistantText,
-} from "@/ai-agents/tools/helpers";
+import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
+import { Customer } from "@/types/business/cms-types";
 import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
 import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
 
-const builder = {
-  infoReservation: {
-    agent: infoReservationAgent,
-    prompt: buildCustomerServiceSystemPrompt,
-  },
-  makeReservation: {
-    agent: makeReservationsAgent,
-    prompt: buildReservationSystemPrompt,
-  },
-  updateReservation: {
-    agent: undefined,
-    prompt: undefined,
-  },
-  cancelReservation: {
-    agent: undefined,
-    prompt: undefined,
-  },
+const agentChoices = {
+  infoReservation: infoReservationAgent,
+  makeReservation: makeReservationsAgent,
+  updateReservation: infoReservationAgent,
+  cancelReservation: infoReservationAgent,
 };
 
 export const aiAgentTestHandler: Handler = async (c) => {
@@ -65,41 +50,26 @@ export const aiAgentTestHandler: Handler = async (c) => {
     ...chatHistory,
     {
       role: "user",
-      content: customerMessage.trim(),
-      // ? [
-      //     {
-      //       text: `Mi nombre es ${customer?.name}`,
-      //       type: "text",
-      //     },
-      //     {
-      //       text: customerMessage.trim(),
-      //       type: "text",
-      //     },
-      //   ]
-      // : [
-      //     {
-      //       text: customerMessage.trim(),
-      //       type: "text",
-      //     },
-      //   ],
+      content: `${customer?.name ? `Mi nombre es ${customer.name}.` : ""} ${customerMessage.trim()}`,
     },
   ];
 
-  const text = await routerAgent(messages);
-  console.log({ text });
-  if (!text) {
+  const agentType = await routerAgent(messages);
+  if (!agentType) {
     return c.json({ error: "Action type not received" }, 400);
   }
-  const ai = builder[text];
-
-  const result = await ai.agent?.generate({
-    system: ai.prompt(business, customerPhone),
-    prompt: messages,
-  });
+  const agent = agentChoices[agentType];
+  const customerData = {
+    ...customer,
+    phoneNumber: customerPhone,
+  } as Customer;
+  const result = await agent(messages, business, customerData);
   const assistantResponse = renderAssistantText(result);
   await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+
   return c.json({
     received: true,
+    agentType,
     text: assistantResponse,
     messages,
     result,
