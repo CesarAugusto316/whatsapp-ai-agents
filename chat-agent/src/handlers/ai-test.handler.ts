@@ -1,5 +1,10 @@
-import { makeReservationsAgent } from "@/ai-agents/ai-gent.config";
 import {
+  infoReservationAgent,
+  makeReservationsAgent,
+  routerAgent,
+} from "@/ai-agents/ai-gent.config";
+import {
+  buildCustomerServiceSystemPrompt,
   buildReservationSystemPrompt,
   renderAssistantText,
 } from "@/ai-agents/tools/helpers";
@@ -8,6 +13,25 @@ import chatHistoryService from "@/services/chatHistory.service";
 import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
 import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
+
+const builder = {
+  infoReservation: {
+    agent: infoReservationAgent,
+    prompt: buildCustomerServiceSystemPrompt,
+  },
+  makeReservation: {
+    agent: makeReservationsAgent,
+    prompt: buildReservationSystemPrompt,
+  },
+  updateReservation: {
+    agent: undefined,
+    prompt: undefined,
+  },
+  cancelReservation: {
+    agent: undefined,
+    prompt: undefined,
+  },
+};
 
 export const aiAgentTestHandler: Handler = async (c) => {
   // const session = custumerMessage.session; // use CMS businessID on creation for WAHA
@@ -29,7 +53,6 @@ export const aiAgentTestHandler: Handler = async (c) => {
   const chatKey = `chat:${businessId}:${customerPhone}`;
   const chatHistory: ModelMessage[] = await chatHistoryService.get(chatKey);
   const business = await businessService.getBusinessById(businessId);
-
   const customer = await businessService.getCostumerByPhone({
     "where[phoneNumber][like]": customerPhone,
     "where[business][equals]": businessId,
@@ -42,27 +65,43 @@ export const aiAgentTestHandler: Handler = async (c) => {
     ...chatHistory,
     {
       role: "user",
-      content: customer
-        ? [
-            {
-              text: `Mi nombre es ${customer?.name}`,
-              type: "text",
-            },
-            {
-              text: customerMessage,
-              type: "text",
-            },
-          ]
-        : customerMessage,
+      content: customerMessage.trim(),
+      // ? [
+      //     {
+      //       text: `Mi nombre es ${customer?.name}`,
+      //       type: "text",
+      //     },
+      //     {
+      //       text: customerMessage.trim(),
+      //       type: "text",
+      //     },
+      //   ]
+      // : [
+      //     {
+      //       text: customerMessage.trim(),
+      //       type: "text",
+      //     },
+      //   ],
     },
   ];
 
-  const result = await makeReservationsAgent.generate({
-    system: buildReservationSystemPrompt(business, customerPhone),
+  const text = await routerAgent(messages);
+  console.log({ text });
+  if (!text) {
+    return c.json({ error: "Action type not received" }, 400);
+  }
+  const ai = builder[text];
+
+  const result = await ai.agent?.generate({
+    system: ai.prompt(business, customerPhone),
     prompt: messages,
   });
-  const assistantResponse: string = renderAssistantText(result);
+  const assistantResponse = renderAssistantText(result);
   await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-
-  return c.json({ received: true, text: assistantResponse, messages, result });
+  return c.json({
+    received: true,
+    text: assistantResponse,
+    messages,
+    result,
+  });
 };

@@ -33,6 +33,21 @@ export const AVAILABLE = {
   NO: false,
 } as const;
 
+export enum ROUTING {
+  InfoReservation = "infoReservation",
+  MakeReservation = "makeReservation",
+  UpdateReservation = "updateReservation",
+  CancelReservation = "cancelReservation",
+}
+
+export enum RESERVATION {
+  CREATE_TRIGGER = "CONFIRMAR RESERVA",
+  UPDATE_TRIGGER = "CAMBIAR RESERVA",
+  DELETE_TRIGGER = "CANCELAR RESERVA",
+  SUCCESS = "RESERVA CONFIRMADA",
+  FAILURE = "RESERVA NO CONFIRMADA",
+}
+
 // ----------------------------------------------------------------------- //
 // SYSTEM PROMPT
 
@@ -125,6 +140,8 @@ export function buildCustomerServiceSystemPrompt(
   Rules:
   - When calling tools always include restaurantId: ${business.id} (REQUIRED FOR ALL TOOLS)
   - Every user that interacts with you is a customer and has a unique customerPhoneNumber ${ctPhoneNumber}.
+  - To confirm a reservation, the customer must explicitly write:
+    ${RESERVATION.CREATE_TRIGGER}
 
   Restaurant information:
   - Name: ${name}
@@ -149,13 +166,55 @@ export function buildReservationSystemPrompt(
     ${WRITING_STYLE}
 
      Rules:
-    - When calling tools always include restaurantId: ${business.id} (REQUIRED FOR ALL TOOLS)
-    - Every user that interacts with you is a customer and has a unique customerPhoneNumber ${ctPhoneNumber} (REQUIRED FOR "makeReservation" TOOL)
-    - Use the "isScheduleAvailable" tool before "makeReservation" tool.
+    - NEVER call the "makeReservation" tool unless the user has explicitly written
+       the confirmation keyword ${RESERVATION.CREATE_TRIGGER}.
+    - When calling tools always include restaurantId: ${business.id} (REQUIRED)
+    - Every user that interacts with you is a customer and has a unique customerPhoneNumber ${ctPhoneNumber} (REQUIRED)
     - Ask for the customer's name only if you don't know it when doing a reservation.
-    - After a reservation is made, give the customer the day, time of the reservation and the reservationId
+    - After a reservation is made, give the customer the day, time of the reservation and the reservationId,
+      add the keyword ${RESERVATION.SUCCESS} ✅ to the end of the message.
+    - If the reservation is not made, give the customer a reason why the reservation could not be made.
+      add the keyword ${RESERVATION.FAILURE} ❌ to the end of the message.
   `.trim();
 }
+
+export const ROUTER_AGENT_PROMPT = `
+  You are a routing classifier.
+
+  Your task is to output EXACTLY ONE string from the allowed list.
+
+  You must NOT:
+  - answer the user
+  - explain anything
+  - add punctuation
+  - add whitespace
+  - add quotes
+  - add any other text
+
+  Allowed outputs:
+  - ${ROUTING.InfoReservation}
+  - ${ROUTING.MakeReservation}
+  - ${ROUTING.UpdateReservation}
+  - ${ROUTING.CancelReservation}
+
+  Decision rules (apply in order):
+
+  1. If the message clearly requests cancellation or deletion of a reservation:
+     output ${ROUTING.CancelReservation}
+
+  2. If the message clearly requests a modification of an existing reservation
+     (date, time, number of people):
+     output ${ROUTING.UpdateReservation}
+
+  3. Output ${ROUTING.MakeReservation} ONLY IF the message explicitly contains
+     the exact confirmation keyword: ${RESERVATION.CREATE_TRIGGER}
+
+  4. Otherwise:
+     output ${ROUTING.InfoReservation}
+
+  Final instruction:
+  Return ONLY one allowed output string. No exceptions.
+`.trim();
 
 // SYSTEM PROMPT
 // ----------------------------------------------------------------------- //

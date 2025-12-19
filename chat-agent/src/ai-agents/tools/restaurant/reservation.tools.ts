@@ -93,7 +93,7 @@ export const getReservationInfoByCustomerPhoneNumberAndDayTime = tool({
 export const makeReservation = tool({
   name: "makeReservation",
   description:
-    "Make a reservation for a customer by providing their customerId, phone number, day, and start time",
+    "Make a reservation for a customer by providing customerName, customerPhoneNumber, day and time",
   inputSchema: z.preprocess(
     parseInput,
     restaurantInfoSchema.extend({
