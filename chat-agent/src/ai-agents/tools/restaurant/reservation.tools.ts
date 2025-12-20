@@ -10,7 +10,7 @@ export const isScheduleAvailable = (restaurantId: string) =>
   tool({
     name: "isScheduleAvailable",
     description:
-      "Check if a schedule is available for reservation by providing its restaurantId, day, and time",
+      "Check if day and time is available for reservation by providing its day, and time",
     inputSchema: z.preprocess(
       parseInput,
       z.object({
