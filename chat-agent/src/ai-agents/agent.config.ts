@@ -8,8 +8,8 @@ import {
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env, fetch } from "bun";
 import {
-  getReservationInfoByDayTime,
-  getReservationInfoById,
+  getReservationStatusByDateAndTime,
+  getReservationStatusById,
   isScheduleAvailable,
   makeReservation,
 } from "./tools/restaurant/reservation.tools";
@@ -17,6 +17,7 @@ import {
   buildInfoReservationsSystemPrompt,
   RESERVATION_SYSTEM_PROMPT,
   ROUTER_AGENT_PROMPT,
+  systemPrompt,
 } from "./tools/prompts";
 import z, { safeParse } from "zod";
 import { AgentArgs, ROUTING_AGENT } from "./agent.types";
@@ -36,8 +37,10 @@ const provider = createOpenAICompatible({
   // includeUsage: true, // Include usage information in streaming responses
 });
 
+const model = "@cf/ibm-granite/granite-4.0-h-micro"; // "@cf/meta/llama-4-scout-17b-16e-instruct"; // "@cf/ibm-granite/granite-4.0-h-micro"
+
 const config = {
-  model: provider("@cf/ibm-granite/granite-4.0-h-micro"),
+  model: provider(model),
   maxOutputTokens: 2048, // 512, 1024
 };
 
@@ -96,19 +99,20 @@ function makeReservationsAgent({
  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
  */
-function infoReservationAgent({
+export function infoReservationAgent({
   messages,
   business,
   customerPhone,
 }: AgentArgs) {
   return generateText({
     ...config,
-    system: buildInfoReservationsSystemPrompt(business),
-    prompt: messages,
+    temperature: 0.2,
+    system: systemPrompt(business),
+    messages,
     tools: {
       isScheduleAvailable: isScheduleAvailable(business.id),
-      getReservationInfoById: getReservationInfoById(),
-      getReservationInfoByDayTime: getReservationInfoByDayTime(
+      getReservationStatusById: getReservationStatusById(),
+      getReservationStatusByDateAndTime: getReservationStatusByDateAndTime(
         business.id,
         customerPhone,
       ),
@@ -117,13 +121,29 @@ function infoReservationAgent({
       stepCountIs(10), // Maximum 10 steps
       // hasToolCall("makeReservation"), // Stop after calling 'someTool'
     ],
-    prepareStep: async ({ stepNumber, steps }) => {
-      console.log({ stepNumber, steps });
-      return {};
-    },
-    onStepFinish: async ({ toolResults }) => {
-      console.log({ toolResults });
-    },
+    // prepareStep: async ({ stepNumber, steps }) => {
+    //   // console.log({ stepNumber, steps });
+    //   return {};
+    // },
+    // onStepFinish: async ({
+    //   toolResults,
+    //   content,
+    //   text,
+    //   toolCalls,
+    //   response,
+    // }) => {
+    //   // {
+    //   //   toolResults: [],
+    //   //   content: [
+    //   //     {
+    //   //       type: "text",
+    //   //       text: "Claro, aquí tienes la información de la reserva con el ID 123123:\n\n- Fecha: 23 de diciembre de 2025\n- Hora: 16:00\n- Número de personas: 4\n- Menú elegido: Pizzas Clásicas\n- Total a pagar: $50,000\n\n¿Hay algo más en lo que pueda ayudarte? 😊",
+    //   //     }
+    //   //   ],
+    //   //   text: "Claro, aquí tienes la información de la reserva con el ID 123123:\n\n- Fecha: 23 de diciembre de 2025\n- Hora: 16:00\n- Número de personas: 4\n- Menú elegido: Pizzas Clásicas\n- Total a pagar: $50,000\n\n¿Hay algo más en lo que pueda ayudarte? 😊",
+    //   // }
+    //   // console.log({ toolResults, toolCalls, content, text, response });
+    // },
   });
 }
 
@@ -143,7 +163,7 @@ export async function routerAgent(messages: ModelMessage[]) {
       method: "POST",
       headers,
       body: JSON.stringify({
-        model: "@cf/ibm-granite/granite-4.0-h-micro",
+        model,
         messages: [
           { role: "system", content: ROUTER_AGENT_PROMPT },
           ...messages,

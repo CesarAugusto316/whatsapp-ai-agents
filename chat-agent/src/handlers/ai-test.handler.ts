@@ -1,4 +1,4 @@
-import { agenticOptions, routerAgent } from "@/ai-agents/agent.config";
+import { infoReservationAgent } from "@/ai-agents/agent.config";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
@@ -34,18 +34,16 @@ export const aiAgentTestHandler: Handler = async (c) => {
       content: customerMessage,
     },
   ];
-  const agentType = await routerAgent(messages);
-  if (!agentType) {
-    return c.json({ error: "Action type not received" }, 400);
-  }
-  const pickedAgent = agenticOptions[agentType];
-  const result = await pickedAgent({ messages, business, customerPhone });
+  const result = await infoReservationAgent({
+    messages,
+    business,
+    customerPhone,
+  });
   const assistantResponse = renderAssistantText(result);
   await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
 
   return c.json({
     received: true,
-    agentType,
     text: assistantResponse,
     messages,
     result,

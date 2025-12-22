@@ -4,13 +4,26 @@ import z from "zod";
 import { parseInput } from "../helpers";
 import { Appointment, Customer } from "@/types/business/cms-types";
 import { dateTime, optionalDateTime } from "./schemas";
-import { AVAILABLE } from "@/ai-agents/agent.types";
+
+export const TOOLS_NAME = {
+  isScheduleAvailable: "isScheduleAvailable",
+  getReservationStatusById: "getReservationStatusById",
+  getReservationStatusByDateAndTime: "getReservationStatusByDateAndTime",
+};
+
+export const DESCRIPTIONS = {
+  isScheduleAvailable:
+    "Check if day and time is available for reservation. Use when the customer asks for availability before making a reservation, the customer must provide the date and time",
+  getReservationStatusById:
+    "Get reservation status by its ID. Use when the customer wants to know the status of a reservation that is already made, the customer must provide the reservation ID",
+  getReservationStatusByDateAndTime:
+    "Get reservation status by its date and time. Use when the customer forgot the reservation ID and wants to check the status of a reservation that is already made",
+};
 
 export const isScheduleAvailable = (restaurantId: string) =>
   tool({
-    name: "isScheduleAvailable",
-    description:
-      "Check if day and time is available for reservation by providing its day, and time",
+    name: TOOLS_NAME.isScheduleAvailable,
+    description: DESCRIPTIONS.isScheduleAvailable,
     inputSchema: z.preprocess(
       parseInput,
       z.object({
@@ -28,14 +41,17 @@ export const isScheduleAvailable = (restaurantId: string) =>
       // Implement the logic to fetch appointments using the businessId
       // Example: const appointments = await fetchAppointments(businessId);
       // Return the appointments as a string or object
-      return res.docs.length === 0 ? AVAILABLE.YES : AVAILABLE.NO;
+      // return res.docs.length === 0 ? AVAILABLE.YES : AVAILABLE.NO;
+
+      /** @todo save availability in redis, so we can know if this tool has been already been called */
+      return res.docs.length === 0 ? "IS AVAILABLE" : "NOT AVAILABLE";
     },
   });
 
-export const getReservationInfoById = () =>
+export const getReservationStatusById = () =>
   tool({
-    name: "getReservationInfoById",
-    description: "Get reservation info by its ID",
+    name: TOOLS_NAME.getReservationStatusById,
+    description: DESCRIPTIONS.getReservationStatusById,
     inputSchema: z.preprocess(
       parseInput,
       z.object({
@@ -45,17 +61,28 @@ export const getReservationInfoById = () =>
     execute: async ({ reservationId }) => {
       const reservation =
         await businessService.getAppointmentById(reservationId);
+      // const result = JSON.stringify(await reservation.json());
+      // console.log({ result });
+
+      // IMPORTANT: EL LLM SI INTERPRETA EL CONTENIDO EN FORMATO JSON, ENTRE MAS
+      // SEMANTICA  ES LA RESPUESTA, MAS PROBABLE ES QUE EL LLM LA INTERPRETE
+      // CORRECTAMENTE
+      // return {
+      //   status: "found",
+      //   data: "confirmada para el día Martes proximo",
+      // };
+      // {ERRORL "NOT FOUND"}
       return reservation.json();
     },
   });
 
-export const getReservationInfoByDayTime = (
+export const getReservationStatusByDateAndTime = (
   restaurantId: string,
   customerPhoneNumber: string,
 ) =>
   tool({
-    name: "getReservationInfoByDayTime",
-    description: "Get reservation info by day, and time",
+    name: TOOLS_NAME.getReservationStatusByDateAndTime,
+    description: DESCRIPTIONS.getReservationStatusByDateAndTime,
     inputSchema: z.preprocess(
       parseInput,
       z.object({
@@ -84,7 +111,8 @@ export const getReservationInfoByDayTime = (
           depth: 0,
         });
       const res = (await reservation.json()) as { docs: Appointment[] };
-      return res?.docs.at(0);
+      // console.log({ res });
+      return res.docs.at(0);
     },
   });
 
@@ -93,7 +121,7 @@ export const makeReservation = (
   customerPhoneNumber: string,
 ) =>
   tool({
-    name: "makeReservation",
+    // name: TOOLS_NAME.makeReservation,
     description:
       "Make a reservation for a customer by providing customerName, customerPhoneNumber, day and time",
     inputSchema: z.preprocess(

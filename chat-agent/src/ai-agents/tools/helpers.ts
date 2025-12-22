@@ -65,8 +65,8 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
         const end = formatTime(slot.endTime, timezone);
         return `${start} to ${end}`;
       })
-      .join("\n  ");
+      .join("  ");
 
-    return `- ${capitalize(day)}:\n  ${ranges}`;
+    return `- ${capitalize(day)}:  ${ranges}`;
   }).join("\n");
 }
