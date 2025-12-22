@@ -119,7 +119,11 @@ class BusinessService {
     if (cache) {
       return JSON.parse(cache) satisfies Customer;
     }
-    const url = generateUrl(`customers`, { depth: 0, ...queryParams });
+    const url = generateUrl(`customers`, {
+      depth: 0,
+      limit: 1,
+      ...queryParams,
+    });
     const response = (await (
       await fetch(url, {
         method: "GET",

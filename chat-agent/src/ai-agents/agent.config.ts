@@ -107,43 +107,15 @@ export function infoReservationAgent({
   return generateText({
     ...config,
     temperature: 0.2,
-    system: systemPrompt(business),
+    system: buildInfoReservationsSystemPrompt(business),
     messages,
     tools: {
       isScheduleAvailable: isScheduleAvailable(business.id),
       getReservationStatusById: getReservationStatusById(),
-      getReservationStatusByDateAndTime: getReservationStatusByDateAndTime(
-        business.id,
-        customerPhone,
-      ),
     },
     stopWhen: [
       stepCountIs(10), // Maximum 10 steps
-      // hasToolCall("makeReservation"), // Stop after calling 'someTool'
     ],
-    // prepareStep: async ({ stepNumber, steps }) => {
-    //   // console.log({ stepNumber, steps });
-    //   return {};
-    // },
-    // onStepFinish: async ({
-    //   toolResults,
-    //   content,
-    //   text,
-    //   toolCalls,
-    //   response,
-    // }) => {
-    //   // {
-    //   //   toolResults: [],
-    //   //   content: [
-    //   //     {
-    //   //       type: "text",
-    //   //       text: "Claro, aquí tienes la información de la reserva con el ID 123123:\n\n- Fecha: 23 de diciembre de 2025\n- Hora: 16:00\n- Número de personas: 4\n- Menú elegido: Pizzas Clásicas\n- Total a pagar: $50,000\n\n¿Hay algo más en lo que pueda ayudarte? 😊",
-    //   //     }
-    //   //   ],
-    //   //   text: "Claro, aquí tienes la información de la reserva con el ID 123123:\n\n- Fecha: 23 de diciembre de 2025\n- Hora: 16:00\n- Número de personas: 4\n- Menú elegido: Pizzas Clásicas\n- Total a pagar: $50,000\n\n¿Hay algo más en lo que pueda ayudarte? 😊",
-    //   // }
-    //   // console.log({ toolResults, toolCalls, content, text, response });
-    // },
   });
 }
 

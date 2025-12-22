@@ -1,3 +1,10 @@
+import { classifyCustomerIntent } from "@/agents/config";
+import {
+  AGENT_NAME,
+  buildWelcomeMessage,
+  CUSTOMER_INTENT,
+  FlowChoices,
+} from "@/agents/prompts";
 import { infoReservationAgent } from "@/ai-agents/agent.config";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import businessService from "@/services/business.service";
@@ -25,6 +32,34 @@ export const aiAgentTestHandler: Handler = async (c) => {
   const chatKey = `chat:${businessId}:${customerPhone}`;
   const chatHistory: ModelMessage[] = await chatHistoryService.get(chatKey);
   const business = await businessService.getBusinessById(businessId);
+  const customer = await businessService.getCostumerByPhone({
+    "where[business][equals]": businessId,
+    "where[phoneNumber][like]": customerPhone,
+  });
+
+  const isFirstMessage = chatHistory.length === 0;
+  if (isFirstMessage) {
+    const assistantResponse = buildWelcomeMessage({
+      assistantName: AGENT_NAME,
+      restaurantName: business.name,
+    });
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+    return c.json({
+      received: true,
+      text: assistantResponse,
+    });
+  }
+  if (customerMessage == FlowChoices.HOW_SYSTEM_WORKS) {
+    const assistantResponse = buildWelcomeMessage({
+      assistantName: AGENT_NAME,
+      restaurantName: business.name,
+    });
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+    return c.json({
+      received: true,
+      text: assistantResponse,
+    });
+  }
 
   // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
   const messages: ModelMessage[] = [
@@ -34,18 +69,22 @@ export const aiAgentTestHandler: Handler = async (c) => {
       content: customerMessage,
     },
   ];
-  const result = await infoReservationAgent({
-    messages,
-    business,
-    customerPhone,
-  });
-  const assistantResponse = renderAssistantText(result);
-  await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
 
-  return c.json({
-    received: true,
-    text: assistantResponse,
-    messages,
-    result,
-  });
+  const customerIntent = await classifyCustomerIntent(messages);
+  if (customerIntent === CUSTOMER_INTENT.INFO_RESERVATION) {
+    const result = await infoReservationAgent({
+      messages,
+      business,
+      customerPhone,
+    });
+    const assistantResponse = renderAssistantText(result);
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+
+    return c.json({
+      received: true,
+      text: assistantResponse,
+      messages,
+      result,
+    });
+  }
 };
