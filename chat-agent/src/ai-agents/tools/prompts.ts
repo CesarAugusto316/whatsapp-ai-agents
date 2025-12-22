@@ -53,6 +53,18 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
   return PROMPT;
 }
 
+export function buildRestaurantInfo(business: Business) {
+  const { name, general, schedule } = business;
+  const scheduleBlock = formatSchedule(schedule, general.timezone);
+  return `
+    INFORMACION:
+    - Nombre: ${name}
+
+    Horario de atención:
+      ${scheduleBlock}
+  `;
+}
+
 export function systemPrompt(business: Business) {
   const { name, general, schedule } = business;
   const scheduleBlock = formatSchedule(schedule, general.timezone);

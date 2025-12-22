@@ -63,7 +63,7 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
       .map((slot) => {
         const start = formatTime(slot.startTime, timezone);
         const end = formatTime(slot.endTime, timezone);
-        return `${start} to ${end}`;
+        return `${start}  ->  ${end}`;
       })
       .join("  ");
 

@@ -99,7 +99,7 @@ export const buildWelcomeMessage = ({
 }: WelcomeMessageParams): string => {
   const GREETINGS = [
     `
-        👋 ¡Hola! Soy ${assistantName}, el asistente automático de ${restaurantName}.
+        👋 ¡Hola! Soy ${assistantName}, el asistente de ${restaurantName}.
 
         Estoy aquí para ayudarte con información y reservas de forma rápida y sencilla.
 
@@ -118,9 +118,10 @@ export const buildWelcomeMessage = ({
         Te explico paso a paso cómo interactuar conmigo y cómo hacer una reserva.
 
         ✍️ Escribe 1, 2, 3 o 4 para continuar.
+        💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
     `
-    👋 ¡Hola! Soy ${assistantName}, el asistente virtual de ${restaurantName}.
+    👋 ¡Hola! Soy ${assistantName}, el asistente de ${restaurantName}.
 
     Puedo ayudarte con información del restaurante y con reservas.
 
@@ -132,10 +133,11 @@ export const buildWelcomeMessage = ({
     4️⃣ ¿Cómo funciona este sistema?
 
     ✍️ Escribe 1, 2, 3 o 4 para continuar.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    ¡Hola! 😊 Te habla ${assistantName}, asistente automático de ${restaurantName}.
+    ¡Hola! 😊 Te habla ${assistantName}, asistente de ${restaurantName}.
 
     Estoy aquí para ayudarte de forma rápida y clara.
 
@@ -147,6 +149,7 @@ export const buildWelcomeMessage = ({
     4️⃣ Explicación de cómo funciona el sistema
 
     ✍️ Escribe 1, 2, 3 o 4 para continuar.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
@@ -162,10 +165,11 @@ export const buildWelcomeMessage = ({
     4️⃣ Ayuda sobre cómo usar este sistema
 
     ✍️ Responde con 1, 2, 3 o 4.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    Hola 👋 Soy ${assistantName}, asistente digital de ${restaurantName}.
+    Hola 👋 Soy ${assistantName}, asistente de ${restaurantName}.
 
     Para ayudarte mejor, indícame qué deseas hacer:
 
@@ -175,6 +179,7 @@ export const buildWelcomeMessage = ({
     4️⃣ Saber cómo funciona este sistema
 
     ✍️ Escribe el número de la opción que prefieras.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
@@ -188,10 +193,11 @@ export const buildWelcomeMessage = ({
     4️⃣ Explicación del funcionamiento del sistema
 
     ✍️ Responde con 1, 2, 3 o 4.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    👋 Hola, soy ${assistantName}, asistente automático de ${restaurantName}.
+    👋 Hola, soy ${assistantName}, asistente de ${restaurantName}.
 
     Puedes interactuar conmigo eligiendo una de estas opciones:
 
@@ -201,10 +207,11 @@ export const buildWelcomeMessage = ({
     4️⃣ Conocer cómo funciona este sistema
 
     ✍️ Escribe el número correspondiente para continuar.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    Bienvenido/a 👋 Soy ${assistantName}, asistente virtual de ${restaurantName}.
+    Bienvenido/a 👋 Soy ${assistantName}, asistente de ${restaurantName}.
 
     Para continuar, selecciona una opción:
 
@@ -214,6 +221,7 @@ export const buildWelcomeMessage = ({
     4️⃣ Ayuda sobre el uso del sistema
 
     ✍️ Responde con 1, 2, 3 o 4.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
@@ -227,10 +235,11 @@ export const buildWelcomeMessage = ({
     4️⃣ Saber cómo funciona el sistema
 
     ✍️ Escribe solo el número.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    👋 Hola. Soy ${assistantName}, el asistente automático de ${restaurantName}.
+    👋 Hola. Soy ${assistantName}, el asistente de ${restaurantName}.
 
     Estoy aquí para ayudarte. Elige una opción para comenzar:
 
@@ -240,10 +249,11 @@ export const buildWelcomeMessage = ({
     4️⃣ Explicación del sistema
 
     ✍️ Responde con 1, 2, 3 o 4.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    ¡Hola! 😊 Soy ${assistantName}, asistente virtual de ${restaurantName}.
+    ¡Hola! 😊 Soy ${assistantName}, asistente de ${restaurantName}.
 
     Puedes elegir una de las siguientes opciones:
 
@@ -253,6 +263,7 @@ export const buildWelcomeMessage = ({
     4️⃣ Cómo funciona este sistema
 
     ✍️ Escribe el número de tu elección.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
@@ -266,10 +277,11 @@ export const buildWelcomeMessage = ({
     4️⃣ Ayuda sobre el funcionamiento del sistema
 
     ✍️ Responde con 1, 2, 3 o 4.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    👋 Bienvenido/a. Soy ${assistantName}, asistente automático de ${restaurantName}.
+    👋 Bienvenido/a. Soy ${assistantName}, asistente de ${restaurantName}.
 
     Elige una de las siguientes opciones para comenzar:
 
@@ -279,10 +291,11 @@ export const buildWelcomeMessage = ({
     4️⃣ Saber cómo funciona este sistema
 
     ✍️ Escribe el número correspondiente.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    Hola 😊 Soy ${assistantName}, asistente digital de ${restaurantName}.
+    Hola 😊 Soy ${assistantName}, asistente de ${restaurantName}.
 
     Indica qué deseas hacer:
 
@@ -292,6 +305,7 @@ export const buildWelcomeMessage = ({
     4️⃣ Explicación del sistema
 
     ✍️ Responde con 1, 2, 3 o 4.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
@@ -305,10 +319,11 @@ export const buildWelcomeMessage = ({
     4️⃣ Cómo funciona este sistema
 
     ✍️ Escribe el número para continuar.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
 
     `
-    ¡Hola! 😊 Soy ${assistantName}, el asistente automático de ${restaurantName}.
+    ¡Hola! 😊 Soy ${assistantName}, el asistente de ${restaurantName}.
 
     Estoy listo para ayudarte. Elige una opción:
 
@@ -318,6 +333,7 @@ export const buildWelcomeMessage = ({
     4️⃣ Ayuda sobre el sistema
 
     ✍️ Responde con 1, 2, 3 o 4.
+    💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim(),
   ];
 
@@ -343,6 +359,7 @@ export const HOW_SYSTEM_WORKS = `
   Puedo volver a explicarte estas reglas cuando lo necesites.
 
   ✍️ Escribe 1, 2, 3 o 4 para continuar.
+  💬 Si tienes otra pregunta o duda, escríbela directamente.
 `.trim();
 
 export function reservationStartMessage({

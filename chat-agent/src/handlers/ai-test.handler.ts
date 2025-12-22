@@ -7,6 +7,7 @@ import {
 } from "@/agents/prompts";
 import { infoReservationAgent } from "@/ai-agents/agent.config";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
+import { buildRestaurantInfo } from "@/ai-agents/tools/prompts";
 import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
 import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
@@ -31,17 +32,25 @@ export const aiAgentTestHandler: Handler = async (c) => {
   }
   const chatKey = `chat:${businessId}:${customerPhone}`;
   const chatHistory: ModelMessage[] = await chatHistoryService.get(chatKey);
+  const messages: ModelMessage[] = [
+    ...chatHistory, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
+    {
+      role: "user",
+      content: customerMessage,
+    },
+  ];
   const business = await businessService.getBusinessById(businessId);
   const customer = await businessService.getCostumerByPhone({
     "where[business][equals]": businessId,
     "where[phoneNumber][like]": customerPhone,
   });
-
   const isFirstMessage = chatHistory.length === 0;
+
   if (isFirstMessage) {
     const assistantResponse = buildWelcomeMessage({
       assistantName: AGENT_NAME,
       restaurantName: business.name,
+      userName: customer?.name,
     });
     await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
     return c.json({
@@ -53,6 +62,7 @@ export const aiAgentTestHandler: Handler = async (c) => {
     const assistantResponse = buildWelcomeMessage({
       assistantName: AGENT_NAME,
       restaurantName: business.name,
+      userName: customer?.name,
     });
     await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
     return c.json({
@@ -60,18 +70,19 @@ export const aiAgentTestHandler: Handler = async (c) => {
       text: assistantResponse,
     });
   }
-
-  // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
-  const messages: ModelMessage[] = [
-    ...chatHistory,
-    {
-      role: "user",
-      content: customerMessage,
-    },
-  ];
-
+  if (customerMessage == FlowChoices.GENERAL_INFO) {
+    const assistantResponse = buildRestaurantInfo(business);
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+    return c.json({
+      received: true,
+      text: assistantResponse,
+    });
+  }
   const customerIntent = await classifyCustomerIntent(messages);
-  if (customerIntent === CUSTOMER_INTENT.INFO_RESERVATION) {
+  if (
+    customerIntent === CUSTOMER_INTENT.INFO_RESERVATION ||
+    customerIntent === CUSTOMER_INTENT.UNKNOWN
+  ) {
     const result = await infoReservationAgent({
       messages,
       business,
