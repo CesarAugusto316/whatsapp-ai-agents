@@ -10,6 +10,82 @@ export enum CUSTOMER_INTENT {
   UNKNOWN = "UNKNOWN",
 }
 
+export enum ReserveStatus {
+  STARTED = "STARTED",
+  RE_STARTED = "RE_STARTED",
+  VALIDATED = "VALIDATED",
+  CONFIRMED = "CONFIRMED",
+}
+
+export interface ReserveProcess {
+  status: ReserveStatus;
+  type: "MAKE" | "UPDATE" | "CANCEL";
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  businessId: string;
+  startTime: string | Date;
+  day: string | Date;
+  numberOfPeople: number;
+}
+
+// Schema para fecha YYYY-MM-DD
+const dateSchema = z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+  message: "Fecha debe estar en formato YYYY-MM-DD",
+});
+
+// Schema para hora HH:mm (24h)
+const timeSchema = z
+  .string()
+  .refine((val) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(val), {
+    message: "Hora debe estar en formato HH:mm",
+  });
+
+type ReservationInput = {
+  name?: string;
+  day: string;
+  startTime: string;
+  numberOfPeople: number;
+};
+
+export function parseStringReservation(input: string): {
+  success: boolean;
+  data?: ReservationInput;
+  error?: string;
+} {
+  const lines = input
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length !== 4) {
+    return {
+      success: false,
+      error: `Formato inválido: se esperaban 4 líneas y llegaron ${lines.length}`,
+    };
+  }
+  const [name, day, startTime, peopleRaw] = lines;
+  const numberOfPeople = Number(peopleRaw);
+  if (Number.isNaN(numberOfPeople)) {
+    return {
+      success: false,
+      error: "El número de personas no es válido",
+    };
+  }
+  return {
+    error: "",
+    success: true,
+    data: { name, day, startTime, numberOfPeople },
+  };
+}
+
+export const reserveSchema = z.object({
+  name: z.string().min(2).max(20).optional(),
+  startTime: dateSchema,
+  day: timeSchema,
+  numberOfPeople: z.number("Debe ser un número").min(1).max(500),
+});
+
 export const customerIntentSchema = z.enum([
   CUSTOMER_INTENT.INFO_RESERVATION,
   CUSTOMER_INTENT.MAKE_RESERVATION,
@@ -80,6 +156,12 @@ export const CLASSIFIER_PROMPT = `
   - If the user asks about procedures, steps, or rules of interaction, prefer ${CUSTOMER_INTENT.HOW_SYSTEM_WORKS} over other intents.
 `.trim();
 
+export enum FlowActions {
+  CONFIRM = "CONFIRMAR",
+  RESTART = "REINGRESAR",
+  EXIT = "SALIR",
+}
+
 export enum FlowChoices {
   GENERAL_INFO = "1",
   MAKE_RESERVATION = "2",
@@ -92,6 +174,19 @@ type WelcomeMessageParams = {
   restaurantName: string;
   userName?: string;
 };
+
+export const EXIT_MESSAGE = `
+  Gracias por usar nuestro servicio 😊
+  Recuerda que puedes elegir una de estas opciones en cualquier momento:
+
+  1️⃣ Información general del restaurante
+  2️⃣ Hacer una reserva
+  3️⃣ Consultar o modificar una reserva existente
+  4️⃣ ¿Cómo funciona este sistema?
+
+  ✍️ Escribe 1, 2, 3 o 4 para continuar.
+  💬 Si tienes otra pregunta, escríbela directamente.
+`;
 
 export const buildWelcomeMessage = ({
   assistantName,
@@ -362,7 +457,11 @@ export const HOW_SYSTEM_WORKS = `
   💬 Si tienes otra pregunta o duda, escríbela directamente.
 `.trim();
 
-export function reservationStartMessage({ userName }: { userName?: string }) {
+export function buildReservationStartMessage({
+  userName,
+}: {
+  userName?: string;
+}) {
   return `
     Perfecto ✅
     Has elegido la **opción 2: Hacer una reserva**.
@@ -370,12 +469,14 @@ export function reservationStartMessage({ userName }: { userName?: string }) {
     Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
 
     1️⃣ Tu **nombre**
-    2️⃣ **Fecha y hora** de la reserva (formato: YYYY-MM-DD HH:mm)
-    3️⃣ **Número de personas**
+    2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+    3️⃣ **Hora** de la reserva (formato: HH:mm)
+    4️⃣ **Número de personas**
 
     📌 Ejemplo:
     Juan Pérez
-    2025-12-21 19:30
+    2025-12-21
+    19:30
     2
 
     ⚠️ Importante:
@@ -384,4 +485,51 @@ export function reservationStartMessage({ userName }: { userName?: string }) {
 
     Cuando envíes los datos, verificaré la disponibilidad.
 `.trim();
+}
+
+export function buildReservationReStartMessage({
+  userName,
+}: {
+  userName?: string;
+}) {
+  return `
+    Por favor, nuevamente envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+
+    1️⃣ Tu **nombre**
+    2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+    3️⃣ **Hora** de la reserva (formato: HH:mm)
+    4️⃣ **Número de personas**
+
+    📌 Ejemplo:
+    Juan Pérez
+    2025-12-21
+    19:30
+    2
+
+    ⚠️ Importante:
+    - Respeta el orden y el formato.
+    - Si algún dato no es válido, te pediré que lo corrijas.
+
+    Cuando envíes los datos, verificaré la disponibilidad.
+`.trim();
+}
+
+export function buildReservationPreFinalStep(data: ReservationInput) {
+  return `
+  Perfecto, por favor revisa los datos de tu reserva, antes de proseguir:
+
+  👤 Nombre: ${data?.name}
+  📅 Fecha: ${data.day}
+  ⏰ Hora: ${data.startTime}
+  👥 Número de personas: ${data.numberOfPeople}
+
+  Si todos los datos son correctos, escribe:
+  ✅ ${FlowActions.CONFIRM}
+
+  Si alguno de los datos es incorrecto y deseas volver a ingresarlos, escribe:
+  ✏️ ${FlowActions.RESTART}
+
+  💬 Si no deseas continuar con la reserva y quieres hacer otra pregunta, escribe:
+  🚪 ${FlowActions.EXIT}
+  `;
 }

@@ -11,7 +11,7 @@ type StoredMessage = {
   timestamp: number;
 };
 const MAX_MESSAGES = 20;
-const EXPIRATION_TIME = 60 * 60 * 3; // 3 horas
+const EXPIRATION_TIME = 60 * 60 * 2; // 2 horas
 
 class ChatHistoryService {
   /**
@@ -28,12 +28,9 @@ class ChatHistoryService {
       const msg: StoredMessage = JSON.parse(item);
       return {
         role: msg.role,
-        // role: msg.role == "assistant" ? "system" : "user",
         content: msg.content,
       };
     }) satisfies ModelMessage[];
-    // TODO: TRY WITH system INSTEAD OF assistant
-    // .filter((message) => message.role === "user") satisfies ModelMessage[]
   }
 
   /**
@@ -54,11 +51,11 @@ class ChatHistoryService {
         content: customerMessage,
         timestamp: Date.now(),
       } satisfies StoredMessage),
-      // JSON.stringify({
-      //   role: "assistant", // TODO: try with "system"
-      //   content: assistantResponse,
-      //   timestamp: Date.now(),
-      // } satisfies StoredMessage),
+      JSON.stringify({
+        role: "assistant",
+        content: assistantResponse,
+        timestamp: Date.now(),
+      } satisfies StoredMessage),
     );
     await redis.ltrim(chatKey, -MAX_MESSAGES, -1);
     await redis.expire(chatKey, EXPIRATION_TIME);
