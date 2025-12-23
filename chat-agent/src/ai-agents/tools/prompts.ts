@@ -57,8 +57,7 @@ export function buildRestaurantInfo(business: Business) {
   const { name, general, schedule } = business;
   const scheduleBlock = formatSchedule(schedule, general.timezone);
   return `
-    INFORMACION:
-    - Nombre: ${name}
+    Bienvenido a ${name}.
 
     Horario de atención:
       ${scheduleBlock}

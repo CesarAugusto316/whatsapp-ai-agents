@@ -362,32 +362,26 @@ export const HOW_SYSTEM_WORKS = `
   💬 Si tienes otra pregunta o duda, escríbela directamente.
 `.trim();
 
-export function reservationStartMessage({
-  assistantName,
-  restaurantName,
-}: {
-  assistantName: string;
-  restaurantName: string;
-}) {
+export function reservationStartMessage({ userName }: { userName?: string }) {
   return `
-Perfecto ✅
-Has elegido la **opción 2: Hacer una reserva**.
+    Perfecto ✅
+    Has elegido la **opción 2: Hacer una reserva**.
 
-Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+    Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
 
-1️⃣ Tu **nombre**
-2️⃣ **Fecha y hora** de la reserva (formato: YYYY-MM-DD HH:mm)
-3️⃣ **Número de personas**
+    1️⃣ Tu **nombre**
+    2️⃣ **Fecha y hora** de la reserva (formato: YYYY-MM-DD HH:mm)
+    3️⃣ **Número de personas**
 
-📌 Ejemplo:
-Juan Pérez
-2025-12-21 19:30
-2
+    📌 Ejemplo:
+    Juan Pérez
+    2025-12-21 19:30
+    2
 
-⚠️ Importante:
-- Respeta el orden y el formato.
-- Si algún dato no es válido, te pediré que lo corrijas.
+    ⚠️ Importante:
+    - Respeta el orden y el formato.
+    - Si algún dato no es válido, te pediré que lo corrijas.
 
-Cuando envíes los datos, verificaré la disponibilidad.
+    Cuando envíes los datos, verificaré la disponibilidad.
 `.trim();
 }
