@@ -174,7 +174,7 @@ export const Appointments: CollectionConfig = {
             en: "End Time",
             es: "Hora de fin",
           },
-          required: true,
+          required: false,
           defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
           access: {
             update: ({ req }) => {

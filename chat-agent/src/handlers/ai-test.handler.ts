@@ -1,15 +1,12 @@
 import {
   AGENT_NAME,
-  buildWelcomeMessage,
   FlowChoices,
-  buildReservationStartMessage,
   ReserveStatus,
   reserveSchema,
   parseStringReservation,
   FlowActions,
-  buildReservationPreFinalStep,
-  buildReservationReStartMessage,
-  EXIT_MESSAGE,
+  makeReservationMessages,
+  flowMessages,
 } from "@/agents/prompts";
 import { infoReservationAgent } from "@/ai-agents/agent.config";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
@@ -17,72 +14,28 @@ import { buildRestaurantInfo } from "@/ai-agents/tools/prompts";
 import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
 import reservationService from "@/services/reservation.service";
-import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
+import { Appointment, Customer } from "@/types/business/cms-types";
+import { Ctx } from "@/types/hono.types";
 import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
 import { safeParse } from "zod/mini";
 
-export const aiAgentTestHandler: Handler = async (c) => {
-  // const session = custumerMessage.session; // use CMS businessID on creation for WAHA
-  const custumerRecievedEvent = await c.req.json<WahaRecievedEvent>();
-  const businessId = custumerRecievedEvent.metadata?.businessId;
-  const customerMessage = (custumerRecievedEvent.payload.body || "").trim();
-  const customerPhone = custumerRecievedEvent.payload.from;
-  const business = await businessService.getBusinessById(businessId);
-  const customer = await businessService.getCostumerByPhone({
-    "where[business][equals]": businessId,
-    "where[phoneNumber][like]": customerPhone,
-  });
-  const chatKey = `chat:${businessId}:${customerPhone}`;
-  const reservationKey = `reservation:${businessId}:${customerPhone}`;
-  const currentReservation = await reservationService.get(reservationKey);
-  const chatHistory = await chatHistoryService.get(chatKey);
-  const messages: ModelMessage[] = [
-    ...chatHistory, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
-    {
-      role: "user",
-      content: customerMessage,
-    },
-  ];
-
-  if (!customerMessage) {
-    return c.json({ error: "Customer message not received" }, 400);
-  }
-  if (!businessId) {
-    return c.json({ error: "Business ID not received" }, 400);
-  }
-  if (!customerPhone) {
-    return c.json({ error: "Customer phone not received" }, 400);
-  }
+export const makeReservationHandler: Handler<Ctx> = async (c, next) => {
+  const business = c.get("business");
+  const customerMessage = c.get("customerMessage");
+  const customerPhone = c.get("customerPhone");
+  const customer = c.get("customer");
+  const chatKey = c.get("chatKey");
+  const reservationKey = c.get("reservationKey");
+  const currentReservation = c.get("currentReservation");
 
   if (!currentReservation && customerMessage == FlowChoices.MAKE_RESERVATION) {
     // START
-    const assistantResponse = buildReservationStartMessage({
+    const assistantResponse = makeReservationMessages.getStartMsg({
       userName: customer?.name,
     });
     await reservationService.save(reservationKey, {
-      businessId,
-      customerId: customer?.id,
-      customerName: customer?.name,
-      customerPhone,
-      status: ReserveStatus.STARTED,
-    });
-    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-    return c.json({
-      received: true,
-      text: assistantResponse,
-    });
-  }
-  if (
-    currentReservation?.status === ReserveStatus.VALIDATED &&
-    customerMessage.toUpperCase() === FlowActions.RESTART
-  ) {
-    // RESTART
-    const assistantResponse = buildReservationReStartMessage({
-      userName: customer?.name,
-    });
-    await reservationService.save(reservationKey, {
-      businessId,
+      businessId: business?.id,
       customerId: customer?.id,
       customerName: customer?.name,
       customerPhone,
@@ -98,7 +51,7 @@ export const aiAgentTestHandler: Handler = async (c) => {
   // TODO: implement a retry system,
   // if user fails to provide valid input > 2, send a message asking for help
   // otherwise the user will be a loop
-  if (currentReservation?.status === ReserveStatus.STARTED) {
+  if (currentReservation?.status === ReserveStatus.STARTED && customerMessage) {
     const parseInput = parseStringReservation(customerMessage);
     if (!parseInput.success) {
       return c.json({
@@ -120,37 +73,126 @@ export const aiAgentTestHandler: Handler = async (c) => {
       numberOfPeople: data.numberOfPeople,
       status: ReserveStatus.VALIDATED,
     });
-
+    const assistantResponse = makeReservationMessages.getConfirmationMsg(data);
+    // await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
     return c.json({
       received: true,
-      text: buildReservationPreFinalStep(data),
+      text: assistantResponse,
     });
   }
+
+  // FINAL STEP: 1. CONFIRMAR
   if (
     currentReservation?.status === ReserveStatus.VALIDATED &&
     customerMessage === FlowActions.CONFIRM
   ) {
+    const {
+      customerName,
+      day,
+      startTime,
+      numberOfPeople = 1,
+    } = currentReservation;
+    let newCustomer = customer;
+
+    if (!customer && customerName) {
+      newCustomer = (
+        (await (
+          await businessService.createCostumer({
+            business: business?.id,
+            phoneNumber: customerPhone,
+            name: customerName,
+          })
+        ).json()) as { doc: Customer }
+      ).doc;
+    }
+    // finally, we create the reservation
+    if (newCustomer?.id && business?.id) {
+      const res = await businessService.createAppointment({
+        business: business?.id,
+        customer: newCustomer.id,
+        startDateTime: startTime || "",
+        endDateTime: (startTime || "") + 60,
+        day: day || "",
+        status: "confirmed",
+      });
+      const reservation = ((await res.json()) as { doc: Appointment }).doc;
+
+      const assistantMsg = makeReservationMessages.getSuccessMsg(reservation, {
+        customerName: newCustomer.name,
+        numberOfPeople,
+        restaurantName: business?.name ?? "",
+      });
+      await chatHistoryService.save(chatKey, customerMessage, assistantMsg);
+      return c.json({
+        received: true,
+        text: assistantMsg,
+        reservation,
+      });
+    }
+    return c.json({ error: "Customer not created" });
   }
+
+  // FINAL STEP: 2. SALIR
   if (
     currentReservation?.status === ReserveStatus.VALIDATED &&
     customerMessage === FlowActions.EXIT
   ) {
     await reservationService.delete(reservationKey);
-    await chatHistoryService.save(chatKey, customerMessage, EXIT_MESSAGE);
-
+    const assistantMsg = flowMessages.getExitMsg();
+    await chatHistoryService.save(chatKey, customerMessage, assistantMsg);
     return c.json({
       received: true,
-      text: EXIT_MESSAGE,
+      text: assistantMsg,
     });
   }
 
+  // FINAL STEP: 3. REINGRESAR DATOS
+  if (
+    currentReservation?.status === ReserveStatus.VALIDATED &&
+    customerMessage.toUpperCase() === FlowActions.RESTART
+  ) {
+    // RESTART
+    const assistantResponse = makeReservationMessages.getReStartMsg({
+      userName: customer?.name,
+    });
+    await reservationService.save(reservationKey, {
+      businessId: business?.id,
+      customerId: customer?.id,
+      customerName: customer?.name,
+      customerPhone,
+      status: ReserveStatus.STARTED,
+    });
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+    return c.json({
+      received: true,
+      text: assistantResponse,
+    });
+  }
+
+  await next();
+};
+
+export const flowHandler: Handler<Ctx> = async (c) => {
+  const business = c.get("business");
+  const customerMessage = c.get("customerMessage");
+  const customerPhone = c.get("customerPhone");
+  const customer = c.get("customer");
+  const chatKey = c.get("chatKey");
+  const chatHistory = await chatHistoryService.get(chatKey);
+  const messages: ModelMessage[] = [
+    ...chatHistory, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
+    {
+      role: "user",
+      content: customerMessage,
+    },
+  ];
   const isFirstMessage = chatHistory.length === 0;
 
   if (isFirstMessage || customerMessage == FlowChoices.HOW_SYSTEM_WORKS) {
     // choices 0 & 4
-    const assistantResponse = buildWelcomeMessage({
+    const assistantResponse = flowMessages.getWelcomeMsg({
       assistantName: AGENT_NAME,
-      restaurantName: business.name,
+      restaurantName: business?.name ?? "",
       userName: customer?.name,
     });
     await chatHistoryService.save(chatKey, customerMessage, assistantResponse);

@@ -208,7 +208,7 @@ export interface Appointment {
   customer: string | Customer;
   day: string;
   startDateTime: string;
-  endDateTime: string;
+  endDateTime?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   notes?: string | null;
   updatedAt: string;

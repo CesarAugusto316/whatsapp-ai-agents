@@ -1,0 +1,19 @@
+import { Context } from "hono";
+import { Business, Customer } from "./business/cms-types";
+import { ReserveProcess } from "@/agents/prompts";
+
+export interface Ctx extends Context {
+  Variables: {
+    whatsappEvent: string;
+    businessId: string;
+    business: Business;
+    customerId: string;
+    customer?: Customer;
+    session: string;
+    customerPhone: string;
+    customerMessage: string;
+    chatKey: string;
+    reservationKey: string;
+    currentReservation: Partial<ReserveProcess> | null;
+  };
+}
