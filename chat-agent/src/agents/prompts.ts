@@ -31,7 +31,7 @@ export interface ReserveProcess {
 }
 
 // Schema para fecha YYYY-MM-DD
-const dateSchema = z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+const daySchema = z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
   error: "Fecha debe estar en formato YYYY-MM-DD",
 });
 
@@ -80,10 +80,39 @@ export function parseStringReservation(input: string): {
   };
 }
 
+type ApiDatePayload = {
+  day: string;
+  startDateTime: string;
+  endDateTime: string;
+};
+
+export function buildApiDates(
+  day: string,
+  startTime: string,
+  durationMinutes = 60,
+): ApiDatePayload {
+  // day: YYYY-MM-DD
+  const dayISO = new Date(`${day}T00:00:00.000Z`).toISOString();
+
+  const [hours, minutes] = startTime.split(":").map(Number);
+
+  // startDateTime usa el MISMO día
+  const start = new Date(`${day}T${startTime}:00.000Z`);
+
+  // endDateTime = start + duración
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+
+  return {
+    day: dayISO,
+    startDateTime: start.toISOString(),
+    endDateTime: end.toISOString(),
+  };
+}
+
 export const reserveSchema = z.object({
   name: z.string().min(2).max(20).optional(),
-  startTime: dateSchema,
-  day: timeSchema,
+  startTime: timeSchema,
+  day: daySchema,
   numberOfPeople: z.number("Debe ser un número").min(1).max(500),
 });
 

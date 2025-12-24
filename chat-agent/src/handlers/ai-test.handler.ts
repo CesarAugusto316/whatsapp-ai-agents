@@ -7,6 +7,7 @@ import {
   FlowActions,
   makeReservationMessages,
   flowMessages,
+  buildApiDates,
 } from "@/agents/prompts";
 import { infoReservationAgent } from "@/ai-agents/agent.config";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
@@ -84,15 +85,20 @@ export const makeReservationHandler: Handler<Ctx> = async (c, next) => {
   // FINAL STEP: 1. CONFIRMAR
   if (
     currentReservation?.status === ReserveStatus.VALIDATED &&
-    customerMessage === FlowActions.CONFIRM
+    customerMessage.toUpperCase() === FlowActions.CONFIRM
   ) {
     const {
       customerName,
-      day,
-      startTime,
+      day = "",
+      startTime = "",
       numberOfPeople = 1,
     } = currentReservation;
     let newCustomer = customer;
+    const {
+      day: reservationDay,
+      endDateTime,
+      startDateTime,
+    } = buildApiDates(day, startTime, business.schedule.averageTime * 60); // use business average reservation time
 
     if (!customer && customerName) {
       newCustomer = (
@@ -110,18 +116,23 @@ export const makeReservationHandler: Handler<Ctx> = async (c, next) => {
       const res = await businessService.createAppointment({
         business: business?.id,
         customer: newCustomer.id,
-        startDateTime: startTime || "",
-        endDateTime: (startTime || "") + 60,
-        day: day || "",
+        startDateTime,
+        endDateTime,
+        day: reservationDay,
         status: "confirmed",
+        // ADD NUMBER OF PEOPLE
       });
-      const reservation = ((await res.json()) as { doc: Appointment }).doc;
+      const reservation = (await res.json()) as { doc: Appointment };
+      console.log({ reservation, customer, business });
 
-      const assistantMsg = makeReservationMessages.getSuccessMsg(reservation, {
-        customerName: newCustomer.name,
-        numberOfPeople,
-        restaurantName: business?.name ?? "",
-      });
+      const assistantMsg = makeReservationMessages.getSuccessMsg(
+        reservation?.doc,
+        {
+          customerName: newCustomer.name,
+          numberOfPeople,
+          restaurantName: business?.name ?? "",
+        },
+      );
       await chatHistoryService.save(chatKey, customerMessage, assistantMsg);
       return c.json({
         received: true,
@@ -135,7 +146,7 @@ export const makeReservationHandler: Handler<Ctx> = async (c, next) => {
   // FINAL STEP: 2. SALIR
   if (
     currentReservation?.status === ReserveStatus.VALIDATED &&
-    customerMessage === FlowActions.EXIT
+    customerMessage.toUpperCase() === FlowActions.EXIT
   ) {
     await reservationService.delete(reservationKey);
     const assistantMsg = flowMessages.getExitMsg();
@@ -166,6 +177,18 @@ export const makeReservationHandler: Handler<Ctx> = async (c, next) => {
     return c.json({
       received: true,
       text: assistantResponse,
+    });
+  }
+
+  if (
+    currentReservation?.status === ReserveStatus.VALIDATED &&
+    customerMessage
+  ) {
+    const assistanceMsg = `Tienes una reserva disponible. Escribe: ${FlowActions.CONFIRM} para confirmar reserva, ${FlowActions.RESTART} para cambiar algun dato, ó ${FlowActions.EXIT} para salir`;
+    await chatHistoryService.save(chatKey, customerMessage, assistanceMsg);
+    return c.json({
+      received: true,
+      text: assistanceMsg,
     });
   }
 
