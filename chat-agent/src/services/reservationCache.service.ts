@@ -1,9 +1,9 @@
-import { ReserveProcess } from "@/ai-agents/schemas";
+import { ReserveProcess } from "@/ai-agents/agent.types";
 import { redis } from "@/storage/storage.config";
 
 const EXPIRATION_TIME = 60 * 60 * 1; // 1 hora
 
-class ReservationService {
+class ReservationCacheService {
   /**
    * @description Get reservation data by key
    * @param key reservation:businesID:customerPhone
@@ -30,4 +30,4 @@ class ReservationService {
   }
 }
 
-export default new ReservationService();
+export default new ReservationCacheService();

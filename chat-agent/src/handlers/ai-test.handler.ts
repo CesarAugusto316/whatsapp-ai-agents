@@ -1,25 +1,28 @@
-import {
-  AGENT_NAME,
-  FlowChoices,
-  ReserveStatus,
-  reserveSchema,
-  parseStringReservation,
-  FlowActions,
-  makeReservationMessages,
-  flowMessages,
-  buildApiDates,
-} from "@/ai-agents/schemas";
+import { reserveSchema } from "@/ai-agents/schemas";
 import { infoReservationAgent } from "@/ai-agents/agent.config";
-import { renderAssistantText } from "@/ai-agents/tools/helpers";
-import { buildRestaurantInfo } from "@/ai-agents/tools/prompts";
+import {
+  buildApiDates,
+  parseStringReservation,
+  renderAssistantText,
+} from "@/ai-agents/tools/helpers";
+import {
+  buildRestaurantInfo,
+  flowMessages,
+  makeReservationMessages,
+} from "@/ai-agents/tools/prompts";
 import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
-import reservationService from "@/services/reservation.service";
+import reservationService from "@/services/reservationCache.service";
 import { Appointment, Customer } from "@/types/business/cms-types";
 import { CTX } from "@/types/hono.types";
 import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
 import { safeParse } from "zod/mini";
+import {
+  FlowActions,
+  FlowChoices,
+  ReserveStatus,
+} from "@/ai-agents/agent.types";
 
 export const makeReservationHandler: Handler<CTX> = async (c, next) => {
   const business = c.get("business");
@@ -214,7 +217,6 @@ export const flowHandler: Handler<CTX> = async (c) => {
   if (isFirstMessage || customerMessage == FlowChoices.HOW_SYSTEM_WORKS) {
     // choices 0 & 4
     const assistantResponse = flowMessages.getWelcomeMsg({
-      assistantName: AGENT_NAME,
       restaurantName: business?.name ?? "",
       userName: customer?.name,
     });

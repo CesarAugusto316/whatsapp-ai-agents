@@ -8,7 +8,7 @@ import {
 import { WahaRecievedEvent } from "./types/whatsapp/received-event";
 import businessService from "./services/business.service";
 import { CTX } from "./types/hono.types";
-import reservationService from "./services/reservation.service";
+import reservationService from "./services/reservationCache.service";
 
 // AI SDK PROJECT EXAMPLE
 // https://github.com/gopinav/Next.js-AI-Tutorials/tree/main/src/app/api
@@ -22,7 +22,7 @@ app.use(
   }),
 );
 
-app.post("/*", async (c, next) => {
+app.use("/*", async (c, next) => {
   const custumerRecievedEvent = await c.req.json<WahaRecievedEvent>();
   const businessId = custumerRecievedEvent.metadata?.businessId;
   const session = custumerRecievedEvent.session;

@@ -1,5 +1,5 @@
 import { GenerateTextResult, ToolSet } from "ai";
-import { WEEK_DAYS, WeekDay } from "../agent.types";
+import { ReservationInput, WEEK_DAYS, WeekDay } from "../agent.types";
 
 /**
  *
@@ -69,4 +69,64 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
 
     return `- ${capitalize(day)}:  ${ranges}`;
   }).join("\n");
+}
+
+export function parseStringReservation(input: string): {
+  success: boolean;
+  data?: ReservationInput;
+  error?: string;
+} {
+  const lines = input
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length !== 4) {
+    return {
+      success: false,
+      error: `Formato inválido: se esperaban 4 líneas y llegaron ${lines.length}`,
+    };
+  }
+  const [name, day, startTime, peopleRaw] = lines;
+  const numberOfPeople = Number(peopleRaw);
+  if (Number.isNaN(numberOfPeople)) {
+    return {
+      success: false,
+      error: "El número de personas no es válido",
+    };
+  }
+  return {
+    error: "",
+    success: true,
+    data: { name, day, startTime, numberOfPeople },
+  };
+}
+
+type ApiDatePayload = {
+  day: string;
+  startDateTime: string;
+  endDateTime: string;
+};
+
+export function buildApiDates(
+  day: string,
+  startTime: string,
+  durationMinutes = 60,
+): ApiDatePayload {
+  // day: YYYY-MM-DD
+  const dayISO = new Date(`${day}T00:00:00.000Z`).toISOString();
+
+  const [hours, minutes] = startTime.split(":").map(Number);
+
+  // startDateTime usa el MISMO día
+  const start = new Date(`${day}T${startTime}:00.000Z`);
+
+  // endDateTime = start + duración
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+
+  return {
+    day: dayISO,
+    startDateTime: start.toISOString(),
+    endDateTime: end.toISOString(),
+  };
 }

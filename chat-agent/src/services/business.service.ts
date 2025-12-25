@@ -11,11 +11,11 @@ const apiUrl = env.CMS_API;
 const slug = env.CMS_SLUG || "third-party-access";
 const apiKey = env.CMS_API_KEY;
 
+// more info: https://payloadcms.com/docs/queries/sort
 export interface BusinessQueryParams {
   limit?: number;
   page?: number;
   depth?: number;
-  // more info: https://payloadcms.com/docs/queries/sort
   sort?: "-createdAt"; // -createdAt
   "where[business][equals]"?: string; // businessId,
   "where[customer][equals]"?: string; // businessId,
