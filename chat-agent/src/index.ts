@@ -7,12 +7,12 @@ import {
 } from "./handlers/ai-test.handler";
 import { WahaRecievedEvent } from "./types/whatsapp/received-event";
 import businessService from "./services/business.service";
-import { Ctx } from "./types/hono.types";
+import { CTX } from "./types/hono.types";
 import reservationService from "./services/reservation.service";
 
 // AI SDK PROJECT EXAMPLE
 // https://github.com/gopinav/Next.js-AI-Tutorials/tree/main/src/app/api
-const app = new Hono<Ctx>();
+const app = new Hono<CTX>();
 
 app.use(
   cors({

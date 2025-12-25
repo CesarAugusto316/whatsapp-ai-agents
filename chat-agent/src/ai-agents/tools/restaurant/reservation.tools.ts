@@ -2,8 +2,8 @@ import businessService from "@/services/business.service";
 import { tool } from "ai";
 import z from "zod";
 import { parseInput } from "../helpers";
-import { Appointment, Customer } from "@/types/business/cms-types";
-import { dateTime, optionalDateTime } from "./schemas";
+import { Appointment } from "@/types/business/cms-types";
+import { dateTime } from "./schemas";
 
 export const TOOLS_NAME = {
   isScheduleAvailable: "isScheduleAvailable",
@@ -75,116 +75,3 @@ export const getReservationStatusById = () =>
       return reservation.json();
     },
   });
-
-export const getReservationStatusByDateAndTime = (
-  restaurantId: string,
-  customerPhoneNumber: string,
-) =>
-  tool({
-    name: TOOLS_NAME.getReservationStatusByDateAndTime,
-    description: DESCRIPTIONS.getReservationStatusByDateAndTime,
-    inputSchema: z.preprocess(
-      parseInput,
-      z.object({
-        ...optionalDateTime,
-      }),
-    ),
-    execute: async ({ day, time }) => {
-      const customer = await businessService.getCostumerByPhone({
-        "where[business][equals]": restaurantId,
-        "where[phoneNumber][like]": customerPhoneNumber,
-        depth: 0,
-        limit: 1,
-      });
-      if (!customer) {
-        // throw new Error("Customer not found");
-        return { error: "Customer not found" };
-      }
-      const reservation =
-        await businessService.getAppointmentByCustomerIdAndDate({
-          "where[business][equals]": restaurantId,
-          "where[customer][equals]": customer?.id,
-          "where[day][equals]": day, // OPTIONAL
-          "where[startDateTime][equals]": time, // OPTIONAL
-          sort: "-createdAt",
-          limit: 1,
-          depth: 0,
-        });
-      const res = (await reservation.json()) as { docs: Appointment[] };
-      // console.log({ res });
-      return res.docs.at(0);
-    },
-  });
-
-export const makeReservation = (
-  restaurantId: string,
-  customerPhoneNumber: string,
-) =>
-  tool({
-    // name: TOOLS_NAME.makeReservation,
-    description:
-      "Make a reservation for a customer by providing customerName, customerPhoneNumber, day and time",
-    inputSchema: z.preprocess(
-      parseInput,
-      z.object({
-        customerName: z.string().min(3).max(18).describe("Customer's name"),
-        ...dateTime,
-      }),
-    ),
-    execute: async ({ day, time, customerName }) => {
-      let customer!: Customer | undefined;
-      if (customerPhoneNumber) {
-        customer = await businessService.getCostumerByPhone({
-          "where[business][equals]": restaurantId,
-          "where[phoneNumber][like]": customerPhoneNumber,
-          depth: 0,
-          limit: 1,
-        });
-      }
-      if (!customer && !customerName) {
-        return { error: "Name is required" };
-      }
-      // If the user is new, create a new customer
-      if (!customer && customerName) {
-        customer = (
-          (await (
-            await businessService.createCostumer({
-              business: restaurantId,
-              phoneNumber: customerPhoneNumber,
-              name: customerName,
-            })
-          ).json()) as { doc: Customer }
-        ).doc;
-      }
-      // if customer exists and name is different, update customer
-      if (customer && customerName !== customer.name) {
-        customer = (
-          (await (
-            await businessService.updateCostumer(customer.id, {
-              business: restaurantId,
-              phoneNumber: customerPhoneNumber,
-              name: customerName,
-            })
-          ).json()) as { doc: Customer }
-        ).doc;
-      }
-      // FINALLY, CREATE RESERVATION
-      if (customer?.id && restaurantId) {
-        const reservation = await businessService.createAppointment({
-          business: restaurantId,
-          customer: customer.id,
-          endDateTime: time + 60,
-          startDateTime: time,
-          day,
-          status: "confirmed",
-        });
-        return ((await reservation.json()) as { doc: Appointment }).doc;
-      }
-      if (!customer) {
-        return { error: "Customer not found" };
-      }
-      return null;
-    },
-  });
-
-//  TODO: updateResevertion TOOL

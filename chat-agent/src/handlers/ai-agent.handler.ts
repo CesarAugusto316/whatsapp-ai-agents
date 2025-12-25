@@ -1,8 +1,9 @@
 import whatsappService from "@/services/whatsapp.service";
+import { CTX } from "@/types/hono.types";
 import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
 import { Handler } from "hono/types";
 
-export const aiAgentHandler: Handler = async (c) => {
+export const aiAgentHandler: Handler<CTX> = async (c) => {
   // const businessId = c.req.param("ownerId");
   const custumerMessage = await c.req.json<WahaRecievedEvent>();
   const toPhoneNumber = custumerMessage.payload.from;

@@ -1,8 +1,8 @@
 import { Context } from "hono";
 import { Business, Customer } from "./business/cms-types";
-import { ReserveProcess } from "@/agents/prompts";
+import { ReserveProcess } from "@/ai-agents/schemas";
 
-export interface Ctx extends Context {
+export interface CTX extends Context {
   Variables: {
     whatsappEvent: string;
     businessId: string;

@@ -1,4 +1,4 @@
-import { ReserveProcess } from "@/agents/prompts";
+import { ReserveProcess } from "@/ai-agents/schemas";
 import { redis } from "@/storage/storage.config";
 
 const EXPIRATION_TIME = 60 * 60 * 1; // 1 hora

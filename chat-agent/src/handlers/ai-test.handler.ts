@@ -8,7 +8,7 @@ import {
   makeReservationMessages,
   flowMessages,
   buildApiDates,
-} from "@/agents/prompts";
+} from "@/ai-agents/schemas";
 import { infoReservationAgent } from "@/ai-agents/agent.config";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import { buildRestaurantInfo } from "@/ai-agents/tools/prompts";
@@ -16,12 +16,12 @@ import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
 import reservationService from "@/services/reservation.service";
 import { Appointment, Customer } from "@/types/business/cms-types";
-import { Ctx } from "@/types/hono.types";
+import { CTX } from "@/types/hono.types";
 import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
 import { safeParse } from "zod/mini";
 
-export const makeReservationHandler: Handler<Ctx> = async (c, next) => {
+export const makeReservationHandler: Handler<CTX> = async (c, next) => {
   const business = c.get("business");
   const customerMessage = c.get("customerMessage");
   const customerPhone = c.get("customerPhone");
@@ -195,7 +195,7 @@ export const makeReservationHandler: Handler<Ctx> = async (c, next) => {
   await next();
 };
 
-export const flowHandler: Handler<Ctx> = async (c) => {
+export const flowHandler: Handler<CTX> = async (c) => {
   const business = c.get("business");
   const customerMessage = c.get("customerMessage");
   const customerPhone = c.get("customerPhone");

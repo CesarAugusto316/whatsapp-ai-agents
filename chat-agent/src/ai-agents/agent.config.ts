@@ -30,66 +30,12 @@ const config = {
   maxOutputTokens: 2048, // 512, 1024
 };
 
-// /**
-//  *
-//  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
-//  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
-//  */
-// function updateReservationsAgent(args: AgentArgs) {
-//   return new Agent({
-//     ...config,
-//     tools: {
-//       // isScheduleAvailable,
-//       // updateReservation,
-//     },
-//     stopWhen: [
-//       stepCountIs(10), // Maximum 10 steps
-//       // hasToolCall("makeReservation"), // Stop after calling 'someTool'
-//     ],
-//     prepareStep: async ({ stepNumber, steps }) => {
-//       console.log({ stepNumber, steps });
-//       return {};
-//     },
-//     onStepFinish: async ({ toolResults }) => {
-//       console.log({ toolResults });
-//     },
-//   });
-// }
-
-// /**
-//  *
-//  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
-//  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
-//  */
-// function makeReservationsAgent({
-//   messages,
-//   business,
-//   customerPhone,
-// }: AgentArgs) {
-//   return generateText({
-//     ...config,
-//     system: RESERVATION_SYSTEM_PROMPT.CREATE,
-//     prompt: messages,
-//     tools: {
-//       makeReservation: makeReservation(business.id, customerPhone),
-//     },
-//     stopWhen: [
-//       stepCountIs(5), // Maximum 10 steps
-//       hasToolCall("makeReservation"), // Stop after calling 'someTool'
-//     ],
-//   });
-// }
-
 /**
  *
  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
  */
-export function infoReservationAgent({
-  messages,
-  business,
-  customerPhone,
-}: AgentArgs) {
+export function infoReservationAgent({ messages, business }: AgentArgs) {
   return generateText({
     ...config,
     temperature: 0.2,
@@ -104,3 +50,35 @@ export function infoReservationAgent({
     ],
   });
 }
+
+// /**
+//  *
+//  * @description Classifies the customer intent based on the conversation history.
+//  * @param messages
+//  * @returns
+//  */
+// export async function classifyCustomerIntent(
+//   messages: ModelMessage[],
+// ): Promise<CUSTOMER_INTENT> {
+//   const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
+//   const headers = {
+//     Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
+//   };
+//   const response = (await (
+//     await fetch(url, {
+//       method: "POST",
+//       headers,
+//       body: JSON.stringify({
+//         model,
+//         messages: [{ role: "system", content: CLASSIFIER_PROMPT }, ...messages],
+//       }),
+//     })
+//   ).json()) as { choices: { message: { content: string } }[] };
+
+//   const raw = response?.choices?.at(0)?.message?.content?.trim() ?? "";
+//   const { success, data } = safeParse(customerIntentSchema, raw);
+//   if (success) return data;
+//   else {
+//     return CUSTOMER_INTENT.UNKNOWN;
+//   }
+// }
