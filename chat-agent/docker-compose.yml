@@ -1,4 +1,13 @@
 services:
+  # app:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env
   redis:
     image: redis:alpine
     container_name: redis-agent
@@ -6,13 +15,6 @@ services:
     ports:
       - "6379:6379"
     command: redis-server
-    # volumes:
-    #   - redis_data:/data
-    # command:
-    #   redis-server
-    # --save 60 1          # Guarda cada 60s si hay 1+ cambio[citation:2]
-    # --appendonly yes    # Habilita persistencia opcional[citation:9]
-    # --loglevel warning
     healthcheck: # Verifica que Redis esté listo[citation:1]
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
