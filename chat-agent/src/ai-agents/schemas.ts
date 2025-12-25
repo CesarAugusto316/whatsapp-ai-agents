@@ -1,0 +1,523 @@
+import { Appointment } from "@/types/business/cms-types";
+import { z } from "zod";
+
+export const AGENT_NAME = "Lua";
+
+export enum ReserveStatus {
+  STARTED = "STARTED",
+  RE_STARTED = "RE_STARTED",
+  VALIDATED = "VALIDATED",
+  CONFIRMED = "CONFIRMED",
+}
+
+export interface ReserveProcess {
+  status: ReserveStatus;
+  type: "MAKE" | "UPDATE" | "CANCEL";
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  businessId: string;
+  startTime: string;
+  day: string;
+  numberOfPeople: number;
+}
+
+// Schema para fecha YYYY-MM-DD
+const daySchema = z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+  error: "Fecha debe estar en formato YYYY-MM-DD",
+});
+
+// Schema para hora HH:mm (24h)
+const timeSchema = z
+  .string()
+  .refine((val) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(val), {
+    error: "Hora debe estar en formato HH:mm",
+  });
+
+type ReservationInput = {
+  name?: string;
+  day: string;
+  startTime: string;
+  numberOfPeople: number;
+};
+
+export function parseStringReservation(input: string): {
+  success: boolean;
+  data?: ReservationInput;
+  error?: string;
+} {
+  const lines = input
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length !== 4) {
+    return {
+      success: false,
+      error: `Formato inválido: se esperaban 4 líneas y llegaron ${lines.length}`,
+    };
+  }
+  const [name, day, startTime, peopleRaw] = lines;
+  const numberOfPeople = Number(peopleRaw);
+  if (Number.isNaN(numberOfPeople)) {
+    return {
+      success: false,
+      error: "El número de personas no es válido",
+    };
+  }
+  return {
+    error: "",
+    success: true,
+    data: { name, day, startTime, numberOfPeople },
+  };
+}
+
+type ApiDatePayload = {
+  day: string;
+  startDateTime: string;
+  endDateTime: string;
+};
+
+export function buildApiDates(
+  day: string,
+  startTime: string,
+  durationMinutes = 60,
+): ApiDatePayload {
+  // day: YYYY-MM-DD
+  const dayISO = new Date(`${day}T00:00:00.000Z`).toISOString();
+
+  const [hours, minutes] = startTime.split(":").map(Number);
+
+  // startDateTime usa el MISMO día
+  const start = new Date(`${day}T${startTime}:00.000Z`);
+
+  // endDateTime = start + duración
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+
+  return {
+    day: dayISO,
+    startDateTime: start.toISOString(),
+    endDateTime: end.toISOString(),
+  };
+}
+
+export const reserveSchema = z.object({
+  name: z.string().min(2).max(20).optional(),
+  startTime: timeSchema,
+  day: daySchema,
+  numberOfPeople: z.number("Debe ser un número").min(1).max(500),
+});
+
+export enum FlowActions {
+  CONFIRM = "CONFIRMAR",
+  RESTART = "REINGRESAR",
+  EXIT = "SALIR",
+}
+
+export enum FlowChoices {
+  GENERAL_INFO = "1",
+  MAKE_RESERVATION = "2",
+  UPDATE_RESERVATION = "3",
+  HOW_SYSTEM_WORKS = "4",
+}
+
+type WelcomeMessageParams = {
+  assistantName: string;
+  restaurantName: string;
+  userName?: string;
+};
+
+export const flowMessages = {
+  howSystemWorksMsg() {
+    return `
+      Así es como funciona este sistema:
+
+      Puedes interactuar conmigo escribiendo una de las siguientes opciones:
+
+      1️⃣ Información general del restaurante
+      Horarios, ubicación, menú, disponibilidad y preguntas generales.
+
+      2️⃣ Hacer una reserva
+      Te pediré paso a paso la información necesaria:
+      fecha, hora y número de personas.
+
+      3️⃣ Consultar o modificar una reserva existente
+      Puedes revisar el estado de tu reserva, cambiarla o cancelarla.
+
+      4️⃣ ¿Cómo funciona este sistema?
+      Puedo volver a explicarte estas reglas cuando lo necesites.
+
+      ✍️ Escribe 1, 2, 3 o 4 para continuar.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+    `.trim();
+  },
+
+  getExitMsg() {
+    return `
+      Gracias por usar nuestro servicio 😊
+      Recuerda que puedes elegir una de estas opciones en cualquier momento:
+
+      1️⃣ Información general del restaurante
+      2️⃣ Hacer una reserva
+      3️⃣ Consultar o modificar una reserva existente
+      4️⃣ ¿Cómo funciona este sistema?
+
+      ✍️ Escribe 1, 2, 3 o 4 para continuar.
+      💬 Si tienes otra pregunta, escríbela directamente.
+    `;
+  },
+
+  getWelcomeMsg({
+    assistantName,
+    restaurantName,
+  }: WelcomeMessageParams): string {
+    const GREETINGS = [
+      `
+          👋 ¡Hola! Soy ${assistantName}, el asistente de ${restaurantName}.
+
+          Estoy aquí para ayudarte con información y reservas de forma rápida y sencilla.
+
+          Para continuar, por favor elige UNA de las siguientes opciones escribiendo el número correspondiente:
+
+          1️⃣ Información general del restaurante
+          Horarios, ubicación, menú, disponibilidad y preguntas generales.
+
+          2️⃣ Hacer una reserva
+          Reservar una mesa indicando fecha, hora y número de personas.
+
+          3️⃣ Consultar o modificar una reserva existente
+          Ver el estado de tu reserva, cambiarla o cancelarla.
+
+          4️⃣ ¿Cómo funciona este sistema?
+          Te explico paso a paso cómo interactuar conmigo y cómo hacer una reserva.
+
+          ✍️ Escribe 1, 2, 3 o 4 para continuar.
+          💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+      `
+      👋 ¡Hola! Soy ${assistantName}, el asistente de ${restaurantName}.
+
+      Puedo ayudarte con información del restaurante y con reservas.
+
+      Para comenzar, elige una opción escribiendo solo el número:
+
+      1️⃣ Información general del restaurante
+      2️⃣ Hacer una reserva
+      3️⃣ Consultar o modificar una reserva existente
+      4️⃣ ¿Cómo funciona este sistema?
+
+      ✍️ Escribe 1, 2, 3 o 4 para continuar.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      ¡Hola! 😊 Te habla ${assistantName}, asistente de ${restaurantName}.
+
+      Estoy aquí para ayudarte de forma rápida y clara.
+
+      Selecciona una de las siguientes opciones escribiendo el número correspondiente:
+
+      1️⃣ Información general (horarios, menú, ubicación)
+      2️⃣ Reservar una mesa
+      3️⃣ Ver, modificar o cancelar una reserva
+      4️⃣ Explicación de cómo funciona el sistema
+
+      ✍️ Escribe 1, 2, 3 o 4 para continuar.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      👋 Bienvenido/a. Soy ${assistantName}, asistente de ${restaurantName}.
+
+      Puedo ayudarte con información o con reservas.
+
+      Por favor, elige una opción:
+
+      1️⃣ Información general del restaurante
+      2️⃣ Crear una nueva reserva
+      3️⃣ Consultar o cambiar una reserva existente
+      4️⃣ Ayuda sobre cómo usar este sistema
+
+      ✍️ Responde con 1, 2, 3 o 4.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      Hola 👋 Soy ${assistantName}, asistente de ${restaurantName}.
+
+      Para ayudarte mejor, indícame qué deseas hacer:
+
+      1️⃣ Consultar información del restaurante
+      2️⃣ Hacer una reserva
+      3️⃣ Revisar o modificar una reserva
+      4️⃣ Saber cómo funciona este sistema
+
+      ✍️ Escribe el número de la opción que prefieras.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      ¡Hola! Te saluda ${assistantName} desde ${restaurantName} 😊
+
+      Estoy aquí para ayudarte. Elige una de estas opciones:
+
+      1️⃣ Información general
+      2️⃣ Reservar una mesa
+      3️⃣ Consultar, modificar o cancelar una reserva
+      4️⃣ Explicación del funcionamiento del sistema
+
+      ✍️ Responde con 1, 2, 3 o 4.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      👋 Hola, soy ${assistantName}, asistente de ${restaurantName}.
+
+      Puedes interactuar conmigo eligiendo una de estas opciones:
+
+      1️⃣ Información sobre el restaurante
+      2️⃣ Iniciar una reserva
+      3️⃣ Consultar o cambiar una reserva existente
+      4️⃣ Conocer cómo funciona este sistema
+
+      ✍️ Escribe el número correspondiente para continuar.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      Bienvenido/a 👋 Soy ${assistantName}, asistente de ${restaurantName}.
+
+      Para continuar, selecciona una opción:
+
+      1️⃣ Información general del restaurante
+      2️⃣ Hacer una reserva
+      3️⃣ Ver o modificar una reserva
+      4️⃣ Ayuda sobre el uso del sistema
+
+      ✍️ Responde con 1, 2, 3 o 4.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      Hola 😊 Te atiende ${assistantName}, asistente de ${restaurantName}.
+
+      Indica qué deseas hacer escribiendo una de estas opciones:
+
+      1️⃣ Información del restaurante
+      2️⃣ Reservar una mesa
+      3️⃣ Consultar o modificar una reserva
+      4️⃣ Saber cómo funciona el sistema
+
+      ✍️ Escribe solo el número.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      👋 Hola. Soy ${assistantName}, el asistente de ${restaurantName}.
+
+      Estoy aquí para ayudarte. Elige una opción para comenzar:
+
+      1️⃣ Información general
+      2️⃣ Nueva reserva
+      3️⃣ Consultar o cambiar una reserva
+      4️⃣ Explicación del sistema
+
+      ✍️ Responde con 1, 2, 3 o 4.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      ¡Hola! 😊 Soy ${assistantName}, asistente de ${restaurantName}.
+
+      Puedes elegir una de las siguientes opciones:
+
+      1️⃣ Información del restaurante
+      2️⃣ Hacer una reserva
+      3️⃣ Revisar o modificar una reserva existente
+      4️⃣ Cómo funciona este sistema
+
+      ✍️ Escribe el número de tu elección.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      Hola 👋 Te saluda ${assistantName} desde ${restaurantName}.
+
+      Para continuar, selecciona una opción:
+
+      1️⃣ Información general
+      2️⃣ Reservar una mesa
+      3️⃣ Consultar o modificar una reserva
+      4️⃣ Ayuda sobre el funcionamiento del sistema
+
+      ✍️ Responde con 1, 2, 3 o 4.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      👋 Bienvenido/a. Soy ${assistantName}, asistente de ${restaurantName}.
+
+      Elige una de las siguientes opciones para comenzar:
+
+      1️⃣ Información del restaurante
+      2️⃣ Crear una reserva
+      3️⃣ Consultar o cambiar una reserva
+      4️⃣ Saber cómo funciona este sistema
+
+      ✍️ Escribe el número correspondiente.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      Hola 😊 Soy ${assistantName}, asistente de ${restaurantName}.
+
+      Indica qué deseas hacer:
+
+      1️⃣ Información general del restaurante
+      2️⃣ Hacer una reserva
+      3️⃣ Consultar o modificar una reserva existente
+      4️⃣ Explicación del sistema
+
+      ✍️ Responde con 1, 2, 3 o 4.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      👋 Hola. Te atiende ${assistantName}, asistente de ${restaurantName}.
+
+      Para ayudarte mejor, selecciona una opción:
+
+      1️⃣ Información general
+      2️⃣ Reservar una mesa
+      3️⃣ Consultar, modificar o cancelar una reserva
+      4️⃣ Cómo funciona este sistema
+
+      ✍️ Escribe el número para continuar.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+
+      `
+      ¡Hola! 😊 Soy ${assistantName}, el asistente de ${restaurantName}.
+
+      Estoy listo para ayudarte. Elige una opción:
+
+      1️⃣ Información del restaurante
+      2️⃣ Hacer una reserva
+      3️⃣ Consultar o modificar una reserva
+      4️⃣ Ayuda sobre el sistema
+
+      ✍️ Responde con 1, 2, 3 o 4.
+      💬 Si tienes otra pregunta o duda, escríbela directamente.
+      `.trim(),
+    ];
+    return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+  },
+};
+
+export const makeReservationMessages = {
+  getStartMsg({ userName }: { userName?: string }) {
+    return `
+      Perfecto ✅
+      Has elegido la **opción 2: Hacer una reserva**.
+
+      Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+
+      1️⃣ Tu **nombre**
+      2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+      3️⃣ **Hora** de la reserva (formato: HH:mm)
+      4️⃣ **Número de personas**
+
+      📌 Ejemplo:
+      Juan Pérez
+      2025-12-21
+      19:30
+      2
+
+      ⚠️ Importante:
+      - Respeta el orden y el formato.
+      - Si algún dato no es válido, te pediré que lo corrijas.
+
+      Cuando envíes los datos, verificaré la disponibilidad.
+  `.trim();
+  },
+
+  getReStartMsg({ userName }: { userName?: string }) {
+    return `
+      Por favor, nuevamente envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+
+      1️⃣ Tu **nombre**
+      2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+      3️⃣ **Hora** de la reserva (formato: HH:mm)
+      4️⃣ **Número de personas**
+
+      📌 Ejemplo:
+      Juan Pérez
+      2025-12-21
+      19:30
+      2
+
+      ⚠️ Importante:
+      - Respeta el orden y el formato.
+      - Si algún dato no es válido, te pediré que lo corrijas.
+
+      Cuando envíes los datos, verificaré la disponibilidad.
+  `.trim();
+  },
+
+  getConfirmationMsg(data: ReservationInput) {
+    return `
+    Perfecto, por favor revisa los datos de tu reserva, antes de proseguir:
+
+    👤 Nombre: ${data?.name}
+    📅 Fecha: ${data.day}
+    ⏰ Hora: ${data.startTime}
+    👥 Número de personas: ${data.numberOfPeople}
+
+    Si todos los datos son correctos, escribe:
+    ✅ ${FlowActions.CONFIRM}
+
+    Si alguno de los datos es incorrecto y deseas volver a ingresarlos, escribe:
+    ✏️ ${FlowActions.RESTART}
+
+    💬 Si no deseas continuar con la reserva y quieres hacer otra pregunta, escribe:
+    🚪 ${FlowActions.EXIT}
+    `;
+  },
+
+  getSuccessMsg(
+    appointment: Appointment,
+    {
+      restaurantName,
+      customerName,
+      numberOfPeople,
+    }: {
+      restaurantName: string;
+      customerName: string;
+      numberOfPeople: number;
+    },
+  ): string {
+    return `
+      ✅ Tu reserva ha sido creada con éxito.
+
+      📍 Restaurante: ${restaurantName}
+      👤 Nombre: ${customerName}
+      📅 Fecha: ${appointment.day}
+      ⏰ Hora: ${appointment.startDateTime}
+      👥 Personas: ${numberOfPeople}
+
+      🆔 Código de reserva: ${appointment.id}
+
+      ⚠️ Guarda este código.
+      Lo necesitarás para consultar, modificar o cancelar tu reserva.
+      Este código es privado. No lo compartas con nadie.
+
+      Si necesitas algo más, escribe:
+      1️⃣ Información del restaurante
+      2️⃣ Hacer otra reserva
+      3️⃣ Consultar o modificar una reserva
+      4️⃣ ¿Cómo funciona el sistema?
+
+      💬 O escribe tu pregunta directamente.
+    `.trim();
+  },
+};
