@@ -71,7 +71,16 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
   }).join("\n");
 }
 
-export function parseStringReservation(input: string): {
+/**
+ *
+ * @param input
+ * @param numOfLines 3 ó 4
+ * @returns
+ */
+export function parseStringReservation(
+  input: string,
+  numOfLines = 4,
+): {
   success: boolean;
   data?: ReservationInput;
   error?: string;
@@ -81,13 +90,29 @@ export function parseStringReservation(input: string): {
     .map((l) => l.trim())
     .filter(Boolean);
 
-  if (lines.length !== 4) {
+  if (lines.length !== numOfLines) {
     return {
       success: false,
       error: `Formato inválido: se esperaban 4 líneas y llegaron ${lines.length}`,
     };
   }
-  const [name, day, startTime, peopleRaw] = lines;
+  if (numOfLines === 4) {
+    const [name, day, startTime, peopleRaw] = lines;
+    const numberOfPeople = Number(peopleRaw);
+    if (Number.isNaN(numberOfPeople)) {
+      return {
+        success: false,
+        error: "El número de personas no es válido",
+      };
+    }
+    return {
+      error: "",
+      success: true,
+      data: { name, day, startTime, numberOfPeople },
+    };
+  }
+  const [day, startTime, peopleRaw] = lines;
+
   const numberOfPeople = Number(peopleRaw);
   if (Number.isNaN(numberOfPeople)) {
     return {
@@ -98,7 +123,7 @@ export function parseStringReservation(input: string): {
   return {
     error: "",
     success: true,
-    data: { name, day, startTime, numberOfPeople },
+    data: { day, startTime, numberOfPeople },
   };
 }
 

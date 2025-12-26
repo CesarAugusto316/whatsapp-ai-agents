@@ -122,7 +122,6 @@ export function buildRestaurantInfo(business: Business) {
 
 type WelcomeMessageParams = {
   restaurantName: string;
-  userName?: string;
 };
 
 export const flowMessages = {
@@ -139,8 +138,8 @@ export const flowMessages = {
       Te pediré paso a paso la información necesaria:
       fecha, hora y número de personas.
 
-      3️⃣ Consultar o modificar una reserva existente
-      Puedes revisar el estado de tu reserva, cambiarla o cancelarla.
+      3️⃣ Modificar una reserva existente
+      Puedes cambiar la información de tu reserva o cancelarla.
 
       4️⃣ ¿Cómo funciona este sistema?
       Puedo volver a explicarte estas reglas cuando lo necesites.
@@ -157,7 +156,7 @@ export const flowMessages = {
 
       1️⃣ Información general del restaurante
       2️⃣ Hacer una reserva
-      3️⃣ Consultar o modificar una reserva existente
+      3️⃣ Modificar o cancelar una reserva existente
       4️⃣ ¿Cómo funciona este sistema?
 
       ✍️ Escribe 1, 2, 3 o 4 para continuar.
@@ -180,7 +179,7 @@ export const flowMessages = {
           2️⃣ Hacer una reserva
           Reservar una mesa indicando fecha, hora y número de personas.
 
-          3️⃣ Consultar o modificar una reserva existente
+          3️⃣ Modificar o cancelar una reserva
           Ver el estado de tu reserva, cambiarla o cancelarla.
 
           4️⃣ ¿Cómo funciona este sistema?
@@ -198,7 +197,7 @@ export const flowMessages = {
 
       1️⃣ Información general del restaurante
       2️⃣ Hacer una reserva
-      3️⃣ Consultar o modificar una reserva existente
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ ¿Cómo funciona este sistema?
 
       ✍️ Escribe 1, 2, 3 o 4 para continuar.
@@ -214,7 +213,7 @@ export const flowMessages = {
 
       1️⃣ Información general (horarios, menú, ubicación)
       2️⃣ Reservar una mesa
-      3️⃣ Ver, modificar o cancelar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Explicación de cómo funciona el sistema
 
       ✍️ Escribe 1, 2, 3 o 4 para continuar.
@@ -230,7 +229,7 @@ export const flowMessages = {
 
       1️⃣ Información general del restaurante
       2️⃣ Crear una nueva reserva
-      3️⃣ Consultar o cambiar una reserva existente
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Ayuda sobre cómo usar este sistema
 
       ✍️ Responde con 1, 2, 3 o 4.
@@ -244,7 +243,7 @@ export const flowMessages = {
 
       1️⃣ Consultar información del restaurante
       2️⃣ Hacer una reserva
-      3️⃣ Revisar o modificar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Saber cómo funciona este sistema
 
       ✍️ Escribe el número de la opción que prefieras.
@@ -258,7 +257,7 @@ export const flowMessages = {
 
       1️⃣ Información general
       2️⃣ Reservar una mesa
-      3️⃣ Consultar, modificar o cancelar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Explicación del funcionamiento del sistema
 
       ✍️ Responde con 1, 2, 3 o 4.
@@ -272,7 +271,7 @@ export const flowMessages = {
 
       1️⃣ Información sobre el restaurante
       2️⃣ Iniciar una reserva
-      3️⃣ Consultar o cambiar una reserva existente
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Conocer cómo funciona este sistema
 
       ✍️ Escribe el número correspondiente para continuar.
@@ -286,7 +285,7 @@ export const flowMessages = {
 
       1️⃣ Información general del restaurante
       2️⃣ Hacer una reserva
-      3️⃣ Ver o modificar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Ayuda sobre el uso del sistema
 
       ✍️ Responde con 1, 2, 3 o 4.
@@ -300,7 +299,7 @@ export const flowMessages = {
 
       1️⃣ Información del restaurante
       2️⃣ Reservar una mesa
-      3️⃣ Consultar o modificar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Saber cómo funciona el sistema
 
       ✍️ Escribe solo el número.
@@ -314,7 +313,7 @@ export const flowMessages = {
 
       1️⃣ Información general
       2️⃣ Nueva reserva
-      3️⃣ Consultar o cambiar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Explicación del sistema
 
       ✍️ Responde con 1, 2, 3 o 4.
@@ -328,7 +327,7 @@ export const flowMessages = {
 
       1️⃣ Información del restaurante
       2️⃣ Hacer una reserva
-      3️⃣ Revisar o modificar una reserva existente
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Cómo funciona este sistema
 
       ✍️ Escribe el número de tu elección.
@@ -342,7 +341,7 @@ export const flowMessages = {
 
       1️⃣ Información general
       2️⃣ Reservar una mesa
-      3️⃣ Consultar o modificar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Ayuda sobre el funcionamiento del sistema
 
       ✍️ Responde con 1, 2, 3 o 4.
@@ -356,7 +355,7 @@ export const flowMessages = {
 
       1️⃣ Información del restaurante
       2️⃣ Crear una reserva
-      3️⃣ Consultar o cambiar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Saber cómo funciona este sistema
 
       ✍️ Escribe el número correspondiente.
@@ -370,7 +369,7 @@ export const flowMessages = {
 
       1️⃣ Información general del restaurante
       2️⃣ Hacer una reserva
-      3️⃣ Consultar o modificar una reserva existente
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Explicación del sistema
 
       ✍️ Responde con 1, 2, 3 o 4.
@@ -384,7 +383,7 @@ export const flowMessages = {
 
       1️⃣ Información general
       2️⃣ Reservar una mesa
-      3️⃣ Consultar, modificar o cancelar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Cómo funciona este sistema
 
       ✍️ Escribe el número para continuar.
@@ -398,7 +397,7 @@ export const flowMessages = {
 
       1️⃣ Información del restaurante
       2️⃣ Hacer una reserva
-      3️⃣ Consultar o modificar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ Ayuda sobre el sistema
 
       ✍️ Responde con 1, 2, 3 o 4.
@@ -411,6 +410,29 @@ export const flowMessages = {
 
 export const makeReservationMessages = {
   getStartMsg({ userName }: { userName?: string }) {
+    if (userName) {
+      return `
+        Perfecto ✅
+        ${userName} has elegido la **opción 2: Hacer una reserva**.
+
+        Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+
+        1️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+        2️⃣ **Hora** de la reserva (formato: HH:mm)
+        3️⃣ **Número de personas**
+
+        📌 Ejemplo:
+        2025-12-21
+        19:30
+        2
+
+        ⚠️ Importante:
+        - Respeta el orden y el formato.
+        - Si algún dato no es válido, te pediré que lo corrijas.
+
+        Cuando envíes los datos, verificaré la disponibilidad.
+    `.trim();
+    }
     return `
       Perfecto ✅
       Has elegido la **opción 2: Hacer una reserva**.
@@ -437,6 +459,26 @@ export const makeReservationMessages = {
   },
 
   getReStartMsg({ userName }: { userName?: string }) {
+    if (userName) {
+      return `
+        Por favor ${userName}, nuevamente envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+
+        1️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+        2️⃣ **Hora** de la reserva (formato: HH:mm)
+        3️⃣ **Número de personas**
+
+        📌 Ejemplo:
+        2025-12-21
+        19:30
+        2
+
+        ⚠️ Importante:
+        - Respeta el orden y el formato.
+        - Si algún dato no es válido, te pediré que lo corrijas.
+
+        Cuando envíes los datos, verificaré la disponibilidad.
+    `.trim();
+    }
     return `
       Por favor, nuevamente envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
 
@@ -509,10 +551,11 @@ export const makeReservationMessages = {
       Si necesitas algo más, escribe:
       1️⃣ Información del restaurante
       2️⃣ Hacer otra reserva
-      3️⃣ Consultar o modificar una reserva
+      3️⃣ Modificar o cancelar una reserva
       4️⃣ ¿Cómo funciona el sistema?
 
-      💬 O escribe tu pregunta directamente.
+      Para consultas sobre el estaddo de tu reserva escribe:
+      “Hola asistente, este es mi ID de reserva ${appointment.id}, puedes darme información?”.
     `.trim();
   },
 };

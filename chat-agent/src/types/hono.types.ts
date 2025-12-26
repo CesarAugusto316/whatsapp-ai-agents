@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { Business, Customer } from "./business/cms-types";
-import { ReserveProcess } from "@/ai-agents/schemas";
+import { ReserveProcess } from "@/ai-agents/agent.types";
 
 export interface CTX extends Context {
   Variables: {
