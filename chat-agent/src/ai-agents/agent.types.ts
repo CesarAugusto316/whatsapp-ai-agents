@@ -20,6 +20,7 @@ export enum ReserveStatus {
 }
 
 export interface ReserveProcess {
+  id: string;
   status: ReserveStatus;
   type: "MAKE" | "UPDATE" | "CANCEL";
   customerId: string;

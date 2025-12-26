@@ -408,16 +408,39 @@ export const flowMessages = {
   },
 };
 
-export const makeReservationMessages = {
-  getStartMsg({ userName }: { userName?: string }) {
+type ReservationMode = "create" | "update";
+
+const MODE_COPY = {
+  create: {
+    action: "Hacer una reserva",
+    verb: "creada",
+    process: "creación",
+  },
+  update: {
+    action: "Modificar una reserva",
+    verb: "actualizada",
+    process: "actualización",
+  },
+} as const;
+
+export const reservationMessages = {
+  getStartMsg({
+    userName,
+    mode = "create",
+  }: {
+    userName?: string;
+    mode?: ReservationMode;
+  }) {
+    const copy = MODE_COPY[mode];
+
     if (userName) {
       return `
         Perfecto ✅
-        ${userName} has elegido la **opción 2: Hacer una reserva**.
+        ${userName}, has elegido la opción: **${copy.action}**.
 
         Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
 
-        1️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+        1️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD)
         2️⃣ **Hora** de la reserva (formato: HH:mm)
         3️⃣ **Número de personas**
 
@@ -430,17 +453,18 @@ export const makeReservationMessages = {
         - Respeta el orden y el formato.
         - Si algún dato no es válido, te pediré que lo corrijas.
 
-        Cuando envíes los datos, verificaré la disponibilidad.
-    `.trim();
+        Cuando envíes los datos, continuaré con la ${copy.process} de la reserva.
+      `.trim();
     }
+
     return `
       Perfecto ✅
-      Has elegido la **opción 2: Hacer una reserva**.
+      Has elegido la opción: **${copy.action}**.
 
       Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
 
       1️⃣ Tu **nombre**
-      2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+      2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD)
       3️⃣ **Hora** de la reserva (formato: HH:mm)
       4️⃣ **Número de personas**
 
@@ -454,16 +478,24 @@ export const makeReservationMessages = {
       - Respeta el orden y el formato.
       - Si algún dato no es válido, te pediré que lo corrijas.
 
-      Cuando envíes los datos, verificaré la disponibilidad.
-  `.trim();
+      Cuando envíes los datos, continuaré con la ${copy.process} de la reserva.
+    `.trim();
   },
 
-  getReStartMsg({ userName }: { userName?: string }) {
+  getReStartMsg({
+    userName,
+    mode = "create",
+  }: {
+    userName?: string;
+    mode?: ReservationMode;
+  }) {
+    const copy = MODE_COPY[mode];
+
     if (userName) {
       return `
-        Por favor ${userName}, nuevamente envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+        ${userName}, por favor envíame nuevamente **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
 
-        1️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+        1️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD)
         2️⃣ **Hora** de la reserva (formato: HH:mm)
         3️⃣ **Número de personas**
 
@@ -474,16 +506,16 @@ export const makeReservationMessages = {
 
         ⚠️ Importante:
         - Respeta el orden y el formato.
-        - Si algún dato no es válido, te pediré que lo corrijas.
 
-        Cuando envíes los datos, verificaré la disponibilidad.
-    `.trim();
+        Continuaremos con la ${copy.process} de la reserva.
+      `.trim();
     }
+
     return `
-      Por favor, nuevamente envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+      Por favor, envíame nuevamente **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
 
       1️⃣ Tu **nombre**
-      2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD | año-mes-dia)
+      2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD)
       3️⃣ **Hora** de la reserva (formato: HH:mm)
       4️⃣ **Número de personas**
 
@@ -495,30 +527,31 @@ export const makeReservationMessages = {
 
       ⚠️ Importante:
       - Respeta el orden y el formato.
-      - Si algún dato no es válido, te pediré que lo corrijas.
 
-      Cuando envíes los datos, verificaré la disponibilidad.
-  `.trim();
+      Continuaremos con la ${copy.process} de la reserva.
+    `.trim();
   },
 
-  getConfirmationMsg(data: ReservationInput) {
+  getConfirmationMsg(data: ReservationInput, mode: ReservationMode = "create") {
+    const copy = MODE_COPY[mode];
+
     return `
-    Perfecto, por favor revisa los datos de tu reserva, antes de proseguir:
+      Por favor revisa los datos antes de confirmar la ${copy.process} de tu reserva:
 
-    👤 Nombre: ${data?.name}
-    📅 Fecha: ${data.day}
-    ⏰ Hora: ${data.startTime}
-    👥 Número de personas: ${data.numberOfPeople}
+      👤 Nombre: ${data?.name}
+      📅 Fecha: ${data.day}
+      ⏰ Hora: ${data.startTime}
+      👥 Número de personas: ${data.numberOfPeople}
 
-    Si todos los datos son correctos, escribe:
-    ✅ ${FlowActions.CONFIRM}
+      Si los datos son correctos, escribe:
+      ✅ ${FlowActions.CONFIRM}
 
-    Si alguno de los datos es incorrecto y deseas volver a ingresarlos, escribe:
-    ✏️ ${FlowActions.RESTART}
+      Si deseas corregirlos, escribe:
+      ✏️ ${FlowActions.RESTART}
 
-    💬 Si no deseas continuar con la reserva y quieres hacer otra pregunta, escribe:
-    🚪 ${FlowActions.EXIT}
-    `;
+      Si no deseas continuar, escribe:
+      🚪 ${FlowActions.EXIT}
+    `.trim();
   },
 
   getSuccessMsg(
@@ -527,14 +560,18 @@ export const makeReservationMessages = {
       restaurantName,
       customerName,
       numberOfPeople,
+      mode = "create",
     }: {
       restaurantName: string;
       customerName: string;
       numberOfPeople: number;
+      mode?: ReservationMode;
     },
   ): string {
+    const copy = MODE_COPY[mode];
+
     return `
-      ✅ Tu reserva ha sido creada con éxito.
+      ✅ Tu reserva ha sido ${copy.verb} con éxito.
 
       📍 Restaurante: ${restaurantName}
       👤 Nombre: ${customerName}
@@ -542,20 +579,16 @@ export const makeReservationMessages = {
       ⏰ Hora: ${appointment.startDateTime}
       👥 Personas: ${numberOfPeople}
 
-      🆔 Código de reserva: ${appointment.id}
+      🆔 ID de reserva: ${appointment.id}
 
-      ⚠️ Guarda este código.
-      Lo necesitarás para consultar, modificar o cancelar tu reserva.
-      Este código es privado. No lo compartas con nadie.
+      ⚠️ Guarda este ID.
+      Lo necesitarás para futuras modificaciones o consultas técnicas.
 
-      Si necesitas algo más, escribe:
+      Para continuar, puedes escribir:
       1️⃣ Información del restaurante
       2️⃣ Hacer otra reserva
       3️⃣ Modificar o cancelar una reserva
       4️⃣ ¿Cómo funciona el sistema?
-
-      Para consultas sobre el estaddo de tu reserva escribe:
-      “Hola asistente, este es mi ID de reserva ${appointment.id}, puedes darme información?”.
     `.trim();
   },
 };
