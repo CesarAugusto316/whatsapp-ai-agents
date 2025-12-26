@@ -37,6 +37,10 @@ export enum FlowActions {
   CONFIRM = "CONFIRMAR",
   RESTART = "REINGRESAR",
   EXIT = "SALIR",
+  UPDATE = "CAMBIAR",
+  CANCEL = "CANCELAR",
+  YES = "SI",
+  NO = "NO",
 }
 
 export enum FlowChoices {
