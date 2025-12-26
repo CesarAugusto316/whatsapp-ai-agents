@@ -1,4 +1,4 @@
-import { generateText, ModelMessage, stepCountIs } from "ai";
+import { generateText, stepCountIs } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env } from "bun";
 import {
@@ -10,7 +10,7 @@ import {
   CLASSIFIER_PROMPT,
 } from "./tools/prompts";
 import { AgentArgs, CUSTOMER_INTENT } from "./agent.types";
-import z, { safeParse } from "zod";
+import { safeParse } from "zod";
 import { customerIntentSchema } from "./schemas";
 
 /**
@@ -43,7 +43,7 @@ const config = {
 export function infoReservationAgent({ messages, business }: AgentArgs) {
   return generateText({
     ...config,
-    temperature: 0.2,
+    // temperature: 0.2,
     system: buildInfoReservationsSystemPrompt(business),
     messages,
     tools: {
@@ -65,6 +65,7 @@ export function infoReservationAgent({ messages, business }: AgentArgs) {
 export async function classifyCustomerIntent(
   message: string,
 ): Promise<CUSTOMER_INTENT> {
+  //
   const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
   const headers = {
     Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
