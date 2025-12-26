@@ -73,6 +73,9 @@ export const Appointments: CollectionConfig = {
         en: "Business",
         es: "Negocio",
       },
+      admin: {
+        readOnly: true,
+      },
       required: true,
       relationTo: Business.slug as CollectionSlug,
       access: {
@@ -91,6 +94,9 @@ export const Appointments: CollectionConfig = {
       name: "customer",
       index: true,
       type: "relationship",
+      admin: {
+        readOnly: true,
+      },
       label: {
         en: "Customer",
         es: "Cliente",
@@ -111,6 +117,9 @@ export const Appointments: CollectionConfig = {
     // customerName
     {
       name: "customerName",
+      admin: {
+        readOnly: true,
+      },
       type: "text",
       label: { en: "Customer Name", es: "Nombre del Cliente" },
     },
@@ -223,6 +232,36 @@ export const Appointments: CollectionConfig = {
         { value: "completed", label: { en: "Completed", es: "Completada" } },
       ],
     },
+    // number of people
+    {
+      type: "number",
+      name: "numberOfPeople",
+      defaultValue: 1,
+      admin: {
+        readOnly: true,
+        // condition: (data) => {
+        //   console.log({ data });
+        //   // data: {
+        //   //    id: 'c948628b-02d0-4088-84df-b1c8b91b1c9d',
+        //   //    business: '71358eb4-b61e-418d-a2fe-e34b8e5c5e6c',
+        //   //    customer: '1cf18943-2a2b-46de-b9fb-5407afce47ae',
+        //   //    customerName: 'Cesar',
+        //   //    day: '2025-12-31T00:00:00.000Z',
+        //   //    startDateTime: '2025-12-31T16:00:00.000Z',
+        //   //    endDateTime: '2025-12-31T17:00:00.000Z',
+        //   //    status: 'confirmed',
+        //   //    numberOfPeople: 3,
+        //   //    notes: null,
+        //   //    updatedAt: '2025-12-26T18:57:52.198Z',
+        //   //    createdAt: '2025-12-26T18:57:52.197Z'
+        //   //  }
+        //   return true;
+        // },
+      },
+      label: { en: "Number of People", es: "Número de Personas" },
+      min: 1,
+      max: 100,
+    },
     // notes
     {
       name: "notes",
@@ -238,19 +277,6 @@ export const Appointments: CollectionConfig = {
           );
         },
       },
-    },
-    // number of people
-    {
-      type: "number",
-      name: "numberOfPeople",
-      defaultValue: 1,
-      admin: {
-        condition: (data) =>
-          data?.business?.general?.businessType === "restaurant",
-      },
-      label: { en: "Tables Number", es: "Número de Mesas" },
-      min: 1,
-      max: 100,
     },
   ],
 };

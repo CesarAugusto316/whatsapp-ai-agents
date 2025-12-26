@@ -24,15 +24,14 @@ class ChatHistoryService {
    */
   async get(chatKey: string) {
     const rawHistory = (await redis.lrange(chatKey, -MAX_MESSAGES, -1)) ?? [];
-    return (
-      rawHistory.map((item) => {
-        const msg: StoredMessage = JSON.parse(item);
-        return {
-          role: msg.role,
-          content: msg.content,
-        };
-      }) satisfies ModelMessage[]
-    ).filter((msg) => msg.role === "user");
+    return rawHistory.map((item) => {
+      const msg: StoredMessage = JSON.parse(item);
+      return {
+        role: msg.role,
+        content: msg.content,
+      };
+    }) satisfies ModelMessage[];
+    // .filter((msg) => msg.role === "user");
   }
 
   /**

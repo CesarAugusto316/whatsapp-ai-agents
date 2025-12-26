@@ -29,7 +29,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  maxDepth: 2,
+  maxDepth: 4,
   collections: [Users, ThirdPartyAccess, Appointments, Customers, Business],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {

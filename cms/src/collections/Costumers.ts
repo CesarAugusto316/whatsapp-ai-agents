@@ -70,6 +70,9 @@ export const Customers: CollectionConfig = {
       defaultValue: "+34",
       minLength: 7,
       maxLength: 20,
+      admin: {
+        readOnly: true,
+      },
       access: {
         update: ({ req }) => {
           if (req?.user?.collection === "third-party-access") {
@@ -90,6 +93,9 @@ export const Customers: CollectionConfig = {
       },
       relationTo: Business.slug as CollectionSlug,
       required: true,
+      admin: {
+        readOnly: true,
+      },
       access: {
         update: ({ req }) => {
           if (req?.user?.collection === "third-party-access") {

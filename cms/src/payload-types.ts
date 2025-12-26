@@ -211,8 +211,8 @@ export interface Appointment {
   startDateTime: string;
   endDateTime?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  notes?: string | null;
   numberOfPeople?: number | null;
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -476,8 +476,8 @@ export interface AppointmentsSelect<T extends boolean = true> {
   startDateTime?: T;
   endDateTime?: T;
   status?: T;
-  notes?: T;
   numberOfPeople?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

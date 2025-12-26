@@ -10,7 +10,7 @@ export const TOOLS_NAME = {
   getReservationStatusByDateAndTime: "getReservationStatusByDateAndTime",
 };
 
-export const DESCRIPTIONS = {
+const DESCRIPTIONS = {
   isScheduleAvailable:
     "Check if day and time is available for reservation. Use when the customer asks for availability before making a reservation, the customer must provide the date and time",
   getReservationStatusById:
