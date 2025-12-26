@@ -14,6 +14,7 @@ export type AgentArgs = {
 
 export enum ReserveStatus {
   STARTED = "STARTED",
+  UPDATING = "UPDATING",
   RE_STARTED = "RE_STARTED",
   VALIDATED = "VALIDATED",
   CONFIRMED = "CONFIRMED",

@@ -17,7 +17,7 @@ import { Appointment, Customer } from "@/types/business/cms-types";
 import { CTX } from "@/types/hono.types";
 import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
-import { safeParse } from "zod/mini";
+import { safeParse, string } from "zod";
 import {
   FlowActions,
   FlowChoices,
@@ -245,21 +245,19 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
   const reservationKey = ctx.get("reservationKey");
   const reservationProcessCache = ctx.get("currentReservation");
 
+  if (!customer) return ctx.json({ error: "Customer not found" }, 404);
   if (
     !reservationProcessCache &&
     customerMessage == FlowChoices.UPDATE_RESERVATION
   ) {
     // START
-    const assistantResponse = reservationMessages.getStartMsg({
-      userName: customer?.name,
-      mode: "update",
-    });
+    const assistantResponse = reservationMessages.enterReservationId();
     await reservationService.save(reservationKey, {
       businessId: business?.id,
       customerId: customer?.id,
       customerName: customer?.name ?? "",
       customerPhone,
-      status: ReserveStatus.STARTED,
+      status: ReserveStatus.UPDATING,
       type: "UPDATE",
     });
     await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
@@ -274,8 +272,54 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
     // if user fails to provide valid input > 2, send a message asking for help
     // otherwise the user will be a loop
     if (
+      reservationProcessCache?.status === ReserveStatus.UPDATING &&
+      customerMessage &&
+      !reservationProcessCache.id
+    ) {
+      // START
+      const { success, data } = safeParse(
+        string().min(2).max(60),
+        customerMessage,
+      );
+      if (!success) {
+        return ctx.json({
+          received: true,
+          text: "Por favor, ingresa un ID válido entre 2 y 60 caracteres.",
+        });
+      }
+      const reservation = (await (
+        await businessService.getAppointmentById(data)
+      ).json()) as Appointment;
+
+      if (!reservation) {
+        return ctx.json({
+          received: true,
+          text: "Reserva no encontrada. Escribe un ID válido.",
+        });
+      }
+      const assistantResponse = reservationMessages.getStartMsg({
+        userName: customer?.name,
+        mode: "update",
+      });
+      await reservationService.save(reservationKey, {
+        ...reservationProcessCache,
+        id: reservation.id,
+        status: ReserveStatus.STARTED,
+      });
+      await chatHistoryService.save(
+        chatKey,
+        customerMessage,
+        assistantResponse,
+      );
+      return ctx.json({
+        received: true,
+        text: assistantResponse,
+      });
+    }
+    if (
       reservationProcessCache?.status === ReserveStatus.STARTED &&
-      customerMessage
+      customerMessage &&
+      reservationProcessCache.id
     ) {
       const parseInput = parseStringReservation(customerMessage, 3); // customerName already provided
       if (!parseInput.success) {
@@ -296,7 +340,7 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
       }
       await reservationService.save(reservationKey, {
         ...reservationProcessCache,
-        customerName: data.name ?? customer?.name,
+        customerName: customer?.name,
         day: data.day,
         startTime: data.startTime,
         numberOfPeople: data.numberOfPeople,
@@ -305,7 +349,7 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
       const assistantResponse = reservationMessages.getConfirmationMsg(
         {
           ...data,
-          name: data?.name ?? customer?.name,
+          name: customer?.name,
         },
         "update",
       );

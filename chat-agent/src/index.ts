@@ -4,6 +4,7 @@ import { aiAgentHandler } from "./handlers/ai-agent.handler";
 import {
   makeReservationHandler,
   flowHandler,
+  updateReservationHandler,
 } from "./handlers/ai-test.handler";
 import { WahaRecievedEvent } from "./types/whatsapp/received-event";
 import businessService from "./services/business.service";
@@ -22,8 +23,8 @@ app.use(
   }),
 );
 
-app.use("/*", async (c, next) => {
-  const custumerRecievedEvent = await c.req.json<WahaRecievedEvent>();
+app.use("/*", async (ctx, next) => {
+  const custumerRecievedEvent = await ctx.req.json<WahaRecievedEvent>();
   const businessId = custumerRecievedEvent.metadata?.businessId;
   const session = custumerRecievedEvent.session;
   const event = custumerRecievedEvent.event;
@@ -37,31 +38,36 @@ app.use("/*", async (c, next) => {
   });
   const business = await businessService.getBusinessById(businessId);
   const currentReservation = await reservationService.get(reservationKey);
-  c.set("session", session);
-  c.set("businessId", businessId);
-  c.set("business", business);
-  c.set("customerPhone", customerPhone);
-  c.set("customer", customer);
-  c.set("customerMessage", customerMessage);
-  c.set("chatKey", chatKey);
-  c.set("whatsappEvent", event);
-  c.set("reservationKey", reservationKey);
-  c.set("currentReservation", currentReservation);
+  ctx.set("session", session);
+  ctx.set("businessId", businessId);
+  ctx.set("business", business);
+  ctx.set("customerPhone", customerPhone);
+  ctx.set("customer", customer);
+  ctx.set("customerMessage", customerMessage);
+  ctx.set("chatKey", chatKey);
+  ctx.set("whatsappEvent", event);
+  ctx.set("reservationKey", reservationKey);
+  ctx.set("currentReservation", currentReservation);
 
   if (!customerMessage) {
-    return c.json({ error: "Customer message not received" }, 400);
+    return ctx.json({ error: "Customer message not received" }, 400);
   }
   if (!businessId) {
-    return c.json({ error: "Business ID not received" }, 400);
+    return ctx.json({ error: "Business ID not received" }, 400);
   }
   if (!customerPhone) {
-    return c.json({ error: "Customer phone not received" }, 400);
+    return ctx.json({ error: "Customer phone not received" }, 400);
   }
   await next();
 });
 
 app.post("/received-messages/:businessId", aiAgentHandler);
-app.post("/test-ai", makeReservationHandler, flowHandler);
+app.post(
+  "/test-ai",
+  makeReservationHandler,
+  updateReservationHandler,
+  flowHandler,
+);
 
 // export default app;
 export default {

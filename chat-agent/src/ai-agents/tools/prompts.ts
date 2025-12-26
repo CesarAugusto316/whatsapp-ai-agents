@@ -414,16 +414,25 @@ const MODE_COPY = {
   create: {
     action: "Hacer una reserva",
     verb: "creada",
+    verbInfinitive: "crear",
     process: "creación",
   },
   update: {
     action: "Modificar una reserva",
     verb: "actualizada",
+    verbInfinitive: "actualizar",
     process: "actualización",
   },
 } as const;
 
 export const reservationMessages = {
+  enterReservationId(mode: ReservationMode = "update") {
+    const copy = MODE_COPY[mode];
+    return `
+      Por favor, envíame **UN SOLO MENSAJE** con el **ID de la reserva** que deseas ${copy.verbInfinitive}.
+    `.trim();
+  },
+
   getStartMsg({
     userName,
     mode = "create",
