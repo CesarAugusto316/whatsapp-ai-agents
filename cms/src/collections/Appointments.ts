@@ -129,7 +129,7 @@ export const Appointments: CollectionConfig = {
         },
       },
       type: "text",
-      label: { en: "Customer Name", es: "Nombre del Cliente" },
+      label: { en: "Customer Name", es: "A nombre de" },
     },
     // day
     {

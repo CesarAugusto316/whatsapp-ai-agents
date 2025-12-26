@@ -2,18 +2,20 @@ import { Context } from "hono";
 import { Business, Customer } from "./business/cms-types";
 import { ReservationState } from "@/ai-agents/agent.types";
 
+export type CtxState = {
+  whatsappEvent: string;
+  businessId: string;
+  business: Business;
+  customerId: string;
+  customer?: Customer;
+  session: string;
+  customerPhone: string;
+  customerMessage: string;
+  chatKey: string;
+  reservationKey: string;
+  currentReservation: Partial<ReservationState> | null;
+};
+
 export interface CTX extends Context {
-  Variables: {
-    whatsappEvent: string;
-    businessId: string;
-    business: Business;
-    customerId: string;
-    customer?: Customer;
-    session: string;
-    customerPhone: string;
-    customerMessage: string;
-    chatKey: string;
-    reservationKey: string;
-    currentReservation: Partial<ReservationState> | null;
-  };
+  Variables: CtxState;
 }
