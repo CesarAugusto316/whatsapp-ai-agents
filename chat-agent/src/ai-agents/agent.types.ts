@@ -12,7 +12,7 @@ export type AgentArgs = {
   customerPhone: string;
 };
 
-export enum ReserveStatus {
+export enum ReservationStep {
   STARTED = "STARTED",
   UPDATING = "UPDATING",
   RE_STARTED = "RE_STARTED",
@@ -20,9 +20,9 @@ export enum ReserveStatus {
   CONFIRMED = "CONFIRMED",
 }
 
-export interface ReserveProcess {
+export interface ReservationState {
   id: string;
-  status: ReserveStatus;
+  step: ReservationStep;
   type: "MAKE" | "UPDATE" | "CANCEL";
   customerId: string;
   customerName: string;
@@ -33,7 +33,7 @@ export interface ReserveProcess {
   numberOfPeople: number;
 }
 
-export enum FlowActions {
+export enum CustomerActions {
   CONFIRM = "CONFIRMAR",
   RESTART = "REINGRESAR",
   EXIT = "SALIR",
@@ -43,7 +43,7 @@ export enum FlowActions {
   NO = "NO",
 }
 
-export enum FlowChoices {
+export enum FlowOptions {
   GENERAL_INFO = "1",
   MAKE_RESERVATION = "2",
   UPDATE_RESERVATION = "3",

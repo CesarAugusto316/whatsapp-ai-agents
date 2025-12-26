@@ -1,4 +1,4 @@
-import { redis } from "@/storage/storage.config";
+import { redis } from "@/storage/cache-storage.config";
 import { ModelMessage } from "ai";
 
 // COMMANDS REDDIS

@@ -1,5 +1,5 @@
-import { ReserveProcess } from "@/ai-agents/agent.types";
-import { redis } from "@/storage/storage.config";
+import { ReservationState } from "@/ai-agents/agent.types";
+import { redis } from "@/storage/cache-storage.config";
 
 const EXPIRATION_TIME = 60 * 60 * 1; // 1 hora
 
@@ -9,10 +9,10 @@ class ReservationCacheService {
    * @param key reservation:businesID:customerPhone
    * @returns
    */
-  async get(key: string): Promise<Partial<ReserveProcess> | null> {
+  async get(key: string): Promise<Partial<ReservationState> | null> {
     const payload = await redis.get(key);
     if (!payload) return null;
-    return JSON.parse(payload) satisfies Partial<ReserveProcess>;
+    return JSON.parse(payload) satisfies Partial<ReservationState>;
   }
 
   /**
@@ -20,7 +20,7 @@ class ReservationCacheService {
    * @param key
    * @param payload
    */
-  async save(key: string, payload: Partial<ReserveProcess>) {
+  async save(key: string, payload: Partial<ReservationState>) {
     await redis.set(key, JSON.stringify(payload));
     await redis.expire(key, EXPIRATION_TIME);
   }

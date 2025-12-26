@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { Business, Customer } from "./business/cms-types";
-import { ReserveProcess } from "@/ai-agents/agent.types";
+import { ReservationState } from "@/ai-agents/agent.types";
 
 export interface CTX extends Context {
   Variables: {
@@ -14,6 +14,6 @@ export interface CTX extends Context {
     customerMessage: string;
     chatKey: string;
     reservationKey: string;
-    currentReservation: Partial<ReserveProcess> | null;
+    currentReservation: Partial<ReservationState> | null;
   };
 }

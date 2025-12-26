@@ -1,7 +1,7 @@
 import { Appointment, Business } from "@/types/business/cms-types";
 import { formatSchedule } from "./helpers";
 import { TOOLS_NAME } from "./restaurant/reservation.tools";
-import { FlowActions, ReservationInput } from "../agent.types";
+import { CustomerActions, ReservationInput } from "../agent.types";
 
 const AGENT_NAME = "Lua";
 
@@ -553,13 +553,13 @@ export const reservationMessages = {
       👥 Número de personas: ${data.numberOfPeople}
 
       Si los datos son correctos, escribe:
-      ✅ ${FlowActions.CONFIRM}
+      ✅ ${CustomerActions.CONFIRM}
 
       Si deseas corregirlos, escribe:
-      ✏️ ${FlowActions.RESTART}
+      ✏️ ${CustomerActions.RESTART}
 
       Si no deseas continuar, escribe:
-      🚪 ${FlowActions.EXIT}
+      🚪 ${CustomerActions.EXIT}
     `.trim();
   },
 
