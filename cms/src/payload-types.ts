@@ -206,11 +206,13 @@ export interface Appointment {
   id: string;
   business: string | Business;
   customer: string | Customer;
+  customerName?: string | null;
   day: string;
   startDateTime: string;
   endDateTime?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   notes?: string | null;
+  numberOfPeople?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -469,11 +471,13 @@ export interface ThirdPartyAccessSelect<T extends boolean = true> {
 export interface AppointmentsSelect<T extends boolean = true> {
   business?: T;
   customer?: T;
+  customerName?: T;
   day?: T;
   startDateTime?: T;
   endDateTime?: T;
   status?: T;
   notes?: T;
+  numberOfPeople?: T;
   updatedAt?: T;
   createdAt?: T;
 }

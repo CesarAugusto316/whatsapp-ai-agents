@@ -49,7 +49,7 @@ export const getReservationStatusById = () =>
     inputSchema: z.preprocess(
       parseInput,
       z.object({
-        reservationId: z.string().min(5).max(20).describe("Reservation ID"),
+        reservationId: z.string().min(5).max(30).describe("Reservation ID"),
       }),
     ),
     execute: async ({ reservationId }) => {

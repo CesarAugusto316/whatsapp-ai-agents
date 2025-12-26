@@ -383,8 +383,8 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
 
     if (
       RESERVATION_CACHE?.step === ReservationStep.STARTED &&
-      customerMessage &&
-      RESERVATION_CACHE.id
+      RESERVATION_CACHE.id &&
+      customerMessage
     ) {
       const parseInput = parseStringReservation(customerMessage, 3); // customerName already provided
       if (!parseInput.success) {
