@@ -1,5 +1,8 @@
+import { BOOL } from "@/ai-agents/agent.types";
+import { buildApiDates } from "@/ai-agents/tools/helpers";
 import { redis } from "@/storage/cache-storage.config";
 import {
+  Appointment,
   Business,
   CreateAppointment,
   CreateCustomer,
@@ -19,12 +22,13 @@ export interface BusinessQueryParams {
   sort?: "-createdAt"; // -createdAt
   "where[business][equals]"?: string; // businessId,
   "where[customer][equals]"?: string; // businessId,
-  "where[day][equals]"?: string | Date; // 2024-03-15
-  "where[startDateTime][equals]"?: string | Date; // 2024-03-15
-  "where[endDateTime][equals]"?: string | Date; // 2024-03-15
+  "where[day][equals]"?: string; // 2024-03-15
+  "where[startDateTime][equals]"?: string; // 2024-03-15
+  "where[endDateTime][equals]"?: string; // 2024-03-15
 
   // COSTUMER:
-  "where[phoneNumber][like]"?: string | Date; // 2024-03-15
+  "where[phoneNumber][like]"?: string; // 2024-03-15
+  averageTime?: number;
   // "where[name][equals]"?: string | Date; // 2024-03-15
   // "where[business][equals]"?: string; // businessId,
 }
@@ -93,12 +97,32 @@ class BusinessService {
    * @param queryParams
    * @returns boolean
    */
-  public checkAvailability(queryParams: BusinessQueryParams) {
-    const url = generateUrl("appointments", { depth: 0, ...queryParams });
-    return fetch(url, {
+  public async checkAvailability(
+    day?: string,
+    startTime?: string,
+    durationMinutes = 60,
+  ) {
+    const {
+      day: reservationDay,
+      startDateTime,
+      endDateTime,
+    } = buildApiDates(day ?? "", startTime ?? "", durationMinutes); // use business average reservation time
+
+    const url = generateUrl("appointments", {
+      depth: 0,
+      ...{
+        "where[day][equals]": reservationDay,
+        "where[startDateTime][equals]": startDateTime,
+        "where[endDateTime][equals]": endDateTime,
+      },
+    });
+    const appointments = await fetch(url, {
       method: "GET",
       headers: this.headers,
     });
+
+    const res = (await appointments.json()) as { docs: Appointment[] };
+    return res.docs.length === 0 ? BOOL.YES : BOOL.NO;
   }
 
   // TODO phoneNumber as primary key

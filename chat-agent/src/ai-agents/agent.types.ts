@@ -1,7 +1,7 @@
 import { Business } from "@/types/business/cms-types";
 import { ModelMessage } from "ai";
 
-export const AVAILABLE = {
+export const BOOL = {
   YES: true,
   NO: false,
 } as const;

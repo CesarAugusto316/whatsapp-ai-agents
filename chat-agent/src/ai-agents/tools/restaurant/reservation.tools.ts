@@ -2,7 +2,6 @@ import businessService from "@/services/business.service";
 import { tool } from "ai";
 import z from "zod";
 import { parseInput } from "../helpers";
-import { Appointment } from "@/types/business/cms-types";
 import { dateTime } from "./schemas";
 
 export const TOOLS_NAME = {
@@ -31,20 +30,15 @@ export const isScheduleAvailable = (restaurantId: string) =>
       }),
     ),
     execute: async ({ day, time }) => {
-      const appointments = await businessService.checkAvailability({
-        "where[business][equals]": restaurantId ?? "",
-        "where[day][equals]": day ?? "",
-        "where[startDateTime][equals]": time ?? "",
-        depth: 0,
-      });
-      const res = (await appointments.json()) as { docs: Appointment[] };
-      // Implement the logic to fetch appointments using the businessId
-      // Example: const appointments = await fetchAppointments(businessId);
-      // Return the appointments as a string or object
-      // return res.docs.length === 0 ? AVAILABLE.YES : AVAILABLE.NO;
+      const business = await businessService.getBusinessById(restaurantId);
+      const appointments = await businessService.checkAvailability(
+        day,
+        time,
+        business.schedule.averageTime * 60,
+      );
 
       /** @todo save availability in redis, so we can know if this tool has been already been called */
-      return res.docs.length === 0 ? "IS AVAILABLE" : "NOT AVAILABLE";
+      return appointments ? "IS AVAILABLE" : "NOT AVAILABLE";
     },
   });
 

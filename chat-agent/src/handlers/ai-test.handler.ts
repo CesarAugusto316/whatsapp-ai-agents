@@ -22,6 +22,7 @@ import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
 import { safeParse, string } from "zod";
 import {
+  BOOL,
   CUSTOMER_INTENT,
   CustomerActions,
   FlowOptions,
@@ -69,6 +70,17 @@ export const makeReservationHandler: Handler<CTX> = async (ctx, next) => {
         return ctx.json({
           received: true,
           text: error,
+        });
+      }
+      const isAvailable = await businessService.checkAvailability(
+        data?.day,
+        data.startTime,
+        business.schedule.averageTime * 60,
+      );
+      if (!isAvailable) {
+        return ctx.json({
+          received: true,
+          text: "Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.",
         });
       }
       await reservationService.save(reservationKey, {
@@ -389,6 +401,17 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
         return ctx.json({
           received: true,
           text: error,
+        });
+      }
+      const isAvailable = await businessService.checkAvailability(
+        data?.day,
+        data.startTime,
+        business.schedule.averageTime * 60,
+      );
+      if (!isAvailable) {
+        return ctx.json({
+          received: true,
+          text: "Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.",
         });
       }
       await reservationService.save(reservationKey, {
