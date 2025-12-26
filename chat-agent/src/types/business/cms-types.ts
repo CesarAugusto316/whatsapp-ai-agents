@@ -30,6 +30,8 @@ export interface Appointment {
   id: string;
   business: string | Business;
   customer: string | Customer;
+  customerName: string;
+  numberOfPeople: number;
   day: string;
   startDateTime: string;
   endDateTime?: string;

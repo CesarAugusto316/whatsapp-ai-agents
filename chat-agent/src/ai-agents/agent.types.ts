@@ -6,6 +6,11 @@ export const AVAILABLE = {
   NO: false,
 } as const;
 
+export enum CUSTOMER_INTENT {
+  WHAT = "WHAT",
+  HOW = "HOW",
+}
+
 export type AgentArgs = {
   messages: ModelMessage[];
   business: Business;

@@ -135,7 +135,7 @@ export const Business: CollectionConfig = {
               },
               label: { en: "Tables Number", es: "Número de Mesas" },
               min: 1,
-              max: 50,
+              max: 500,
             },
             {
               type: "textarea",

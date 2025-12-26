@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CUSTOMER_INTENT } from "./agent.types";
 
 // Schema para fecha YYYY-MM-DD
 const daySchema = z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
@@ -18,3 +19,8 @@ export const reserveSchema = z.object({
   day: daySchema,
   numberOfPeople: z.number("Debe ser un número").min(1).max(500),
 });
+
+export const customerIntentSchema = z.enum([
+  CUSTOMER_INTENT.WHAT,
+  CUSTOMER_INTENT.HOW,
+]);

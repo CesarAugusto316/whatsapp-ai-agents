@@ -1,12 +1,17 @@
-import { generateText, stepCountIs } from "ai";
+import { generateText, ModelMessage, stepCountIs } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env } from "bun";
 import {
   getReservationStatusById,
   isScheduleAvailable,
 } from "./tools/restaurant/reservation.tools";
-import { buildInfoReservationsSystemPrompt } from "./tools/prompts";
-import { AgentArgs } from "./agent.types";
+import {
+  buildInfoReservationsSystemPrompt,
+  CLASSIFIER_PROMPT,
+} from "./tools/prompts";
+import { AgentArgs, CUSTOMER_INTENT } from "./agent.types";
+import z, { safeParse } from "zod";
+import { customerIntentSchema } from "./schemas";
 
 /**
  *
@@ -51,34 +56,37 @@ export function infoReservationAgent({ messages, business }: AgentArgs) {
   });
 }
 
-// /**
-//  *
-//  * @description Classifies the customer intent based on the conversation history.
-//  * @param messages
-//  * @returns
-//  */
-// export async function classifyCustomerIntent(
-//   messages: ModelMessage[],
-// ): Promise<CUSTOMER_INTENT> {
-//   const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
-//   const headers = {
-//     Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
-//   };
-//   const response = (await (
-//     await fetch(url, {
-//       method: "POST",
-//       headers,
-//       body: JSON.stringify({
-//         model,
-//         messages: [{ role: "system", content: CLASSIFIER_PROMPT }, ...messages],
-//       }),
-//     })
-//   ).json()) as { choices: { message: { content: string } }[] };
+/**
+ *
+ * @description Classifies the customer intent based on the conversation history.
+ * @param messages
+ * @returns
+ */
+export async function classifyCustomerIntent(
+  message: string,
+): Promise<CUSTOMER_INTENT> {
+  const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
+  const headers = {
+    Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
+  };
+  const response = (await (
+    await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: CLASSIFIER_PROMPT },
+          { role: "user", content: message },
+        ],
+      }),
+    })
+  ).json()) as { choices: { message: { content: string } }[] };
 
-//   const raw = response?.choices?.at(0)?.message?.content?.trim() ?? "";
-//   const { success, data } = safeParse(customerIntentSchema, raw);
-//   if (success) return data;
-//   else {
-//     return CUSTOMER_INTENT.UNKNOWN;
-//   }
-// }
+  const raw = response?.choices?.at(0)?.message?.content?.trim() ?? "";
+  const { success, data } = safeParse(customerIntentSchema, raw);
+  if (success) return data;
+  else {
+    return CUSTOMER_INTENT.WHAT;
+  }
+}

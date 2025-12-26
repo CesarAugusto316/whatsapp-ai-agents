@@ -1,5 +1,8 @@
 import { reserveSchema } from "@/ai-agents/schemas";
-import { infoReservationAgent } from "@/ai-agents/agent.config";
+import {
+  classifyCustomerIntent,
+  infoReservationAgent,
+} from "@/ai-agents/agent.config";
 import {
   buildApiDates,
   parseStringReservation,
@@ -19,6 +22,7 @@ import { ModelMessage } from "ai";
 import { Handler } from "hono/types";
 import { safeParse, string } from "zod";
 import {
+  CUSTOMER_INTENT,
   CustomerActions,
   FlowOptions,
   ReservationStep,
@@ -123,6 +127,8 @@ export const makeReservationHandler: Handler<CTX> = async (ctx, next) => {
             business: business?.id,
             customer: newCustomer.id,
             startDateTime,
+            customerName: newCustomer.name,
+            numberOfPeople,
             endDateTime,
             day: reservationDay,
             status: "confirmed",
@@ -511,6 +517,12 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
   await next();
 };
 
+/**
+ *
+ * @description Handles the GLOBAL flow of the conversation
+ * @param ctx
+ * @returns
+ */
 export const flowHandler: Handler<CTX> = async (ctx) => {
   const business = ctx.get("business");
   const customerMessage = ctx.get("customerMessage");
@@ -520,6 +532,99 @@ export const flowHandler: Handler<CTX> = async (ctx) => {
   const customer = ctx.get("customer");
   const reservationKey = ctx.get("reservationKey");
   const reservationProcessCache = ctx.get("currentReservation");
+
+  // 1. DETERMINISTIC FLOW AND CORE BUSINESS LOGIC
+  if (!reservationProcessCache) {
+    //
+    const isFirstMessage = chatHistoryCache.length === 0;
+    if (isFirstMessage || customerMessage == FlowOptions.HOW_SYSTEM_WORKS) {
+      // choices 0 & 4
+      const assistantResponse = flowMessages.getWelcomeMsg({
+        restaurantName: business?.name ?? "",
+      });
+      await chatHistoryService.save(
+        chatKey,
+        customerMessage,
+        assistantResponse,
+      );
+      return ctx.json({
+        received: true,
+        text: assistantResponse,
+      });
+    }
+    if (customerMessage == FlowOptions.GENERAL_INFO) {
+      // choice 1
+      const assistantResponse = buildRestaurantInfo(business);
+      await chatHistoryService.save(
+        chatKey,
+        customerMessage,
+        assistantResponse,
+      );
+      return ctx.json({
+        received: true,
+        text: assistantResponse,
+      });
+    }
+    if (customerMessage == FlowOptions.MAKE_RESERVATION) {
+      // START
+      const assistantResponse = reservationMessages.getStartMsg({
+        userName: customer?.name,
+      });
+      await reservationService.save(reservationKey, {
+        businessId: business?.id,
+        customerId: customer?.id,
+        customerName: customer?.name ?? "",
+        customerPhone,
+        step: ReservationStep.STARTED,
+        type: "MAKE",
+      });
+      await chatHistoryService.save(
+        chatKey,
+        customerMessage,
+        assistantResponse,
+      );
+      return ctx.json({
+        received: true,
+        text: assistantResponse,
+      });
+    }
+    if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
+      // START
+      const assistantResponse = reservationMessages.enterReservationId();
+      await reservationService.save(reservationKey, {
+        businessId: business?.id,
+        customerId: customer?.id,
+        customerName: customer?.name ?? "",
+        customerPhone,
+        step: ReservationStep.UPDATING,
+        type: "UPDATE",
+      });
+      await chatHistoryService.save(
+        chatKey,
+        customerMessage,
+        assistantResponse,
+      );
+      return ctx.json({
+        received: true,
+        text: assistantResponse,
+      });
+    }
+  }
+
+  // 2. INTENT HANDLING FOR CUSTOMER ASKS THE HOW OF SOMETHING
+  const customerIntent = await classifyCustomerIntent(customerMessage);
+
+  if (customerIntent === CUSTOMER_INTENT.HOW) {
+    // choices 0 & 4
+    const assistantResponse = flowMessages.howSystemWorksMsg();
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+    return ctx.json({
+      received: true,
+      text: assistantResponse,
+    });
+  }
+
+  // 3. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
   const messages: ModelMessage[] = [
     ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
     {
@@ -527,71 +632,6 @@ export const flowHandler: Handler<CTX> = async (ctx) => {
       content: customerMessage,
     },
   ];
-  const isFirstMessage = chatHistoryCache.length === 0;
-
-  if (isFirstMessage || customerMessage == FlowOptions.HOW_SYSTEM_WORKS) {
-    // choices 0 & 4
-    const assistantResponse = flowMessages.getWelcomeMsg({
-      restaurantName: business?.name ?? "",
-    });
-    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-    return ctx.json({
-      received: true,
-      text: assistantResponse,
-    });
-  }
-  if (customerMessage == FlowOptions.GENERAL_INFO) {
-    // choice 1
-    const assistantResponse = buildRestaurantInfo(business);
-    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-    return ctx.json({
-      received: true,
-      text: assistantResponse,
-    });
-  }
-  if (
-    !reservationProcessCache &&
-    customerMessage == FlowOptions.UPDATE_RESERVATION
-  ) {
-    // START
-    const assistantResponse = reservationMessages.enterReservationId();
-    await reservationService.save(reservationKey, {
-      businessId: business?.id,
-      customerId: customer?.id,
-      customerName: customer?.name ?? "",
-      customerPhone,
-      step: ReservationStep.UPDATING,
-      type: "UPDATE",
-    });
-    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-    return ctx.json({
-      received: true,
-      text: assistantResponse,
-    });
-  }
-  if (
-    !reservationProcessCache &&
-    customerMessage == FlowOptions.MAKE_RESERVATION
-  ) {
-    // START
-    const assistantResponse = reservationMessages.getStartMsg({
-      userName: customer?.name,
-    });
-    await reservationService.save(reservationKey, {
-      businessId: business?.id,
-      customerId: customer?.id,
-      customerName: customer?.name ?? "",
-      customerPhone,
-      step: ReservationStep.STARTED,
-      type: "MAKE",
-    });
-    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-    return ctx.json({
-      received: true,
-      text: assistantResponse,
-    });
-  }
-
   const result = await infoReservationAgent({
     messages,
     business,

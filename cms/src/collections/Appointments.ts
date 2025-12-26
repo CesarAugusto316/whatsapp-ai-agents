@@ -16,7 +16,7 @@ export const Appointments: CollectionConfig = {
     },
   },
   admin: {
-    useAsTitle: "startDateTime", // header title is taken from "name" field
+    useAsTitle: "customerName", // header title is taken from "name" field
   },
   timestamps: true,
   access: {
@@ -64,6 +64,7 @@ export const Appointments: CollectionConfig = {
     },
   },
   fields: [
+    // businessId
     {
       name: "business",
       type: "relationship",
@@ -85,6 +86,7 @@ export const Appointments: CollectionConfig = {
         },
       },
     },
+    // customerId
     {
       name: "customer",
       index: true,
@@ -106,6 +108,13 @@ export const Appointments: CollectionConfig = {
         },
       },
     },
+    // customerName
+    {
+      name: "customerName",
+      type: "text",
+      label: { en: "Customer Name", es: "Nombre del Cliente" },
+    },
+    // day
     {
       name: "day",
       index: true,
@@ -135,6 +144,7 @@ export const Appointments: CollectionConfig = {
         },
       },
     },
+    // time: startDateTime - endDateTime
     {
       type: "row",
       fields: [
@@ -196,6 +206,7 @@ export const Appointments: CollectionConfig = {
         },
       ],
     },
+    // status
     {
       name: "status",
       type: "select",
@@ -212,6 +223,7 @@ export const Appointments: CollectionConfig = {
         { value: "completed", label: { en: "Completed", es: "Completada" } },
       ],
     },
+    // notes
     {
       name: "notes",
       type: "textarea",
@@ -226,6 +238,19 @@ export const Appointments: CollectionConfig = {
           );
         },
       },
+    },
+    // number of people
+    {
+      type: "number",
+      name: "numberOfPeople",
+      defaultValue: 1,
+      admin: {
+        condition: (data) =>
+          data?.business?.general?.businessType === "restaurant",
+      },
+      label: { en: "Tables Number", es: "Número de Mesas" },
+      min: 1,
+      max: 100,
     },
   ],
 };

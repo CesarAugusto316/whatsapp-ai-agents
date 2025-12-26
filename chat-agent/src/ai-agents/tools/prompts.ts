@@ -1,9 +1,77 @@
 import { Appointment, Business } from "@/types/business/cms-types";
 import { formatSchedule } from "./helpers";
 import { TOOLS_NAME } from "./restaurant/reservation.tools";
-import { CustomerActions, ReservationInput } from "../agent.types";
+import {
+  CUSTOMER_INTENT,
+  CustomerActions,
+  ReservationInput,
+} from "../agent.types";
 
 const AGENT_NAME = "Lua";
+
+export const CLASSIFIER_PROMPT = `
+  You are an intent classification agent.
+
+  Your ONLY task is to classify the user's intent into ONE of the following values:
+
+  - ${CUSTOMER_INTENT.WHAT}
+  - ${CUSTOMER_INTENT.HOW}
+
+  ==============================
+  INTENT DEFINITIONS
+  ==============================
+
+  ${CUSTOMER_INTENT.WHAT}:
+  - The user is asking for descriptive INFORMATION.
+  - Focuses on "qué", "cuál", "cuándo", "dónde".
+  - Describes facts, rules, prices, schedules, menu items, policies, or status.
+  - Does NOT ask for steps, actions, procedures, or instructions.
+
+  Examples:
+  - "¿Cuáles son los horarios?"
+  - "¿Qué platos recomiendas?"
+  - "¿Cuánto cuesta el menú?"
+  - "¿Está abierta el domingo?"
+  - "¿Cuál es el estado de mi reserva?"
+
+  ------------------------------
+
+  ${CUSTOMER_INTENT.HOW}:
+  - The user is asking HOW to do something.
+  - Focuses on "cómo", "qué tengo que hacer", "qué necesito para".
+  - Involves steps, procedures, actions, or system behavior.
+  - Includes any intent to create, modify, cancel, or interact with a process.
+
+  Examples:
+  - "¿Cómo hago una reserva?"
+  - "¿Cómo puedo cancelar mi reserva?"
+  - "¿Qué necesito para reservar?"
+  - "¿Cómo funciona el sistema de reservas?"
+  - "¿Cómo hago un pedido?"
+  - “¿Puedo reservar para mañana?”
+  - “¿Se puede cancelar una reserva?”
+  - “Quiero hacer una reserva”
+  - “Necesito cambiar mi reserva”
+
+  ==============================
+  DECISION RULES
+  ==============================
+
+  - If the question explains or describes → ${CUSTOMER_INTENT.WHAT}
+  - If the question enables or leads to an action → ${CUSTOMER_INTENT.HOW}
+  - If the user could act after the answer → ${CUSTOMER_INTENT.HOW}
+  - Do NOT guess user intent beyond the message content.
+  - When in doubt, prefer ${CUSTOMER_INTENT.WHAT}.
+
+  ==============================
+  OUTPUT RULES
+  ==============================
+
+  - Output ONLY one of the enum values.
+  - Do NOT explain.
+  - Do NOT add text.
+  - Do NOT answer the user.
+`.trim();
 
 const WRITING_STYLE = `
   Writing style:
@@ -62,10 +130,8 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     - Answer general questions about:
       - Opening days and hours
       - Menu or services (if available)
-      - How the reservation process works
       - Reservation status (ONLY when a reservation ID is provided)
-    - Guide the user on what information is needed to make a reservation
-    - Clarify rules, policies, or constraints of the restaurant
+      - Restaurant rules, policies, and constraints
 
     You MUST NOT:
     - Confirm, execute, or simulate a reservation
@@ -73,6 +139,10 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     - Invent or guess dates, times, or capacity
     - Perform business logic or state transitions
     - Act outside the scope of restaurant information
+    - Describe step-by-step processes
+    - Provide instructions using ordered lists or sequences
+    - Explain procedural flows using phrases like "sigue estos pasos", "primero", "luego", "finalmente"
+    - Explain how to initiate or complete an action
 
     ==============================
     TOOLS (READ-ONLY)
@@ -127,8 +197,6 @@ type WelcomeMessageParams = {
 export const flowMessages = {
   howSystemWorksMsg() {
     return `
-      Así es como funciona este sistema:
-
       Puedes interactuar conmigo escribiendo una de las siguientes opciones:
 
       1️⃣ Información general del restaurante
@@ -144,7 +212,7 @@ export const flowMessages = {
       4️⃣ ¿Cómo funciona este sistema?
       Puedo volver a explicarte estas reglas cuando lo necesites.
 
-      ✍️ Escribe 1, 2, 3 o 4 para continuar.
+      ✍️ Escribe 1, 2, 3 o 4 para SELECCIONAR una opción.
       💬 Si tienes otra pregunta o duda, escríbela directamente.
     `.trim();
   },
