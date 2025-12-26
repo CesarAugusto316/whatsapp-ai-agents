@@ -31,38 +31,15 @@ import {
  * @returns
  */
 export const makeReservationHandler: Handler<CTX> = async (ctx, next) => {
-  const business = ctx.get("business");
-  const customerMessage = ctx.get("customerMessage");
-  const customerPhone = ctx.get("customerPhone");
-  const customer = ctx.get("customer");
-  const chatKey = ctx.get("chatKey");
-  const reservationKey = ctx.get("reservationKey");
   const reservationProcessCache = ctx.get("currentReservation");
 
-  if (
-    !reservationProcessCache &&
-    customerMessage == FlowOptions.MAKE_RESERVATION
-  ) {
-    // START
-    const assistantResponse = reservationMessages.getStartMsg({
-      userName: customer?.name,
-    });
-    await reservationService.save(reservationKey, {
-      businessId: business?.id,
-      customerId: customer?.id,
-      customerName: customer?.name ?? "",
-      customerPhone,
-      step: ReservationStep.STARTED,
-      type: "MAKE",
-    });
-    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-    return ctx.json({
-      received: true,
-      text: assistantResponse,
-    });
-  }
-
   if (reservationProcessCache?.type === "MAKE") {
+    const business = ctx.get("business");
+    const customerMessage = ctx.get("customerMessage");
+    const customerPhone = ctx.get("customerPhone");
+    const customer = ctx.get("customer");
+    const chatKey = ctx.get("chatKey");
+    const reservationKey = ctx.get("reservationKey");
     // TODO: implement a retry system,
     // if user fails to provide valid input > 2, send a message asking for help
     // otherwise the user will be a loop
@@ -114,7 +91,7 @@ export const makeReservationHandler: Handler<CTX> = async (ctx, next) => {
     }
 
     if (reservationProcessCache?.step === ReservationStep.VALIDATED) {
-      // FINAL STEP: 1. CONFIRMAR
+      // FINAL OPTION: 1. CONFIRMAR
       if (customerMessage.toUpperCase() === CustomerActions.CONFIRM) {
         const {
           customerName = "",
@@ -171,7 +148,7 @@ export const makeReservationHandler: Handler<CTX> = async (ctx, next) => {
         return ctx.json({ error: "Customer not created" });
       }
 
-      // FINAL STEP: 2. SALIR
+      // FINAL OPTION: 2. SALIR
       if (customerMessage.toUpperCase() === CustomerActions.EXIT) {
         await reservationService.delete(reservationKey);
         const assistantMsg = flowMessages.getExitMsg();
@@ -182,7 +159,7 @@ export const makeReservationHandler: Handler<CTX> = async (ctx, next) => {
         });
       }
 
-      // FINAL STEP: 3. REINGRESAR DATOS
+      // FINAL OPTION: 3. REINGRESAR DATOS
       if (customerMessage.toUpperCase() === CustomerActions.RESTART) {
         // RESTART
         const assistantResponse = reservationMessages.getReStartMsg({
@@ -227,41 +204,24 @@ export const makeReservationHandler: Handler<CTX> = async (ctx, next) => {
  * @returns
  */
 export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
-  const business = ctx.get("business");
-  const customerMessage = ctx.get("customerMessage");
-  const customerPhone = ctx.get("customerPhone");
   const customer = ctx.get("customer");
-  const chatKey = ctx.get("chatKey");
-  const reservationKey = ctx.get("reservationKey");
   const reservationProcessCache = ctx.get("currentReservation");
 
-  if (!customer) return ctx.json({ error: "Customer not found" }, 404);
-  if (
-    !reservationProcessCache &&
-    customerMessage == FlowOptions.UPDATE_RESERVATION
-  ) {
-    // START
-    const assistantResponse = reservationMessages.enterReservationId();
-    await reservationService.save(reservationKey, {
-      businessId: business?.id,
-      customerId: customer?.id,
-      customerName: customer?.name ?? "",
-      customerPhone,
-      step: ReservationStep.UPDATING,
-      type: "UPDATE",
-    });
-    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+  if (!customer)
     return ctx.json({
       received: true,
-      text: assistantResponse,
+      text: "Aún no te has registrado, por favor has tu primera reserva para registrarte",
     });
-  }
 
   if (
     reservationProcessCache?.type === "CANCEL" &&
     reservationProcessCache?.step === ReservationStep.STARTED &&
     reservationProcessCache.id
   ) {
+    const customerMessage = ctx.get("customerMessage");
+    const chatKey = ctx.get("chatKey");
+    const reservationKey = ctx.get("reservationKey");
+
     if (customerMessage.toUpperCase() === CustomerActions.YES) {
       const res = await businessService.updateAppointment(
         reservationProcessCache.id,
@@ -313,6 +273,11 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
   }
 
   if (reservationProcessCache?.type === "UPDATE") {
+    const business = ctx.get("business");
+    const customerMessage = ctx.get("customerMessage");
+    const customerPhone = ctx.get("customerPhone");
+    const chatKey = ctx.get("chatKey");
+    const reservationKey = ctx.get("reservationKey");
     // TODO: implement a retry system,
     // if user fails to provide valid input > 2, send a message asking for help
     // otherwise the user will be a loop
@@ -447,7 +412,7 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
     }
 
     if (reservationProcessCache?.step === ReservationStep.VALIDATED) {
-      // FINAL STEP: 1. CONFIRMAR
+      // FINAL OPTION: 1. CONFIRMAR
       if (customerMessage.toUpperCase() === CustomerActions.CONFIRM) {
         const {
           day = "",
@@ -495,7 +460,7 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
         return ctx.json({ error: "Customer not created" });
       }
 
-      // FINAL STEP: 2. SALIR
+      // FINAL OPTION: 2. SALIR
       if (customerMessage.toUpperCase() === CustomerActions.EXIT) {
         await reservationService.delete(reservationKey);
         const assistantMsg = flowMessages.getExitMsg();
@@ -506,7 +471,7 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
         });
       }
 
-      // FINAL STEP: 3. REINGRESAR DATOS
+      // FINAL OPTION: 3. REINGRESAR DATOS
       if (customerMessage.toUpperCase() === CustomerActions.RESTART) {
         // RESTART
         const assistantResponse = reservationMessages.getReStartMsg({
@@ -546,12 +511,15 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
   await next();
 };
 
-export const flowHandler: Handler<CTX> = async (c) => {
-  const business = c.get("business");
-  const customerMessage = c.get("customerMessage");
-  const customerPhone = c.get("customerPhone");
-  const chatKey = c.get("chatKey");
+export const flowHandler: Handler<CTX> = async (ctx) => {
+  const business = ctx.get("business");
+  const customerMessage = ctx.get("customerMessage");
+  const customerPhone = ctx.get("customerPhone");
+  const chatKey = ctx.get("chatKey");
   const chatHistoryCache = await chatHistoryService.get(chatKey);
+  const customer = ctx.get("customer");
+  const reservationKey = ctx.get("reservationKey");
+  const reservationProcessCache = ctx.get("currentReservation");
   const messages: ModelMessage[] = [
     ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
     {
@@ -567,7 +535,7 @@ export const flowHandler: Handler<CTX> = async (c) => {
       restaurantName: business?.name ?? "",
     });
     await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-    return c.json({
+    return ctx.json({
       received: true,
       text: assistantResponse,
     });
@@ -576,7 +544,49 @@ export const flowHandler: Handler<CTX> = async (c) => {
     // choice 1
     const assistantResponse = buildRestaurantInfo(business);
     await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
-    return c.json({
+    return ctx.json({
+      received: true,
+      text: assistantResponse,
+    });
+  }
+  if (
+    !reservationProcessCache &&
+    customerMessage == FlowOptions.UPDATE_RESERVATION
+  ) {
+    // START
+    const assistantResponse = reservationMessages.enterReservationId();
+    await reservationService.save(reservationKey, {
+      businessId: business?.id,
+      customerId: customer?.id,
+      customerName: customer?.name ?? "",
+      customerPhone,
+      step: ReservationStep.UPDATING,
+      type: "UPDATE",
+    });
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+    return ctx.json({
+      received: true,
+      text: assistantResponse,
+    });
+  }
+  if (
+    !reservationProcessCache &&
+    customerMessage == FlowOptions.MAKE_RESERVATION
+  ) {
+    // START
+    const assistantResponse = reservationMessages.getStartMsg({
+      userName: customer?.name,
+    });
+    await reservationService.save(reservationKey, {
+      businessId: business?.id,
+      customerId: customer?.id,
+      customerName: customer?.name ?? "",
+      customerPhone,
+      step: ReservationStep.STARTED,
+      type: "MAKE",
+    });
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+    return ctx.json({
       received: true,
       text: assistantResponse,
     });
@@ -590,7 +600,7 @@ export const flowHandler: Handler<CTX> = async (c) => {
   const assistantResponse = renderAssistantText(result);
   await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
 
-  return c.json({
+  return ctx.json({
     received: true,
     text: assistantResponse,
     messages,
