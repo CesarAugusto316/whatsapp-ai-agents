@@ -117,8 +117,16 @@ export const Appointments: CollectionConfig = {
     // customerName
     {
       name: "customerName",
-      admin: {
-        readOnly: true,
+      access: {
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
+          );
+        },
       },
       type: "text",
       label: { en: "Customer Name", es: "Nombre del Cliente" },
@@ -133,15 +141,14 @@ export const Appointments: CollectionConfig = {
         es: "Día",
       },
       required: true,
-      // defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
-      defaultValue: new Date().toISOString(),
       access: {
         update: ({ req }) => {
           if (req?.user?.collection === "third-party-access") {
             return true;
           }
           return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
           );
         },
       },
@@ -166,14 +173,14 @@ export const Appointments: CollectionConfig = {
             es: "Hora de inicio",
           },
           required: true,
-          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
           access: {
             update: ({ req }) => {
               if (req?.user?.collection === "third-party-access") {
                 return true;
               }
               return (
-                req?.user?.collection === "users" && req?.user?.role === "admin"
+                req?.user?.collection === "users" &&
+                (req?.user?.role === "admin" || req?.user?.role === "business")
               );
             },
           },
@@ -194,14 +201,14 @@ export const Appointments: CollectionConfig = {
             es: "Hora de fin",
           },
           required: false,
-          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
           access: {
             update: ({ req }) => {
-              if (req.user?.collection === "third-party-access") {
+              if (req?.user?.collection === "third-party-access") {
                 return true;
               }
               return (
-                req?.user?.collection === "users" && req?.user?.role === "admin"
+                req?.user?.collection === "users" &&
+                (req?.user?.role === "admin" || req?.user?.role === "business")
               );
             },
           },
@@ -225,6 +232,17 @@ export const Appointments: CollectionConfig = {
       },
       required: true,
       defaultValue: "pending",
+      access: {
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
+          );
+        },
+      },
       options: [
         { value: "pending", label: { en: "Pending", es: "Pendiente" } },
         { value: "confirmed", label: { en: "Confirmed", es: "Confirmada" } },
@@ -267,16 +285,6 @@ export const Appointments: CollectionConfig = {
       name: "notes",
       type: "textarea",
       label: { en: "Notes", es: "Observaciones" },
-      access: {
-        update: ({ req }) => {
-          if (req?.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
-          );
-        },
-      },
     },
   ],
 };

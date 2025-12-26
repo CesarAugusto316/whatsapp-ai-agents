@@ -118,7 +118,8 @@ export const Customers: CollectionConfig = {
             return true;
           }
           return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
           );
         },
       },
@@ -149,7 +150,8 @@ export const Customers: CollectionConfig = {
             return true;
           }
           return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
           );
         },
       },
