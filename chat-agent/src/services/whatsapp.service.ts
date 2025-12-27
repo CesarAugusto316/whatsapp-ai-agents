@@ -87,7 +87,7 @@ class WhatsappService {
 
   public async beforeSend(
     args: SendSeenPayload,
-    callAI: () => Promise<string>,
+    flowHandler: () => Promise<string>,
   ) {
     // send seen
     await Promise.all([
@@ -95,8 +95,8 @@ class WhatsappService {
       this.timeOut(),
     ]);
     // start typing
-    const [aiResponse] = await Promise.all([
-      callAI(),
+    const [flowResponse] = await Promise.all([
+      flowHandler(),
       this.sendStartTyping({ session: args.session, chatId: args.chatId }),
       this.timeOut(),
     ]);
@@ -105,7 +105,7 @@ class WhatsappService {
       this.sendStopTyping({ session: args.session, chatId: args.chatId }),
       this.timeOut(),
     ]);
-    return aiResponse;
+    return flowResponse;
   }
 
   public async sendText({ session, text, chatId }: SendMessagePayload) {

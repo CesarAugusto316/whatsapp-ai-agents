@@ -1,9 +1,9 @@
 import whatsappService from "@/services/whatsapp.service";
 import { CTX, CtxState } from "@/types/hono.types";
 import { Handler } from "hono/types";
-import { initFlow } from "./flow";
+import { initChatFlow } from "./chat-flow";
 
-export const aiAgentHandler: Handler<CTX> = async (ctx) => {
+export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
   const state = {
     session: ctx.get("session"),
     whatsappEvent: ctx.get("whatsappEvent"),
@@ -22,20 +22,18 @@ export const aiAgentHandler: Handler<CTX> = async (ctx) => {
   }
 
   // 1. Set message as seen & call the core-flow & get a response
-  const flowResponse = await whatsappService.beforeSend(
+  const chatResponse = await whatsappService.beforeSend(
     {
       session: state.session,
       chatId: state.customerPhone,
     },
-    async () => {
-      return initFlow(state);
-    },
+    async () => initChatFlow(state),
   );
 
   // 2. Send AI response to customer
   await whatsappService.sendText({
     chatId: state.customerPhone,
-    text: flowResponse,
+    text: chatResponse,
     session: state.session,
   });
 

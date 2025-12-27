@@ -17,7 +17,7 @@ export type AgentArgs = {
   customerPhone: string;
 };
 
-export const ReStatus = {
+export const reservationStatuses = {
   MAKE_STARTED: "MAKE_STARTED",
   MAKE_RESTARTED: "MAKE_RESTARTED",
   MAKE_VALIDATED: "MAKE_VALIDATED",
@@ -34,9 +34,11 @@ export const ReStatus = {
   CANCEL_CONFIRMED: "CANCEL_CONFIRMED",
 } as const;
 
+export type ReservationStatus = keyof typeof reservationStatuses;
+
 export interface ReservationState {
   id: string;
-  status: keyof typeof ReStatus;
+  status: ReservationStatus;
   customerId: string;
   customerName: string;
   customerPhone: string;
