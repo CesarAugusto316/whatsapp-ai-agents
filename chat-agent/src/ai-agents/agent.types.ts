@@ -17,18 +17,26 @@ export type AgentArgs = {
   customerPhone: string;
 };
 
-export enum ReservationStep {
-  STARTED = "STARTED",
-  UPDATING = "UPDATING",
-  RE_STARTED = "RE_STARTED",
-  VALIDATED = "VALIDATED",
-  CONFIRMED = "CONFIRMED",
-}
+export const ReStatus = {
+  MAKE_STARTED: "MAKE_STARTED",
+  MAKE_RESTARTED: "MAKE_RESTARTED",
+  MAKE_VALIDATED: "MAKE_VALIDATED",
+  MAKE_CONFIRMED: "MAKE_CONFIRMED",
+
+  UPDATE_PRE_START: "UPDATE_PRE_START",
+  UPDATE_STARTED: "UPDATE_STARTED",
+  UPDATE_RESTARTED: "UPDATE_RESTARTED",
+  UPDATE_VALIDATED: "UPDATE_VALIDATED",
+  UPDATE_CONFIRMED: "UPDATE_CONFIRMED",
+
+  CANCEL_STARTED: "CANCEL_STARTED",
+  CANCEL_VALIDATED: "CANCEL_VALIDATED",
+  CANCEL_CONFIRMED: "CANCEL_CONFIRMED",
+} as const;
 
 export interface ReservationState {
   id: string;
-  step: ReservationStep;
-  type: "MAKE" | "UPDATE" | "CANCEL";
+  status: keyof typeof ReStatus;
   customerId: string;
   customerName: string;
   customerPhone: string;

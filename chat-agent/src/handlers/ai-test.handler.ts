@@ -25,7 +25,7 @@ import {
   CUSTOMER_INTENT,
   CustomerActions,
   FlowOptions,
-  ReservationStep,
+  ReStatus,
 } from "@/ai-agents/agent.types";
 
 /**
@@ -43,22 +43,22 @@ export const makeReservationHandler: Handler<CTX> = async (ctx, next) => {
   const chatKey = ctx.get("chatKey");
   const reservationKey = ctx.get("reservationKey");
 
-  const text = await makeReservationFlow({
-    business,
-    customer,
-    customerMessage,
-    customerPhone,
-    reservationKey,
-    currentReservation: RESERVATION_CACHE,
-  });
+  // const text = await makeReservationFlow({
+  //   business,
+  //   customer,
+  //   customerMessage,
+  //   customerPhone,
+  //   reservationKey,
+  //   currentReservation: RESERVATION_CACHE,
+  // });
 
-  if (text) {
-    await chatHistoryService.save(chatKey, customerMessage, text);
-    return ctx.json({
-      received: true,
-      text,
-    });
-  }
+  // if (text) {
+  //   await chatHistoryService.save(chatKey, customerMessage, text);
+  //   return ctx.json({
+  //     received: true,
+  //     text,
+  //   });
+  // }
   await next();
 };
 
@@ -74,138 +74,130 @@ export async function makeReservationFlow(
     currentReservation: RESERVATION_CACHE,
   } = ctx;
 
-  if (RESERVATION_CACHE?.type === "MAKE") {
-    // TODO: implement a retry system,
-    // if user fails to provide valid input > 2, send a message asking for help
-    // otherwise the user will be a loop
-    if (
-      RESERVATION_CACHE?.step === ReservationStep.STARTED &&
-      customerMessage
-    ) {
-      const parseInput = parseStringReservation(
-        customerMessage,
-        customer?.name ? 3 : 4,
-      );
-      if (!parseInput.success) {
-        return parseInput.error ?? "Datos inválidos";
-      }
-      const { success, data, error } = safeParse(
-        reserveSchema,
-        parseInput.data,
-      );
-      if (!success) {
-        return error.message ?? "Datos inválidos";
-      }
-      const isAvailable = await businessService.checkAvailability(
-        data?.day,
-        data.startTime,
+  // TODO: implement a retry system,
+  // if user fails to provide valid input > 2, send a message asking for help
+  // otherwise the user will be a loop
+  if (RESERVATION_CACHE?.status === ReStatus.MAKE_STARTED && customerMessage) {
+    const parseInput = parseStringReservation(
+      customerMessage,
+      customer?.name ? 3 : 4,
+    );
+    if (!parseInput.success) {
+      return parseInput.error ?? "Datos inválidos";
+    }
+    const { success, data, error } = safeParse(reserveSchema, parseInput.data);
+    if (!success) {
+      return error.message ?? "Datos inválidos";
+    }
+    const isAvailable = await businessService.checkAvailability(
+      data?.day,
+      data.startTime,
+      (business?.schedule?.averageTime ?? 1) * 60,
+    );
+    if (!isAvailable) {
+      return "Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.";
+    }
+    await reservationService.save(reservationKey ?? "", {
+      ...RESERVATION_CACHE,
+      customerName: data.name ?? customer?.name,
+      day: data.day,
+      startTime: data.startTime,
+      numberOfPeople: data.numberOfPeople,
+      status: ReStatus.MAKE_VALIDATED,
+      // step: ReservationStep.VALIDATED,
+    });
+    const assistantResponse = reservationMessages.getConfirmationMsg({
+      ...data,
+      name: data?.name ?? customer?.name,
+    });
+    return assistantResponse;
+  }
+
+  if (RESERVATION_CACHE?.status === ReStatus.MAKE_VALIDATED) {
+    // FINAL OPTION: 1. CONFIRMAR
+    if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
+      const {
+        customerName = "",
+        day = "",
+        startTime = "",
+        numberOfPeople = 1,
+      } = RESERVATION_CACHE;
+      let newCustomer = customer;
+      const {
+        day: reservationDay,
+        endDateTime,
+        startDateTime,
+      } = buildApiDates(
+        day,
+        startTime,
         (business?.schedule?.averageTime ?? 1) * 60,
-      );
-      if (!isAvailable) {
-        return "Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.";
+      ); // use business average reservation time
+
+      if (!customer) {
+        newCustomer = (
+          (await (
+            await businessService.createCostumer({
+              business: business?.id ?? "",
+              phoneNumber: customerPhone ?? "",
+              name: customerName,
+            })
+          ).json()) as { doc: Customer }
+        ).doc;
       }
-      await reservationService.save(reservationKey ?? "", {
-        ...RESERVATION_CACHE,
-        customerName: data.name ?? customer?.name,
-        day: data.day,
-        startTime: data.startTime,
-        numberOfPeople: data.numberOfPeople,
-        step: ReservationStep.VALIDATED,
+      // finally, we create the reservation
+      if (newCustomer?.id && business?.id) {
+        const res = await businessService.createAppointment({
+          business: business?.id,
+          customer: newCustomer.id,
+          startDateTime,
+          customerName: newCustomer.name,
+          numberOfPeople,
+          endDateTime,
+          day: reservationDay,
+          status: "confirmed",
+        });
+        const reservation = (await res.json()) as { doc: Appointment };
+        const assistantMsg = reservationMessages.getSuccessMsg(
+          reservation?.doc,
+          {
+            customerName: newCustomer.name,
+            numberOfPeople,
+            restaurantName: business?.name ?? "",
+          },
+        );
+        await reservationService.delete(reservationKey ?? "");
+        return assistantMsg;
+      }
+      return "Cliente no pudo ser creado";
+    }
+
+    // FINAL OPTION: 2. SALIR
+    if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
+      await reservationService.delete(reservationKey ?? "");
+      const assistantMsg = flowMessages.getExitMsg();
+      return assistantMsg;
+    }
+
+    // FINAL OPTION: 3. REINGRESAR DATOS
+    if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
+      // RESTART
+      const assistantResponse = reservationMessages.getReStartMsg({
+        userName: customer?.name,
       });
-      const assistantResponse = reservationMessages.getConfirmationMsg({
-        ...data,
-        name: data?.name ?? customer?.name,
+      await reservationService.save(reservationKey ?? "", {
+        businessId: business?.id,
+        customerId: customer?.id,
+        customerName: customer?.name ?? "",
+        customerPhone,
+        status: ReStatus.MAKE_STARTED,
       });
       return assistantResponse;
     }
 
-    if (RESERVATION_CACHE?.step === ReservationStep.VALIDATED) {
-      // FINAL OPTION: 1. CONFIRMAR
-      if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
-        const {
-          customerName = "",
-          day = "",
-          startTime = "",
-          numberOfPeople = 1,
-        } = RESERVATION_CACHE;
-        let newCustomer = customer;
-        const {
-          day: reservationDay,
-          endDateTime,
-          startDateTime,
-        } = buildApiDates(
-          day,
-          startTime,
-          (business?.schedule?.averageTime ?? 1) * 60,
-        ); // use business average reservation time
-
-        if (!customer) {
-          newCustomer = (
-            (await (
-              await businessService.createCostumer({
-                business: business?.id ?? "",
-                phoneNumber: customerPhone ?? "",
-                name: customerName,
-              })
-            ).json()) as { doc: Customer }
-          ).doc;
-        }
-        // finally, we create the reservation
-        if (newCustomer?.id && business?.id) {
-          const res = await businessService.createAppointment({
-            business: business?.id,
-            customer: newCustomer.id,
-            startDateTime,
-            customerName: newCustomer.name,
-            numberOfPeople,
-            endDateTime,
-            day: reservationDay,
-            status: "confirmed",
-            // ADD NUMBER OF PEOPLE
-          });
-          const reservation = (await res.json()) as { doc: Appointment };
-          const assistantMsg = reservationMessages.getSuccessMsg(
-            reservation?.doc,
-            {
-              customerName: newCustomer.name,
-              numberOfPeople,
-              restaurantName: business?.name ?? "",
-            },
-          );
-          await reservationService.delete(reservationKey ?? "");
-          return assistantMsg;
-        }
-        return "Cliente no pudo ser creado";
-      }
-
-      // FINAL OPTION: 2. SALIR
-      if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-        await reservationService.delete(reservationKey ?? "");
-        const assistantMsg = flowMessages.getExitMsg();
-        return assistantMsg;
-      }
-
-      // FINAL OPTION: 3. REINGRESAR DATOS
-      if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
-        // RESTART
-        const assistantResponse = reservationMessages.getReStartMsg({
-          userName: customer?.name,
-        });
-        await reservationService.save(reservationKey ?? "", {
-          businessId: business?.id,
-          customerId: customer?.id,
-          customerName: customer?.name ?? "",
-          customerPhone,
-          step: ReservationStep.STARTED,
-        });
-        return assistantResponse;
-      }
-
-      // FALLBACK
-      if (customerMessage) {
-        const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva, ${CustomerActions.RESTART} para cambiar algun dato, ó ${CustomerActions.EXIT} para salir`;
-        return assistanceMsg;
-      }
+    // FALLBACK
+    if (customerMessage) {
+      const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva, ${CustomerActions.RESTART} para cambiar algun dato, ó ${CustomerActions.EXIT} para salir`;
+      return assistanceMsg;
     }
   }
 }
@@ -219,6 +211,11 @@ export async function makeReservationFlow(
 export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
   const customer = ctx.get("customer");
   const RESERVATION_CACHE = ctx.get("currentReservation");
+  const reservationKey = ctx.get("reservationKey") ?? "";
+  const business = ctx.get("business");
+  const customerMessage = ctx.get("customerMessage");
+  const customerPhone = ctx.get("customerPhone");
+  const chatKey = ctx.get("chatKey");
 
   if (!customer)
     return ctx.json({
@@ -227,13 +224,11 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
     });
 
   if (
-    RESERVATION_CACHE?.type === "CANCEL" &&
-    RESERVATION_CACHE?.step === ReservationStep.STARTED &&
-    RESERVATION_CACHE.id
+    RESERVATION_CACHE?.status === ReStatus.CANCEL_STARTED &&
+    RESERVATION_CACHE?.id
   ) {
     const customerMessage = ctx.get("customerMessage");
     const chatKey = ctx.get("chatKey");
-    const reservationKey = ctx.get("reservationKey");
 
     if (customerMessage.toUpperCase() === CustomerActions.YES) {
       const res = await businessService.updateAppointment(
@@ -285,145 +280,220 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
     }
   }
 
-  if (RESERVATION_CACHE?.type === "UPDATE") {
-    const business = ctx.get("business");
-    const customerMessage = ctx.get("customerMessage");
-    const customerPhone = ctx.get("customerPhone");
-    const chatKey = ctx.get("chatKey");
-    const reservationKey = ctx.get("reservationKey");
-    // TODO: implement a retry system,
-    // if user fails to provide valid input > 2, send a message asking for help
-    // otherwise the user will be a loop
-    if (RESERVATION_CACHE?.step === ReservationStep.UPDATING) {
-      // START
-      if (customerMessage && !RESERVATION_CACHE.id) {
-        const { success, data } = safeParse(
-          string().min(2).max(60),
-          customerMessage.trim(),
-        );
-        if (!success) {
-          return ctx.json({
-            received: true,
-            text: "Por favor, ingresa un ID válido entre 2 y 60 caracteres.",
-          });
-        }
-        const reservation = (await (
-          await businessService.getAppointmentById(data)
-        ).json()) as Appointment;
-
-        if (!reservation) {
-          return ctx.json({
-            received: true,
-            text: "Reserva no encontrada. Escribe un ID válido.",
-          });
-        }
-        const assistantResponse = `Escribe la palabra ${CustomerActions.UPDATE} para actualizar la reserva. o ${CustomerActions.CANCEL} para cancelarla.`;
-        await reservationService.save(reservationKey, {
-          ...RESERVATION_CACHE,
-          id: reservation.id,
-        });
-        await chatHistoryService.save(
-          chatKey,
-          customerMessage,
-          assistantResponse,
-        );
-        return ctx.json({
-          received: true,
-          text: assistantResponse,
-        });
-      }
-      if (
-        customerMessage.toUpperCase() === CustomerActions.UPDATE &&
-        RESERVATION_CACHE.id
-      ) {
-        const assistantResponse = reservationMessages.getStartMsg({
-          userName: customer?.name,
-          mode: "update",
-        });
-        await reservationService.save(reservationKey, {
-          ...RESERVATION_CACHE,
-          step: ReservationStep.STARTED,
-        });
-        await chatHistoryService.save(
-          chatKey,
-          customerMessage,
-          assistantResponse,
-        );
-        return ctx.json({
-          received: true,
-          text: assistantResponse,
-        });
-      }
-      if (
-        customerMessage.toUpperCase() === CustomerActions.CANCEL &&
-        RESERVATION_CACHE.id
-      ) {
-        const assistantResponse = `Seguro que desea cancelar su reserva? esta accion no se puede revertir. Escribe ${CustomerActions.YES} para confirmar o ${CustomerActions.NO} para cancelar`;
-        await reservationService.save(reservationKey, {
-          ...RESERVATION_CACHE,
-          step: ReservationStep.STARTED,
-          type: "CANCEL",
-        });
-        await chatHistoryService.save(
-          chatKey,
-          customerMessage,
-          assistantResponse,
-        );
-        return ctx.json({
-          received: true,
-          text: assistantResponse,
-        });
-      }
-    }
-
-    if (
-      RESERVATION_CACHE?.step === ReservationStep.STARTED &&
-      RESERVATION_CACHE.id &&
-      customerMessage
-    ) {
-      const parseInput = parseStringReservation(customerMessage, 3); // customerName already provided
-      if (!parseInput.success) {
-        return ctx.json({
-          received: true,
-          text: parseInput.error,
-        });
-      }
-      const { success, data, error } = safeParse(
-        reserveSchema,
-        parseInput.data,
+  // TODO: implement a retry system,
+  // if user fails to provide valid input > 2, send a message asking for help
+  // otherwise the user will be a loop
+  if (RESERVATION_CACHE?.status === ReStatus.UPDATE_PRE_START) {
+    // START
+    if (customerMessage && !RESERVATION_CACHE?.id) {
+      const { success, data } = safeParse(
+        string().min(2).max(60),
+        customerMessage.trim(),
       );
       if (!success) {
         return ctx.json({
           received: true,
-          text: error,
+          text: "Por favor, ingresa un ID válido entre 2 y 60 caracteres.",
         });
       }
-      const isAvailable = await businessService.checkAvailability(
-        data?.day,
-        data.startTime,
-        business.schedule.averageTime * 60,
-      );
-      if (!isAvailable) {
+      const reservation = (await (
+        await businessService.getAppointmentById(data)
+      ).json()) as Appointment;
+
+      if (!reservation) {
         return ctx.json({
           received: true,
-          text: "Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.",
+          text: "Reserva no encontrada. Escribe un ID válido.",
         });
       }
+      const assistantResponse = `Escribe la palabra ${CustomerActions.UPDATE} para actualizar la reserva. o ${CustomerActions.CANCEL} para cancelarla.`;
       await reservationService.save(reservationKey, {
         ...RESERVATION_CACHE,
-        customerName: customer?.name,
-        day: data.day,
-        startTime: data.startTime,
-        numberOfPeople: data.numberOfPeople,
-        step: ReservationStep.VALIDATED,
+        id: reservation.id,
       });
-      const assistantResponse = reservationMessages.getConfirmationMsg(
-        {
-          ...data,
-          name: customer?.name,
-        },
-        "update",
+      await chatHistoryService.save(
+        chatKey,
+        customerMessage,
+        assistantResponse,
       );
+      return ctx.json({
+        received: true,
+        text: assistantResponse,
+      });
+    }
+    if (
+      customerMessage.toUpperCase() === CustomerActions.UPDATE &&
+      RESERVATION_CACHE?.id
+    ) {
+      const assistantResponse = reservationMessages.getStartMsg({
+        userName: customer?.name,
+        mode: "update",
+      });
+      await reservationService.save(reservationKey, {
+        ...RESERVATION_CACHE,
+        status: ReStatus.UPDATE_STARTED,
+      });
+      await chatHistoryService.save(
+        chatKey,
+        customerMessage,
+        assistantResponse,
+      );
+      return ctx.json({
+        received: true,
+        text: assistantResponse,
+      });
+    }
+    if (
+      customerMessage.toUpperCase() === CustomerActions.CANCEL &&
+      RESERVATION_CACHE?.id
+    ) {
+      const assistantResponse = `Seguro que desea cancelar su reserva? esta accion no se puede revertir. Escribe ${CustomerActions.YES} para confirmar o ${CustomerActions.NO} para cancelar`;
+      await reservationService.save(reservationKey, {
+        ...RESERVATION_CACHE,
+        status: ReStatus.CANCEL_STARTED,
+      });
+      await chatHistoryService.save(
+        chatKey,
+        customerMessage,
+        assistantResponse,
+      );
+      return ctx.json({
+        received: true,
+        text: assistantResponse,
+      });
+    }
+  }
+
+  if (
+    RESERVATION_CACHE?.status === ReStatus.UPDATE_STARTED &&
+    RESERVATION_CACHE?.id &&
+    customerMessage
+  ) {
+    const parseInput = parseStringReservation(customerMessage, 3); // customerName already provided
+    if (!parseInput.success) {
+      return ctx.json({
+        received: true,
+        text: parseInput.error,
+      });
+    }
+    const { success, data, error } = safeParse(reserveSchema, parseInput.data);
+    if (!success) {
+      return ctx.json({
+        received: true,
+        text: error,
+      });
+    }
+    const isAvailable = await businessService.checkAvailability(
+      data?.day,
+      data.startTime,
+      business.schedule.averageTime * 60,
+    );
+    if (!isAvailable) {
+      return ctx.json({
+        received: true,
+        text: "Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.",
+      });
+    }
+    await reservationService.save(reservationKey, {
+      ...RESERVATION_CACHE,
+      customerName: customer?.name,
+      day: data.day,
+      startTime: data.startTime,
+      numberOfPeople: data.numberOfPeople,
+      status: ReStatus.UPDATE_VALIDATED,
+    });
+    const assistantResponse = reservationMessages.getConfirmationMsg(
+      {
+        ...data,
+        name: customer?.name,
+      },
+      "update",
+    );
+    await chatHistoryService.save(chatKey, customerMessage, assistantResponse);
+    return ctx.json({
+      received: true,
+      text: assistantResponse,
+    });
+  }
+
+  if (RESERVATION_CACHE?.status === ReStatus?.UPDATE_VALIDATED) {
+    // FINAL OPTION: 1. CONFIRMAR
+    if (customerMessage.toUpperCase() === CustomerActions.CONFIRM) {
+      const {
+        day = "",
+        startTime = "",
+        numberOfPeople = 1,
+      } = RESERVATION_CACHE;
+      const {
+        day: reservationDay,
+        endDateTime,
+        startDateTime,
+      } = buildApiDates(day, startTime, business.schedule.averageTime * 60); // use business average reservation time
+
+      // finally, we create the reservation
+      if (customer?.id && business?.id && RESERVATION_CACHE?.id) {
+        const res = await businessService.updateAppointment(
+          RESERVATION_CACHE?.id,
+          {
+            business: business?.id,
+            customer: customer?.id,
+            startDateTime,
+            endDateTime,
+            numberOfPeople,
+            customerName: customer.name ?? "",
+            day: reservationDay,
+            status: "confirmed",
+            // ADD NUMBER OF PEOPLE
+          },
+        );
+        const reservation = (await res.json()) as { doc: Appointment };
+        const assistantMsg = reservationMessages.getSuccessMsg(
+          reservation?.doc,
+          {
+            customerName: customer?.name,
+            numberOfPeople,
+            restaurantName: business?.name ?? "",
+            mode: "update",
+          },
+        );
+        await reservationService.delete(reservationKey);
+        await chatHistoryService.save(chatKey, customerMessage, assistantMsg);
+        return ctx.json({
+          received: true,
+          text: assistantMsg,
+          reservation,
+        });
+      }
+      return ctx.json({ error: "Customer not created" });
+    }
+
+    // FINAL OPTION: 2. SALIR
+    if (customerMessage.toUpperCase() === CustomerActions.EXIT) {
+      await reservationService.delete(reservationKey);
+      const assistantMsg = flowMessages.getExitMsg();
+      await chatHistoryService.save(chatKey, customerMessage, assistantMsg);
+      return ctx.json({
+        received: true,
+        text: assistantMsg,
+      });
+    }
+
+    // FINAL OPTION: 3. REINGRESAR DATOS
+    if (customerMessage.toUpperCase() === CustomerActions.RESTART) {
+      // RESTART
+      const assistantResponse = reservationMessages.getReStartMsg({
+        userName: customer?.name,
+        mode: "update",
+      });
+      await reservationService.save(reservationKey, {
+        ...RESERVATION_CACHE,
+        businessId: business?.id,
+        customerId: customer?.id,
+        customerName: customer?.name ?? "",
+        customerPhone,
+        status: ReStatus.UPDATE_STARTED,
+        // step: ReservationStep.STARTED,
+      });
       await chatHistoryService.save(
         chatKey,
         customerMessage,
@@ -435,101 +505,14 @@ export const updateReservationHandler: Handler<CTX> = async (ctx, next) => {
       });
     }
 
-    if (RESERVATION_CACHE?.step === ReservationStep.VALIDATED) {
-      // FINAL OPTION: 1. CONFIRMAR
-      if (customerMessage.toUpperCase() === CustomerActions.CONFIRM) {
-        const {
-          day = "",
-          startTime = "",
-          numberOfPeople = 1,
-        } = RESERVATION_CACHE;
-        const {
-          day: reservationDay,
-          endDateTime,
-          startDateTime,
-        } = buildApiDates(day, startTime, business.schedule.averageTime * 60); // use business average reservation time
-
-        // finally, we create the reservation
-        if (customer?.id && business?.id && RESERVATION_CACHE?.id) {
-          const res = await businessService.updateAppointment(
-            RESERVATION_CACHE?.id,
-            {
-              business: business?.id,
-              customer: customer?.id,
-              startDateTime,
-              endDateTime,
-              day: reservationDay,
-              status: "confirmed",
-              // ADD NUMBER OF PEOPLE
-            },
-          );
-          const reservation = (await res.json()) as { doc: Appointment };
-          const assistantMsg = reservationMessages.getSuccessMsg(
-            reservation?.doc,
-            {
-              customerName: customer?.name,
-              numberOfPeople,
-              restaurantName: business?.name ?? "",
-              mode: "update",
-            },
-          );
-          await reservationService.delete(reservationKey);
-          await chatHistoryService.save(chatKey, customerMessage, assistantMsg);
-          return ctx.json({
-            received: true,
-            text: assistantMsg,
-            reservation,
-          });
-        }
-        return ctx.json({ error: "Customer not created" });
-      }
-
-      // FINAL OPTION: 2. SALIR
-      if (customerMessage.toUpperCase() === CustomerActions.EXIT) {
-        await reservationService.delete(reservationKey);
-        const assistantMsg = flowMessages.getExitMsg();
-        await chatHistoryService.save(chatKey, customerMessage, assistantMsg);
-        return ctx.json({
-          received: true,
-          text: assistantMsg,
-        });
-      }
-
-      // FINAL OPTION: 3. REINGRESAR DATOS
-      if (customerMessage.toUpperCase() === CustomerActions.RESTART) {
-        // RESTART
-        const assistantResponse = reservationMessages.getReStartMsg({
-          userName: customer?.name,
-          mode: "update",
-        });
-        await reservationService.save(reservationKey, {
-          ...RESERVATION_CACHE,
-          businessId: business?.id,
-          customerId: customer?.id,
-          customerName: customer?.name ?? "",
-          customerPhone,
-          step: ReservationStep.STARTED,
-        });
-        await chatHistoryService.save(
-          chatKey,
-          customerMessage,
-          assistantResponse,
-        );
-        return ctx.json({
-          received: true,
-          text: assistantResponse,
-        });
-      }
-
-      // FALLBACK
-      if (customerMessage) {
-        const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva, ${CustomerActions.RESTART} para cambiar algun dato, ó ${CustomerActions.EXIT} para salir`;
-        await chatHistoryService.save(chatKey, customerMessage, assistanceMsg);
-        return ctx.json({
-          received: true,
-          text: assistanceMsg,
-        });
-      }
+    // FALLBACK
+    if (customerMessage) {
+      const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva, ${CustomerActions.RESTART} para cambiar algun dato, ó ${CustomerActions.EXIT} para salir`;
+      await chatHistoryService.save(chatKey, customerMessage, assistanceMsg);
+      return ctx.json({
+        received: true,
+        text: assistanceMsg,
+      });
     }
   }
 
@@ -594,8 +577,7 @@ export const flowHandler: Handler<CTX> = async (ctx) => {
         customerId: customer?.id,
         customerName: customer?.name ?? "",
         customerPhone,
-        step: ReservationStep.STARTED,
-        type: "MAKE",
+        status: ReStatus.MAKE_STARTED,
       });
       await chatHistoryService.save(
         chatKey,
@@ -615,8 +597,7 @@ export const flowHandler: Handler<CTX> = async (ctx) => {
         customerId: customer?.id,
         customerName: customer?.name ?? "",
         customerPhone,
-        step: ReservationStep.UPDATING,
-        type: "UPDATE",
+        status: ReStatus.UPDATE_PRE_START,
       });
       await chatHistoryService.save(
         chatKey,

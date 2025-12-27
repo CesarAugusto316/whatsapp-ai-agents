@@ -1,25 +1,25 @@
-import { ReservationStep } from "@/ai-agents/agent.types";
+import { ReStatus } from "@/ai-agents/agent.types";
 import { CtxState } from "@/types/hono.types";
 
 type FlowResult = string | void | Promise<string | void>;
 
 type FlowHandler = (ctx: Readonly<Partial<CtxState>>) => FlowResult;
 
-class Flow {
+export class Flow {
   private handlers: Record<string, FlowHandler[]> = {};
 
   constructor(public readonly ctx: Readonly<Partial<CtxState>>) {}
 
-  on(event: string, handler: FlowHandler): this {
+  on(event: keyof typeof ReStatus, handler: FlowHandler): this {
     (this.handlers[event] ??= []).push(handler);
     return this;
   }
 
   async run(): Promise<FlowResult> {
-    const type = this.ctx.currentReservation?.type;
-    if (!type) return;
+    const status = this.ctx.currentReservation?.status;
+    if (!status) return;
 
-    const handlers = this.handlers[type] ?? [];
+    const handlers = this.handlers[status] ?? [];
     for (const h of handlers) {
       const res = await h(this.ctx);
       if (res) return res;
@@ -42,18 +42,18 @@ export async function reservationFlow(
   // });
 
   flow
-    .on("MAKE", async (ctx) => {
-      if (ctx.currentReservation?.step !== ReservationStep.STARTED) return;
-      if (!ctx.customerMessage) return;
+    .on("CANCEL_STARTED", async (ctx) => {
+      // if (ctx.currentReservation?.step !== ReservationStep.STARTED) return;
+      // if (!ctx.customerMessage) return;
 
       return "Validando datos…";
     })
-    .on("UPDATE", async (ctx) => {
+    .on("CANCEL_VALIDATED", async (ctx) => {
       if (!ctx.customer) {
         return "Debes registrarte primero";
       }
     })
-    .on("CANCEL", async (ctx) => {
+    .on("UPDATE_STARTED", async (ctx) => {
       if (ctx.currentReservation?.id) {
         return `Reserva ${ctx.currentReservation.id} cancelada`;
       }
