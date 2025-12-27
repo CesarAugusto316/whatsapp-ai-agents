@@ -1,5 +1,5 @@
 import whatsappService from "@/services/whatsapp.service";
-import { CTX, CtxState } from "@/types/hono.types";
+import { CTX, AppContext } from "@/types/hono.types";
 import { Handler } from "hono/types";
 import { initChatFlow } from "./chat-flow";
 
@@ -15,7 +15,7 @@ export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
     businessId: ctx.get("businessId"),
     chatKey: ctx.get("chatKey"),
     reservationKey: ctx.get("reservationKey"),
-  } as CtxState;
+  } as AppContext;
 
   if (state.whatsappEvent !== "message") {
     return ctx.json({ message: "Invalid event" });

@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { Business, Customer } from "./business/cms-types";
 import { ReservationState } from "@/ai-agents/agent.types";
 
-export type CtxState = {
+export type AppContext = {
   whatsappEvent: string;
   businessId: string;
   business: Business;
@@ -16,5 +16,5 @@ export type CtxState = {
 };
 
 export interface CTX extends Context {
-  Variables: CtxState;
+  Variables: AppContext;
 }

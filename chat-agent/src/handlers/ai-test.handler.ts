@@ -1,4 +1,4 @@
-import { CTX, CtxState } from "@/types/hono.types";
+import { CTX, AppContext } from "@/types/hono.types";
 import { Handler } from "hono/types";
 import { initChatFlow } from "./chat-flow";
 
@@ -17,7 +17,7 @@ export const aiTestHandler: Handler<CTX> = async (ctx) => {
     customer: ctx.get("customer"),
     chatKey: ctx.get("chatKey"),
     reservationKey: ctx.get("reservationKey"),
-  } as CtxState;
+  } as AppContext;
 
   return ctx.json({ received: true, text: await initChatFlow(args) });
 };

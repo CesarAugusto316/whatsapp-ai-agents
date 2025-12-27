@@ -16,7 +16,7 @@ import {
 } from "@/ai-agents/tools/prompts";
 import chatHistoryService from "@/services/chatHistory.service";
 import reservationCacheService from "@/services/reservationCache.service";
-import { CtxState } from "@/types/hono.types";
+import { AppContext } from "@/types/hono.types";
 import { ModelMessage } from "ai";
 import { FlowHandler, FlowResult } from "./handlers.types";
 import { makeStarted, makeValidated } from "./reservations/make.handlers";
@@ -31,16 +31,21 @@ import {
  *
  * @description deterministic chat flow, here core business logic lives
  */
-class ChatFlow {
+class CoreFlow {
   private handlers: Record<string, FlowHandler[]> = {};
 
-  constructor(public readonly ctx: Readonly<CtxState>) {}
+  constructor(public readonly ctx: Readonly<AppContext>) {}
 
   on(event: ReservationStatus, handler: FlowHandler): this {
     (this.handlers[event] ??= []).push(handler);
     return this;
   }
 
+  /**
+   *
+   * @description if run() returns void, it means no handler was executed.
+   * This is OK
+   */
   async run(): Promise<FlowResult | void> {
     const status = this.ctx.RESERVATION_CACHE?.status;
     if (!status) return;
@@ -58,7 +63,7 @@ class ChatFlow {
  * @description no-deterministic chat flow, here we can use ai-agents,
  * no-critical logic lives here.
  */
-async function preFlow(ctx: CtxState): Promise<string> {
+async function fallbackFlow(ctx: AppContext): Promise<string> {
   const {
     RESERVATION_CACHE,
     customerMessage = "",
@@ -151,10 +156,10 @@ async function preFlow(ctx: CtxState): Promise<string> {
  *
  * @description Initialize the chat flow
  * @param ctx
- * @returns
+ * @returns Promise<string>
  */
-export async function initChatFlow(ctx: CtxState): Promise<string> {
-  const coreFlow = new ChatFlow(ctx);
+export async function initChatFlow(ctx: AppContext): Promise<string> {
+  const coreFlow = new CoreFlow(ctx);
 
   coreFlow
     .on("MAKE_STARTED", makeStarted)
@@ -170,7 +175,7 @@ export async function initChatFlow(ctx: CtxState): Promise<string> {
     await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, result);
     return result;
   }
-  const preResult = await preFlow(ctx);
+  const preResult = await fallbackFlow(ctx);
   await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, preResult);
   return preResult;
 }
