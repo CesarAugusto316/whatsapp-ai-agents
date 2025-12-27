@@ -9,9 +9,9 @@ class ReservationCacheService {
    * @param key reservation:businesID:customerPhone
    * @returns
    */
-  async get(key: string): Promise<Partial<ReservationState> | null> {
+  async get(key: string): Promise<Partial<ReservationState> | undefined> {
     const payload = await redis.get(key);
-    if (!payload) return null;
+    if (!payload) return;
     return JSON.parse(payload) satisfies Partial<ReservationState>;
   }
 

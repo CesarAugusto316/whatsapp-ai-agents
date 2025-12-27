@@ -6,14 +6,13 @@ export type CtxState = {
   whatsappEvent: string;
   businessId: string;
   business: Business;
-  customerId: string;
   customer?: Customer;
   session: string;
   customerPhone: string;
   customerMessage: string;
   chatKey: string;
   reservationKey: string;
-  currentReservation: Partial<ReservationState> | null;
+  RESERVATION_CACHE: Partial<ReservationState> | undefined;
 };
 
 export interface CTX extends Context {

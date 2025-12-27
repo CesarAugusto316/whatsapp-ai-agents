@@ -1,11 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { aiAgentHandler } from "./handlers/ai-agent.handler";
-import {
-  makeReservationHandler,
-  flowHandler,
-  updateReservationHandler,
-} from "./handlers/ai-test.handler";
+import { reservationHandler } from "./handlers/ai-test.handler";
 import { WahaRecievedEvent } from "./types/whatsapp/received-event";
 import businessService from "./services/business.service";
 import { CTX } from "./types/hono.types";
@@ -48,13 +44,13 @@ app.use("/*", async (ctx, next) => {
   ctx.set("chatKey", chatKey);
   ctx.set("whatsappEvent", event);
   ctx.set("reservationKey", reservationKey);
-  ctx.set("currentReservation", currentReservation);
+  ctx.set("RESERVATION_CACHE", currentReservation);
 
   if (!customerMessage) {
     return ctx.json({ error: "Customer message not received" }, 400);
   }
-  if (!businessId) {
-    return ctx.json({ error: "Business ID not received" }, 400);
+  if (!business) {
+    return ctx.json({ error: "Business not found" }, 404);
   }
   if (!customerPhone) {
     return ctx.json({ error: "Customer phone not received" }, 400);
@@ -62,13 +58,8 @@ app.use("/*", async (ctx, next) => {
   await next();
 });
 
-app.post("/received-messages/:businessId", aiAgentHandler);
-app.post(
-  "/test-ai",
-  makeReservationHandler,
-  updateReservationHandler,
-  flowHandler,
-);
+app.post("/received-messages", aiAgentHandler);
+app.post("/test-ai", reservationHandler);
 
 // export default app;
 export default {
