@@ -84,8 +84,9 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
         {
           role: "user",
           content: `
-            Este es un mensaje inicial, además de responder a mi pregunta debes saludarme y explicarme:
-              1). Cómo funciona el sistema en lineas generales.
+            Este es un mensaje inicial, además de responder a mi pregunta debes saludarme y guiarme:
+             - Busco ayuda para empezar a usar tus servicios en pasos muy simples.
+             - No me abrumes con detalles innecesarios.
 
             ${customer?.name ? `Mi nombre es ${customer.name}` : ""}
             Esta es mi pregunta:

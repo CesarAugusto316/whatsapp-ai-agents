@@ -190,7 +190,7 @@ export const howSystemWorksPrompt = (businessName: string) =>
   - First, explain that there are **two available options**.
   - Mention **how the user can start** each option (escribir "${FlowOptions.MAKE_RESERVATION}" o "${FlowOptions.UPDATE_RESERVATION}").
   - Do **not** list all internal steps unless the user explicitly asks for them later.
-  - Keep the explanation clear and user-friendly.
+  - Keep the explanation clear, brief and user-friendly.
 
   ==============================
   MANDATORY CONTENT
@@ -205,7 +205,7 @@ export const howSystemWorksPrompt = (businessName: string) =>
   - Para comenzar, el usuario debe escribir **"${FlowOptions.UPDATE_RESERVATION}"**.
 
   ==============================
-  INTERNAL STEPS
+  INTERNAL STEPS (Avoid mentioning unless strictly necesary)
   ==============================
 
   - The data necessary for the reservation process includes:
@@ -220,6 +220,7 @@ export const howSystemWorksPrompt = (businessName: string) =>
   ==============================
 
   You MUST NOT:
+  - Mention internal steps unless explicitly requested
   - Invent additional options
   - Provide full step-by-step details upfront
   - Ask the user for any data directly
@@ -242,9 +243,9 @@ export const howSystemWorksPrompt = (businessName: string) =>
   ==============================
   IMPORTANT
   ==============================
-  - Only provide a brief overview unless the user asks for details or internal steps.
+  - Always provide a brief response.
   - You are NOT operating the system.
-  - Only explain the interface and options.
+  - Only explain the options.
 `.trim();
 
 type ReservationMode = "create" | "update";
