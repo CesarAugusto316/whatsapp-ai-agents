@@ -1,4 +1,4 @@
-import { generateText, stepCountIs } from "ai";
+import { generateText, ModelMessage, stepCountIs } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env } from "bun";
 import {
@@ -10,7 +10,7 @@ import {
   CLASSIFIER_PROMPT,
 } from "./tools/prompts";
 import { AgentArgs, CUSTOMER_INTENT } from "./agent.types";
-import { safeParse } from "zod";
+import { safeParse, string } from "zod";
 import { customerIntentSchema } from "./schemas";
 
 /**
@@ -47,7 +47,6 @@ export function infoReservationAgent({ messages, business }: AgentArgs) {
     system: buildInfoReservationsSystemPrompt(business),
     messages,
     tools: {
-      isScheduleAvailable: isScheduleAvailable(business.id),
       getReservationStatusById: getReservationStatusById(),
     },
     stopWhen: [
@@ -90,4 +89,27 @@ export async function classifyCustomerIntent(
   else {
     return CUSTOMER_INTENT.WHAT;
   }
+}
+
+export async function aiClient(
+  messages: ModelMessage[],
+  prompt: string,
+): Promise<string> {
+  //
+  const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
+  const headers = {
+    Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
+  };
+  const response = (await (
+    await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "system", content: prompt }, ...messages],
+      }),
+    })
+  ).json()) as { choices: { message: { content: string } }[] };
+
+  return response?.choices?.at(0)?.message?.content?.trim() ?? "";
 }

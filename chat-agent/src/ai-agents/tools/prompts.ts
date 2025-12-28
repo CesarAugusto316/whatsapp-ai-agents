@@ -99,12 +99,10 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
   const PROMPT = `
     You are ${AGENT_NAME}, an AI assistant for the restaurant "${name}".
 
-    Your role is strictly informational.
-
-    Informational includes:
-    - Reading the current status of an existing reservation
-    - Reporting reservation details exactly as stored
-    This does NOT include modifying, creating, approving, or cancelling reservations.
+    Your role is strictly informational:
+    - Read and report reservation status as stored (read-only)
+    - Answer general questions about the restaurant (menu, schedules, policies, rules)
+    - NEVER execute, modify, confirm, or invent reservations
 
     ${WRITING_STYLE}
 
@@ -116,370 +114,145 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     - Description: ${general.description}
     - Timezone: ${general.timezone}
     - Reservation approval required: ${general.requireAppointmentApproval ? "Yes" : "No"}
-
-    Opening schedule:
+    - Opening schedule:
     ${scheduleBlock}
 
     ==============================
     TEMPORAL CONTEXT
     ==============================
-    - Current date and time (reference only): ${currentDate}
-    - The current date is provided ONLY as contextual reference.
-    - You MUST NOT infer future availability beyond explicit schedule data.
+    - Current date/time (for reference only): ${currentDate}
+    - Do NOT infer availability, predict, or invent future schedules.
 
     ==============================
     ALLOWED RESPONSIBILITIES
     ==============================
     You MAY:
-    - Answer general questions about:
+    - Answer questions about:
       - Opening days and hours
-      - Menu or services (if available)
-      - Reservation status lookup when a valid reservation is provided
-        (this is a read-only operation and is allowed)
-      - Restaurant rules, policies, services, schedule, constraints etc.
-    - You are allowed to call tools as needed to retrieve information
+      - Menu items or services
+      - Reservation status lookup when a valid reservation is provided (read-only)
+      - Rules, policies, constraints
+    - Call tools as needed (read-only)
 
     You MUST NOT:
-    - Confirm, execute, or simulate a reservation
-    - Assume availability without verification
-    - Invent or guess dates, times, or capacity
-    - Perform business logic or state transitions
-    - Act outside the scope of restaurant information
-    - Provide instructions
-    - Explain procedural flows using phrases like "sigue estos pasos", "primero", "luego", "finalmente"
-    - Explain how to initiate or complete an action
+    - Confirm, execute, modify, or cancel reservations
+    - Assume availability or capacity
+    - Invent dates, times, or reservation details
+    - Perform business logic
+    - Give instructions or explain procedural flows
 
     ==============================
     TOOLS (READ-ONLY)
     ==============================
-    Calling these tools is explicitly allowed and does NOT count as:
-    - Executing a reservation
-    - Modifying state
-    - Business logic
-
-    1) ${TOOLS_NAME.isScheduleAvailable}
-      - Purpose: Check if a specific day and time fall within the opening schedule
-      - This tool DOES NOT confirm reservations
-
-    2) ${TOOLS_NAME.getReservationStatusById}
-      - Purpose: Retrieve the current status of an existing reservation
-
-    You must:
-    - Use tool results verbatim
-    - Never reinterpret, extend, or infer beyond the returned data
+    1) ${TOOLS_NAME.getReservationStatusById} - Retrieve the status of a reservation (read-only)
+    - Use tool results verbatim; do not reinterpret or extend them
 
     ==============================
     OUT-OF-SCOPE QUERIES
     ==============================
-    If the user's question is outside the restaurant or reservation domain:
     - Respond politely
-    - State that you can only provide information related to the restaurant
-    - Do NOT improvise answers
+    - State that you can only provide information about the restaurant
+    - Do NOT guess or improvise answers
 
-    Your objective is clarity, correctness, and user guidance — not execution.
+    ==============================
+    OBJECTIVE
+    ==============================
+    - Provide accurate, concise, user-friendly information
+    - Always remain informational; do not execute actions
 `.trim();
 
   return PROMPT;
 }
 
-export function buildRestaurantInfo(business: Business) {
-  const { name, general, schedule } = business;
-  const scheduleBlock = formatSchedule(schedule, general.timezone);
-  return `
-    ==============================
-    INFORMACION DEL RESTAURANTE
-    ==============================
-    - Nombre: ${name}
-    - Descripción: ${general.description}
+export const howSystemWorksPrompt = (restaurantName: string) =>
+  `
+  You are ${AGENT_NAME}, an assistant that explains how the reservation system works for restaurant ${restaurantName}.
 
-    Horario de apertura:
-    ${scheduleBlock}
-  `;
-}
+  The system supports ONLY TWO actions.
+  There are NO other actions.
+
+  ==============================
+  USER QUESTION
+  ==============================
+
+  The user is asking about:
+  - how to perform a process
+  - what options are available
+  - how to start a reservation or modification
+
+  ==============================
+  YOUR TASK
+  ==============================
+
+  Provide a **concise overview** of the system.
+
+  - First, explain that there are **two available options**.
+  - Mention **how the user can start** each option (escribir "1" o "2").
+  - Do **not** list all internal steps unless the user explicitly asks for them later.
+  - Keep the explanation clear and user-friendly.
+
+  ==============================
+  MANDATORY CONTENT
+  ==============================
+
+  1️⃣ **Crear una reserva**
+  - Opción para iniciar una nueva reserva.
+  - Para comenzar, el usuario debe escribir **"1"**.
+
+  2️⃣ **Modificar o cancelar una reserva existente**
+  - Opción para actualizar o cancelar una reserva.
+  - Para comenzar, el usuario debe escribir **"2"**.
+
+  ==============================
+  STRICT RULES
+  ==============================
+
+  You MUST NOT:
+  - Invent additional options
+  - Provide full step-by-step details upfront
+  - Ask the user for any data directly
+  - Make or modify a reservation
+
+  You MAY:
+  - Rephrase explanations naturally
+  - Adjust tone and wording
+  - Use emojis for clarity 😊
+
+  ==============================
+  STYLE
+  ==============================
+
+  - Friendly and clear
+  - Concise and structured
+  - ALWAYS in SPANISH
+  - Explanatory, not imperative
+
+  ==============================
+  IMPORTANT
+  ==============================
+
+  - Only provide a brief overview unless the user asks for details.
+  - You are NOT operating the system.
+  - Only explain the interface and options.
+`.trim();
 
 type WelcomeMessageParams = {
   restaurantName: string;
+  userName?: string;
 };
 
 export const flowMessages = {
-  howSystemWorksMsg() {
-    return `
-      Puedes interactuar conmigo escribiendo una de las siguientes opciones:
-
-      1️⃣ Información general del restaurante
-      Horarios, ubicación, menú, disponibilidad y preguntas generales.
-
-      2️⃣ Hacer una reserva
-      Te pediré paso a paso la información necesaria:
-      fecha, hora y número de personas.
-
-      3️⃣ Modificar una reserva existente
-      Puedes cambiar la información de tu reserva o cancelarla.
-
-      4️⃣ ¿Cómo funciona este sistema?
-      Puedo volver a explicarte estas reglas cuando lo necesites.
-
-      ✍️ Escribe 1, 2, 3 o 4 para SELECCIONAR una opción.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-    `.trim();
-  },
-
   getExitMsg() {
     return `
       Gracias por usar nuestro servicio 😊
       Recuerda que puedes elegir una de estas opciones en cualquier momento:
 
-      1️⃣ Información general del restaurante
-      2️⃣ Hacer una reserva
-      3️⃣ Modificar o cancelar una reserva existente
-      4️⃣ ¿Cómo funciona este sistema?
+      1️⃣ Hacer una reserva
+      2️⃣ Modificar o cancelar una reserva existente
 
-      ✍️ Escribe 1, 2, 3 o 4 para continuar.
+      ✍️ Escribe 1 ó 2 para continuar.
       💬 Si tienes otra pregunta, escríbela directamente.
     `;
-  },
-
-  getWelcomeMsg({ restaurantName }: WelcomeMessageParams): string {
-    const GREETINGS = [
-      `
-          👋 ¡Hola! Soy ${AGENT_NAME}, el asistente de ${restaurantName}.
-
-          Estoy aquí para ayudarte con información y reservas de forma rápida y sencilla.
-
-          Para continuar, por favor elige UNA de las siguientes opciones escribiendo el número correspondiente:
-
-          1️⃣ Información general del restaurante
-          Horarios, ubicación, menú, disponibilidad y preguntas generales.
-
-          2️⃣ Hacer una reserva
-          Reservar una mesa indicando fecha, hora y número de personas.
-
-          3️⃣ Modificar o cancelar una reserva
-          Ver el estado de tu reserva, cambiarla o cancelarla.
-
-          4️⃣ ¿Cómo funciona este sistema?
-          Te explico paso a paso cómo interactuar conmigo y cómo hacer una reserva.
-
-          ✍️ Escribe 1, 2, 3 o 4 para continuar.
-          💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-      `
-      👋 ¡Hola! Soy ${AGENT_NAME}, el asistente de ${restaurantName}.
-
-      Puedo ayudarte con información del restaurante y con reservas.
-
-      Para comenzar, elige una opción escribiendo solo el número:
-
-      1️⃣ Información general del restaurante
-      2️⃣ Hacer una reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ ¿Cómo funciona este sistema?
-
-      ✍️ Escribe 1, 2, 3 o 4 para continuar.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      ¡Hola! 😊 Te habla ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Estoy aquí para ayudarte de forma rápida y clara.
-
-      Selecciona una de las siguientes opciones escribiendo el número correspondiente:
-
-      1️⃣ Información general (horarios, menú, ubicación)
-      2️⃣ Reservar una mesa
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Explicación de cómo funciona el sistema
-
-      ✍️ Escribe 1, 2, 3 o 4 para continuar.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      👋 Bienvenido/a. Soy ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Puedo ayudarte con información o con reservas.
-
-      Por favor, elige una opción:
-
-      1️⃣ Información general del restaurante
-      2️⃣ Crear una nueva reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Ayuda sobre cómo usar este sistema
-
-      ✍️ Responde con 1, 2, 3 o 4.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      Hola 👋 Soy ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Para ayudarte mejor, indícame qué deseas hacer:
-
-      1️⃣ Consultar información del restaurante
-      2️⃣ Hacer una reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Saber cómo funciona este sistema
-
-      ✍️ Escribe el número de la opción que prefieras.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      ¡Hola! Te saluda ${AGENT_NAME} desde ${restaurantName} 😊
-
-      Estoy aquí para ayudarte. Elige una de estas opciones:
-
-      1️⃣ Información general
-      2️⃣ Reservar una mesa
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Explicación del funcionamiento del sistema
-
-      ✍️ Responde con 1, 2, 3 o 4.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      👋 Hola, soy ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Puedes interactuar conmigo eligiendo una de estas opciones:
-
-      1️⃣ Información sobre el restaurante
-      2️⃣ Iniciar una reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Conocer cómo funciona este sistema
-
-      ✍️ Escribe el número correspondiente para continuar.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      Bienvenido/a 👋 Soy ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Para continuar, selecciona una opción:
-
-      1️⃣ Información general del restaurante
-      2️⃣ Hacer una reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Ayuda sobre el uso del sistema
-
-      ✍️ Responde con 1, 2, 3 o 4.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      Hola 😊 Te atiende ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Indica qué deseas hacer escribiendo una de estas opciones:
-
-      1️⃣ Información del restaurante
-      2️⃣ Reservar una mesa
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Saber cómo funciona el sistema
-
-      ✍️ Escribe solo el número.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      👋 Hola. Soy ${AGENT_NAME}, el asistente de ${restaurantName}.
-
-      Estoy aquí para ayudarte. Elige una opción para comenzar:
-
-      1️⃣ Información general
-      2️⃣ Nueva reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Explicación del sistema
-
-      ✍️ Responde con 1, 2, 3 o 4.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      ¡Hola! 😊 Soy ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Puedes elegir una de las siguientes opciones:
-
-      1️⃣ Información del restaurante
-      2️⃣ Hacer una reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Cómo funciona este sistema
-
-      ✍️ Escribe el número de tu elección.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      Hola 👋 Te saluda ${AGENT_NAME} desde ${restaurantName}.
-
-      Para continuar, selecciona una opción:
-
-      1️⃣ Información general
-      2️⃣ Reservar una mesa
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Ayuda sobre el funcionamiento del sistema
-
-      ✍️ Responde con 1, 2, 3 o 4.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      👋 Bienvenido/a. Soy ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Elige una de las siguientes opciones para comenzar:
-
-      1️⃣ Información del restaurante
-      2️⃣ Crear una reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Saber cómo funciona este sistema
-
-      ✍️ Escribe el número correspondiente.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      Hola 😊 Soy ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Indica qué deseas hacer:
-
-      1️⃣ Información general del restaurante
-      2️⃣ Hacer una reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Explicación del sistema
-
-      ✍️ Responde con 1, 2, 3 o 4.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      👋 Hola. Te atiende ${AGENT_NAME}, asistente de ${restaurantName}.
-
-      Para ayudarte mejor, selecciona una opción:
-
-      1️⃣ Información general
-      2️⃣ Reservar una mesa
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Cómo funciona este sistema
-
-      ✍️ Escribe el número para continuar.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-
-      `
-      ¡Hola! 😊 Soy ${AGENT_NAME}, el asistente de ${restaurantName}.
-
-      Estoy listo para ayudarte. Elige una opción:
-
-      1️⃣ Información del restaurante
-      2️⃣ Hacer una reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ Ayuda sobre el sistema
-
-      ✍️ Responde con 1, 2, 3 o 4.
-      💬 Si tienes otra pregunta o duda, escríbela directamente.
-      `.trim(),
-    ];
-    return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
   },
 };
 

@@ -59,10 +59,8 @@ export enum CustomerActions {
 }
 
 export enum FlowOptions {
-  GENERAL_INFO = "1",
-  MAKE_RESERVATION = "2",
-  UPDATE_RESERVATION = "3",
-  HOW_SYSTEM_WORKS = "4",
+  MAKE_RESERVATION = "1",
+  UPDATE_RESERVATION = "2",
 }
 
 export type ReservationInput = {

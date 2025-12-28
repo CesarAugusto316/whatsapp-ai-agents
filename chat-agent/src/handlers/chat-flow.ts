@@ -1,4 +1,5 @@
 import {
+  aiClient,
   classifyCustomerIntent,
   infoReservationAgent,
 } from "@/ai-agents/agent.config";
@@ -10,8 +11,8 @@ import {
 } from "@/ai-agents/agent.types";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import {
-  buildRestaurantInfo,
   flowMessages,
+  howSystemWorksPrompt,
   reservationMessages,
 } from "@/ai-agents/tools/prompts";
 import chatHistoryService from "@/services/chatHistory.service";
@@ -80,15 +81,21 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
     const chatHistoryCache = await chatHistoryService.get(chatKey);
     const isFirstMessage = chatHistoryCache.length === 0;
     if (isFirstMessage) {
-      // before any choice
-      const assistantResponse = flowMessages.getWelcomeMsg({
-        restaurantName: business?.name ?? "",
-      });
-      return assistantResponse;
-    }
-    if (customerMessage == FlowOptions.GENERAL_INFO) {
-      // choice 1
-      const assistantResponse = buildRestaurantInfo(business);
+      const messages: ModelMessage[] = [
+        {
+          role: "user",
+          content: `
+            Este es un mensaje inicial, debes saludarme y explicarme como hacer una reserva rápidamente.
+            ${customer?.name ? `Mi nombre es ${customer.name}` : ""}
+            Esta es mi pregunta:
+            - ${customerMessage}
+          `,
+        },
+      ];
+      const assistantResponse = aiClient(
+        messages,
+        howSystemWorksPrompt(business?.name),
+      );
       return assistantResponse;
     }
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
@@ -117,23 +124,8 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
       });
       return assistantResponse;
     }
-    if (customerMessage == FlowOptions.HOW_SYSTEM_WORKS) {
-      // choice 4
-      const assistantResponse = flowMessages.howSystemWorksMsg();
-      return assistantResponse;
-    }
   }
 
-  // 2. INTENT HANDLING WHEN CUSTOMER ASKS THE HOW OF SOMETHING
-  const customerIntent = await classifyCustomerIntent(customerMessage);
-
-  if (customerIntent === CUSTOMER_INTENT.HOW) {
-    // choice 4 again
-    const assistantResponse = flowMessages.howSystemWorksMsg();
-    return assistantResponse;
-  }
-
-  // 3. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
   const chatHistoryCache = await chatHistoryService.get(chatKey);
   const messages: ModelMessage[] = [
     ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
@@ -143,6 +135,20 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
     },
   ];
 
+  // 2. INTENT HANDLING WHEN CUSTOMER ASKS THE HOW OF SOMETHING
+  const customerIntent = await classifyCustomerIntent(customerMessage);
+
+  // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS
+  if (customerIntent === CUSTOMER_INTENT.HOW) {
+    // choice 4 again
+    const assistantResponse = aiClient(
+      messages,
+      howSystemWorksPrompt(business?.name),
+    );
+    return assistantResponse;
+  }
+
+  // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
   const result = await infoReservationAgent({
     messages,
     business,
