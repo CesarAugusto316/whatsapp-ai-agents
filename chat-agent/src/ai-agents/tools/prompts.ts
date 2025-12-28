@@ -164,9 +164,9 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
   return PROMPT;
 }
 
-export const howSystemWorksPrompt = (restaurantName: string) =>
+export const howSystemWorksPrompt = (businessName: string) =>
   `
-  You are ${AGENT_NAME}, an assistant that explains how the reservation system works for restaurant ${restaurantName}.
+  You are ${AGENT_NAME}, an assistant that explains how the reservation system works for restaurant ${businessName}.
 
   The system supports ONLY TWO actions.
   There are NO other actions.
@@ -204,6 +204,16 @@ export const howSystemWorksPrompt = (restaurantName: string) =>
   - Para comenzar, el usuario debe escribir **"2"**.
 
   ==============================
+  INTERNAL STEPS
+  ==============================
+  - The data necessary for the reservation process includes:
+    - Customer Name if not provided
+    - Date in format DD/MM/YYYY
+    - Time in format HH:MM
+    - Number of people
+  - Plus when Modifying/Canceling an existing reservation, the user must provide the reservation ID.
+
+  ==============================
   STRICT RULES
   ==============================
 
@@ -230,31 +240,10 @@ export const howSystemWorksPrompt = (restaurantName: string) =>
   ==============================
   IMPORTANT
   ==============================
-
-  - Only provide a brief overview unless the user asks for details.
+  - Only provide a brief overview unless the user asks for details or internal steps.
   - You are NOT operating the system.
   - Only explain the interface and options.
 `.trim();
-
-type WelcomeMessageParams = {
-  restaurantName: string;
-  userName?: string;
-};
-
-export const flowMessages = {
-  getExitMsg() {
-    return `
-      Gracias por usar nuestro servicio 😊
-      Recuerda que puedes elegir una de estas opciones en cualquier momento:
-
-      1️⃣ Hacer una reserva
-      2️⃣ Modificar o cancelar una reserva existente
-
-      ✍️ Escribe 1 ó 2 para continuar.
-      💬 Si tienes otra pregunta, escríbela directamente.
-    `;
-  },
-};
 
 type ReservationMode = "create" | "update";
 
@@ -447,5 +436,18 @@ export const reservationMessages = {
       3️⃣ Modificar o cancelar una reserva
       4️⃣ ¿Cómo funciona el sistema?
     `.trim();
+  },
+
+  getExitMsg() {
+    return `
+      Gracias por usar nuestro servicio 😊
+      Recuerda que puedes elegir una de estas opciones en cualquier momento:
+
+      1️⃣ Hacer una reserva
+      2️⃣ Modificar o cancelar una reserva existente
+
+      ✍️ Escribe 1 ó 2 para continuar.
+      💬 Si tienes otra pregunta, escríbela directamente.
+    `;
   },
 };

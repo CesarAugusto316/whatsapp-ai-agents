@@ -11,7 +11,6 @@ import {
 } from "@/ai-agents/agent.types";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import {
-  flowMessages,
   howSystemWorksPrompt,
   reservationMessages,
 } from "@/ai-agents/tools/prompts";

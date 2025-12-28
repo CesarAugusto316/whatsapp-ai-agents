@@ -12,7 +12,7 @@ import {
   ReservationState,
   reservationStatuses,
 } from "@/ai-agents/agent.types";
-import { flowMessages, reservationMessages } from "@/ai-agents/tools/prompts";
+import { reservationMessages } from "@/ai-agents/tools/prompts";
 import { Appointment } from "@/types/business/cms-types";
 
 export const updatePreStart: FlowHandler = async (ctx) => {
@@ -179,7 +179,7 @@ export const updateValidated: FlowHandler = async (ctx) => {
   // FINAL OPTION: 2. SALIR
   if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
     await reservationCacheService.delete(reservationKey ?? "");
-    const assistantMsg = flowMessages.getExitMsg();
+    const assistantMsg = reservationMessages.getExitMsg();
     return assistantMsg;
   }
 

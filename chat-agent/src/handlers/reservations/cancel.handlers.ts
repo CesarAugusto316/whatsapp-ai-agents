@@ -2,7 +2,7 @@ import { FlowHandler } from "../handlers.types";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { CustomerActions } from "@/ai-agents/agent.types";
-import { flowMessages } from "@/ai-agents/tools/prompts";
+import { reservationMessages } from "@/ai-agents/tools/prompts";
 
 export const cancelStarted: FlowHandler = async (ctx) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;
@@ -26,7 +26,7 @@ export const cancelStarted: FlowHandler = async (ctx) => {
       return assistantResponse;
     }
     if (customerMessage.toUpperCase() === CustomerActions.NO) {
-      const assistantResponse = flowMessages.getExitMsg();
+      const assistantResponse = reservationMessages.getExitMsg();
       await reservationCacheService.delete(reservationKey);
       return assistantResponse;
     }
