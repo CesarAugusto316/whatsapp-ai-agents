@@ -24,6 +24,13 @@ export const makeStarted: FlowHandler = async (ctx) => {
     reservationKey,
   } = ctx;
 
+  // FINAL OPTION: 2. SALIR
+  if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
+    await reservationCacheService.delete(reservationKey ?? "");
+    const assistantMsg = reservationMessages.getExitMsg();
+    return assistantMsg;
+  }
+
   const parseInput = parseStringReservation(
     customerMessage,
     customer?.name ? 3 : 4,

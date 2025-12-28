@@ -84,11 +84,13 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
         {
           role: "user",
           content: `
-            Este es un mensaje inicial, debes saludarme y explicarme como hacer una reserva rápidamente.
+            Este es un mensaje inicial, además de responder a mi pregunta debes saludarme y explicarme:
+              1). Cómo funciona el sistema en lineas generales.
+
             ${customer?.name ? `Mi nombre es ${customer.name}` : ""}
             Esta es mi pregunta:
             - ${customerMessage}
-          `,
+          `.trim(),
         },
       ];
       const assistantResponse = aiClient(

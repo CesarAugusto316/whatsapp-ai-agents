@@ -4,6 +4,7 @@ import { TOOLS_NAME } from "./restaurant/reservation.tools";
 import {
   CUSTOMER_INTENT,
   CustomerActions,
+  FlowOptions,
   ReservationInput,
 } from "../agent.types";
 
@@ -158,7 +159,7 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     OBJECTIVE
     ==============================
     - Provide accurate, concise, user-friendly information
-    - Always remain informational; do not execute actions
+    - Always remain informational
 `.trim();
 
   return PROMPT;
@@ -187,7 +188,7 @@ export const howSystemWorksPrompt = (businessName: string) =>
   Provide a **concise overview** of the system.
 
   - First, explain that there are **two available options**.
-  - Mention **how the user can start** each option (escribir "1" o "2").
+  - Mention **how the user can start** each option (escribir "${FlowOptions.MAKE_RESERVATION}" o "${FlowOptions.UPDATE_RESERVATION}").
   - Do **not** list all internal steps unless the user explicitly asks for them later.
   - Keep the explanation clear and user-friendly.
 
@@ -197,15 +198,16 @@ export const howSystemWorksPrompt = (businessName: string) =>
 
   1️⃣ **Crear una reserva**
   - Opción para iniciar una nueva reserva.
-  - Para comenzar, el usuario debe escribir **"1"**.
+  - Para comenzar, el usuario debe escribir **"${FlowOptions.MAKE_RESERVATION}"**.
 
   2️⃣ **Modificar o cancelar una reserva existente**
   - Opción para actualizar o cancelar una reserva.
-  - Para comenzar, el usuario debe escribir **"2"**.
+  - Para comenzar, el usuario debe escribir **"${FlowOptions.UPDATE_RESERVATION}"**.
 
   ==============================
   INTERNAL STEPS
   ==============================
+
   - The data necessary for the reservation process includes:
     - Customer Name if not provided
     - Date in format DD/MM/YYYY
@@ -300,6 +302,7 @@ export const reservationMessages = {
         - Si algún dato no es válido, te pediré que lo corrijas.
 
         Cuando envíes los datos, continuaré con la ${copy.process} de la reserva.
+        Escribe ${CustomerActions.EXIT} si deseas salir de éste proceso.
       `.trim();
     }
 
@@ -325,6 +328,7 @@ export const reservationMessages = {
       - Si algún dato no es válido, te pediré que lo corrijas.
 
       Cuando envíes los datos, continuaré con la ${copy.process} de la reserva.
+      Escribe ${CustomerActions.EXIT} si deseas salir de éste proceso.
     `.trim();
   },
 
@@ -354,6 +358,7 @@ export const reservationMessages = {
         - Respeta el orden y el formato.
 
         Continuaremos con la ${copy.process} de la reserva.
+        Escribe ${CustomerActions.EXIT} si deseas salir de éste proceso.
       `.trim();
     }
 
@@ -375,6 +380,7 @@ export const reservationMessages = {
       - Respeta el orden y el formato.
 
       Continuaremos con la ${copy.process} de la reserva.
+      Escribe ${CustomerActions.EXIT} si deseas salir de éste proceso.
     `.trim();
   },
 
@@ -446,7 +452,7 @@ export const reservationMessages = {
       1️⃣ Hacer una reserva
       2️⃣ Modificar o cancelar una reserva existente
 
-      ✍️ Escribe 1 ó 2 para continuar.
+      ✍️ Escribe ${FlowOptions.MAKE_RESERVATION} ó ${FlowOptions.UPDATE_RESERVATION} para continuar.
       💬 Si tienes otra pregunta, escríbela directamente.
     `;
   },

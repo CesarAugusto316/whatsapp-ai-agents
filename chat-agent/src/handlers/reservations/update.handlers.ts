@@ -44,6 +44,8 @@ export const updatePreStart: FlowHandler = async (ctx) => {
     });
     return assistantResponse;
   }
+
+  // 1. MODIFY RESERVATION
   if (
     customerMessage?.toUpperCase() === CustomerActions.UPDATE &&
     RESERVATION_CACHE?.id
@@ -58,6 +60,8 @@ export const updatePreStart: FlowHandler = async (ctx) => {
     });
     return assistantResponse;
   }
+
+  // 2. CANCEL RESERVATION
   if (
     customerMessage?.toUpperCase() === CustomerActions.CANCEL &&
     RESERVATION_CACHE?.id
@@ -82,6 +86,13 @@ export const updateStarted: FlowHandler = async (ctx) => {
 
   if (!customer) {
     return "Aún no te has registrado, por favor has tu primera reserva para registrarte";
+  }
+
+  // FINAL OPTION: 2. SALIR
+  if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
+    await reservationCacheService.delete(reservationKey ?? "");
+    const assistantMsg = reservationMessages.getExitMsg();
+    return assistantMsg;
   }
 
   if (RESERVATION_CACHE?.id) {

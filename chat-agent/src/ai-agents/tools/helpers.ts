@@ -93,7 +93,7 @@ export function parseStringReservation(
   if (lines.length !== numOfLines) {
     return {
       success: false,
-      error: `Formato inválido: se esperaban 4 líneas y llegaron ${lines.length}`,
+      error: `Formato inválido: se esperaban ${numOfLines} líneas y llegaron ${lines.length}`,
     };
   }
   if (numOfLines === 4) {
@@ -110,20 +110,25 @@ export function parseStringReservation(
       success: true,
       data: { name, day, startTime, numberOfPeople },
     };
-  }
-  const [day, startTime, peopleRaw] = lines;
+  } else if (numOfLines === 3) {
+    const [day, startTime, peopleRaw] = lines;
 
-  const numberOfPeople = Number(peopleRaw);
-  if (Number.isNaN(numberOfPeople)) {
+    const numberOfPeople = Number(peopleRaw);
+    if (Number.isNaN(numberOfPeople)) {
+      return {
+        success: false,
+        error: "El número de personas no es válido",
+      };
+    }
     return {
-      success: false,
-      error: "El número de personas no es válido",
+      error: "",
+      success: true,
+      data: { day, startTime, numberOfPeople },
     };
   }
   return {
-    error: "",
-    success: true,
-    data: { day, startTime, numberOfPeople },
+    error: "Formato inválido",
+    success: false,
   };
 }
 
