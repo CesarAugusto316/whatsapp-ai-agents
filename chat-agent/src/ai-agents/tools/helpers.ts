@@ -1,5 +1,5 @@
 import { GenerateTextResult, ToolSet } from "ai";
-import { ReservationInput, WEEK_DAYS, WeekDay } from "../agent.types";
+import { WEEK_DAYS, WeekDay } from "../agent.types";
 
 /**
  *
@@ -37,10 +37,6 @@ export function renderAssistantText<T>(result: T): string {
     .trim();
 }
 
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
 function formatTime(isoString: string, timezone: string): string {
   const date = new Date(isoString);
 
@@ -52,84 +48,51 @@ function formatTime(isoString: string, timezone: string): string {
   });
 }
 
-export function formatSchedule(schedule: WeekDay, timezone: string): string {
-  return WEEK_DAYS.map((day) => {
-    const slots = schedule[day];
-
-    if (!slots || slots?.length === 0) {
-      return `- ${capitalize(day)}: Closed`;
-    }
-    const ranges = slots
-      .map((slot) => {
-        const start = formatTime(slot.startTime, timezone);
-        const end = formatTime(slot.endTime, timezone);
-        return `${start}  ->  ${end}`;
-      })
-      .join("  ");
-
-    return `- ${capitalize(day)}:  ${ranges}`;
-  }).join("\n");
-}
-
 /**
  *
- * @param input
- * @param numOfLines 3 ó 4
+ * @example
+ * TIMEZONE: America/Guayaquil
+ * DAY: MONDAY
+ * STATUS: OPEN
+ * RANGE: 18:00-23:00
+ *
+ * DAY: TUESDAY
+ * STATUS: CLOSED
+ *
+ * DAY: WEDNESDAY
+ * STATUS: OPEN
+ * RANGE: 12:00-15:00
+ * RANGE: 18:00-22:00
+ * @param schedule
+ * @param timezone
  * @returns
  */
-export function parseStringReservation(
-  input: string,
-  numOfLines = 4,
-): {
-  success: boolean;
-  data?: ReservationInput;
-  error?: string;
-} {
-  const lines = input
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
+export function formatSchedule(schedule: WeekDay, timezone: string): string {
+  const lines: string[] = [];
 
-  if (lines.length !== numOfLines) {
-    return {
-      success: false,
-      error: `Formato inválido: se esperaban ${numOfLines} líneas y llegaron ${lines.length}`,
-    };
-  }
-  if (numOfLines === 4) {
-    const [name, day, startTime, peopleRaw] = lines;
-    const numberOfPeople = Number(peopleRaw);
-    if (Number.isNaN(numberOfPeople)) {
-      return {
-        success: false,
-        error: "El número de personas no es válido",
-      };
-    }
-    return {
-      error: "",
-      success: true,
-      data: { name, day, startTime, numberOfPeople },
-    };
-  } else if (numOfLines === 3) {
-    const [day, startTime, peopleRaw] = lines;
+  lines.push(`TIMEZONE: ${timezone}`);
 
-    const numberOfPeople = Number(peopleRaw);
-    if (Number.isNaN(numberOfPeople)) {
-      return {
-        success: false,
-        error: "El número de personas no es válido",
-      };
+  for (const day of WEEK_DAYS) {
+    const slots = schedule[day];
+
+    lines.push(``);
+    lines.push(`DAY: ${day.toUpperCase()}`);
+
+    if (!slots || slots.length === 0) {
+      lines.push(`STATUS: CLOSED`);
+      continue;
     }
-    return {
-      error: "",
-      success: true,
-      data: { day, startTime, numberOfPeople },
-    };
+
+    lines.push(`STATUS: OPEN`);
+
+    for (const slot of slots) {
+      const start = formatTime(slot.startTime, timezone);
+      const end = formatTime(slot.endTime, timezone);
+      lines.push(`RANGE: ${start}-${end}`);
+    }
   }
-  return {
-    error: "Formato inválido",
-    success: false,
-  };
+
+  return lines.join("\n");
 }
 
 type ApiDatePayload = {

@@ -1,70 +1,196 @@
-import {
-  buildApiDates,
-  parseStringReservation,
-} from "@/ai-agents/tools/helpers";
+import { buildApiDates } from "@/ai-agents/tools/helpers";
 import { FlowHandler } from "../handlers.types";
-import { safeParse } from "zod";
-import { reserveSchema } from "@/ai-agents/schemas";
+import z, { safeParse } from "zod";
+import { reservationSchemaWithDates } from "@/ai-agents/schemas";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
   CustomerActions,
+  ReservationInput,
   ReservationState,
   reservationStatuses,
+  InputIntent,
 } from "@/ai-agents/agent.types";
-import { reservationMessages } from "@/ai-agents/tools/prompts";
+import {
+  dataValidationPrompts,
+  systemMessages,
+} from "@/ai-agents/tools/prompts";
 import { Appointment, Customer } from "@/types/business/cms-types";
+import {
+  aiClient,
+  humanizerAgent,
+  inputClassIntent,
+} from "@/ai-agents/agent.config";
+import { ModelMessage } from "ai";
+
+export function extractMissingFields(zodError: z.ZodError): string[] {
+  const fields = new Set<string>();
+
+  for (const issue of zodError.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string") {
+      fields.add(field);
+    }
+  }
+
+  return [...fields];
+}
+
+const FIELD_MAP: Record<string, string> = {
+  customerName: "customerName",
+  day: "date",
+  startDateTime: "time",
+  endDateTime: "time",
+  numberOfPeople: "numberOfPeople",
+};
+
+export function toConversationalFields(fields: string[]) {
+  return [...new Set(fields.map((f) => FIELD_MAP[f]).filter(Boolean))];
+}
 
 export const makeStarted: FlowHandler = async (ctx) => {
   const {
     RESERVATION_CACHE,
     business,
     customerMessage,
-    customer,
     reservationKey,
+    customer,
   } = ctx;
 
-  // FINAL OPTION: 2. SALIR
-  if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-    await reservationCacheService.delete(reservationKey ?? "");
-    const assistantMsg = reservationMessages.getExitMsg();
-    return assistantMsg;
-  }
+  try {
+    const inputIntent = await inputClassIntent(customerMessage);
 
-  const parseInput = parseStringReservation(
-    customerMessage,
-    customer?.name ? 3 : 4,
-  );
-  if (!parseInput.success) {
-    return parseInput.error ?? "Datos inválidos";
+    if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
+      return InputIntent.CUSTOMER_QUESTION;
+      // This breaks the flow and the fallback AGENT takes control
+      // (this time and returns control back)
+    }
+    // OPTION: 1. SALIR
+    if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
+      await reservationCacheService.delete(reservationKey ?? "");
+      const responseMsg = systemMessages.getExitMsg();
+      return humanizerAgent(responseMsg);
+    }
+
+    if ((RESERVATION_CACHE?.attempts ?? 0) > 4) {
+      await reservationCacheService.save(reservationKey ?? "", {
+        ...RESERVATION_CACHE,
+        customerName: customer?.name ?? "",
+        day: "",
+        startDateTime: "",
+        endDateTime: "",
+        numberOfPeople: 0,
+        attempts: RESERVATION_CACHE?.attempts || 0,
+      } satisfies Partial<ReservationState>);
+
+      return humanizerAgent(
+        "Intentemos de nuevo desde cero. ¿Puedes enviarme todos los datos de la reserva en un solo mensaje?",
+      );
+    }
+
+    const messages: ModelMessage[] = [
+      {
+        role: "user",
+        content: `
+        This is the initial context.
+        Can be used as reference for completing the next user message:
+          ${JSON.stringify({
+            customerName: RESERVATION_CACHE?.customerName ?? "",
+            startDateTime: RESERVATION_CACHE?.startDateTime ?? "",
+            endDateTime: RESERVATION_CACHE?.endDateTime ?? "",
+            day: RESERVATION_CACHE?.day ?? "",
+            numberOfPeople: RESERVATION_CACHE?.numberOfPeople ?? 0,
+          } satisfies ReservationInput)}
+      `,
+      },
+      { role: "user", content: customerMessage },
+    ];
+    const DATA_PARSER_PROMPT = dataValidationPrompts.dataParser(business);
+    const DATA_COLLECTOR_PROMPT = dataValidationPrompts.humanizer(
+      business.general.timezone,
+    );
+    const aiValidator = await aiClient(messages, DATA_PARSER_PROMPT);
+    const { success, data, error } = safeParse(
+      reservationSchemaWithDates,
+      aiValidator,
+    );
+    if (!success) {
+      const obj = JSON.parse(aiValidator);
+      await reservationCacheService.save(reservationKey ?? "", {
+        ...RESERVATION_CACHE,
+        customerName: obj.customerName ?? "",
+        day: obj?.day ?? "",
+        startDateTime: obj.startDateTime,
+        endDateTime: obj.endDateTime,
+        numberOfPeople: obj.numberOfPeople,
+        attempts: (RESERVATION_CACHE?.attempts || 0) + 1,
+      } satisfies Partial<ReservationState>);
+
+      const conversationalContext = {
+        missingFields: toConversationalFields(extractMissingFields(error)),
+        lastError:
+          obj?.["error"] || "Algunos datos de la reserva no quedaron claros",
+      };
+      const aiHumanizer = await aiClient(
+        [
+          {
+            role: "user",
+            content: `
+              Context for clarification:
+              missingFields: ${JSON.stringify(conversationalContext.missingFields)}
+              error: ${conversationalContext.lastError}
+            `,
+          },
+        ],
+        DATA_COLLECTOR_PROMPT,
+      );
+      return aiHumanizer;
+    }
+
+    const isAvailable = await businessService.checkAvailability({
+      "where[day][equals]": data.day ?? "",
+      "where[startDateTime][equals]": data.startDateTime ?? "",
+      "where[endDateTime][equals]": data.endDateTime ?? "",
+    });
+
+    if (!isAvailable) {
+      return humanizerAgent(
+        "Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.",
+      );
+    }
+
+    // 2. ✅ INPUT DATA VALIDATED
+    await reservationCacheService.save(reservationKey ?? "", {
+      ...RESERVATION_CACHE,
+      customerName: data.customerName ?? "",
+      day: data?.day ?? "",
+      startDateTime: data.startDateTime,
+      endDateTime: data.endDateTime,
+      numberOfPeople: data.numberOfPeople,
+      status: reservationStatuses.MAKE_VALIDATED,
+    } satisfies Partial<ReservationState>);
+
+    const responseMsg = systemMessages.getConfirmationMsg({
+      customerName: data.customerName ?? "",
+      day: data?.day,
+      startDateTime: data.startDateTime,
+      endDateTime: data.endDateTime ?? "",
+      numberOfPeople: data.numberOfPeople,
+    } satisfies ReservationInput);
+
+    return humanizerAgent(responseMsg);
+  } catch (error) {
+    //
+    // BORRAR CACHE y REINICIAR
+    return "Ocurrió un problema inesperado. ¿Podemos intentar de nuevo con los datos de la reserva?";
   }
-  const { success, data, error } = safeParse(reserveSchema, parseInput.data);
-  if (!success) {
-    return error.message ?? "Datos inválidos";
-  }
-  const isAvailable = await businessService.checkAvailability(
-    data?.day,
-    data.startTime,
-    (business?.schedule?.averageTime ?? 1) * 60,
-  );
-  if (!isAvailable) {
-    return "Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.";
-  }
-  await reservationCacheService.save(reservationKey ?? "", {
-    ...RESERVATION_CACHE,
-    customerName: data.name ?? customer?.name,
-    day: data.day,
-    startTime: data.startTime,
-    numberOfPeople: data.numberOfPeople,
-    status: reservationStatuses.MAKE_VALIDATED,
-  });
-  const assistantResponse = reservationMessages.getConfirmationMsg({
-    ...data,
-    name: data?.name ?? customer?.name,
-  });
-  return assistantResponse;
 };
 
+/**
+ *
+ * @param ctx
+ * @returns
+ */
 export const makeValidated: FlowHandler = async (ctx) => {
   const {
     RESERVATION_CACHE,
@@ -80,7 +206,7 @@ export const makeValidated: FlowHandler = async (ctx) => {
     const {
       customerName = "",
       day = "",
-      startTime = "",
+      startDateTime: startTime = "",
       numberOfPeople = 1,
     } = RESERVATION_CACHE as ReservationState;
     let newCustomer = customer;
@@ -119,7 +245,7 @@ export const makeValidated: FlowHandler = async (ctx) => {
         status: "confirmed",
       });
       const reservation = (await res.json()) as { doc: Appointment };
-      const assistantMsg = reservationMessages.getSuccessMsg(reservation?.doc, {
+      const assistantMsg = systemMessages.getSuccessMsg(reservation?.doc, {
         customerName: newCustomer.name ?? customerName,
         numberOfPeople,
         restaurantName: business?.name ?? "",
@@ -133,14 +259,14 @@ export const makeValidated: FlowHandler = async (ctx) => {
   // FINAL OPTION: 2. SALIR
   if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
     await reservationCacheService.delete(reservationKey ?? "");
-    const assistantMsg = reservationMessages.getExitMsg();
+    const assistantMsg = systemMessages.getExitMsg();
     return assistantMsg;
   }
 
   // FINAL OPTION: 3. REINGRESAR DATOS
   if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
     // RESTART
-    const assistantResponse = reservationMessages.getReStartMsg({
+    const assistantResponse = systemMessages.getStartMsg({
       userName: customer?.name,
     });
     await reservationCacheService.save(reservationKey ?? "", {

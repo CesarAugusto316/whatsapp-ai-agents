@@ -1,6 +1,12 @@
 import { CollectionConfig, CollectionSlug } from "payload";
 import { Users } from "./Users";
 
+const date = (hour: number) => {
+  const now = new Date(); // fecha actual
+  now.setHours(hour, 0, 0, 0); // ajusta la hora local del navegador
+  return now.toISOString(); // Payload convertirá a UTC
+};
+
 // TODO: NORMALIZE DATES
 export const Business: CollectionConfig = {
   slug: "businesses",
@@ -252,7 +258,7 @@ export const Business: CollectionConfig = {
                         es: "Fecha de inicio",
                       },
                       required: true,
-                      defaultValue: new Date().toISOString(),
+                      defaultValue: () => new Date().toISOString(),
                       admin: {
                         date: {
                           pickerAppearance: "dayOnly",
@@ -267,7 +273,7 @@ export const Business: CollectionConfig = {
                         es: "Fech de fin",
                       },
                       required: true,
-                      defaultValue: new Date().toISOString(),
+                      defaultValue: () => new Date().toISOString(),
                       admin: {
                         date: {
                           pickerAppearance: "dayOnly",
@@ -321,14 +327,14 @@ export const Business: CollectionConfig = {
                   },
                   minRows: 0,
                   maxRows: 2,
-                  defaultValue: [
+                  defaultValue: () => [
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T12:00:00.000",
+                      startTime: date(8),
+                      endTime: date(12),
                     },
                     {
-                      startTime: "2000-01-01T14:00:00.000",
-                      endTime: "2000-01-01T20:00:00.000",
+                      startTime: date(14),
+                      endTime: date(20),
                     },
                   ],
                   fields: [
@@ -342,8 +348,15 @@ export const Business: CollectionConfig = {
                             en: "Start Time",
                             es: "Hora de inicio",
                           },
+                          localized: false,
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
+                          defaultValue: () => date(8),
                           required: true,
-                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -359,8 +372,14 @@ export const Business: CollectionConfig = {
                             en: "End Time",
                             es: "Hora de fin",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
+                          defaultValue: () => date(12),
                           required: true,
-                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -392,14 +411,14 @@ export const Business: CollectionConfig = {
                       es: "Bloques",
                     },
                   },
-                  defaultValue: [
+                  defaultValue: () => [
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T12:00:00.000",
+                      startTime: date(8),
+                      endTime: date(12),
                     },
                     {
-                      startTime: "2000-01-01T14:00:00.000",
-                      endTime: "2000-01-01T20:00:00.000",
+                      startTime: date(14),
+                      endTime: date(20),
                     },
                   ],
                   fields: [
@@ -413,8 +432,14 @@ export const Business: CollectionConfig = {
                             en: "Start Time",
                             es: "Hora de inicio",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(8),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -430,8 +455,14 @@ export const Business: CollectionConfig = {
                             en: "End Time",
                             es: "Hora de fin",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(12),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -463,14 +494,14 @@ export const Business: CollectionConfig = {
                       es: "Bloques",
                     },
                   },
-                  defaultValue: [
+                  defaultValue: () => [
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T12:00:00.000",
+                      startTime: date(8),
+                      endTime: date(12),
                     },
                     {
-                      startTime: "2000-01-01T14:00:00.000",
-                      endTime: "2000-01-01T20:00:00.000",
+                      startTime: date(14),
+                      endTime: date(20),
                     },
                   ],
                   fields: [
@@ -484,8 +515,14 @@ export const Business: CollectionConfig = {
                             en: "Start Time",
                             es: "Hora de inicio",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(8),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -501,8 +538,14 @@ export const Business: CollectionConfig = {
                             en: "End Time",
                             es: "Hora de fin",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(12),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -534,14 +577,14 @@ export const Business: CollectionConfig = {
                       es: "Bloques",
                     },
                   },
-                  defaultValue: [
+                  defaultValue: () => [
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T12:00:00.000",
+                      startTime: date(8),
+                      endTime: date(12),
                     },
                     {
-                      startTime: "2000-01-01T14:00:00.000",
-                      endTime: "2000-01-01T20:00:00.000",
+                      startTime: date(14),
+                      endTime: date(20),
                     },
                   ],
                   fields: [
@@ -555,8 +598,14 @@ export const Business: CollectionConfig = {
                             en: "Start Time",
                             es: "Hora de inicio",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(8),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -572,8 +621,14 @@ export const Business: CollectionConfig = {
                             en: "End Time",
                             es: "Hora de fin",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(12),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -605,14 +660,14 @@ export const Business: CollectionConfig = {
                       es: "Bloques",
                     },
                   },
-                  defaultValue: [
+                  defaultValue: () => [
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T12:00:00.000",
+                      startTime: date(8),
+                      endTime: date(12),
                     },
                     {
-                      startTime: "2000-01-01T14:00:00.000",
-                      endTime: "2000-01-01T20:00:00.000",
+                      startTime: date(14),
+                      endTime: date(20),
                     },
                   ],
                   fields: [
@@ -626,8 +681,14 @@ export const Business: CollectionConfig = {
                             en: "Start Time",
                             es: "Hora de inicio",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(8),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -643,8 +704,14 @@ export const Business: CollectionConfig = {
                             en: "End Time",
                             es: "Hora de fin",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(12),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -676,10 +743,10 @@ export const Business: CollectionConfig = {
                       es: "Bloques",
                     },
                   },
-                  defaultValue: [
+                  defaultValue: () => [
                     {
-                      startTime: "2000-01-01T08:00:00.000",
-                      endTime: "2000-01-01T17:00:00.000",
+                      startTime: date(8),
+                      endTime: date(12),
                     },
                   ],
                   fields: [
@@ -693,8 +760,14 @@ export const Business: CollectionConfig = {
                             en: "Start Time",
                             es: "Hora de inicio",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(8),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -710,8 +783,14 @@ export const Business: CollectionConfig = {
                             en: "End Time",
                             es: "Hora de fin",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(12),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -754,8 +833,14 @@ export const Business: CollectionConfig = {
                             en: "Start Time",
                             es: "Hora de inicio",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T08:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(8),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",
@@ -771,8 +856,14 @@ export const Business: CollectionConfig = {
                             en: "End Time",
                             es: "Hora de fin",
                           },
+                          // timezone: {
+                          //   defaultTimezone: "UTC",
+                          //   supportedTimezones: [
+                          //     { label: "UTC", value: "UTC" },
+                          //   ],
+                          // },
                           required: true,
-                          defaultValue: "2000-01-01T17:00:00.000", // Fecha fija de referencia
+                          defaultValue: () => date(12),
                           admin: {
                             date: {
                               pickerAppearance: "timeOnly",

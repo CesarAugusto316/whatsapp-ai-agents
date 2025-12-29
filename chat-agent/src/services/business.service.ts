@@ -98,23 +98,16 @@ class BusinessService {
    * @returns boolean
    */
   public async checkAvailability(
-    day?: string,
-    startTime?: string,
-    durationMinutes = 60,
+    queryParams: Pick<
+      BusinessQueryParams,
+      | "where[day][equals]"
+      | "where[startDateTime][equals]"
+      | "where[endDateTime][equals]"
+    >, // where[phoneNumber][equals]=${phoneNumber}
   ) {
-    const {
-      day: reservationDay,
-      startDateTime,
-      endDateTime,
-    } = buildApiDates(day ?? "", startTime ?? "", durationMinutes); // use business average reservation time
-
     const url = generateUrl("appointments", {
       depth: 0,
-      ...{
-        "where[day][equals]": reservationDay,
-        "where[startDateTime][equals]": startDateTime,
-        "where[endDateTime][equals]": endDateTime,
-      },
+      ...queryParams,
     });
     const appointments = await fetch(url, {
       method: "GET",

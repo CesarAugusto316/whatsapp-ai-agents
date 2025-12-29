@@ -2,7 +2,8 @@ import { FlowHandler } from "../handlers.types";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { CustomerActions } from "@/ai-agents/agent.types";
-import { reservationMessages } from "@/ai-agents/tools/prompts";
+import { systemMessages } from "@/ai-agents/tools/prompts";
+import { humanizerAgent } from "@/ai-agents/agent.config";
 
 export const cancelStarted: FlowHandler = async (ctx) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;
@@ -26,13 +27,13 @@ export const cancelStarted: FlowHandler = async (ctx) => {
       return assistantResponse;
     }
     if (customerMessage.toUpperCase() === CustomerActions.NO) {
-      const assistantResponse = reservationMessages.getExitMsg();
+      const assistantResponse = systemMessages.getExitMsg();
       await reservationCacheService.delete(reservationKey);
       return assistantResponse;
     }
     if (customerMessage) {
       const assistantResponse = `Escribe ${CustomerActions.YES} para confirmar o ${CustomerActions.NO} para cancelar`;
-      return assistantResponse;
+      return humanizerAgent(assistantResponse);
     }
   }
 };

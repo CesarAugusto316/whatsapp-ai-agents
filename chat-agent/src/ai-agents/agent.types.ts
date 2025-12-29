@@ -1,4 +1,4 @@
-import { Business } from "@/types/business/cms-types";
+import { Appointment, Business } from "@/types/business/cms-types";
 import { ModelMessage } from "ai";
 
 export const BOOL = {
@@ -36,39 +36,43 @@ export const reservationStatuses = {
 
 export type ReservationStatus = keyof typeof reservationStatuses;
 
-export interface ReservationState {
+export type ReservationInput = Pick<
+  Appointment,
+  "customerName" | "startDateTime" | "endDateTime" | "day" | "numberOfPeople"
+>;
+
+export interface ReservationState extends ReservationInput {
   id: string;
   status: ReservationStatus;
-  customerId: string;
-  customerName: string;
   customerPhone: string;
+  customerId: string;
   businessId: string;
-  startTime: string;
-  day: string;
-  numberOfPeople: number;
+  attempts: number;
 }
 
-export enum CustomerActions {
-  CONFIRM = "CONFIRMAR",
-  RESTART = "REINGRESAR",
-  EXIT = "SALIR",
-  UPDATE = "CAMBIAR",
-  CANCEL = "CANCELAR",
-  YES = "SI",
-  NO = "NO",
-}
+export const CustomerActions = {
+  CONFIRM: "CONFIRMAR",
+  RESTART: "REINGRESAR",
+  EXIT: "SALIR",
+  UPDATE: "CAMBIAR",
+  CANCEL: "CANCELAR",
+  YES: "SI",
+  NO: "NO",
+} as const;
 
-export enum FlowOptions {
-  MAKE_RESERVATION = "1",
-  UPDATE_RESERVATION = "2",
-}
+export const FlowOptions = {
+  MAKE_RESERVATION: "1",
+  UPDATE_RESERVATION: "2",
+} as const;
 
-export type ReservationInput = {
-  name?: string;
-  day: string;
-  startTime: string;
-  numberOfPeople: number;
-};
+/**
+ *
+ * @description Enum for intention classification
+ */
+export enum InputIntent {
+  INPUT_DATA = "INPUT_DATA",
+  CUSTOMER_QUESTION = "CUSTOMER_QUESTION",
+}
 
 export type WeekDay = Omit<Business["schedule"], "averageTime">;
 

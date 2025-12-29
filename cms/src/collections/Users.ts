@@ -36,30 +36,10 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   auth: true,
-  // auth: {
-  //   verify: {
-  //     generateEmailHTML: ({ req, token, user }) => {
-  //       // Use the token provided to allow your user to verify their account
-  //       const url = `https://yourfrontend.com/verify?token=${token}`;
-
-  //       return `Hey ${user.email}, verify your email by clicking here: ${url}`;
-  //     },
-  //   },
-  // },
   /**
    *
    * @description UUIDV7: https://payloadcms.com/community-help/github/how-to-implement-automatic-custom-id
    */
-  // hooks: {
-  //     beforeValidate: [({ data }) => {
-  //       if (!data.id) {
-  //         // replace with your own way to generate IDs
-  //         const customID = uuid()
-  //         return {...data, id: customID }
-  //       }
-  //       return data
-  //     }],
-  //   },
   fields: [
     // Email added by default
     // Add more fields as needed

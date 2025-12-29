@@ -155,8 +155,6 @@ export const Appointments: CollectionConfig = {
       admin: {
         date: {
           pickerAppearance: "dayOnly",
-          // timeFormat: "HH:mm",
-          // displayFormat: "HH:mm",
         },
       },
     },

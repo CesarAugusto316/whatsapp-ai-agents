@@ -6,6 +6,7 @@ import {
   CustomerActions,
   FlowOptions,
   ReservationInput,
+  InputIntent,
 } from "../agent.types";
 
 const AGENT_NAME = "Lua";
@@ -116,6 +117,10 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     - Timezone: ${general.timezone}
     - Reservation approval required: ${general.requireAppointmentApproval ? "Yes" : "No"}
     - Opening schedule:
+
+    ==============================
+    RESTAURANT SCHEDULE
+    ==============================
     ${scheduleBlock}
 
     ==============================
@@ -265,7 +270,281 @@ const MODE_COPY = {
   },
 } as const;
 
-export const reservationMessages = {
+export const dataValidationPrompts = {
+  intentClassifier() {
+    return `
+        You are an intention classification module for a restaurant reservation system.
+
+        Your task is to classify the user's input message into exactly one of two categories:
+
+        1. "${InputIntent.INPUT_DATA}" → if the message contains **any explicit information for a reservation**, including:
+           - Customer name
+           - Reservation date (absolute or relative, e.g., "mañana", "pasado mañana")
+           - Reservation start time or end time
+           - Number of people
+           Even if the information is incomplete, approximate, abbreviated, or mixed with a question, it should be classified as INPUT_DATA.
+
+        2. "${InputIntent.CUSTOMER_QUESTION}" → if the message:
+           - Asks about restaurant hours, availability, menu, or policies
+           - Is a comment, doubt, or inquiry
+           - Mentions dates or times but **does not provide any data about the user’s reservation**
+           - Is purely interrogative, without attempting to send reservation information
+
+        STRICT RULES:
+        - Input messages are in Spanish.
+        - Only return one of the exact strings: "${InputIntent.INPUT_DATA}" or "${InputIntent.CUSTOMER_QUESTION}".
+        - Do NOT include explanations, examples, quotes, or extra text.
+        - Do NOT guess or infer missing information; classify **based only on explicit presence of user reservation data**.
+        - Partial, relative, or abbreviated data counts as INPUT_DATA.
+        - If the message combines a question with reservation data, prioritize the **presence of reservation data**: classify as INPUT_DATA.
+
+        INPUT EXAMPLES AND INTENDED OUTPUT (for reference only, do not output these):
+        - "A nombre de Sergio Rivera para el 25 de diciembre a las 8 de la noche para 4 personas" → "${InputIntent.INPUT_DATA}"
+        - "¿A qué hora abre el restaurante mañana?" → "${InputIntent.CUSTOMER_QUESTION}"
+        - "Mañana a las 7pm para dos personas, Raúl Lara" → "${InputIntent.INPUT_DATA}"
+        - "¿Pueden acomodarnos en una mesa al aire libre?" → "${InputIntent.CUSTOMER_QUESTION}"
+        - "A las 8 para 3 personas" → "${InputIntent.INPUT_DATA}"
+        - "Quisiera reservar para pasado mañana a las 6" → "${InputIntent.INPUT_DATA}"
+        - "¿Tienen mesas libres mañana a las 8?" → "${InputIntent.CUSTOMER_QUESTION}"
+        - "Raul R. 25/12 20h 4 pers" → "${InputIntent.INPUT_DATA}"
+        ${Object.values(CustomerActions)
+          .map((action) => `- "${action}" → "${InputIntent.INPUT_DATA}"`)
+          .join("\n")}
+      `.trim();
+  },
+
+  currentDate(timeZone: string) {
+    return `
+    REFERENCE TIME:
+    - Interpret relative dates (e.g. "tomorrow") relative to today's date: ${timeZone}`;
+  },
+
+  dataParser(business: Business) {
+    const { schedule, general } = business;
+    const scheduleBlock = formatSchedule(schedule, general?.timezone);
+    const currentDateTime = new Date().toLocaleTimeString("en-GB", {
+      dateStyle: "full",
+      timeStyle: "full",
+      timeZone: general.timezone,
+    });
+
+    return `
+      You are a deterministic parsing and normalization module for a reservation system.
+
+      Your ONLY task is to interpret a user's message and extract structured data.
+      This is NOT a conversational task.
+
+      STRICT RULES:
+
+      1. The input is a single free-text message written by a user in Spanish.
+      2. You must extract, if explicitly present:
+        - Customer name
+        - Reservation date (day, month, year)
+        - Start time
+        - End time (optional)
+        - Number of people
+      3. If the user does NOT provide an end time AND a valid start time exists:
+        - endDateTime = startDateTime + exactly 60 minutes.
+      4. All dates and times MUST be returned in ISO 8601 format in UTC (Z).
+      5. Do NOT invent, infer, guess, or assume missing or implicit values.
+      6. Relative dates (e.g. "mañana", "hoy", "pasado mañana") MUST be resolved using the reference time.
+      7. If required information is missing, contradictory, or ambiguous, return an ERROR object.
+      8. Do NOT include explanations, comments, markdown, or extra text.
+      9. Output MUST be a single valid JSON object.
+      10. Always consider the following reference date and time as "now": ${currentDateTime}
+      11. Schedule validation MUST be applied ONLY if a valid startDateTime exists.
+          If schedule validation applies:
+            - startDateTime MUST fall within the restaurant schedule.
+            - if an endDateTime exists (explicit or derived), it MUST also fall within the schedule.
+          If any validated time is OUTSIDE the schedule, return an ERROR object.
+      12. All user-provided times MUST be interpreted in the restaurant's local timezone.
+      13. Schedule validation MUST be performed using the restaurant's local timezone.
+      14. Conversion to UTC MUST occur ONLY after schedule validation succeeds.
+
+      ==============================
+      RESTAURANT SCHEDULE (AUTHORITATIVE)
+      ==============================
+      ${scheduleBlock}
+
+      ==============================
+      SCHEDULE VALIDATION RULES
+      ==============================
+
+      - The restaurant schedule is authoritative.
+      - Any time outside the schedule invalidates the reservation.
+
+
+      OUTPUT FORMAT ON SUCCESS (EXACT KEYS AND TYPES):
+
+      {
+        "customerName": "string",
+        "day": "YYYY-MM-DDT00:00:00.000Z",
+        "startDateTime": "YYYY-MM-DDTHH:mm:00.000Z",
+        "endDateTime": "YYYY-MM-DDTHH:mm:00.000Z",
+        "numberOfPeople": number,
+        "error": ""
+      }
+
+      OUTPUT FORMAT ON ERROR (EXACT KEYS AND TYPES):
+
+      {
+        "customerName": "",
+        "day": "",
+        "startDateTime": "",
+        "endDateTime": "",
+        "numberOfPeople": 0,
+        "error": "La hora indicada está fuera del horario de atención del restaurante"
+      }
+
+      EXAMPLES:
+      Note: The times are converted from the restaurant's local timezone (Europe/Madrid, UTC+1) to UTC.
+
+      Input:
+      "A nombre de Sergio Rivera para el 25 de diciembre a las 8 de la noche para 4 personas"
+
+      Output:
+      {
+        "customerName": "Sergio Rivera",
+        "day": "2025-12-25T00:00:00.000Z",
+        "startDateTime": "2025-12-25T19:00:00.000Z",
+        "endDateTime": "2025-12-25T20:00:00.000Z",
+        "numberOfPeople": 4,
+        "error": ""
+      }
+
+      Input:
+      "Mañana a las 7pm para dos personas, Raúl Lara"
+
+      Output:
+      {
+        "customerName": "Raúl Lara",
+        "day": "2025-12-29T00:00:00.000Z",
+        "startDateTime": "2025-12-29T18:00:00.000Z",
+        "endDateTime": "2025-12-29T19:00:00.000Z",
+        "numberOfPeople": 2,
+        "error": ""
+      }
+
+      Input:
+      "A las 8 para 3 personas"
+
+      Output:
+      {
+        "customerName": "",
+        "day": "",
+        "startDateTime": "",
+        "endDateTime": "",
+        "numberOfPeople": 3,
+        "error": "No indicaste la fecha ni tu nombre para la reserva"
+      }
+
+      Input:
+      "El domingo a las 23 horas" (According to the provided restaurant schedule)
+
+      Output:
+      {
+        "customerName": "",
+        "day": "",
+        "startDateTime": "",
+        "endDateTime": "",
+        "numberOfPeople": 0,
+        "error": "La hora indicada está fuera del horario de atención del restaurante"
+      }
+
+      ==============================
+      REMEMBER
+      ==============================
+
+      - The schedule block is authoritative.
+      - Invalid time = invalid reservation.
+      - No corrections. No suggestions. No negotiation.
+  `.trim();
+  },
+
+  humanizer(timeZone: string) {
+    const currentDateTime = new Date().toLocaleTimeString("en-GB", {
+      dateStyle: "full",
+      timeStyle: "full",
+      timeZone,
+    });
+
+    return `
+      You are a response-generation module for a reservation system.
+
+      Your ONLY function is to convert a structured validation error
+      into a clear, short, and human-friendly message for the user.
+
+      You do NOT:
+      - parse or interpret user input
+      - validate or normalize data
+      - infer missing values
+      - manage conversation state
+      - confirm or create reservations
+
+      You receive a structured context produced by another system.
+      That context is authoritative.
+
+      ----------------------------------
+      INPUT CONTEXT (always structured):
+
+      - missingFields: array of missing or invalid data
+        Possible values:
+        ["customerName", "date", "time", "numberOfPeople"]
+
+      - error: a short, human-readable summary of what went wrong
+
+      ----------------------------------
+      YOUR RESPONSIBILITIES:
+
+      1. Explain, in natural Spanish, what information is missing or unclear.
+      2. Mention ONLY the fields listed in "missingFields".
+      3. Use non-technical, user-friendly language.
+      4. Ask the user to provide the missing information.
+      5. Keep the message short, precise, and polite.
+      6. Never invent, assume, or suggest values.
+      7. Never mention internal systems, parsing, schemas, or validation.
+      8. Always respond in Spanish.
+      9. Produce a SINGLE message addressed directly to the user.
+
+      ----------------------------------
+      REFERENCE DATE (for wording only, not reasoning):
+      ${currentDateTime}
+
+      ----------------------------------
+      STYLE GUIDELINES:
+
+      - Be clear and direct.
+      - Avoid repetition.
+      - Do not include examples unless they help clarify what is missing.
+      - Do not ask for information that is not listed in "missingFields".
+
+      ----------------------------------
+      EXAMPLES OF VALID OUTPUTS:
+
+      • If missingFields = ["date", "time"]:
+        "Para continuar necesito que me indiques el día de la reserva y la hora."
+
+      • If missingFields = ["customerName"]:
+        "¿A nombre de quién sería la reserva?"
+
+      • If missingFields = ["numberOfPeople"]:
+        "¿Para cuántas personas sería la reserva?"
+
+
+      ----------------------------------
+      MANDATORY FINAL MESSAGE (ALWAYS INCLUDED):
+
+      "Si tienes alguna duda o prefieres salir de este proceso, escribe la palabra ${CustomerActions.EXIT} y un asistente te ayudará."
+
+      ----------------------------------
+      Remember:
+      You translate system state into human language.
+      Nothing more.
+  `.trim();
+  },
+};
+
+export const systemMessages = {
   enterReservationId(mode: ReservationMode = "update") {
     const copy = MODE_COPY[mode];
     return `
@@ -273,127 +552,47 @@ export const reservationMessages = {
     `.trim();
   },
 
-  getStartMsg({
-    userName,
-    mode = "create",
-  }: {
-    userName?: string;
-    mode?: ReservationMode;
-  }) {
+  getStartMsg(
+    { userName }: { userName?: string },
+    mode: ReservationMode = "create",
+  ) {
     const copy = MODE_COPY[mode];
-
     if (userName) {
       return `
         Perfecto ✅
-        ${userName}, has elegido la opción: **${copy.action}**.
+        Para ${copy.verbInfinitive} tu reserva, comentame:
+        el día, la hora y cuántas personas serán.
 
-        Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+        Por ejemplo:
+          “El 25 de diciembre a las 7pm para 2 personas”
+          “Mañana a las 8pm para 4 personas”
 
-        1️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD)
-        2️⃣ **Hora** de la reserva (formato: HH:mm)
-        3️⃣ **Número de personas**
-
-        📌 Ejemplo:
-        2025-12-21
-        19:30
-        2
-
-        ⚠️ Importante:
-        - Respeta el orden y el formato.
-        - Si algún dato no es válido, te pediré que lo corrijas.
-
-        Cuando envíes los datos, continuaré con la ${copy.process} de la reserva.
-        Escribe ${CustomerActions.EXIT} si deseas salir de éste proceso.
+        Escribe "${CustomerActions.EXIT}" si deseas salir de éste proceso.
       `.trim();
     }
 
     return `
       Perfecto ✅
-      Has elegido la opción: **${copy.action}**.
+      Para ${copy.verbInfinitive} tu reserva, ayudame con:
+      **tu nombre**, el **día**, la **hora** y **cuántas personas** serán.
 
-      Por favor, envíame **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
+      Por ejemplo:
+        “Juan Pérez, el 25 de diciembre a las 7pm para 2 personas”
+        “A nombre de María Rodríguez, mañana a las 8pm para 4 personas”
 
-      1️⃣ Tu **nombre**
-      2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD)
-      3️⃣ **Hora** de la reserva (formato: HH:mm)
-      4️⃣ **Número de personas**
-
-      📌 Ejemplo:
-      Juan Pérez
-      2025-12-21
-      19:30
-      2
-
-      ⚠️ Importante:
-      - Respeta el orden y el formato.
-      - Si algún dato no es válido, te pediré que lo corrijas.
-
-      Cuando envíes los datos, continuaré con la ${copy.process} de la reserva.
-      Escribe ${CustomerActions.EXIT} si deseas salir de éste proceso.
-    `.trim();
-  },
-
-  getReStartMsg({
-    userName,
-    mode = "create",
-  }: {
-    userName?: string;
-    mode?: ReservationMode;
-  }) {
-    const copy = MODE_COPY[mode];
-
-    if (userName) {
-      return `
-        ${userName}, por favor envíame nuevamente **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
-
-        1️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD)
-        2️⃣ **Hora** de la reserva (formato: HH:mm)
-        3️⃣ **Número de personas**
-
-        📌 Ejemplo:
-        2025-12-21
-        19:30
-        2
-
-        ⚠️ Importante:
-        - Respeta el orden y el formato.
-
-        Continuaremos con la ${copy.process} de la reserva.
-        Escribe ${CustomerActions.EXIT} si deseas salir de éste proceso.
-      `.trim();
-    }
-
-    return `
-      Por favor, envíame nuevamente **UN SOLO MENSAJE** con la siguiente información, **cada dato en una línea**, en este orden:
-
-      1️⃣ Tu **nombre**
-      2️⃣ **Fecha** de la reserva (formato: YYYY-MM-DD)
-      3️⃣ **Hora** de la reserva (formato: HH:mm)
-      4️⃣ **Número de personas**
-
-      📌 Ejemplo:
-      Juan Pérez
-      2025-12-21
-      19:30
-      2
-
-      ⚠️ Importante:
-      - Respeta el orden y el formato.
-
-      Continuaremos con la ${copy.process} de la reserva.
-      Escribe ${CustomerActions.EXIT} si deseas salir de éste proceso.
+      Escribe "${CustomerActions.EXIT}" si deseas salir de este proceso.
     `.trim();
   },
 
   getConfirmationMsg(data: ReservationInput, mode: ReservationMode = "create") {
     const copy = MODE_COPY[mode];
-
     return `
       Por favor revisa los datos antes de confirmar la ${copy.process} de tu reserva:
 
-      👤 Nombre: ${data?.name}
+      👤 Nombre: ${data?.customerName}
       📅 Fecha: ${data.day}
-      ⏰ Hora: ${data.startTime}
+      ⏰ Hora de entrada: ${data.startDateTime}
+      ⏰ Hora de salida: ${data.endDateTime}
       👥 Número de personas: ${data.numberOfPeople}
 
       Si los datos son correctos, escribe:
@@ -407,6 +606,10 @@ export const reservationMessages = {
     `.trim();
   },
 
+  /**
+   *
+   * @todo SIMPLIFICAR ESTOS ARGUMENTOS
+   */
   getSuccessMsg(
     appointment: Appointment,
     {
@@ -436,12 +639,6 @@ export const reservationMessages = {
 
       ⚠️ Guarda este ID.
       Lo necesitarás para futuras modificaciones o consultas técnicas.
-
-      Para continuar, puedes escribir:
-      1️⃣ Información del restaurante
-      2️⃣ Hacer otra reserva
-      3️⃣ Modificar o cancelar una reserva
-      4️⃣ ¿Cómo funciona el sistema?
     `.trim();
   },
 
@@ -458,3 +655,32 @@ export const reservationMessages = {
     `;
   },
 };
+
+export function humanizerPrompt(originalMessage: string) {
+  return `
+    You are an assistant specialized in rewriting system messages in a natural and human-like way.
+    Your goal is to make each message feel fresh and non-repetitive, while preserving the original meaning.
+    You can introduce small variations in tone, syntax, and emojis.
+
+    Strict rules:
+
+    1. Do not change the **meaning** of the original message.
+    2. Do not remove important data, instructions, or placeholders such as:
+      ${Object.values(CustomerActions)
+        .map((action) => `"${action}"`)
+        .join(", ")},
+      ${Object.values(FlowOptions)
+        .map((option) => `"${option}"`)
+        .join(", ")}.
+    3. You may add, change, or move emojis to make the message sound friendlier and more human.
+    4. Modify **syntax, word order, and tone** so that each version feels a little different.
+    5. Keep the message clear and maintain the overall structure.
+    6. Always **return the rewritten message in Spanish**, ready to be sent to the user. Do not include explanations or comments.
+    7. Respect any numbered instructions in the message (1, 2, 3, etc.) and maintain their order and meaning.
+
+    Message to rewrite:
+    """
+    ${originalMessage}
+    """
+  `;
+}

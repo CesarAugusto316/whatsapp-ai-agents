@@ -24,6 +24,17 @@ export default buildConfig({
     supportedLanguages: { en, es },
   },
   admin: {
+    timezones: {
+      // supportedTimezones: [
+      //   {
+      //     label: "UTC",
+      //     value: "UTC",
+      //   },
+      //   // ...other timezones
+      // ],
+      defaultTimezone: "UTC",
+    },
+    dateFormat: "MMMM do, yyyy",
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),

@@ -1,6 +1,7 @@
 import {
   aiClient,
   classifyCustomerIntent,
+  humanizerAgent,
   infoReservationAgent,
 } from "@/ai-agents/agent.config";
 import {
@@ -8,11 +9,12 @@ import {
   ReservationStatus,
   FlowOptions,
   reservationStatuses,
+  InputIntent,
 } from "@/ai-agents/agent.types";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import {
   howSystemWorksPrompt,
-  reservationMessages,
+  systemMessages,
 } from "@/ai-agents/tools/prompts";
 import chatHistoryService from "@/services/chatHistory.service";
 import reservationCacheService from "@/services/reservationCache.service";
@@ -102,9 +104,11 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
     }
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
       // choice 2
-      const assistantResponse = reservationMessages.getStartMsg({
-        userName: customer?.name,
-      });
+      const assistantResponse = await humanizerAgent(
+        systemMessages.getStartMsg({
+          userName: customer?.name,
+        }),
+      );
       await reservationCacheService.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
@@ -116,7 +120,9 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
     }
     if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
       // choice 3
-      const assistantResponse = reservationMessages.enterReservationId();
+      const assistantResponse = await humanizerAgent(
+        systemMessages.enterReservationId(),
+      );
       await reservationCacheService.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
@@ -179,10 +185,19 @@ export async function initChatFlow(ctx: AppContext): Promise<string> {
 
   const result = await coreFlow.run();
 
-  if (result) {
+  if (result && result !== InputIntent.CUSTOMER_QUESTION) {
     await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, result);
     return result;
   }
+  /**
+   *
+   * @todo mange case when user asks a question and is currently inside a FLOW/EVENT
+   * IF result == InputIntent.CUSTOMER_QUESTION, then the AGENT SHOULD
+   * invite the user to continue the FLOW: MAKE_STARTED, UPDATE_STARTED
+   * @see makeStarted
+   * @see updateStarted
+   * @see {InputIntent}
+   */
   const preResult = await fallbackFlow(ctx);
   await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, preResult);
   return preResult;

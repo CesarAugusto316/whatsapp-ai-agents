@@ -1,17 +1,16 @@
 import { generateText, ModelMessage, stepCountIs } from "ai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env } from "bun";
-import {
-  getReservationStatusById,
-  isScheduleAvailable,
-} from "./tools/restaurant/reservation.tools";
+import { getReservationStatusById } from "./tools/restaurant/reservation.tools";
 import {
   buildInfoReservationsSystemPrompt,
   CLASSIFIER_PROMPT,
+  dataValidationPrompts,
+  humanizerPrompt,
 } from "./tools/prompts";
-import { AgentArgs, CUSTOMER_INTENT } from "./agent.types";
-import { safeParse, string } from "zod";
-import { customerIntentSchema } from "./schemas";
+import { AgentArgs, CUSTOMER_INTENT, InputIntent } from "./agent.types";
+import { safeParse } from "zod";
+import { customerIntentSchema, inputIntentSchema } from "./schemas";
 
 /**
  *
@@ -57,43 +56,15 @@ export function infoReservationAgent({ messages, business }: AgentArgs) {
 
 /**
  *
- * @description Classifies the customer intent based on the conversation history.
  * @param messages
+ * @param prompt
+ * @param temperature
  * @returns
  */
-export async function classifyCustomerIntent(
-  message: string,
-): Promise<CUSTOMER_INTENT> {
-  //
-  const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
-  const headers = {
-    Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
-  };
-  const response = (await (
-    await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: CLASSIFIER_PROMPT },
-          { role: "user", content: message },
-        ],
-      }),
-    })
-  ).json()) as { choices: { message: { content: string } }[] };
-
-  const raw = response?.choices?.at(0)?.message?.content?.trim() ?? "";
-  const { success, data } = safeParse(customerIntentSchema, raw);
-  if (success) return data;
-  else {
-    return CUSTOMER_INTENT.WHAT;
-  }
-}
-
 export async function aiClient(
   messages: ModelMessage[],
   prompt: string,
+  temperature = 0.8,
 ): Promise<string> {
   //
   const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
@@ -106,10 +77,89 @@ export async function aiClient(
       headers,
       body: JSON.stringify({
         model,
+        temperature,
         messages: [{ role: "system", content: prompt }, ...messages],
       }),
     })
   ).json()) as { choices: { message: { content: string } }[] };
 
-  return response?.choices?.at(0)?.message?.content?.trim() ?? "";
+  const content = response?.choices?.[0]?.message?.content?.trim();
+  if (!content) {
+    throw new Error("No se recibió respuesta del humanizer agent");
+  }
+  return content;
+}
+
+/**
+ *
+ * @description Classifies the customer intent based on the conversation history.
+ * @param messages
+ * @returns
+ */
+export async function classifyCustomerIntent(
+  message: string,
+): Promise<CUSTOMER_INTENT> {
+  try {
+    const temperature = 0.1;
+    const raw = await aiClient(
+      [{ role: "user", content: message }],
+      CLASSIFIER_PROMPT,
+      temperature,
+    ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
+
+    const { success, data } = safeParse(customerIntentSchema, raw);
+    if (success) return data;
+    return CUSTOMER_INTENT.WHAT; // fallback
+  } catch (err) {
+    console.error("Error clasificando la intención del usuario:", err);
+    return CUSTOMER_INTENT.WHAT; // fallback en caso de error
+  }
+}
+
+/**
+ *
+ * @description Classifies the customer intent based on the conversation history.
+ * @param messages
+ * @returns
+ */
+export async function inputClassIntent(message: string): Promise<InputIntent> {
+  try {
+    const temperature = 0.1;
+    const raw = await aiClient(
+      [{ role: "user", content: message }],
+      dataValidationPrompts.intentClassifier(),
+      temperature,
+    ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
+
+    const { success, data } = safeParse(inputIntentSchema, raw);
+    if (success) return data;
+    return InputIntent.CUSTOMER_QUESTION; // fallback
+  } catch (err) {
+    console.error("Error clasificando la intención del usuario:", err);
+    return InputIntent.CUSTOMER_QUESTION; // fallback en caso de error
+  }
+}
+
+export async function humanizerAgent(message: string, temperature = 0.6) {
+  const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
+  const headers = {
+    Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
+  };
+  const response = (await (
+    await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model,
+        temperature,
+        messages: [{ role: "system", content: humanizerPrompt(message) }],
+      }),
+    })
+  ).json()) as { choices: { message: { content: string } }[] };
+
+  const content = response?.choices?.[0]?.message?.content?.trim();
+  if (!content) {
+    throw new Error("No se recibió respuesta del humanizer agent");
+  }
+  return content;
 }
