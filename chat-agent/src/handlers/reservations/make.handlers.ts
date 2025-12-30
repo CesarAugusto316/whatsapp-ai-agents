@@ -212,7 +212,12 @@ export const makeValidated: FlowHandler = async (ctx) => {
 
   // FALLBACK
   if (customerMessage) {
-    const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva ó ${CustomerActions.EXIT} para salir`;
+    const assistanceMsg = `
+      Tienes una reserva disponible. Escribe:
+      - ${CustomerActions.CONFIRM} para confirmar reserva ó
+      - ${CustomerActions.RESTART} para cambiar algun dato que quieras cambiar
+      - ${CustomerActions.EXIT} para salir de este proceso
+      `;
     return humanizerAgent(assistanceMsg);
   }
 };

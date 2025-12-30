@@ -81,12 +81,25 @@ export const updatePreStart: FlowHandler = async (ctx) => {
     customerMessage?.toUpperCase() === CustomerActions.CANCEL &&
     RESERVATION_CACHE?.id
   ) {
-    const responseMsg = `Seguro que desea salir del proceso. Escribe ${CustomerActions.YES} para confirmar o ${CustomerActions.NO} para cancelar`;
+    const responseMsg = `
+      Seguro que desea cancelar tu reserva?. Escribe:
+      - ${CustomerActions.YES} para confirmar o
+      - ${CustomerActions.NO} para salir de este proceso.
+    `;
     await reservationCacheService.save(reservationKey ?? "", {
       ...RESERVATION_CACHE,
       status: reservationStatuses.CANCEL_STARTED,
     });
     return humanizerAgent(responseMsg);
+  }
+
+  // FALLBACK
+  if (customerMessage && RESERVATION_CACHE?.id) {
+    const assistanceMsg = `
+      Tienes una reserva disponible con ID ${RESERVATION_CACHE.id}. Escribe:
+      - ${CustomerActions.UPDATE} para actualizar reserva, ó
+      - ${CustomerActions.CANCEL} para cancelarla`;
+    return humanizerAgent(assistanceMsg);
   }
 };
 

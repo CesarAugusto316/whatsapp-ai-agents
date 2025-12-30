@@ -22,7 +22,7 @@ export const cancelStarted: FlowHandler = async (ctx) => {
       if (res.status !== 200) {
         return `Error al cancelar la reserva ${RESERVATION_CACHE.id}`;
       }
-      const assistantResponse = `Reserva ${RESERVATION_CACHE.id} cancelada exitosamente ✅`;
+      const assistantResponse = `Hemos cancelado tu reserva  ${RESERVATION_CACHE.id} exitosamente ✅`;
       await reservationCacheService.delete(reservationKey);
       return assistantResponse;
     }
