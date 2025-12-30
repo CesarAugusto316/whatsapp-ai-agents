@@ -54,7 +54,7 @@ class CoreFlow {
 
     const handlers = this.handlers[status] ?? [];
     for (const h of handlers) {
-      const res = await h(this.ctx);
+      const res = await h(this.ctx, status);
       if (res) return res;
     }
   }

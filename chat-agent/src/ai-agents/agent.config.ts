@@ -8,9 +8,19 @@ import {
   parserPrompts,
   humanizerPrompt,
 } from "./tools/prompts";
-import { AgentArgs, CUSTOMER_INTENT, InputIntent } from "./agent.types";
-import { safeParse } from "zod";
-import { customerIntentSchema, inputIntentSchema } from "./schemas";
+import {
+  AgentArgs,
+  CUSTOMER_INTENT,
+  InputIntent,
+  ReservationInput,
+} from "./agent.types";
+import { Business } from "@/types/business/cms-types";
+import z, { safeParse, ZodError } from "zod";
+import {
+  customerIntentSchema,
+  inputIntentSchema,
+  reservationSchema,
+} from "./schemas";
 
 /**
  *
@@ -165,3 +175,107 @@ export async function humanizerAgent(message: string, temperature = 0.5) {
   }
   return content;
 }
+
+function extractMissingFields(zodError: z.ZodError): string[] {
+  const fields = new Set<string>();
+
+  for (const issue of zodError.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string") {
+      fields.add(field);
+    }
+  }
+
+  return [...fields];
+}
+
+/** @todo DELETE day and Only keep startDateTime, startDateTime. THEN CHANGE THE PROMPT */
+const FIELD_MAP: Record<string, string> = {
+  customerName: "customerName",
+  day: "date",
+  startDateTime: "time",
+  endDateTime: "time",
+  numberOfPeople: "numberOfPeople",
+};
+
+function toConversationalFields(fields: string[]) {
+  return [...new Set(fields.map((f) => FIELD_MAP[f]).filter(Boolean))];
+}
+
+export const validationAgent = {
+  /**
+   *
+   * @description Validates the customer's input and returns a parsed object
+   */
+  async parser(
+    business: Business,
+    customerMessage: string,
+    previousState: ReservationInput,
+    temp = 0.2,
+  ) {
+    const PARSER_PROMPT = parserPrompts.dataParser(business);
+    const messages: ModelMessage[] = [
+      { role: "user", content: customerMessage },
+    ];
+    const aiValidator: string = await aiClient(messages, PARSER_PROMPT, temp);
+    // ✨ Optional fields
+    const firstParsing = safeParse(
+      reservationSchema.partial(),
+      JSON.parse(aiValidator),
+    );
+    if (!firstParsing.success) {
+      return;
+    }
+    const mergeState = {
+      customerName:
+        firstParsing.data?.customerName || previousState.customerName,
+      day: firstParsing.data?.day || previousState.day,
+      startDateTime:
+        firstParsing.data?.startDateTime || previousState.startDateTime,
+      endDateTime: firstParsing.data?.endDateTime || previousState.endDateTime,
+      numberOfPeople:
+        firstParsing.data?.numberOfPeople || previousState.numberOfPeople,
+      //
+    } satisfies ReservationInput;
+
+    // ✅ Required fields
+    const secondParsing = safeParse(reservationSchema, mergeState);
+    return { parsedData: secondParsing, mergedData: mergeState };
+  },
+
+  /**
+   *
+   * @description converts ZodError into human readable message and asks to complete
+   * the process
+   * @param business
+   * @param error
+   * @returns
+   */
+  async collector(
+    business: Business,
+    error: ZodError<ReservationInput>,
+    customErr = "",
+    temp = 0.6,
+  ) {
+    const COLLECTOR_PROMPT = parserPrompts.collector(business);
+    const conversationalContext = {
+      missingFields: toConversationalFields(extractMissingFields(error)),
+      lastError: customErr || error.issues.at(0)?.message,
+    };
+    const aiDataCollector = aiClient(
+      [
+        {
+          role: "user",
+          content: `
+              Context for clarification:
+              missingFields: ${JSON.stringify(conversationalContext.missingFields)}
+              error: ${conversationalContext.lastError}
+            `,
+        },
+      ],
+      COLLECTOR_PROMPT,
+      temp,
+    );
+    return aiDataCollector;
+  },
+};

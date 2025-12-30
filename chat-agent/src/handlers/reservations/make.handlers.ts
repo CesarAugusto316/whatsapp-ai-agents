@@ -1,6 +1,4 @@
 import { FlowHandler } from "../handlers.types";
-import z, { safeParse } from "zod";
-import { reservationSchema } from "@/ai-agents/schemas";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
@@ -11,39 +9,13 @@ import {
   InputIntent,
   FlowOptions,
 } from "@/ai-agents/agent.types";
-import { parserPrompts, systemMessages } from "@/ai-agents/tools/prompts";
+import { systemMessages } from "@/ai-agents/tools/prompts";
 import { Appointment, Customer } from "@/types/business/cms-types";
 import {
-  aiClient,
   humanizerAgent,
   inputIntentClassifier,
+  validationAgent,
 } from "@/ai-agents/agent.config";
-import { ModelMessage } from "ai";
-
-export function extractMissingFields(zodError: z.ZodError): string[] {
-  const fields = new Set<string>();
-
-  for (const issue of zodError.issues) {
-    const field = issue.path[0];
-    if (typeof field === "string") {
-      fields.add(field);
-    }
-  }
-
-  return [...fields];
-}
-
-const FIELD_MAP: Record<string, string> = {
-  customerName: "customerName",
-  day: "date",
-  startDateTime: "time",
-  endDateTime: "time",
-  numberOfPeople: "numberOfPeople",
-};
-
-export function toConversationalFields(fields: string[]) {
-  return [...new Set(fields.map((f) => FIELD_MAP[f]).filter(Boolean))];
-}
 
 export const ATTEMPTS = 4;
 
@@ -64,9 +36,6 @@ export const makeStarted: FlowHandler = async (ctx) => {
     numberOfPeople: RESERVATION_CACHE?.numberOfPeople || 0,
     //
   } satisfies ReservationInput;
-
-  const PARSER_PROMPT = parserPrompts.dataParser(business);
-  const COLLECTOR_PROMPT = parserPrompts.collector(business);
 
   try {
     // OPTION: 1. SALIR
@@ -90,63 +59,28 @@ export const makeStarted: FlowHandler = async (ctx) => {
       // This breaks the flow and the fallback AGENT takes control
       // (Just for this time)
     }
-    const messages: ModelMessage[] = [
-      { role: "user", content: customerMessage },
-    ];
-    const aiValidator: string = await aiClient(messages, PARSER_PROMPT);
-    let rawObj!: Partial<ReservationInput> | undefined;
-    try {
-      const parsedRaw = safeParse(
-        reservationSchema.partial(),
-        JSON.parse(aiValidator),
-      );
-      if (!parsedRaw.success) {
-        return humanizerAgent(
-          "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
-        );
-      }
-      rawObj = parsedRaw.data;
-    } catch {
+
+    // ✅ All fields are required here
+    const result = await validationAgent.parser(
+      business,
+      customerMessage,
+      previousState,
+    );
+    if (!result) {
       return humanizerAgent(
         "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
       );
     }
-    const mergeState = {
-      customerName: rawObj?.customerName || previousState.customerName,
-      day: rawObj?.day || previousState.day,
-      startDateTime: rawObj?.startDateTime || previousState.startDateTime,
-      endDateTime: rawObj?.endDateTime || previousState.endDateTime,
-      numberOfPeople: rawObj?.numberOfPeople || previousState.numberOfPeople,
-      //
-    } satisfies ReservationInput;
+    const { mergedData, parsedData } = result;
+    const { success, data, error } = parsedData;
 
-    console.log({ mergeState, RESERVATION_CACHE, rawObj });
-    const { success, data, error } = safeParse(reservationSchema, mergeState); // all fields are required
     if (!success) {
       await reservationCacheService.save(reservationKey, {
         ...RESERVATION_CACHE,
-        ...mergeState,
+        ...mergedData,
       } satisfies Partial<ReservationState>);
 
-      const conversationalContext = {
-        missingFields: toConversationalFields(extractMissingFields(error)),
-        lastError:
-          error.issues.at(0)?.message ||
-          "Algunos datos de la reserva hacen falta",
-      };
-      const aiDataCollector = aiClient(
-        [
-          {
-            role: "user",
-            content: `
-              Context for clarification:
-              missingFields: ${JSON.stringify(conversationalContext.missingFields)}
-              error: ${conversationalContext.lastError}
-            `,
-          },
-        ],
-        COLLECTOR_PROMPT,
-      );
+      const aiDataCollector = validationAgent.collector(business, error);
       return aiDataCollector;
     }
 
