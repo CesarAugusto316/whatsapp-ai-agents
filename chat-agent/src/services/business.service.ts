@@ -1,5 +1,4 @@
 import { BOOL } from "@/ai-agents/agent.types";
-import { buildApiDates } from "@/ai-agents/tools/helpers";
 import { redis } from "@/storage/cache-storage.config";
 import {
   Appointment,

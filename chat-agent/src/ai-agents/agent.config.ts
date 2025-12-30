@@ -140,7 +140,7 @@ export async function inputClassIntent(message: string): Promise<InputIntent> {
   }
 }
 
-export async function humanizerAgent(message: string, temperature = 0.6) {
+export async function humanizerAgent(message: string, temperature = 0.5) {
   const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
   const headers = {
     Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,

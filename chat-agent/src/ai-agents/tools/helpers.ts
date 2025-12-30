@@ -69,12 +69,12 @@ function formatTime(isoString: string, timezone: string): string {
  */
 export function formatSchedule(schedule: WeekDay, timezone: string): string {
   const lines: string[] = [];
-
   lines.push(`TIMEZONE: ${timezone}`);
 
   for (const day of WEEK_DAYS) {
-    const slots = schedule[day];
+    const slots = schedule?.[day];
 
+    console.log(slots);
     lines.push(``);
     lines.push(`DAY: ${day.toUpperCase()}`);
 
@@ -91,35 +91,6 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
       lines.push(`RANGE: ${start}-${end}`);
     }
   }
-
+  console.log({ lines });
   return lines.join("\n");
-}
-
-type ApiDatePayload = {
-  day: string;
-  startDateTime: string;
-  endDateTime: string;
-};
-
-export function buildApiDates(
-  day: string,
-  startTime: string,
-  durationMinutes = 60,
-): ApiDatePayload {
-  // day: YYYY-MM-DD
-  const dayISO = new Date(`${day}T00:00:00.000Z`).toISOString();
-
-  const [hours, minutes] = startTime.split(":").map(Number);
-
-  // startDateTime usa el MISMO día
-  const start = new Date(`${day}T${startTime}:00.000Z`);
-
-  // endDateTime = start + duración
-  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
-
-  return {
-    day: dayISO,
-    startDateTime: start.toISOString(),
-    endDateTime: end.toISOString(),
-  };
 }

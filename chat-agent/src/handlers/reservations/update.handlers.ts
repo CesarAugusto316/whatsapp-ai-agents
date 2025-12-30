@@ -1,6 +1,5 @@
-import { buildApiDates } from "@/ai-agents/tools/helpers";
 import { FlowHandler } from "../handlers.types";
-import { safeParse, string } from "zod";
+import z, { safeParse } from "zod";
 import { reservationSchemaWithDates } from "@/ai-agents/schemas";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
@@ -32,20 +31,22 @@ export const updatePreStart: FlowHandler = async (ctx) => {
   }
   // START
   if (!RESERVATION_CACHE?.id) {
-    const { success, data } = safeParse(
-      string().min(2).max(60),
-      customerMessage.trim(),
-    );
+    const { success, data } = safeParse(z.uuidv4(), customerMessage.trim());
     if (!success) {
-      return "Por favor, ingresa un ID válido entre 2 y 60 caracteres.";
+      return humanizerAgent(
+        "Por favor, ingresa un ID de reserva válido, sólo dame tu ID, sin texto extra",
+      );
     }
-    const reservation = (await (
-      await businessService.getAppointmentById(data)
-    ).json()) as Appointment;
+    const res = await businessService.getAppointmentById(data);
 
-    if (!reservation) {
-      return "Reserva no encontrada. Escribe un ID válido.";
+    console.log({ res });
+    if (res.status !== 200) {
+      return humanizerAgent(
+        "Reserva no encontrada. Seguro que escribiste  el ID correcto?",
+      );
     }
+
+    const reservation = (await res.json()) as Appointment;
 
     // 2. ✅ INPUT DATA VALIDATED
     const responseMsg = `Escribe la palabra ${CustomerActions.UPDATE} para actualizar la reserva. o ${CustomerActions.CANCEL} para cancelarla.`;
@@ -79,7 +80,7 @@ export const updatePreStart: FlowHandler = async (ctx) => {
     customerMessage?.toUpperCase() === CustomerActions.CANCEL &&
     RESERVATION_CACHE?.id
   ) {
-    const responseMsg = `Seguro que desea cancelar su reserva? esta accion no se puede revertir. Escribe ${CustomerActions.YES} para confirmar o ${CustomerActions.NO} para cancelar`;
+    const responseMsg = `Seguro que desea salir del proceso. Escribe ${CustomerActions.YES} para confirmar o ${CustomerActions.NO} para cancelar`;
     await reservationCacheService.save(reservationKey ?? "", {
       ...RESERVATION_CACHE,
       status: reservationStatuses.CANCEL_STARTED,
@@ -108,6 +109,7 @@ export const updateStarted: FlowHandler = async (ctx) => {
     // This breaks the flow and the fallback AGENT takes control
     // (this time and returns control back)
   }
+
   // OPTION: 1. SALIR
   if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
     await reservationCacheService.delete(reservationKey ?? "");
@@ -216,14 +218,10 @@ export const updateValidated: FlowHandler = async (ctx) => {
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
       day = "",
-      startDateTime: startTime = "",
+      startDateTime = "",
+      endDateTime = "",
       numberOfPeople = 1,
     } = RESERVATION_CACHE as ReservationState;
-    const {
-      day: reservationDay,
-      endDateTime,
-      startDateTime,
-    } = buildApiDates(day, startTime, business.schedule.averageTime * 60); // use business average reservation time
 
     // finally, we create the reservation
     if (customer?.id && business?.id && RESERVATION_CACHE?.id) {
@@ -236,7 +234,7 @@ export const updateValidated: FlowHandler = async (ctx) => {
           endDateTime,
           numberOfPeople,
           customerName: customer.name ?? "",
-          day: reservationDay,
+          day,
           status: "confirmed",
         },
       );

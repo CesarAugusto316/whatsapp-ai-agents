@@ -85,15 +85,10 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
       const messages: ModelMessage[] = [
         {
           role: "user",
-          content: `
-            Este es un mensaje inicial, además de responder a mi pregunta debes saludarme y guiarme:
-             - Busco ayuda para empezar a usar tus servicios en pasos muy simples.
-             - No me abrumes con detalles innecesarios.
-
-            ${customer?.name ? `Mi nombre es ${customer.name}` : ""}
-            Esta es mi pregunta:
-            - ${customerMessage}
-          `.trim(),
+          content: systemMessages.initialGreeting(
+            customerMessage,
+            customer?.name,
+          ),
         },
       ];
       const assistantResponse = aiClient(
@@ -104,11 +99,6 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
     }
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
       // choice 2
-      const assistantResponse = await humanizerAgent(
-        systemMessages.getStartMsg({
-          userName: customer?.name,
-        }),
-      );
       await reservationCacheService.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
@@ -116,13 +106,13 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
         customerPhone,
         status: reservationStatuses.MAKE_STARTED,
       });
-      return assistantResponse;
+      const responseMsg = systemMessages.getStartMsg({
+        userName: customer?.name,
+      });
+      return humanizerAgent(responseMsg);
     }
     if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
       // choice 3
-      const assistantResponse = await humanizerAgent(
-        systemMessages.enterReservationId(),
-      );
       await reservationCacheService.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
@@ -130,7 +120,8 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
         customerPhone,
         status: reservationStatuses.UPDATE_PRE_START,
       });
-      return assistantResponse;
+      const responseMsg = systemMessages.enterReservationId();
+      return humanizerAgent(responseMsg);
     }
   }
 
@@ -189,6 +180,7 @@ export async function initChatFlow(ctx: AppContext): Promise<string> {
     await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, result);
     return result;
   }
+
   /**
    *
    * @todo mange case when user asks a question and is currently inside a FLOW/EVENT

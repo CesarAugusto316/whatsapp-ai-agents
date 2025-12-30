@@ -219,6 +219,7 @@ export const howSystemWorksPrompt = (businessName: string) =>
     - Time in format HH:MM
     - Number of people
   - Plus when Modifying/Canceling an existing reservation, the user must provide the reservation ID.
+  - User can exit/leave any reservation/data-collection process by typing **"${CustomerActions.EXIT}"**.
 
   ==============================
   STRICT RULES
@@ -322,7 +323,7 @@ export const dataValidationPrompts = {
   dataParser(business: Business) {
     const { schedule, general } = business;
     const scheduleBlock = formatSchedule(schedule, general?.timezone);
-    const currentDateTime = new Date().toLocaleTimeString("en-GB", {
+    const currentDateTime = new Date().toLocaleString("en-GB", {
       dateStyle: "full",
       timeStyle: "full",
       timeZone: general.timezone,
@@ -374,7 +375,7 @@ export const dataValidationPrompts = {
       - Any time outside the schedule invalidates the reservation.
 
 
-      OUTPUT FORMAT ON SUCCESS (EXACT KEYS AND TYPES):
+      OUTPUT FORMAT (EXACT KEYS AND TYPES):
 
       {
         "customerName": "string",
@@ -382,18 +383,6 @@ export const dataValidationPrompts = {
         "startDateTime": "YYYY-MM-DDTHH:mm:00.000Z",
         "endDateTime": "YYYY-MM-DDTHH:mm:00.000Z",
         "numberOfPeople": number,
-        "error": ""
-      }
-
-      OUTPUT FORMAT ON ERROR (EXACT KEYS AND TYPES):
-
-      {
-        "customerName": "",
-        "day": "",
-        "startDateTime": "",
-        "endDateTime": "",
-        "numberOfPeople": 0,
-        "error": "La hora indicada está fuera del horario de atención del restaurante"
       }
 
       EXAMPLES:
@@ -409,7 +398,6 @@ export const dataValidationPrompts = {
         "startDateTime": "2025-12-25T19:00:00.000Z",
         "endDateTime": "2025-12-25T20:00:00.000Z",
         "numberOfPeople": 4,
-        "error": ""
       }
 
       Input:
@@ -422,7 +410,6 @@ export const dataValidationPrompts = {
         "startDateTime": "2025-12-29T18:00:00.000Z",
         "endDateTime": "2025-12-29T19:00:00.000Z",
         "numberOfPeople": 2,
-        "error": ""
       }
 
       Input:
@@ -434,8 +421,7 @@ export const dataValidationPrompts = {
         "day": "",
         "startDateTime": "",
         "endDateTime": "",
-        "numberOfPeople": 3,
-        "error": "No indicaste la fecha ni tu nombre para la reserva"
+        "numberOfPeople": 3
       }
 
       Input:
@@ -448,7 +434,6 @@ export const dataValidationPrompts = {
         "startDateTime": "",
         "endDateTime": "",
         "numberOfPeople": 0,
-        "error": "La hora indicada está fuera del horario de atención del restaurante"
       }
 
       ==============================
@@ -462,7 +447,7 @@ export const dataValidationPrompts = {
   },
 
   humanizer(timeZone: string) {
-    const currentDateTime = new Date().toLocaleTimeString("en-GB", {
+    const currentDateTime = new Date().toLocaleString("en-GB", {
       dateStyle: "full",
       timeStyle: "full",
       timeZone,
@@ -530,12 +515,6 @@ export const dataValidationPrompts = {
       • If missingFields = ["numberOfPeople"]:
         "¿Para cuántas personas sería la reserva?"
 
-
-      ----------------------------------
-      MANDATORY FINAL MESSAGE (ALWAYS INCLUDED):
-
-      "Si tienes alguna duda o prefieres salir de este proceso, escribe la palabra ${CustomerActions.EXIT} y un asistente te ayudará."
-
       ----------------------------------
       Remember:
       You translate system state into human language.
@@ -552,6 +531,18 @@ export const systemMessages = {
     `.trim();
   },
 
+  initialGreeting(message: string, customerName?: string) {
+    return `
+      Este es un mensaje inicial, además de responder a mi pregunta debes saludarme y guiarme:
+       - Busco ayuda para empezar a usar tus servicios en pasos muy simples.
+       - No me abrumes con detalles innecesarios.
+
+      ${customerName ? `Mi nombre es ${customerName}` : ""}
+      Esta es mi pregunta:
+      - ${message}
+    `.trim();
+  },
+
   getStartMsg(
     { userName }: { userName?: string },
     mode: ReservationMode = "create",
@@ -559,7 +550,6 @@ export const systemMessages = {
     const copy = MODE_COPY[mode];
     if (userName) {
       return `
-        Perfecto ✅
         Para ${copy.verbInfinitive} tu reserva, comentame:
         el día, la hora y cuántas personas serán.
 
@@ -572,7 +562,6 @@ export const systemMessages = {
     }
 
     return `
-      Perfecto ✅
       Para ${copy.verbInfinitive} tu reserva, ayudame con:
       **tu nombre**, el **día**, la **hora** y **cuántas personas** serán.
 
@@ -587,7 +576,9 @@ export const systemMessages = {
   getConfirmationMsg(data: ReservationInput, mode: ReservationMode = "create") {
     const copy = MODE_COPY[mode];
     return `
-      Por favor revisa los datos antes de confirmar la ${copy.process} de tu reserva:
+      Ya tenemos las datos listos para tu reserva !!
+      Y hemos CONFIRMADO que hay disponibilidad ✅.
+      Por favor revisa antes de confirmar la ${copy.process} de tu reserva:
 
       👤 Nombre: ${data?.customerName}
       📅 Fecha: ${data.day}
@@ -656,29 +647,77 @@ export const systemMessages = {
   },
 };
 
+// export function humanizerPrompt(originalMessage: string) {
+//   return `
+//     You are an assistant specialized in rewriting system messages in a natural and human-like way.
+//     Your goal is to make each message feel fresh and non-repetitive, while preserving the original meaning.
+//     You can introduce small variations in tone, syntax, and emojis.
+
+//     Strict rules:
+
+//     1. Do not change the **meaning** of the original message.
+//     2. Do not remove important data, instructions, or placeholders such as:
+//       ${Object.values(CustomerActions)
+//         .map((action) => `"${action}"`)
+//         .join(", ")},
+//       ${Object.values(FlowOptions)
+//         .map((option) => `"${option}"`)
+//         .join(", ")}.
+//     3. You may add, change, or move emojis to make the message sound friendlier and more human.
+//     4. Modify **syntax, word order, and tone** so that each version feels a little different.
+//     5. Keep the message clear and maintain the overall structure.
+//     6. Always **return the rewritten message in Spanish**, ready to be sent to the user. Do not include explanations or comments.
+//     7. Respect any numbered instructions in the message (1, 2, 3, etc.) and maintain their order and meaning.
+
+//     Message to rewrite:
+//     """
+//     ${originalMessage}
+//     """
+//   `;
+// }
+
 export function humanizerPrompt(originalMessage: string) {
   return `
-    You are an assistant specialized in rewriting system messages in a natural and human-like way.
-    Your goal is to make each message feel fresh and non-repetitive, while preserving the original meaning.
-    You can introduce small variations in tone, syntax, and emojis.
+    You are a conversational humanizer for a restaurant reservation system.
 
-    Strict rules:
+    Your task is to transform system-generated messages into warm, natural, and human-like responses,
+    as if written by a friendly and attentive restaurant assistant.
 
-    1. Do not change the **meaning** of the original message.
-    2. Do not remove important data, instructions, or placeholders such as:
-      ${Object.values(CustomerActions)
-        .map((action) => `"${action}"`)
-        .join(", ")},
-      ${Object.values(FlowOptions)
-        .map((option) => `"${option}"`)
-        .join(", ")}.
-    3. You may add, change, or move emojis to make the message sound friendlier and more human.
-    4. Modify **syntax, word order, and tone** so that each version feels a little different.
-    5. Keep the message clear and maintain the overall structure.
-    6. Always **return the rewritten message in Spanish**, ready to be sent to the user. Do not include explanations or comments.
-    7. Respect any numbered instructions in the message (1, 2, 3, etc.) and maintain their order and meaning.
+    Your goal is NOT just to rephrase, but to make the message feel:
+    - Polite
+    - Approachable
+    - Slightly interactive
+    - Naturally varied across repetitions
 
-    Message to rewrite:
+    STRICT CONSTRAINTS (DO NOT VIOLATE):
+
+    1. Always Keep The original meaning, intent, and instructions MUST remain exactly the same.
+    2. Do NOT remove, alter, or reinterpret any system actions, placeholders, or tokens such as:
+       ${Object.values(CustomerActions)
+         .map((action) => `"${action}"`)
+         .join(", ")},
+       ${Object.values(FlowOptions)
+         .map((option) => `"${option}"`)
+         .join(", ")}.
+    3. Do NOT add new instructions, requirements, or data requests.
+    4. Respect numbered instructions (1, 2, 3, etc.) and preserve their order and logic.
+
+    HUMANIZATION GUIDELINES:
+
+    - You MAY slightly adjust tone, rhythm, and phrasing to sound more natural.
+    - You MAY introduce soft acknowledgements (e.g., "perfecto", "de acuerdo", "sin problema").
+    - You MAY add light conversational cues that feel human but do not change intent.
+    - You MAY use emojis, but ONLY if they reinforce warmth or clarity (never decorative spam).
+    - Avoid robotic or repetitive phrasing across messages.
+    - The message should feel like it comes from a real person helping the user, not from a system.
+
+    OUTPUT RULES:
+
+    - Always return a single rewritten message in Spanish.
+    - Do NOT include explanations, meta-comments, or formatting markers.
+    - The output must be ready to be sent directly to the user.
+
+    Message to humanize:
     """
     ${originalMessage}
     """

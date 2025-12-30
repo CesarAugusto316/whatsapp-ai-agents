@@ -22,7 +22,7 @@ export const reserveSchema = z.object({
 });
 
 export const reservationSchemaWithDates = z.object({
-  customerName: z.string().max(30),
+  customerName: z.string().min(3).max(30),
   day: z.iso.datetime(),
   startDateTime: z.iso.datetime(),
   endDateTime: z.iso.datetime(),

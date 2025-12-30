@@ -32,7 +32,7 @@ export const cancelStarted: FlowHandler = async (ctx) => {
       return assistantResponse;
     }
     if (customerMessage) {
-      const assistantResponse = `Escribe ${CustomerActions.YES} para confirmar o ${CustomerActions.NO} para cancelar`;
+      const assistantResponse = `Escribe "${CustomerActions.YES}" para cancelar tu reserva o "${CustomerActions.NO}" para salir de este proceso`;
       return humanizerAgent(assistantResponse);
     }
   }
