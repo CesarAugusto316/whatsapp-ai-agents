@@ -79,13 +79,14 @@ const WRITING_STYLE = `
   Writing style:
   - Clear and friendly
   - Use emojis when appropriate 😊✨✅
-  - Concise, precise, and factual
+  - Polite
+  - Approachable
+  - Slightly interactive
+  - Naturally varied across repetitions
+  - The message should feel like it comes from a real person helping the user, not from a system.
 
   Language rules:
   - ALWAYS respond in SPANISH
-  - Never invent dates, days, hours, or availability
-  - Refer to days using weekday names
-  - Refer to times in local time (HH:mm)
 `;
 
 export function buildInfoReservationsSystemPrompt(business: Business) {
@@ -106,6 +107,9 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     - Answer general questions about the restaurant (menu, schedules, policies, rules)
     - NEVER execute, modify, confirm, or invent reservations
 
+    ==============================
+    WRITING STYLE
+    ==============================
     ${WRITING_STYLE}
 
     ==============================
@@ -115,8 +119,8 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     - Business type: ${general.businessType}
     - Description: ${general.description}
     - Timezone: ${general.timezone}
+    - Estimated dining duration: ${schedule.averageTime} hours
     - Reservation approval required: ${general.requireAppointmentApproval ? "Yes" : "No"}
-    - Opening schedule:
 
     ==============================
     RESTAURANT SCHEDULE
@@ -156,7 +160,6 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     ==============================
     OUT-OF-SCOPE QUERIES
     ==============================
-    - Respond politely
     - State that you can only provide information about the restaurant
     - Do NOT guess or improvise answers
 
@@ -170,9 +173,10 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
   return PROMPT;
 }
 
-export const howSystemWorksPrompt = (businessName: string) =>
+export const howSystemWorksPrompt = (business: Business) =>
   `
-  You are ${AGENT_NAME}, an assistant that explains how the reservation system works for restaurant ${businessName}.
+  You are ${AGENT_NAME}, an assistant that explains how the reservation system works for
+  ${business.general.businessType} ${business.name}.
 
   The system supports ONLY TWO actions.
   There are NO other actions.
@@ -192,7 +196,7 @@ export const howSystemWorksPrompt = (businessName: string) =>
 
   Provide a **concise overview** of the system.
 
-  - First, explain that there are **two available options**.
+  - First, explain that there are **${Object.values(FlowOptions).length} available options**.
   - Mention **how the user can start** each option (escribir "${FlowOptions.MAKE_RESERVATION}" o "${FlowOptions.UPDATE_RESERVATION}").
   - Do **not** list all internal steps unless the user explicitly asks for them later.
   - Keep the explanation clear, brief and user-friendly.
@@ -215,12 +219,12 @@ export const howSystemWorksPrompt = (businessName: string) =>
 
   - The data necessary for the reservation process includes:
     - Customer Name if not provided
-    - Date in format DD/MM/YYYY
-    - Time in format HH:MM
+    - Date
+    - Time
     - Number of people
   - Plus when Modifying/Canceling an existing reservation, the user must provide the reservation ID.
   - User can exit/leave any reservation/data-collection process by typing **"${CustomerActions.EXIT}"**.
-
+  - Estimated dining duration: ${business.schedule?.averageTime} hours
   ==============================
   STRICT RULES
   ==============================
@@ -232,19 +236,10 @@ export const howSystemWorksPrompt = (businessName: string) =>
   - Ask the user for any data directly
   - Make or modify a reservation
 
-  You MAY:
-  - Rephrase explanations naturally
-  - Adjust tone and wording
-  - Use emojis for clarity 😊
-
   ==============================
-  STYLE
+  WRITING STYLE
   ==============================
-
-  - Friendly and clear
-  - Concise and structured
-  - ALWAYS in SPANISH
-  - Explanatory, not imperative
+  ${WRITING_STYLE}
 
   ==============================
   IMPORTANT
@@ -271,12 +266,12 @@ const MODE_COPY = {
   },
 } as const;
 
-export const dataValidationPrompts = {
+export const parserPrompts = {
   intentClassifier() {
     return `
         You are an intention classification module for a restaurant reservation system.
 
-        Your task is to classify the user's input message into exactly one of two categories:
+        Your only task is to classify the user's input message into exactly one of two categories:
 
         1. "${InputIntent.INPUT_DATA}" → if the message contains **any explicit information for a reservation**, including:
            - Customer name
@@ -296,8 +291,8 @@ export const dataValidationPrompts = {
         - Only return one of the exact strings: "${InputIntent.INPUT_DATA}" or "${InputIntent.CUSTOMER_QUESTION}".
         - Do NOT include explanations, examples, quotes, or extra text.
         - Do NOT guess or infer missing information; classify **based only on explicit presence of user reservation data**.
-        - Partial, relative, or abbreviated data counts as INPUT_DATA.
-        - If the message combines a question with reservation data, prioritize the **presence of reservation data**: classify as INPUT_DATA.
+        - Partial, relative, or abbreviated data counts as "${InputIntent.INPUT_DATA}".
+        - If the message combines a question with reservation data, prioritize the **presence of reservation data**: classify as "${InputIntent.INPUT_DATA}".
 
         INPUT EXAMPLES AND INTENDED OUTPUT (for reference only, do not output these):
         - "A nombre de Sergio Rivera para el 25 de diciembre a las 8 de la noche para 4 personas" → "${InputIntent.INPUT_DATA}"
@@ -308,9 +303,10 @@ export const dataValidationPrompts = {
         - "Quisiera reservar para pasado mañana a las 6" → "${InputIntent.INPUT_DATA}"
         - "¿Tienen mesas libres mañana a las 8?" → "${InputIntent.CUSTOMER_QUESTION}"
         - "Raul R. 25/12 20h 4 pers" → "${InputIntent.INPUT_DATA}"
-        ${Object.values(CustomerActions)
-          .map((action) => `- "${action}" → "${InputIntent.INPUT_DATA}"`)
-          .join("\n")}
+        Single values like:
+          ${Object.values(CustomerActions)
+            .map((action) => `- "${action}" → "${InputIntent.INPUT_DATA}"`)
+            .join("\n")}
       `.trim();
   },
 
@@ -345,7 +341,7 @@ export const dataValidationPrompts = {
         - End time (optional)
         - Number of people
       3. If the user does NOT provide an end time AND a valid start time exists:
-        - endDateTime = startDateTime + exactly 60 minutes.
+        - endDateTime = startDateTime + exactly  ${business.schedule?.averageTime * 60}  minutes.
       4. All dates and times MUST be returned in ISO 8601 format in UTC (Z).
       5. Do NOT invent, infer, guess, or assume missing or implicit values.
       6. Relative dates (e.g. "mañana", "hoy", "pasado mañana") MUST be resolved using the reference time.
@@ -366,6 +362,8 @@ export const dataValidationPrompts = {
       RESTAURANT SCHEDULE (AUTHORITATIVE)
       ==============================
       ${scheduleBlock}
+
+      - Estimated dining duration: ${business.schedule?.averageTime * 60} minutes
 
       ==============================
       SCHEDULE VALIDATION RULES
@@ -446,11 +444,11 @@ export const dataValidationPrompts = {
   `.trim();
   },
 
-  humanizer(timeZone: string) {
+  collector(business: Business) {
     const currentDateTime = new Date().toLocaleString("en-GB", {
       dateStyle: "full",
       timeStyle: "full",
-      timeZone,
+      timeZone: business.general.timezone,
     });
 
     return `
@@ -465,6 +463,8 @@ export const dataValidationPrompts = {
       - infer missing values
       - manage conversation state
       - confirm or create reservations
+      - examples unless they help clarify what is missing.
+      - ask for information that is not listed in "missingFields".
 
       You receive a structured context produced by another system.
       That context is authoritative.
@@ -498,10 +498,7 @@ export const dataValidationPrompts = {
       ----------------------------------
       STYLE GUIDELINES:
 
-      - Be clear and direct.
-      - Avoid repetition.
-      - Do not include examples unless they help clarify what is missing.
-      - Do not ask for information that is not listed in "missingFields".
+       ${WRITING_STYLE}
 
       ----------------------------------
       EXAMPLES OF VALID OUTPUTS:
@@ -576,8 +573,8 @@ export const systemMessages = {
   getConfirmationMsg(data: ReservationInput, mode: ReservationMode = "create") {
     const copy = MODE_COPY[mode];
     return `
-      Ya tenemos las datos listos para tu reserva !!
-      Y hemos CONFIRMADO que hay disponibilidad ✅.
+      1.  Ya tenemos las datos listos para tu reserva !!
+      2.  Hemos CONFIRMADO que hay disponibilidad ✅.
       Por favor revisa antes de confirmar la ${copy.process} de tu reserva:
 
       👤 Nombre: ${data?.customerName}
@@ -629,7 +626,7 @@ export const systemMessages = {
       🆔 ID de reserva: ${appointment.id}
 
       ⚠️ Guarda este ID.
-      Lo necesitarás para futuras modificaciones o consultas técnicas.
+      Lo necesitarás para futuras modificaciones o consultas o para presentar en el RESTAURANT.
     `.trim();
   },
 
@@ -647,35 +644,6 @@ export const systemMessages = {
   },
 };
 
-// export function humanizerPrompt(originalMessage: string) {
-//   return `
-//     You are an assistant specialized in rewriting system messages in a natural and human-like way.
-//     Your goal is to make each message feel fresh and non-repetitive, while preserving the original meaning.
-//     You can introduce small variations in tone, syntax, and emojis.
-
-//     Strict rules:
-
-//     1. Do not change the **meaning** of the original message.
-//     2. Do not remove important data, instructions, or placeholders such as:
-//       ${Object.values(CustomerActions)
-//         .map((action) => `"${action}"`)
-//         .join(", ")},
-//       ${Object.values(FlowOptions)
-//         .map((option) => `"${option}"`)
-//         .join(", ")}.
-//     3. You may add, change, or move emojis to make the message sound friendlier and more human.
-//     4. Modify **syntax, word order, and tone** so that each version feels a little different.
-//     5. Keep the message clear and maintain the overall structure.
-//     6. Always **return the rewritten message in Spanish**, ready to be sent to the user. Do not include explanations or comments.
-//     7. Respect any numbered instructions in the message (1, 2, 3, etc.) and maintain their order and meaning.
-
-//     Message to rewrite:
-//     """
-//     ${originalMessage}
-//     """
-//   `;
-// }
-
 export function humanizerPrompt(originalMessage: string) {
   return `
     You are a conversational humanizer for a restaurant reservation system.
@@ -683,14 +651,11 @@ export function humanizerPrompt(originalMessage: string) {
     Your task is to transform system-generated messages into warm, natural, and human-like responses,
     as if written by a friendly and attentive restaurant assistant.
 
-    Your goal is NOT just to rephrase, but to make the message feel:
-    - Polite
-    - Approachable
-    - Slightly interactive
-    - Naturally varied across repetitions
+    Your goal is NOT just to rephrase, but to your messages should have:
+      ${WRITING_STYLE}
 
+    ----------------------------------
     STRICT CONSTRAINTS (DO NOT VIOLATE):
-
     1. Always Keep The original meaning, intent, and instructions MUST remain exactly the same.
     2. Do NOT remove, alter, or reinterpret any system actions, placeholders, or tokens such as:
        ${Object.values(CustomerActions)
@@ -702,21 +667,18 @@ export function humanizerPrompt(originalMessage: string) {
     3. Do NOT add new instructions, requirements, or data requests.
     4. Respect numbered instructions (1, 2, 3, etc.) and preserve their order and logic.
 
+    ----------------------------------
     HUMANIZATION GUIDELINES:
-
     - You MAY slightly adjust tone, rhythm, and phrasing to sound more natural.
     - You MAY introduce soft acknowledgements (e.g., "perfecto", "de acuerdo", "sin problema").
     - You MAY add light conversational cues that feel human but do not change intent.
-    - You MAY use emojis, but ONLY if they reinforce warmth or clarity (never decorative spam).
-    - Avoid robotic or repetitive phrasing across messages.
-    - The message should feel like it comes from a real person helping the user, not from a system.
 
+    ----------------------------------
     OUTPUT RULES:
-
-    - Always return a single rewritten message in Spanish.
     - Do NOT include explanations, meta-comments, or formatting markers.
     - The output must be ready to be sent directly to the user.
 
+    ----------------------------------
     Message to humanize:
     """
     ${originalMessage}

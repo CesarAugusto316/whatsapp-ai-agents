@@ -1,6 +1,6 @@
 import {
   aiClient,
-  classifyCustomerIntent,
+  customerIntentClassifier,
   humanizerAgent,
   infoReservationAgent,
 } from "@/ai-agents/agent.config";
@@ -93,7 +93,7 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
       ];
       const assistantResponse = aiClient(
         messages,
-        howSystemWorksPrompt(business?.name),
+        howSystemWorksPrompt(business),
       );
       return assistantResponse;
     }
@@ -135,14 +135,14 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
   ];
 
   // 2. INTENT HANDLING WHEN CUSTOMER ASKS THE HOW OF SOMETHING
-  const customerIntent = await classifyCustomerIntent(customerMessage);
+  const customerIntent = await customerIntentClassifier(customerMessage);
 
   // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS
   if (customerIntent === CUSTOMER_INTENT.HOW) {
     // choice 4 again
     const assistantResponse = aiClient(
       messages,
-      howSystemWorksPrompt(business?.name),
+      howSystemWorksPrompt(business),
     );
     return assistantResponse;
   }

@@ -5,7 +5,7 @@ import { getReservationStatusById } from "./tools/restaurant/reservation.tools";
 import {
   buildInfoReservationsSystemPrompt,
   CLASSIFIER_PROMPT,
-  dataValidationPrompts,
+  parserPrompts,
   humanizerPrompt,
 } from "./tools/prompts";
 import { AgentArgs, CUSTOMER_INTENT, InputIntent } from "./agent.types";
@@ -64,7 +64,7 @@ export function infoReservationAgent({ messages, business }: AgentArgs) {
 export async function aiClient(
   messages: ModelMessage[],
   prompt: string,
-  temperature = 0.8,
+  temperature = 0.7,
 ): Promise<string> {
   //
   const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
@@ -96,7 +96,7 @@ export async function aiClient(
  * @param messages
  * @returns
  */
-export async function classifyCustomerIntent(
+export async function customerIntentClassifier(
   message: string,
 ): Promise<CUSTOMER_INTENT> {
   try {
@@ -122,12 +122,14 @@ export async function classifyCustomerIntent(
  * @param messages
  * @returns
  */
-export async function inputClassIntent(message: string): Promise<InputIntent> {
+export async function inputIntentClassifier(
+  message: string,
+): Promise<InputIntent> {
   try {
     const temperature = 0.1;
     const raw = await aiClient(
       [{ role: "user", content: message }],
-      dataValidationPrompts.intentClassifier(),
+      parserPrompts.intentClassifier(),
       temperature,
     ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
 
