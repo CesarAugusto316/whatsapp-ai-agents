@@ -1,7 +1,7 @@
 import whatsappService from "@/services/whatsapp.service";
 import { CTX, AppContext } from "@/types/hono.types";
 import { Handler } from "hono/types";
-import { initChatFlow } from "./chat-flow";
+import { runChatSession } from "./chat-flow";
 
 export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
   const state = {
@@ -27,7 +27,7 @@ export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
       session: state.session,
       chatId: state.customerPhone,
     },
-    async () => initChatFlow(state),
+    async () => runChatSession(state),
   );
 
   // 2. Send AI response to customer

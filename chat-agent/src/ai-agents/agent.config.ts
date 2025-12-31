@@ -13,6 +13,7 @@ import {
   CUSTOMER_INTENT,
   InputIntent,
   ReservationInput,
+  ReservationStatus,
 } from "./agent.types";
 import { Business } from "@/types/business/cms-types";
 import z, { safeParse, ZodError } from "zod";
@@ -49,11 +50,14 @@ const config = {
  * @description Configure the agent with the model, system prompt, tools, and stop conditions.
  * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
  */
-export function infoReservationAgent({ messages, business }: AgentArgs) {
+export function infoReservationAgent(
+  { messages, business }: AgentArgs,
+  ctxStatus?: ReservationStatus,
+) {
   return generateText({
     ...config,
     // temperature: 0.2,
-    system: buildInfoReservationsSystemPrompt(business),
+    system: buildInfoReservationsSystemPrompt(business, ctxStatus),
     messages,
     tools: {
       getReservationStatusById: getReservationStatusById(),

@@ -1,11 +1,11 @@
-import { FlowHandler } from "../handlers.types";
+import { StateHandler } from "../handlers.types";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { CustomerActions } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
 import { humanizerAgent } from "@/ai-agents/agent.config";
 
-export const cancelStarted: FlowHandler = async (ctx) => {
+const started: StateHandler = async (ctx) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;
 
   if (!customer) {
@@ -37,3 +37,5 @@ export const cancelStarted: FlowHandler = async (ctx) => {
     }
   }
 };
+
+export const cancellHandlers = { started };

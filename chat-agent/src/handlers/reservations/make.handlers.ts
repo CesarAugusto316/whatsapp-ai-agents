@@ -1,4 +1,4 @@
-import { FlowHandler } from "../handlers.types";
+import { StateHandler } from "../handlers.types";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
@@ -19,7 +19,7 @@ import {
 
 export const ATTEMPTS = 4;
 
-export const makeStarted: FlowHandler = async (ctx) => {
+const started: StateHandler = async (ctx) => {
   const {
     RESERVATION_CACHE,
     business,
@@ -128,7 +128,7 @@ export const makeStarted: FlowHandler = async (ctx) => {
  * @param ctx
  * @returns
  */
-export const makeValidated: FlowHandler = async (ctx) => {
+const validated: StateHandler = async (ctx) => {
   const {
     RESERVATION_CACHE,
     business,
@@ -211,7 +211,7 @@ export const makeValidated: FlowHandler = async (ctx) => {
   }
 
   // FALLBACK
-  if (customerMessage) {
+  if (customerMessage && RESERVATION_CACHE) {
     const assistanceMsg = `
       Tienes una reserva disponible. Escribe:
       - ${CustomerActions.CONFIRM} para confirmar reserva ó
@@ -221,3 +221,5 @@ export const makeValidated: FlowHandler = async (ctx) => {
     return humanizerAgent(assistanceMsg);
   }
 };
+
+export const makeHandlers = { started, validated };

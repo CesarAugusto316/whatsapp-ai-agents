@@ -41,15 +41,6 @@ export type ReservationInput = Pick<
   "customerName" | "startDateTime" | "endDateTime" | "day" | "numberOfPeople"
 >;
 
-export interface ReservationState extends ReservationInput {
-  id: string;
-  status: ReservationStatus;
-  customerPhone: string;
-  customerId: string;
-  businessId: string;
-  attempts: number;
-}
-
 export const CustomerActions = {
   CONFIRM: "CONFIRMAR",
   RESTART: "REINGRESAR",
@@ -59,6 +50,90 @@ export const CustomerActions = {
   YES: "SI",
   NO: "NO",
 } as const;
+
+export interface ReservationState extends ReservationInput {
+  id: string;
+  status: ReservationStatus;
+  customerPhone: string;
+  customerId: string;
+  businessId: string;
+  attempts: number;
+}
+
+export interface ConversationGuidance {
+  nextStatus: ReservationStatus;
+  suggestedActions: string[];
+  messageHint: string; // opcional, solo para LLM
+}
+
+export function deriveGuidance(
+  status: ReservationStatus,
+): ConversationGuidance {
+  switch (status) {
+    case reservationStatuses.MAKE_STARTED:
+      return {
+        nextStatus: reservationStatuses.MAKE_VALIDATED,
+        suggestedActions: [CustomerActions.EXIT],
+        messageHint:
+          "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
+      };
+
+    case reservationStatuses.MAKE_VALIDATED:
+      return {
+        nextStatus: reservationStatuses.MAKE_CONFIRMED,
+        suggestedActions: [
+          CustomerActions.CONFIRM,
+          CustomerActions.RESTART,
+          CustomerActions.CANCEL,
+        ],
+        messageHint:
+          "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
+      };
+
+    case reservationStatuses.UPDATE_PRE_START:
+      return {
+        nextStatus: reservationStatuses.UPDATE_STARTED,
+        suggestedActions: [CustomerActions.EXIT],
+        messageHint:
+          "If relevant, remind the user can enter the ID of his reservation or exit.",
+      };
+
+    case reservationStatuses.UPDATE_STARTED:
+      return {
+        nextStatus: reservationStatuses.UPDATE_VALIDATED,
+        suggestedActions: [CustomerActions.CANCEL],
+        messageHint:
+          "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
+      };
+
+    case reservationStatuses.UPDATE_VALIDATED:
+      return {
+        nextStatus: reservationStatuses.UPDATE_CONFIRMED,
+        suggestedActions: [
+          CustomerActions.CONFIRM,
+          CustomerActions.RESTART,
+          CustomerActions.CANCEL,
+        ],
+        messageHint:
+          "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
+      };
+
+    case reservationStatuses.CANCEL_STARTED:
+      return {
+        nextStatus: reservationStatuses.CANCEL_VALIDATED,
+        suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
+        messageHint:
+          "If relevant, remind the user that a reservation cancellation is in progress and they can confirm or exit.",
+      };
+
+    default:
+      return {
+        nextStatus: status,
+        messageHint: "The user has a process in progress.",
+        suggestedActions: [CustomerActions.EXIT],
+      };
+  }
+}
 
 export const FlowOptions = {
   MAKE_RESERVATION: "1",

@@ -20,25 +20,21 @@ import chatHistoryService from "@/services/chatHistory.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { AppContext } from "@/types/hono.types";
 import { ModelMessage } from "ai";
-import { FlowHandler, FlowResult } from "./handlers.types";
-import { makeStarted, makeValidated } from "./reservations/make.handlers";
-import { cancelStarted } from "./reservations/cancel.handlers";
-import {
-  updatePreStart,
-  updateStarted,
-  updateValidated,
-} from "./reservations/update.handlers";
+import { StateHandler, StateResult } from "./handlers.types";
+import { makeHandlers } from "./reservations/make.handlers";
+import { updateHandlers } from "./reservations/update.handlers";
+import { cancellHandlers } from "./reservations/cancel.handlers";
 
 /**
  *
  * @description deterministic chat flow, here core business logic lives
  */
-class CoreFlow {
-  private handlers: Record<string, FlowHandler[]> = {};
+class StateRouter {
+  private handlers: Record<string, StateHandler[]> = {};
 
   constructor(public readonly ctx: Readonly<AppContext>) {}
 
-  on(event: ReservationStatus, handler: FlowHandler): this {
+  on(event: ReservationStatus, handler: StateHandler): this {
     (this.handlers[event] ??= []).push(handler);
     return this;
   }
@@ -48,7 +44,7 @@ class CoreFlow {
    * @description if run() returns void, it means no handler was executed.
    * This is OK
    */
-  async run(): Promise<FlowResult | void> {
+  async run(): Promise<StateResult | void> {
     const status = this.ctx.RESERVATION_CACHE?.status;
     if (!status) return;
 
@@ -65,7 +61,7 @@ class CoreFlow {
  * @description no-deterministic chat flow, here we can use ai-agents,
  * no-critical logic lives here.
  */
-async function fallbackFlow(ctx: AppContext): Promise<string> {
+async function conversationalHandler(ctx: AppContext): Promise<string> {
   const {
     RESERVATION_CACHE,
     customerMessage = "",
@@ -142,17 +138,20 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
     // choice 4 again
     const assistantResponse = aiClient(
       messages,
-      howSystemWorksPrompt(business),
+      howSystemWorksPrompt(business, RESERVATION_CACHE?.status),
     );
     return assistantResponse;
   }
 
   // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
-  const result = await infoReservationAgent({
-    messages,
-    business,
-    customerPhone,
-  });
+  const result = await infoReservationAgent(
+    {
+      messages,
+      business,
+      customerPhone,
+    },
+    RESERVATION_CACHE?.status,
+  );
   const assistantResponse = renderAssistantText(result);
   return assistantResponse;
 }
@@ -163,22 +162,26 @@ async function fallbackFlow(ctx: AppContext): Promise<string> {
  * @param ctx
  * @returns Promise<string>
  */
-export async function initChatFlow(ctx: AppContext): Promise<string> {
-  const coreFlow = new CoreFlow(ctx);
+export async function runChatSession(ctx: AppContext): Promise<string> {
+  const stateRouter = new StateRouter(ctx);
 
-  coreFlow
-    .on("MAKE_STARTED", makeStarted)
-    .on("MAKE_VALIDATED", makeValidated)
-    .on("CANCEL_STARTED", cancelStarted)
-    .on("UPDATE_PRE_START", updatePreStart)
-    .on("UPDATE_STARTED", updateStarted)
-    .on("UPDATE_VALIDATED", updateValidated);
+  stateRouter
+    .on("MAKE_STARTED", makeHandlers.started)
+    .on("MAKE_VALIDATED", makeHandlers.validated)
+    .on("UPDATE_PRE_START", updateHandlers.preStart)
+    .on("UPDATE_STARTED", updateHandlers.started)
+    .on("UPDATE_VALIDATED", updateHandlers.validated)
+    .on("CANCEL_STARTED", cancellHandlers.started);
 
-  const result = await coreFlow.run();
+  const stateResult = await stateRouter.run();
 
-  if (result && result !== InputIntent.CUSTOMER_QUESTION) {
-    await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, result);
-    return result;
+  if (stateResult && stateResult !== InputIntent.CUSTOMER_QUESTION) {
+    await chatHistoryService.save(
+      ctx.chatKey,
+      ctx.customerMessage,
+      stateResult,
+    );
+    return stateResult;
   }
 
   /**
@@ -190,7 +193,7 @@ export async function initChatFlow(ctx: AppContext): Promise<string> {
    * @see updateStarted
    * @see {InputIntent}
    */
-  const preResult = await fallbackFlow(ctx);
+  const preResult = await conversationalHandler(ctx);
   await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, preResult);
   return preResult;
 }

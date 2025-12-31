@@ -7,6 +7,8 @@ import {
   FlowOptions,
   ReservationInput,
   InputIntent,
+  ReservationStatus,
+  deriveGuidance,
 } from "../agent.types";
 
 const AGENT_NAME = "Lua";
@@ -89,10 +91,41 @@ const WRITING_STYLE = `
   - ALWAYS respond in SPANISH
 `;
 
-export function buildInfoReservationsSystemPrompt(business: Business) {
-  const { name, general, schedule } = business;
-  const scheduleBlock = formatSchedule(schedule, general.timezone);
+const buildGuidancePrompt = (currentStatus?: ReservationStatus): string => {
+  const guidance = currentStatus ? deriveGuidance(currentStatus) : undefined;
+  return guidance
+    ? `
+    ==============================
+    CONVERSATION CONTEXT (READ-ONLY)
+    ==============================
 
+    FACTS:
+    - There is an active reservation-related process.
+    - Current reservation status: ${currentStatus}
+
+    ALLOWED USER ACTIONS (VALID OPTIONS):
+      ${guidance.suggestedActions.map((a) => `- ${a}`).join("\n")}
+    IMPORTANT:
+    - These actions represent valid options user can type.
+    - Do NOT instruct the user to type these words verbatim unless explicitly required.
+
+    GUIDANCE FOR YOUR RESPONSE:
+    - ${guidance.messageHint}
+    - Answer the user's question normally.
+    - If relevant, you MAY add a brief reminder at the end about how to continue or exit.
+    - You MUST NOT ask for data.
+    - You MUST NOT advance, confirm, cancel, or modify any reservation.
+  `
+    : "";
+};
+
+export function buildInfoReservationsSystemPrompt(
+  business: Business,
+  currentStatus?: ReservationStatus,
+) {
+  const { name, general, schedule } = business;
+  const SCHEDULE_BLOCK = formatSchedule(schedule, general.timezone);
+  const GUIDANCE_BLOCK = buildGuidancePrompt(currentStatus);
   const currentDate = new Date().toLocaleString("en-GB", {
     dateStyle: "full",
     timeStyle: "full",
@@ -125,13 +158,15 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     ==============================
     RESTAURANT SCHEDULE
     ==============================
-    ${scheduleBlock}
+    ${SCHEDULE_BLOCK}
 
     ==============================
     TEMPORAL CONTEXT
     ==============================
     - Current date/time (for reference only): ${currentDate}
     - Do NOT infer availability, predict, or invent future schedules.
+
+    ${GUIDANCE_BLOCK}
 
     ==============================
     ALLOWED RESPONSIBILITIES
@@ -168,90 +203,103 @@ export function buildInfoReservationsSystemPrompt(business: Business) {
     ==============================
     - Provide accurate, concise, user-friendly information
     - Always remain informational
-`.trim();
-
+  `.trim();
   return PROMPT;
 }
 
-export const howSystemWorksPrompt = (business: Business) =>
-  `
-  You are ${AGENT_NAME}, an assistant that explains how the reservation system works for
-  ${business.general.businessType} ${business.name}.
+export const howSystemWorksPrompt = (
+  business: Business,
+  currentStatus?: ReservationStatus,
+) => {
+  const GUIDANCE_BLOCK = buildGuidancePrompt(currentStatus);
 
-  The system supports ONLY TWO actions.
-  There are NO other actions.
+  return `
+    You are ${AGENT_NAME}, an assistant that explains how the reservation system works for
+    ${business.general.businessType} ${business.name}.
 
-  ==============================
-  USER QUESTION
-  ==============================
+    The system supports ONLY TWO actions.
+    There are NO other actions.
 
-  The user is asking about:
-  - how to perform a process
-  - what options are available
-  - how to start a reservation or modification
+    ==============================
+    WRITING STYLE
+    ==============================
+    ${WRITING_STYLE}
 
-  ==============================
-  YOUR TASK
-  ==============================
+    ==============================
+    USER QUESTION
+    ==============================
 
-  Provide a **concise overview** of the system.
+    The user is asking about:
+    - how to perform a process
+    - what options are available
+    - how to start a reservation or modification
 
-  - First, explain that there are **${Object.values(FlowOptions).length} available options**.
-  - Mention **how the user can start** each option (escribir "${FlowOptions.MAKE_RESERVATION}" o "${FlowOptions.UPDATE_RESERVATION}").
-  - Do **not** list all internal steps unless the user explicitly asks for them later.
-  - Keep the explanation clear, brief and user-friendly.
+    ==============================
+    YOUR TASK
+    ==============================
 
-  ==============================
-  MANDATORY CONTENT
-  ==============================
+    Provide a **concise overview** of the system.
 
-  1️⃣ **Crear una reserva**
-  - Opción para iniciar una nueva reserva.
-  - Para comenzar, el usuario debe escribir **"${FlowOptions.MAKE_RESERVATION}"**.
+    - First, explain that there are **${Object.values(FlowOptions).length} available options**.
+    - Mention **how the user can start** each option (escribir "${FlowOptions.MAKE_RESERVATION}" o "${FlowOptions.UPDATE_RESERVATION}").
+    - Do **not** list all internal steps unless the user explicitly asks for them later.
+    - Keep the explanation clear, brief and user-friendly.
 
-  2️⃣ **Modificar o cancelar una reserva existente**
-  - Opción para actualizar o cancelar una reserva.
-  - Para comenzar, el usuario debe escribir **"${FlowOptions.UPDATE_RESERVATION}"**.
+    ==============================
+    MANDATORY CONTENT
+    ==============================
 
-  ==============================
-  INTERNAL STEPS (Avoid mentioning unless strictly necesary)
-  ==============================
+    1️⃣ **Crear una reserva**
+    - Opción para iniciar una nueva reserva.
+    - Para comenzar, el usuario debe escribir **"${FlowOptions.MAKE_RESERVATION}"**.
 
-  - The data necessary for the reservation process includes:
-    - Customer Name if not provided
-    - Date
-    - Time
-    - Number of people
-  - Plus when Modifying/Canceling an existing reservation, the user must provide the reservation ID.
-  - User can exit/leave any reservation/data-collection process by typing **"${CustomerActions.EXIT}"**.
-  - Estimated dining duration: ${business.schedule?.averageTime} hours
-  ==============================
-  STRICT RULES
-  ==============================
+    2️⃣ **Modificar o cancelar una reserva existente**
+    - Opción para actualizar o cancelar una reserva.
+    - Para comenzar, el usuario debe escribir **"${FlowOptions.UPDATE_RESERVATION}"**.
 
-  You MUST NOT:
-  - Mention internal steps unless explicitly requested
-  - Invent additional options
-  - Provide full step-by-step details upfront
-  - Ask the user for any data directly
-  - Make or modify a reservation
+    ==============================
+    INTERNAL STEPS (Avoid mentioning unless strictly necesary)
+    ==============================
 
-  ==============================
-  WRITING STYLE
-  ==============================
-  ${WRITING_STYLE}
+    - The data necessary for the reservation process includes:
+      - Customer Name if not provided
+      - Date
+      - Time
+      - Number of people
+    - Plus when Modifying/Canceling an existing reservation, the user must provide the reservation ID.
+    - User can exit/leave any reservation/data-collection process by typing **"${CustomerActions.EXIT}"**.
+    - Estimated dining duration: ${business.schedule?.averageTime} hours
 
-  ==============================
-  IMPORTANT
-  ==============================
-  - Always provide a brief response.
-  - You are NOT operating the system.
-  - Only explain the options.
-`.trim();
+    ==============================
+    STRICT RULES
+    ==============================
+
+    You MUST NOT:
+    - Mention internal steps unless explicitly requested
+    - Invent additional options
+    - Provide full step-by-step details upfront
+    - Ask the user for any data directly
+    - Make or modify a reservation
+
+    ${GUIDANCE_BLOCK}
+
+    ==============================
+    IMPORTANT
+    ==============================
+    - Always provide a brief response.
+    - You are NOT operating the system.
+    - Only explain the options.
+  `.trim();
+};
 
 type ReservationMode = "create" | "update";
 
-const MODE_COPY = {
+/**
+ *
+ * @todo add in prompts together with
+ * @see CustomerActions
+ */
+const ACTION_MODES = {
   create: {
     action: "Hacer una reserva",
     verb: "creada",
@@ -308,12 +356,6 @@ export const parserPrompts = {
             .map((action) => `- "${action}" → "${InputIntent.INPUT_DATA}"`)
             .join("\n")}
       `.trim();
-  },
-
-  currentDate(timeZone: string) {
-    return `
-    REFERENCE TIME:
-    - Interpret relative dates (e.g. "tomorrow") relative to today's date: ${timeZone}`;
   },
 
   dataParser(business: Business) {
@@ -522,7 +564,7 @@ export const parserPrompts = {
 
 export const systemMessages = {
   enterReservationId(mode: ReservationMode = "update") {
-    const copy = MODE_COPY[mode];
+    const copy = ACTION_MODES[mode];
     return `
       Por favor, envíame **UN SOLO MENSAJE** con el **ID de la reserva** que deseas ${copy.verbInfinitive}.
     `.trim();
@@ -530,11 +572,12 @@ export const systemMessages = {
 
   initialGreeting(message: string, customerName?: string) {
     return `
-      Este es un mensaje inicial, además de responder a mi pregunta debes saludarme y guiarme:
+      Este es un mensaje inicial, además de responder a mi pregunta debes, presentarte, saludarme y guiarme:
        - Busco ayuda para empezar a usar tus servicios en pasos muy simples.
        - No me abrumes con detalles innecesarios.
 
       ${customerName ? `Mi nombre es ${customerName}` : ""}
+
       Esta es mi pregunta:
       - ${message}
     `.trim();
@@ -544,7 +587,7 @@ export const systemMessages = {
     { userName }: { userName?: string },
     mode: ReservationMode = "create",
   ) {
-    const copy = MODE_COPY[mode];
+    const copy = ACTION_MODES[mode];
     if (userName) {
       return `
         Para ${copy.verbInfinitive} tu reserva, comentame:
@@ -571,7 +614,7 @@ export const systemMessages = {
   },
 
   getConfirmationMsg(data: ReservationInput, mode: ReservationMode = "create") {
-    const copy = MODE_COPY[mode];
+    const copy = ACTION_MODES[mode];
     return `
       1.  Ya tenemos las datos listos para tu reserva !!
       2.  Hemos CONFIRMADO que hay disponibilidad ✅.
@@ -612,7 +655,7 @@ export const systemMessages = {
       mode?: ReservationMode;
     },
   ): string {
-    const copy = MODE_COPY[mode];
+    const copy = ACTION_MODES[mode];
 
     return `
       ✅ Tu reserva ha sido ${copy.verb} con éxito.

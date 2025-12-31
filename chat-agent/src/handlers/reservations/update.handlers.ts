@@ -1,4 +1,4 @@
-import { FlowHandler } from "../handlers.types";
+import { StateHandler } from "../handlers.types";
 import z, { safeParse } from "zod";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
@@ -19,7 +19,7 @@ import {
 } from "@/ai-agents/agent.config";
 import { ATTEMPTS } from "./make.handlers";
 
-export const updatePreStart: FlowHandler = async (ctx) => {
+const preStart: StateHandler = async (ctx) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;
 
   if (!customer) {
@@ -103,7 +103,7 @@ export const updatePreStart: FlowHandler = async (ctx) => {
   }
 };
 
-export const updateStarted: FlowHandler = async (ctx) => {
+const started: StateHandler = async (ctx) => {
   const {
     RESERVATION_CACHE,
     customerMessage,
@@ -228,7 +228,7 @@ export const updateStarted: FlowHandler = async (ctx) => {
   }
 };
 
-export const updateValidated: FlowHandler = async (ctx) => {
+const validated: StateHandler = async (ctx) => {
   const {
     RESERVATION_CACHE,
     customerMessage,
@@ -308,3 +308,5 @@ export const updateValidated: FlowHandler = async (ctx) => {
     return humanizerAgent(assistanceMsg);
   }
 };
+
+export const updateHandlers = { preStart, started, validated };
