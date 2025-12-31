@@ -51,6 +51,8 @@ export const CustomerActions = {
   NO: "NO",
 } as const;
 
+// export type CustomerAction = keyof typeof CustomerActions;
+
 export interface ReservationState extends ReservationInput {
   id: string;
   status: ReservationStatus;
@@ -72,9 +74,10 @@ export interface ConversationGuidance {
  * @param status
  * @returns
  */
-export function deriveGuidance(
+export function getStateTransition(
   status: ReservationStatus,
-): ConversationGuidance | undefined {
+  action?: "CAMBIAR" | "CANCELAR",
+): ConversationGuidance {
   switch (status) {
     case reservationStatuses.MAKE_STARTED:
       return {
@@ -98,7 +101,10 @@ export function deriveGuidance(
 
     case reservationStatuses.UPDATE_PRE_START:
       return {
-        nextStatus: reservationStatuses.UPDATE_STARTED,
+        nextStatus:
+          action && action == CustomerActions?.UPDATE
+            ? reservationStatuses.UPDATE_STARTED
+            : reservationStatuses.CANCEL_STARTED,
         suggestedActions: [CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user can enter the ID of his reservation or exit.",
@@ -130,6 +136,13 @@ export function deriveGuidance(
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation cancellation is in progress and they can confirm or exit.",
+      };
+
+    default:
+      return {
+        nextStatus: status,
+        suggestedActions: [],
+        messageHint: "",
       };
   }
 }

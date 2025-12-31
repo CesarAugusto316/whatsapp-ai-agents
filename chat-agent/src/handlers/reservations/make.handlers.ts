@@ -9,6 +9,7 @@ import {
   InputIntent,
   FlowOptions,
   ReservationStatus,
+  getStateTransition,
 } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
 import { Appointment, Customer } from "@/types/business/cms-types";
@@ -21,7 +22,10 @@ import { AppContext } from "@/types/hono.types";
 
 export const ATTEMPTS = 4;
 
-const started: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
+const started: StateHandler<AppContext, ReservationStatus> = async (
+  ctx,
+  currStatus,
+) => {
   const {
     RESERVATION_CACHE,
     business,
@@ -108,10 +112,11 @@ const started: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
     }
 
     // 2. ✅ INPUT DATA VALIDATED
+    const transition = getStateTransition(currStatus);
     await reservationCacheService.save(reservationKey, {
       ...RESERVATION_CACHE,
       ...data,
-      status: reservationStatuses.MAKE_VALIDATED,
+      status: transition.nextStatus, // MAKE_VALIDATED
     } satisfies Partial<ReservationState>);
 
     const responseMsg = systemMessages.getConfirmationMsg(data);

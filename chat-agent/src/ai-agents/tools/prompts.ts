@@ -8,7 +8,7 @@ import {
   ReservationInput,
   InputIntent,
   ReservationStatus,
-  deriveGuidance,
+  getStateTransition,
 } from "../agent.types";
 
 const AGENT_NAME = "Lua";
@@ -92,7 +92,10 @@ const WRITING_STYLE = `
 `;
 
 const buildGuidancePrompt = (currentStatus?: ReservationStatus): string => {
-  const guidance = currentStatus ? deriveGuidance(currentStatus) : undefined;
+  const guidance = currentStatus
+    ? getStateTransition(currentStatus)
+    : undefined;
+
   return guidance
     ? `
     ==============================

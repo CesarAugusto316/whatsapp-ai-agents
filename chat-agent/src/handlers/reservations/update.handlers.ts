@@ -10,6 +10,7 @@ import {
   InputIntent,
   FlowOptions,
   ReservationStatus,
+  getStateTransition,
 } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
 import { Appointment } from "@/types/business/cms-types";
@@ -21,7 +22,10 @@ import {
 import { ATTEMPTS } from "./make.handlers";
 import { AppContext } from "@/types/hono.types";
 
-const preStart: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
+const preStart: StateHandler<AppContext, ReservationStatus> = async (
+  ctx,
+  currStatus,
+) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;
 
   if (!customer) {
@@ -71,9 +75,10 @@ const preStart: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
       },
       "update",
     );
+    const transition = getStateTransition(currStatus, CustomerActions.UPDATE);
     await reservationCacheService.save(reservationKey ?? "", {
       ...RESERVATION_CACHE,
-      status: reservationStatuses.UPDATE_STARTED,
+      status: transition.nextStatus, //  UPDATE_STARTED,
     });
     return humanizerAgent(responseMsg);
   }
@@ -88,9 +93,10 @@ const preStart: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
       - ${CustomerActions.YES} para confirmar o
       - ${CustomerActions.NO} para salir de este proceso.
     `;
+    const transition = getStateTransition(currStatus, CustomerActions.CANCEL);
     await reservationCacheService.save(reservationKey ?? "", {
       ...RESERVATION_CACHE,
-      status: reservationStatuses.CANCEL_STARTED,
+      status: transition.nextStatus, //CANCEL_STARTED,
     });
     return humanizerAgent(responseMsg);
   }
@@ -105,7 +111,10 @@ const preStart: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
   }
 };
 
-const started: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
+const started: StateHandler<AppContext, ReservationStatus> = async (
+  ctx,
+  currStatus,
+) => {
   const {
     RESERVATION_CACHE,
     customerMessage,
@@ -204,10 +213,11 @@ const started: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
       }
 
       // 2. ✅ INPUT DATA VALIDATED
+      const transition = getStateTransition(currStatus);
       await reservationCacheService.save(reservationKey, {
         ...RESERVATION_CACHE,
         ...data,
-        status: reservationStatuses.UPDATE_VALIDATED,
+        status: transition.nextStatus, // UPDATE_VALIDATED,
       } satisfies Partial<ReservationState>);
 
       const responseMsg = systemMessages.getConfirmationMsg(data, "update");
