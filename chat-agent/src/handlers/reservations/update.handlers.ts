@@ -305,10 +305,10 @@ const validated: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
   }
 
   // FALLBACK
-  if (customerMessage) {
-    const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva, ${CustomerActions.RESTART} para cambiar algun dato, ó ${CustomerActions.EXIT} para salir`;
-    return humanizerAgent(assistanceMsg);
-  }
+  // if (customerMessage) {
+  //   const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva, ${CustomerActions.RESTART} para cambiar algun dato, ó ${CustomerActions.EXIT} para salir`;
+  //   return humanizerAgent(assistanceMsg);
+  // }
 };
 
 export const updateHandlers = { preStart, started, validated };

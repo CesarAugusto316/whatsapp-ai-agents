@@ -20,7 +20,7 @@ import z, { safeParse, ZodError } from "zod";
 import {
   customerIntentSchema,
   inputIntentSchema,
-  reservationSchema,
+  reservationSchemas,
 } from "./schemas";
 
 /**
@@ -223,28 +223,28 @@ export const validationAgent = {
     ];
     const aiValidator: string = await aiClient(messages, PARSER_PROMPT, temp);
     // ✨ Optional fields
-    const firstParsing = safeParse(
-      reservationSchema.partial(),
+    const phase1 = safeParse(
+      reservationSchemas.phase1,
       JSON.parse(aiValidator),
     );
-    if (!firstParsing.success) {
+    console.log({ aiValidator, firstParsing: phase1, previousState });
+    if (!phase1.success) {
       return;
     }
     const mergeState = {
-      customerName:
-        firstParsing.data?.customerName || previousState.customerName,
-      day: firstParsing.data?.day || previousState.day,
-      startDateTime:
-        firstParsing.data?.startDateTime || previousState.startDateTime,
-      endDateTime: firstParsing.data?.endDateTime || previousState.endDateTime,
+      customerName: phase1.data?.customerName || previousState.customerName,
+      day: phase1.data?.day || previousState.day,
+      startDateTime: phase1.data?.startDateTime || previousState.startDateTime,
+      endDateTime: phase1.data?.endDateTime || previousState.endDateTime,
       numberOfPeople:
-        firstParsing.data?.numberOfPeople || previousState.numberOfPeople,
+        phase1.data?.numberOfPeople || previousState.numberOfPeople,
       //
     } satisfies ReservationInput;
 
     // ✅ Required fields
-    const secondParsing = safeParse(reservationSchema, mergeState);
-    return { parsedData: secondParsing, mergedData: mergeState };
+    const phase2 = safeParse(reservationSchemas.phase2, mergeState);
+    console.log({ secondParsing: phase2 });
+    return { parsedData: phase2, mergedData: mergeState };
   },
 
   /**
@@ -258,18 +258,29 @@ export const validationAgent = {
   async collector(
     business: Business,
     error: ZodError<ReservationInput>,
-    customErr = "",
     temp = 0.6,
   ) {
     const COLLECTOR_PROMPT = parserPrompts.collector(business);
+    // ISSUES:
+    // {
+    //    "origin": "number",
+    //    "code": "too_small",
+    //    "minimum": 1,
+    //    "inclusive": true,
+    //    "path": [
+    //      "numberOfPeople"
+    //    ],
+    //    "message": "Too small: expected number to be >=1"
+    //  }
     const conversationalContext = {
       missingFields: toConversationalFields(extractMissingFields(error)),
-      lastError: customErr || error.issues.at(0)?.message,
+      lastError: error.issues.at(0)?.message,
     };
     const aiDataCollector = aiClient(
       [
         {
           role: "user",
+          /** @todo improve COLLECTOR_PROMPT and INPUT_SCHEMA (content message)  */
           content: `
               Context for clarification:
               missingFields: ${JSON.stringify(conversationalContext.missingFields)}

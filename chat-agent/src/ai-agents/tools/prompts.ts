@@ -106,7 +106,7 @@ const buildGuidancePrompt = (currentStatus?: ReservationStatus): string => {
     ALLOWED USER ACTIONS (VALID OPTIONS):
       ${guidance?.suggestedActions.map((a) => `- ${a}`).join("\n")}
     IMPORTANT:
-    - These actions represent valid options user can type.
+    - These actions represent valid options user can type to continue the reservation process.
     - Do NOT instruct the user to type these words verbatim unless explicitly required.
 
     GUIDANCE FOR YOUR RESPONSE:
@@ -486,6 +486,12 @@ export const parserPrompts = {
   `.trim();
   },
 
+  /**
+   *
+   * @todo Improve error handling to a object like {field: "customerName", error: "length must be >= 3"} []
+   * El usuario no puede pedir mesas para 0 personas ó 1 millon, ni tampoco puede pedir fechas imposibles.
+   * ni su nombre debe ser tan corto ni tan largo.
+   */
   collector(business: Business) {
     const currentDateTime = new Date().toLocaleString("en-GB", {
       dateStyle: "full",
@@ -543,7 +549,7 @@ export const parserPrompts = {
        ${WRITING_STYLE}
 
       ----------------------------------
-      EXAMPLES OF VALID OUTPUTS:
+      EXAMPLES OF VALID OUTPUTS (You should improve them using STYLE GUIDELINES):
 
       • If missingFields = ["date", "time"]:
         "Para continuar necesito que me indiques el día de la reserva y la hora."
@@ -551,8 +557,14 @@ export const parserPrompts = {
       • If missingFields = ["customerName"]:
         "¿A nombre de quién sería la reserva?"
 
+      • If missingFields = ["customerName"] and error = "too_small: length must be >= 3":
+        "Ese nombre es muy corto. Debe tener al menos 3 caracteres. Por favor, ingresa un nombre correcto"
+
       • If missingFields = ["numberOfPeople"]:
         "¿Para cuántas personas sería la reserva?"
+
+      • If missingFields = ["numberOfPeople"] and error = "too_small: Value must be >= 1":
+        "Las reservas deben ser al menos para 1 persona"
 
       ----------------------------------
       Remember:

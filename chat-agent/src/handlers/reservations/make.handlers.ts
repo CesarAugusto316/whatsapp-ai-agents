@@ -76,7 +76,7 @@ const started: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
     const { mergedData, parsedData } = result;
     const { success, data, error } = parsedData;
 
-    if (!success) {
+    if (!success && error) {
       await reservationCacheService.save(reservationKey, {
         ...RESERVATION_CACHE,
         ...mergedData,
@@ -212,16 +212,16 @@ const validated: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
     return humanizerAgent(assistantResponse);
   }
 
-  // FALLBACK
-  if (customerMessage && RESERVATION_CACHE) {
-    const assistanceMsg = `
-      Tienes una reserva disponible. Escribe:
-      - ${CustomerActions.CONFIRM} para confirmar reserva ó
-      - ${CustomerActions.RESTART} para cambiar algun dato que quieras cambiar
-      - ${CustomerActions.EXIT} para salir de este proceso
-      `;
-    return humanizerAgent(assistanceMsg);
-  }
+  // // FALLBACK
+  // if (customerMessage && RESERVATION_CACHE) {
+  //   const assistanceMsg = `
+  //     Tienes una reserva disponible. Escribe:
+  //     - ${CustomerActions.CONFIRM} para confirmar reserva ó
+  //     - ${CustomerActions.RESTART} para cambiar algun dato que quieras cambiar
+  //     - ${CustomerActions.EXIT} para salir de este proceso
+  //     `;
+  //   return humanizerAgent(assistanceMsg);
+  // }
 };
 
 export const makeHandlers = { started, validated };
