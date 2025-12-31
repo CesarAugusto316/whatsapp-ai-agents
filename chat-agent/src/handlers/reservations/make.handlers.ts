@@ -8,6 +8,7 @@ import {
   reservationStatuses,
   InputIntent,
   FlowOptions,
+  ReservationStatus,
 } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
 import { Appointment, Customer } from "@/types/business/cms-types";
@@ -16,10 +17,11 @@ import {
   inputIntentClassifier,
   validationAgent,
 } from "@/ai-agents/agent.config";
+import { AppContext } from "@/types/hono.types";
 
 export const ATTEMPTS = 4;
 
-const started: StateHandler = async (ctx) => {
+const started: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
   const {
     RESERVATION_CACHE,
     business,
@@ -81,7 +83,7 @@ const started: StateHandler = async (ctx) => {
       } satisfies Partial<ReservationState>);
 
       const aiDataCollector = validationAgent.collector(business, error);
-      return aiDataCollector;
+      return aiDataCollector; // agent try to collect missing data
     }
 
     const isAvailable = await businessService.checkAvailability({
@@ -128,7 +130,7 @@ const started: StateHandler = async (ctx) => {
  * @param ctx
  * @returns
  */
-const validated: StateHandler = async (ctx) => {
+const validated: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
   const {
     RESERVATION_CACHE,
     business,

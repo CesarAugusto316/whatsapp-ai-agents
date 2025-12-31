@@ -66,9 +66,15 @@ export interface ConversationGuidance {
   messageHint: string; // opcional, solo para LLM
 }
 
+/**
+ *
+ * @description Derives guidance for the conversation based on the current reservation status.
+ * @param status
+ * @returns
+ */
 export function deriveGuidance(
   status: ReservationStatus,
-): ConversationGuidance {
+): ConversationGuidance | undefined {
   switch (status) {
     case reservationStatuses.MAKE_STARTED:
       return {
@@ -124,13 +130,6 @@ export function deriveGuidance(
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation cancellation is in progress and they can confirm or exit.",
-      };
-
-    default:
-      return {
-        nextStatus: status,
-        messageHint: "The user has a process in progress.",
-        suggestedActions: [CustomerActions.EXIT],
       };
   }
 }

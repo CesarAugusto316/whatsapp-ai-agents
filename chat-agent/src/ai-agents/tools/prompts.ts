@@ -104,13 +104,13 @@ const buildGuidancePrompt = (currentStatus?: ReservationStatus): string => {
     - Current reservation status: ${currentStatus}
 
     ALLOWED USER ACTIONS (VALID OPTIONS):
-      ${guidance.suggestedActions.map((a) => `- ${a}`).join("\n")}
+      ${guidance?.suggestedActions.map((a) => `- ${a}`).join("\n")}
     IMPORTANT:
     - These actions represent valid options user can type.
     - Do NOT instruct the user to type these words verbatim unless explicitly required.
 
     GUIDANCE FOR YOUR RESPONSE:
-    - ${guidance.messageHint}
+    - ${guidance?.messageHint}
     - Answer the user's question normally.
     - If relevant, you MAY add a brief reminder at the end about how to continue or exit.
     - You MUST NOT ask for data.

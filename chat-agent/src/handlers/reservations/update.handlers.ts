@@ -9,6 +9,7 @@ import {
   reservationStatuses,
   InputIntent,
   FlowOptions,
+  ReservationStatus,
 } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
 import { Appointment } from "@/types/business/cms-types";
@@ -18,8 +19,9 @@ import {
   validationAgent,
 } from "@/ai-agents/agent.config";
 import { ATTEMPTS } from "./make.handlers";
+import { AppContext } from "@/types/hono.types";
 
-const preStart: StateHandler = async (ctx) => {
+const preStart: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;
 
   if (!customer) {
@@ -103,7 +105,7 @@ const preStart: StateHandler = async (ctx) => {
   }
 };
 
-const started: StateHandler = async (ctx) => {
+const started: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
   const {
     RESERVATION_CACHE,
     customerMessage,
@@ -228,7 +230,7 @@ const started: StateHandler = async (ctx) => {
   }
 };
 
-const validated: StateHandler = async (ctx) => {
+const validated: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
   const {
     RESERVATION_CACHE,
     customerMessage,

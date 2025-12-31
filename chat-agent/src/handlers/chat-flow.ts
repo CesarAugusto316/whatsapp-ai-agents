@@ -20,7 +20,7 @@ import chatHistoryService from "@/services/chatHistory.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { AppContext } from "@/types/hono.types";
 import { ModelMessage } from "ai";
-import { StateHandler, StateResult } from "./handlers.types";
+import { HandlerResult, StateHandler } from "./handlers.types";
 import { makeHandlers } from "./reservations/make.handlers";
 import { updateHandlers } from "./reservations/update.handlers";
 import { cancellHandlers } from "./reservations/cancel.handlers";
@@ -29,23 +29,21 @@ import { cancellHandlers } from "./reservations/cancel.handlers";
  *
  * @description deterministic chat flow, here core business logic lives
  */
-class StateRouter {
-  private handlers: Record<string, StateHandler[]> = {};
+class StateRouter<Ctx, St extends string> {
+  private handlers: Partial<Record<St, StateHandler<Ctx, St>[]>> = {};
 
-  constructor(public readonly ctx: Readonly<AppContext>) {}
+  constructor(
+    private readonly ctx: Readonly<Ctx>,
+    private readonly status?: St,
+  ) {}
 
-  on(event: ReservationStatus, handler: StateHandler): this {
-    (this.handlers[event] ??= []).push(handler);
+  on(state: St, handler: StateHandler<Ctx, St>): this {
+    (this.handlers[state] ??= []).push(handler);
     return this;
   }
 
-  /**
-   *
-   * @description if run() returns void, it means no handler was executed.
-   * This is OK
-   */
-  async run(): Promise<StateResult | void> {
-    const status = this.ctx.RESERVATION_CACHE?.status;
+  async run(): Promise<HandlerResult> {
+    const status = this.status;
     if (!status) return;
 
     const handlers = this.handlers[status] ?? [];
@@ -163,7 +161,10 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
  * @returns Promise<string>
  */
 export async function runChatSession(ctx: AppContext): Promise<string> {
-  const stateRouter = new StateRouter(ctx);
+  const stateRouter = new StateRouter<AppContext, ReservationStatus>(
+    ctx,
+    ctx.RESERVATION_CACHE?.status,
+  );
 
   stateRouter
     .on("MAKE_STARTED", makeHandlers.started)
@@ -193,7 +194,7 @@ export async function runChatSession(ctx: AppContext): Promise<string> {
    * @see updateStarted
    * @see {InputIntent}
    */
-  const preResult = await conversationalHandler(ctx);
-  await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, preResult);
-  return preResult;
+  const convResult = await conversationalHandler(ctx);
+  await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, convResult);
+  return convResult;
 }
