@@ -6,11 +6,11 @@ import {
   CustomerActions,
   ReservationInput,
   ReservationState,
-  reservationStatuses,
+  ReservationStatuses,
   InputIntent,
   FlowOptions,
-  ReservationStatus,
   getStateTransition,
+  FMStatus,
 } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
 import { Appointment } from "@/types/business/cms-types";
@@ -22,7 +22,7 @@ import {
 import { ATTEMPTS } from "./make.handlers";
 import { AppContext } from "@/types/hono.types";
 
-const preStart: StateHandler<AppContext, ReservationStatus> = async (
+const preStart: StateHandler<AppContext, FMStatus> = async (
   ctx,
   currStatus,
 ) => {
@@ -111,10 +111,7 @@ const preStart: StateHandler<AppContext, ReservationStatus> = async (
   }
 };
 
-const started: StateHandler<AppContext, ReservationStatus> = async (
-  ctx,
-  currStatus,
-) => {
+const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
   const {
     RESERVATION_CACHE,
     customerMessage,
@@ -227,7 +224,7 @@ const started: StateHandler<AppContext, ReservationStatus> = async (
     await reservationCacheService.save(reservationKey, {
       ...RESERVATION_CACHE,
       id: "",
-      status: reservationStatuses.UPDATE_PRE_START,
+      status: ReservationStatuses.UPDATE_PRE_START,
     } satisfies Partial<ReservationState>);
 
     return "No ingresaste el ID de tu reserva, vuelve a ingresarlo";
@@ -240,7 +237,7 @@ const started: StateHandler<AppContext, ReservationStatus> = async (
   }
 };
 
-const validated: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
+const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
   const {
     RESERVATION_CACHE,
     customerMessage,
@@ -309,7 +306,7 @@ const validated: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
       customerId: customer?.id,
       customerName: customer?.name ?? "",
       customerPhone: customer.phoneNumber,
-      status: reservationStatuses.UPDATE_STARTED,
+      status: ReservationStatuses.UPDATE_STARTED,
     });
     return assistantResponse;
   }

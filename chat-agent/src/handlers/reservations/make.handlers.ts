@@ -5,11 +5,11 @@ import {
   CustomerActions,
   ReservationInput,
   ReservationState,
-  reservationStatuses,
+  ReservationStatuses,
   InputIntent,
   FlowOptions,
-  ReservationStatus,
   getStateTransition,
+  FMStatus,
 } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
 import { Appointment, Customer } from "@/types/business/cms-types";
@@ -22,10 +22,13 @@ import { AppContext } from "@/types/hono.types";
 
 export const ATTEMPTS = 4;
 
-const started: StateHandler<AppContext, ReservationStatus> = async (
-  ctx,
-  currStatus,
-) => {
+/**
+ *
+ * @param ctx
+ * @param currStatus
+ * @returns
+ */
+const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
   const {
     RESERVATION_CACHE,
     business,
@@ -135,7 +138,7 @@ const started: StateHandler<AppContext, ReservationStatus> = async (
  * @param ctx
  * @returns
  */
-const validated: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
+const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
   const {
     RESERVATION_CACHE,
     business,
@@ -212,7 +215,7 @@ const validated: StateHandler<AppContext, ReservationStatus> = async (ctx) => {
       customerId: customer?.id,
       customerName: customer?.name ?? "",
       customerPhone,
-      status: reservationStatuses.MAKE_STARTED,
+      status: ReservationStatuses.MAKE_STARTED,
     });
     return humanizerAgent(assistantResponse);
   }

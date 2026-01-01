@@ -7,8 +7,8 @@ import {
   FlowOptions,
   ReservationInput,
   InputIntent,
-  ReservationStatus,
   getStateTransition,
+  FMStatus,
 } from "../agent.types";
 
 const AGENT_NAME = "Lua";
@@ -91,10 +91,8 @@ const WRITING_STYLE = `
   - ALWAYS respond in SPANISH
 `;
 
-const buildGuidancePrompt = (currentStatus?: ReservationStatus): string => {
-  const guidance = currentStatus
-    ? getStateTransition(currentStatus)
-    : undefined;
+const buildGuidancePrompt = (status?: FMStatus): string => {
+  const guidance = status ? getStateTransition(status) : undefined;
 
   return guidance
     ? `
@@ -104,7 +102,7 @@ const buildGuidancePrompt = (currentStatus?: ReservationStatus): string => {
 
     FACTS:
     - There is an active reservation-related process.
-    - Current reservation status: ${currentStatus}
+    - Current reservation status: ${status}
 
     ALLOWED USER ACTIONS (VALID OPTIONS):
       ${guidance?.suggestedActions.map((a) => `- ${a}`).join("\n")}
@@ -124,11 +122,11 @@ const buildGuidancePrompt = (currentStatus?: ReservationStatus): string => {
 
 export function buildInfoReservationsSystemPrompt(
   business: Business,
-  currentStatus?: ReservationStatus,
+  status?: FMStatus,
 ) {
   const { name, general, schedule } = business;
   const SCHEDULE_BLOCK = formatSchedule(schedule, general.timezone);
-  const GUIDANCE_BLOCK = buildGuidancePrompt(currentStatus);
+  const GUIDANCE_BLOCK = buildGuidancePrompt(status);
   const currentDate = new Date().toLocaleString("en-GB", {
     dateStyle: "full",
     timeStyle: "full",
@@ -210,11 +208,8 @@ export function buildInfoReservationsSystemPrompt(
   return PROMPT;
 }
 
-export const howSystemWorksPrompt = (
-  business: Business,
-  currentStatus?: ReservationStatus,
-) => {
-  const GUIDANCE_BLOCK = buildGuidancePrompt(currentStatus);
+export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
+  const GUIDANCE_BLOCK = buildGuidancePrompt(status);
 
   return `
     You are ${AGENT_NAME}, an assistant that explains how the reservation system works for

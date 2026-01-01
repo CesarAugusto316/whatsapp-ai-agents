@@ -11,13 +11,22 @@ export enum CUSTOMER_INTENT {
   HOW = "HOW",
 }
 
+/**
+ *
+ * @description Enum for intention classification
+ */
+export enum InputIntent {
+  INPUT_DATA = "INPUT_DATA",
+  CUSTOMER_QUESTION = "CUSTOMER_QUESTION",
+}
+
 export type AgentArgs = {
   messages: ModelMessage[];
   business: Business;
   customerPhone: string;
 };
 
-export const reservationStatuses = {
+export const ReservationStatuses = {
   MAKE_STARTED: "MAKE_STARTED",
   MAKE_RESTARTED: "MAKE_RESTARTED",
   MAKE_VALIDATED: "MAKE_VALIDATED",
@@ -34,12 +43,20 @@ export const reservationStatuses = {
   CANCEL_CONFIRMED: "CANCEL_CONFIRMED",
 } as const;
 
-export type ReservationStatus = keyof typeof reservationStatuses;
+export type ReservationStatus = keyof typeof ReservationStatuses;
 
 export type ReservationInput = Pick<
   Appointment,
   "customerName" | "startDateTime" | "endDateTime" | "day" | "numberOfPeople"
 >;
+
+export type FlowOption = "1" | "2";
+export type FMStatus = ReservationStatus | FlowOption;
+
+export const FlowOptions = {
+  MAKE_RESERVATION: "1",
+  UPDATE_RESERVATION: "2",
+} as const;
 
 export const CustomerActions = {
   CONFIRM: "CONFIRMAR",
@@ -51,19 +68,17 @@ export const CustomerActions = {
   NO: "NO",
 } as const;
 
-// export type CustomerAction = keyof typeof CustomerActions;
-
 export interface ReservationState extends ReservationInput {
   id: string;
-  status: ReservationStatus;
+  status: FMStatus;
   customerPhone: string;
   customerId: string;
   businessId: string;
   attempts: number;
 }
 
-export interface ConversationGuidance {
-  nextStatus: ReservationStatus;
+export interface StateTransition {
+  nextStatus: FMStatus;
   suggestedActions: string[];
   messageHint: string; // opcional, solo para LLM
 }
@@ -75,21 +90,21 @@ export interface ConversationGuidance {
  * @returns
  */
 export function getStateTransition(
-  status: ReservationStatus,
+  status: FMStatus,
   action?: "CAMBIAR" | "CANCELAR",
-): ConversationGuidance {
+): StateTransition {
   switch (status) {
-    case reservationStatuses.MAKE_STARTED:
+    case ReservationStatuses.MAKE_STARTED:
       return {
-        nextStatus: reservationStatuses.MAKE_VALIDATED,
+        nextStatus: ReservationStatuses.MAKE_VALIDATED,
         suggestedActions: [CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
       };
 
-    case reservationStatuses.MAKE_VALIDATED:
+    case ReservationStatuses.MAKE_VALIDATED:
       return {
-        nextStatus: reservationStatuses.MAKE_CONFIRMED,
+        nextStatus: ReservationStatuses.MAKE_CONFIRMED,
         suggestedActions: [
           CustomerActions.CONFIRM,
           CustomerActions.RESTART,
@@ -99,28 +114,28 @@ export function getStateTransition(
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
       };
 
-    case reservationStatuses.UPDATE_PRE_START:
+    case ReservationStatuses.UPDATE_PRE_START:
       return {
         nextStatus:
           action && action == CustomerActions?.UPDATE
-            ? reservationStatuses.UPDATE_STARTED
-            : reservationStatuses.CANCEL_STARTED,
+            ? ReservationStatuses.UPDATE_STARTED
+            : ReservationStatuses.CANCEL_STARTED,
         suggestedActions: [CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user can enter the ID of his reservation or exit.",
       };
 
-    case reservationStatuses.UPDATE_STARTED:
+    case ReservationStatuses.UPDATE_STARTED:
       return {
-        nextStatus: reservationStatuses.UPDATE_VALIDATED,
+        nextStatus: ReservationStatuses.UPDATE_VALIDATED,
         suggestedActions: [CustomerActions.CANCEL],
         messageHint:
           "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
       };
 
-    case reservationStatuses.UPDATE_VALIDATED:
+    case ReservationStatuses.UPDATE_VALIDATED:
       return {
-        nextStatus: reservationStatuses.UPDATE_CONFIRMED,
+        nextStatus: ReservationStatuses.UPDATE_CONFIRMED,
         suggestedActions: [
           CustomerActions.CONFIRM,
           CustomerActions.RESTART,
@@ -130,12 +145,26 @@ export function getStateTransition(
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
       };
 
-    case reservationStatuses.CANCEL_STARTED:
+    case ReservationStatuses.CANCEL_STARTED:
       return {
-        nextStatus: reservationStatuses.CANCEL_VALIDATED,
+        nextStatus: ReservationStatuses.CANCEL_VALIDATED,
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation cancellation is in progress and they can confirm or exit.",
+      };
+
+    case FlowOptions.UPDATE_RESERVATION:
+      return {
+        nextStatus: ReservationStatuses.UPDATE_STARTED,
+        suggestedActions: [],
+        messageHint: "",
+      };
+
+    case FlowOptions.MAKE_RESERVATION:
+      return {
+        nextStatus: ReservationStatuses.MAKE_STARTED,
+        suggestedActions: [],
+        messageHint: "",
       };
 
     default:
@@ -145,20 +174,6 @@ export function getStateTransition(
         messageHint: "",
       };
   }
-}
-
-export const FlowOptions = {
-  MAKE_RESERVATION: "1",
-  UPDATE_RESERVATION: "2",
-} as const;
-
-/**
- *
- * @description Enum for intention classification
- */
-export enum InputIntent {
-  INPUT_DATA = "INPUT_DATA",
-  CUSTOMER_QUESTION = "CUSTOMER_QUESTION",
 }
 
 export type WeekDay = Omit<Business["schedule"], "averageTime">;

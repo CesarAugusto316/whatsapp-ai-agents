@@ -11,6 +11,7 @@ import {
 import {
   AgentArgs,
   CUSTOMER_INTENT,
+  FlowOption,
   InputIntent,
   ReservationInput,
   ReservationStatus,
@@ -52,7 +53,7 @@ const config = {
  */
 export function infoReservationAgent(
   { messages, business }: AgentArgs,
-  ctxStatus?: ReservationStatus,
+  ctxStatus?: ReservationStatus|FlowOption,
 ) {
   return generateText({
     ...config,
@@ -227,7 +228,6 @@ export const validationAgent = {
       reservationSchemas.phase1,
       JSON.parse(aiValidator),
     );
-    console.log({ aiValidator, firstParsing: phase1, previousState });
     if (!phase1.success) {
       return;
     }
@@ -243,7 +243,6 @@ export const validationAgent = {
 
     // ✅ Required fields
     const phase2 = safeParse(reservationSchemas.phase2, mergeState);
-    console.log({ secondParsing: phase2 });
     return { parsedData: phase2, mergedData: mergeState };
   },
 

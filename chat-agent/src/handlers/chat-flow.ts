@@ -6,10 +6,10 @@ import {
 } from "@/ai-agents/agent.config";
 import {
   CUSTOMER_INTENT,
-  ReservationStatus,
   FlowOptions,
-  reservationStatuses,
   InputIntent,
+  FMStatus,
+  getStateTransition,
 } from "@/ai-agents/agent.types";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import {
@@ -29,15 +29,15 @@ import { cancellHandlers } from "./reservations/cancel.handlers";
  *
  * @description deterministic chat flow, here core business logic lives
  */
-class StateRouter<Ctx, St extends string> {
-  private handlers: Partial<Record<St, StateHandler<Ctx, St>[]>> = {};
+class StateRouter<Ctx, S extends string> {
+  private handlers: Partial<Record<S, StateHandler<Ctx, S>[]>> = {};
 
   constructor(
     private readonly ctx: Readonly<Ctx>,
-    private readonly status?: St,
+    private readonly status?: S,
   ) {}
 
-  on(state: St, handler: StateHandler<Ctx, St>): this {
+  on(state: S, handler: StateHandler<Ctx, S>): this {
     (this.handlers[state] ??= []).push(handler);
     return this;
   }
@@ -93,12 +93,13 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
     }
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
       // choice 2
+      const transition = getStateTransition(FlowOptions.MAKE_RESERVATION);
       await reservationCacheService.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
         customerName: customer?.name ?? "",
         customerPhone,
-        status: reservationStatuses.MAKE_STARTED,
+        status: transition.nextStatus, // MAKE_STARTED
       });
       const responseMsg = systemMessages.getStartMsg({
         userName: customer?.name,
@@ -107,12 +108,13 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
     }
     if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
       // choice 3
+      const transition = getStateTransition(FlowOptions.UPDATE_RESERVATION);
       await reservationCacheService.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
         customerName: customer?.name ?? "",
         customerPhone,
-        status: reservationStatuses.UPDATE_PRE_START,
+        status: transition.nextStatus, // UPDATE_PRE_START
       });
       const responseMsg = systemMessages.enterReservationId();
       return humanizerAgent(responseMsg);
@@ -161,7 +163,7 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
  * @returns Promise<string>
  */
 export async function runChatSession(ctx: AppContext): Promise<string> {
-  const stateRouter = new StateRouter<AppContext, ReservationStatus>(
+  const stateRouter = new StateRouter<AppContext, FMStatus>(
     ctx,
     ctx.RESERVATION_CACHE?.status,
   );
