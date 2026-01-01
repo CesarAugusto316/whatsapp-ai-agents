@@ -16,7 +16,7 @@ import {
 } from "@/llm/llm.config";
 import { ATTEMPTS } from "./make.workflow";
 import { AppContext } from "@/types/hono.types";
-import { isStartDateTimeWithinSchedule } from "@/helpers/helpers";
+import { isDateTimeWithinSchedule } from "@/helpers/helpers";
 import {
   ReservationState,
   resolveNextState,
@@ -96,7 +96,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
         return aiDataCollector;
       }
 
-      const isWithinSchedule = isStartDateTimeWithinSchedule(
+      const isWithinSchedule = isDateTimeWithinSchedule(
         data.startDateTime,
         business.schedule,
         business.general.timezone,

@@ -21,7 +21,7 @@ import {
   resolveNextState,
   ReservationState,
 } from "@/workflow-fsm/resolve-next-state";
-import { isStartDateTimeWithinSchedule } from "@/helpers/helpers";
+import { isDateTimeWithinSchedule } from "@/helpers/helpers";
 
 export const ATTEMPTS = 4;
 
@@ -98,7 +98,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
       const aiDataCollector = validationAgent.collector(business, error);
       return aiDataCollector; // agent try to collect missing data
     }
-    const isWithinSchedule = isStartDateTimeWithinSchedule(
+    const isWithinSchedule = isDateTimeWithinSchedule(
       data.startDateTime,
       business.schedule,
       business.general.timezone,

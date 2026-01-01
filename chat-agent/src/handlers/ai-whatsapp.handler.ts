@@ -22,7 +22,7 @@ export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
   }
 
   // 1. Set message as seen & call the core-flow & get a response
-  const chatResponse = await whatsappService.beforeSend(
+  const chatResponse: string = await whatsappService.beforeSend(
     {
       session: appContext.session,
       chatId: appContext.customerPhone,

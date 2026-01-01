@@ -111,57 +111,39 @@ type Schedule = {
   sunday?: Day[] | null;
 };
 
-export function isStartDateTimeWithinSchedule(
+export function isDateTimeWithinSchedule(
   startDateTimeUtc: string,
   schedule: Schedule,
   timezone: string,
 ): boolean {
-  // Convertimos la fecha UTC a la zona horaria del negocio
   const date = new Date(startDateTimeUtc);
-  const localDateStr = date.toLocaleString("en-US", { timeZone: timezone });
-  const localDate = new Date(localDateStr);
 
-  // Obtenemos el día de la semana en minúsculas
-  const days: Record<number, keyof Schedule> = {
-    0: "sunday",
-    1: "monday",
-    2: "tuesday",
-    3: "wednesday",
-    4: "thursday",
-    5: "friday",
-    6: "saturday",
-  };
-  const dayKey = days[localDate.getDay()];
-  const daySchedule = schedule[dayKey];
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    weekday: "long",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(date);
 
-  if (!daySchedule || daySchedule.length === 0) return false;
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
 
-  // Calculamos minutos desde medianoche
-  const minutes = localDate.getHours() * 60 + localDate.getMinutes();
+  const weekday = parts
+    .find((p) => p.type === "weekday")!
+    .value.toLowerCase() as keyof Schedule;
 
-  // Verificamos si cae en algún rango
-  for (const range of daySchedule) {
-    if (minutes >= range.open && minutes < range.close) {
-      return true;
-    }
-  }
+  const minutes = get("hour") * 60 + get("minute");
 
-  return false;
+  const daySchedule = schedule[weekday];
+  if (!daySchedule?.length) return false;
+
+  return daySchedule.some((r) => minutes >= r.open && minutes < r.close);
 }
 
-// ===== Ejemplo de uso =====
-const scheduleExample: Schedule = {
-  monday: [
-    { open: 480, close: 720 },
-    { open: 840, close: 1200 },
-  ], // 08:00-12:00 y 14:00-20:00
-  tuesday: [{ open: 480, close: 720 }],
-};
-
-console.log(
-  isStartDateTimeWithinSchedule(
-    "2025-12-29T18:00:00.000Z",
-    scheduleExample,
-    "America/Guayaquil",
-  ),
-); // true o false
+export function daysFromNowUTC(days: number, hourUTC: number) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + days);
+  d.setUTCHours(hourUTC, 0, 0, 0);
+  return d.toISOString();
+}

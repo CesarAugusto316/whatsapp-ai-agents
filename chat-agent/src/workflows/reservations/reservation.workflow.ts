@@ -218,7 +218,7 @@ async function resolveConversationalFallback(ctx: AppContext): Promise<string> {
 
 /**
  *
- * @description Initialize the chat flow
+ * @description Initialize the reservation workflow
  * @param ctx
  * @returns Promise<string>
  */
