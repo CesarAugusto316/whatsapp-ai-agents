@@ -15,7 +15,7 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx) => {
 
   if (RESERVATION_CACHE?.id) {
     //
-    if (customerMessage.toUpperCase() === CustomerActions.YES) {
+    if (customerMessage.toUpperCase() === CustomerActions.CONFIRM) {
       const res = await businessService.updateAppointment(
         RESERVATION_CACHE.id,
         { status: "cancelled" },
@@ -23,19 +23,19 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx) => {
       if (res.status !== 200) {
         return `Error al cancelar la reserva ${RESERVATION_CACHE.id}`;
       }
-      const assistantResponse = `Hemos cancelado tu reserva  ${RESERVATION_CACHE.id} exitosamente ✅`;
+      const assistantResponse = `Hemos cancelado tu reserva  ${RESERVATION_CACHE.id} exitosamente ✅. Gracias por preferirnos`;
       await reservationCacheService.delete(reservationKey);
-      return assistantResponse;
+      return humanizerAgent(assistantResponse);
     }
-    if (customerMessage.toUpperCase() === CustomerActions.NO) {
+    if (customerMessage.toUpperCase() === CustomerActions.EXIT) {
       const assistantResponse = systemMessages.getExitMsg();
       await reservationCacheService.delete(reservationKey);
       return assistantResponse;
     }
-    if (customerMessage) {
-      const assistantResponse = `Escribe "${CustomerActions.YES}" para cancelar tu reserva o "${CustomerActions.NO}" para salir de este proceso`;
-      return humanizerAgent(assistantResponse);
-    }
+    // if (customerMessage) {
+    //   const assistantResponse = `Escribe "${CustomerActions.YES}" para cancelar tu reserva o "${CustomerActions.NO}" para salir de este proceso`;
+    //   return humanizerAgent(assistantResponse);
+    // }
   }
 };
 

@@ -32,7 +32,6 @@ export const ReservationStatuses = {
   MAKE_VALIDATED: "MAKE_VALIDATED",
   MAKE_CONFIRMED: "MAKE_CONFIRMED",
 
-  UPDATE_PRE_START: "UPDATE_PRE_START",
   UPDATE_STARTED: "UPDATE_STARTED",
   UPDATE_RESTARTED: "UPDATE_RESTARTED",
   UPDATE_VALIDATED: "UPDATE_VALIDATED",
@@ -50,12 +49,13 @@ export type ReservationInput = Pick<
   "customerName" | "startDateTime" | "endDateTime" | "numberOfPeople"
 >;
 
-export type FlowOption = "1" | "2";
+export type FlowOption = "1" | "2" | "3";
 export type FMStatus = ReservationStatus | FlowOption;
 
 export const FlowOptions = {
   MAKE_RESERVATION: "1",
   UPDATE_RESERVATION: "2",
+  CANCEL_RESERVATION: "3",
 } as const;
 
 export const CustomerActions = {
@@ -64,8 +64,6 @@ export const CustomerActions = {
   EXIT: "SALIR",
   UPDATE: "CAMBIAR",
   CANCEL: "CANCELAR",
-  YES: "SI",
-  NO: "NO",
 } as const;
 
 export interface ReservationState extends ReservationInput {
@@ -89,11 +87,15 @@ export interface StateTransition {
  * @param status
  * @returns
  */
-export function getStateTransition(
-  status: FMStatus,
-  action?: "CAMBIAR" | "CANCELAR",
-): StateTransition {
+export function getStateTransition(status: FMStatus): StateTransition {
   switch (status) {
+    // CREATE
+    case FlowOptions.MAKE_RESERVATION:
+      return {
+        nextStatus: ReservationStatuses.MAKE_STARTED,
+        suggestedActions: [],
+        messageHint: "",
+      };
     case ReservationStatuses.MAKE_STARTED:
       return {
         nextStatus: ReservationStatuses.MAKE_VALIDATED,
@@ -101,7 +103,6 @@ export function getStateTransition(
         messageHint:
           "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
       };
-
     case ReservationStatuses.MAKE_VALIDATED:
       return {
         nextStatus: ReservationStatuses.MAKE_CONFIRMED,
@@ -114,25 +115,20 @@ export function getStateTransition(
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
       };
 
-    case ReservationStatuses.UPDATE_PRE_START:
+    // UPDATE
+    case FlowOptions.UPDATE_RESERVATION:
       return {
-        nextStatus:
-          action && action == CustomerActions?.UPDATE
-            ? ReservationStatuses.UPDATE_STARTED
-            : ReservationStatuses.CANCEL_STARTED,
-        suggestedActions: [CustomerActions.EXIT],
-        messageHint:
-          "If relevant, remind the user can enter the ID of his reservation or exit.",
+        nextStatus: ReservationStatuses.UPDATE_STARTED,
+        suggestedActions: [],
+        messageHint: "",
       };
-
     case ReservationStatuses.UPDATE_STARTED:
       return {
         nextStatus: ReservationStatuses.UPDATE_VALIDATED,
-        suggestedActions: [CustomerActions.CANCEL],
+        suggestedActions: [CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
       };
-
     case ReservationStatuses.UPDATE_VALIDATED:
       return {
         nextStatus: ReservationStatuses.UPDATE_CONFIRMED,
@@ -145,26 +141,19 @@ export function getStateTransition(
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
       };
 
+    // CANCEL
+    case FlowOptions.CANCEL_RESERVATION:
+      return {
+        nextStatus: ReservationStatuses.CANCEL_STARTED,
+        suggestedActions: [],
+        messageHint: "",
+      };
     case ReservationStatuses.CANCEL_STARTED:
       return {
         nextStatus: ReservationStatuses.CANCEL_VALIDATED,
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation cancellation is in progress and they can confirm or exit.",
-      };
-
-    case FlowOptions.UPDATE_RESERVATION:
-      return {
-        nextStatus: ReservationStatuses.UPDATE_STARTED,
-        suggestedActions: [],
-        messageHint: "",
-      };
-
-    case FlowOptions.MAKE_RESERVATION:
-      return {
-        nextStatus: ReservationStatuses.MAKE_STARTED,
-        suggestedActions: [],
-        messageHint: "",
       };
 
     default:

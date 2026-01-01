@@ -5,7 +5,7 @@ import { getReservationStatusById } from "./tools/restaurant/reservation.tools";
 import {
   buildInfoReservationsSystemPrompt,
   CLASSIFIER_PROMPT,
-  parserPrompts,
+  validationPrompts,
   humanizerPrompt,
 } from "./tools/prompts";
 import {
@@ -144,7 +144,7 @@ export async function inputIntentClassifier(
     const temperature = 0.1;
     const raw = await aiClient(
       [{ role: "user", content: message }],
-      parserPrompts.intentClassifier(),
+      validationPrompts.intentClassifier(),
       temperature,
     ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
 
@@ -187,24 +187,6 @@ type FieldError = {
   error: string; // "" si el campo está vacío / requerido pero no provisto
 };
 
-// Función que extrae los errores de Zod
-function extractMissingFields(zodError: ZodError): FieldError[] {
-  const result: FieldError[] = [];
-
-  for (const issue of zodError.issues) {
-    const field = issue.path[0];
-    if (typeof field === "string") {
-      result.push({
-        field,
-        // usamos issue.message si existe, si no ponemos "" indicando campo vacío
-        error: issue.message || "",
-      });
-    }
-  }
-
-  return result;
-}
-
 export const validationAgent = {
   /**
    *
@@ -214,9 +196,9 @@ export const validationAgent = {
     business: Business,
     customerMessage: string,
     previousState: ReservationInput,
-    temp = 0.2,
+    temp = 0.1,
   ) {
-    const PARSER_PROMPT = parserPrompts.dataParser(business);
+    const PARSER_PROMPT = validationPrompts.dataParser(business);
     const messages: ModelMessage[] = [
       { role: "user", content: customerMessage },
     ];
@@ -254,9 +236,26 @@ export const validationAgent = {
   async collector(
     business: Business,
     error: ZodError<ReservationInput>,
-    temp = 0.6,
+    temp = 0.7,
   ) {
-    const COLLECTOR_PROMPT = parserPrompts.collector(business);
+    // Función que extrae los errores de Zod
+    function extractMissingFields(zodError: ZodError): FieldError[] {
+      const result: FieldError[] = [];
+
+      for (const issue of zodError.issues) {
+        const field = issue.path[0];
+        if (typeof field === "string") {
+          result.push({
+            field,
+            // usamos issue.message si existe, si no ponemos "" indicando campo vacío
+            error: issue.message || "",
+          });
+        }
+      }
+      return result;
+    }
+
+    const COLLECTOR_PROMPT = validationPrompts.collector(business);
     const aiDataCollector = aiClient(
       [
         {

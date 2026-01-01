@@ -116,7 +116,7 @@ const buildGuidancePrompt = (status?: FMStatus): string => {
     - If relevant, you MAY add a brief reminder at the end about how to continue or exit.
     - You MUST NOT ask for data.
     - You MUST NOT advance, confirm, cancel, or modify any reservation.
-  `
+  `.trim()
     : "";
 };
 
@@ -153,7 +153,7 @@ export function buildInfoReservationsSystemPrompt(
     - Business type: ${general.businessType}
     - Description: ${general.description}
     - Timezone: ${general.timezone}
-    - Estimated dining duration: ${schedule.averageTime} hours
+    - Estimated dining duration: ${schedule.averageTime} minutes
     - Reservation approval required: ${general.requireAppointmentApproval ? "Yes" : "No"}
 
     ==============================
@@ -255,18 +255,19 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
     - Opción para actualizar o cancelar una reserva.
     - Para comenzar, el usuario debe escribir **"${FlowOptions.UPDATE_RESERVATION}"**.
 
+    3️⃣ **Cancelar una reserva existente**
+    - Opción para cancelar una reserva existente.
+    - Para comenzar, el usuario debe escribir **"${FlowOptions.CANCEL_RESERVATION}"**.
+
     ==============================
-    INTERNAL STEPS (Avoid mentioning unless strictly necesary)
+    INTERNAL STEPS (Do not mention unless strictly necesary)
     ==============================
 
-    - The data necessary for the reservation process includes:
+    The data necessary for the reservation process includes:
       - Customer Name if not provided
       - Date
       - Time
       - Number of people
-    - Plus when Modifying/Canceling an existing reservation, the user must provide the reservation ID.
-    - User can exit/leave any reservation/data-collection process by typing **"${CustomerActions.EXIT}"**.
-    - Estimated dining duration: ${business.schedule?.averageTime} hours
 
     ==============================
     STRICT RULES
@@ -284,7 +285,6 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
     ==============================
     IMPORTANT
     ==============================
-    - Always provide a brief response.
     - You are NOT operating the system.
     - Only explain the options.
   `.trim();
@@ -312,7 +312,7 @@ const ACTION_MODES = {
   },
 } as const;
 
-export const parserPrompts = {
+export const validationPrompts = {
   intentClassifier() {
     return `
         You are an intention classification module for a restaurant reservation system.
@@ -567,17 +567,15 @@ export const parserPrompts = {
   },
 };
 
+/**
+ *
+ * @description deterministic messages sent to the user
+ */
 export const systemMessages = {
-  enterReservationId(mode: ReservationMode = "update") {
-    const copy = ACTION_MODES[mode];
-    return `
-      Por favor, envíame **UN SOLO MENSAJE** con el **ID de la reserva** que deseas ${copy.verbInfinitive}.
-    `.trim();
-  },
-
+  //
   initialGreeting(message: string, customerName?: string) {
     return `
-      Este es un mensaje inicial, además de responder a mi pregunta debes, presentarte, saludarme y guiarme:
+      Este es un mensaje inicial, además de responder a mi pregunta debes presentarte luego saludarme y finalmente guiarme:
        - Busco ayuda para empezar a usar tus servicios en pasos muy simples.
        - No me abrumes con detalles innecesarios.
 
@@ -588,33 +586,28 @@ export const systemMessages = {
     `.trim();
   },
 
-  getStartMsg(
+  getCreateMsg(
     { userName }: { userName?: string },
     mode: ReservationMode = "create",
   ) {
-    const copy = ACTION_MODES[mode];
     if (userName) {
       return `
-        Para ${copy.verbInfinitive} tu reserva, comentame:
-        el día, la hora y cuántas personas serán.
+        ✌🏽Para crear tu reserva es muy simple, comentame:
+        el **día**, la **hora** y **cuántas personas** serán.
 
         Por ejemplo:
           “El 25 de diciembre a las 7pm para 2 personas”
           “Mañana a las 8pm para 4 personas”
-
-        Escribe "${CustomerActions.EXIT}" si deseas salir de éste proceso.
       `.trim();
     }
 
     return `
-      Para ${copy.verbInfinitive} tu reserva, ayudame con:
+      👌Para crear tu reserva es muy fácil, ayudame con:
       **tu nombre**, el **día**, la **hora** y **cuántas personas** serán.
 
       Por ejemplo:
         “Juan Pérez, el 25 de diciembre a las 7pm para 2 personas”
         “A nombre de María Rodríguez, mañana a las 8pm para 4 personas”
-
-      Escribe "${CustomerActions.EXIT}" si deseas salir de este proceso.
     `.trim();
   },
 
@@ -641,38 +634,63 @@ export const systemMessages = {
     `.trim();
   },
 
+  getUpdateMsg(data: ReservationInput) {
+    return `
+      ✨ Hemos encontrado tu más reciente reserva!
+
+      👤 A nombre de: ${data?.customerName}
+      ⏰ Hora de entrada: ${data.startDateTime}
+      ⏰ Hora de salida: ${data.endDateTime}
+      👥 Número de personas: ${data.numberOfPeople}
+
+      Si gustas cambiarla ayudanos con tus nuevos datos.
+      Por ejemplo:
+        “Para mañana a las 8pm para 4 personas”
+
+      Así de simple 😊
+    `.trim();
+  },
+
+  getCancelMsg(data: ReservationInput) {
+    return `
+      ✨ Hemos encontrado tu más reciente reserva!
+
+      👤 A nombre de: ${data?.customerName}
+      ⏰ Hora de entrada: ${data.startDateTime}
+      ⏰ Hora de salida: ${data.endDateTime}
+      👥 Número de personas: ${data.numberOfPeople}
+
+      Si deseas cancelarla, escribe:
+      🚪 ${CustomerActions.CONFIRM}
+
+      Así de simple 😉
+    `.trim();
+  },
+
   /**
    *
    * @todo SIMPLIFICAR ESTOS ARGUMENTOS
    */
   getSuccessMsg(
     appointment: Appointment,
-    {
-      restaurantName,
-      customerName,
-      numberOfPeople,
-      mode = "create",
-    }: {
-      restaurantName: string;
-      customerName: string;
-      numberOfPeople: number;
-      mode?: ReservationMode;
-    },
+    mode: ReservationMode = "create",
   ): string {
+    const { customerName, startDateTime, endDateTime, numberOfPeople } =
+      appointment;
     const copy = ACTION_MODES[mode];
 
     return `
       ✅ Tu reserva ha sido ${copy.verb} con éxito.
 
-      📍 Restaurante: ${restaurantName}
       👤 Nombre: ${customerName}
-      ⏰ Hora: ${appointment.startDateTime}
+      ⏰ Hora de entrada: ${startDateTime}
+      ⏰ Hora de salida: ${endDateTime}
       👥 Personas: ${numberOfPeople}
 
       🆔 ID de reserva: ${appointment.id}
 
       ⚠️ Guarda este ID.
-      Lo necesitarás para futuras modificaciones o consultas o para presentar en el RESTAURANT.
+      Para presentarla en el RESTAURANT el día de tu llegada 🍽️.
     `.trim();
   },
 
@@ -682,9 +700,9 @@ export const systemMessages = {
       Recuerda que puedes elegir una de estas opciones en cualquier momento:
 
       1️⃣ Hacer una reserva
-      2️⃣ Modificar o cancelar una reserva existente
+      2️⃣ Modificar una reserva existente ó
+      3️⃣ Cancelar
 
-      ✍️ Escribe ${FlowOptions.MAKE_RESERVATION} ó ${FlowOptions.UPDATE_RESERVATION} para continuar.
       💬 Si tienes otra pregunta, escríbela directamente.
     `;
   },

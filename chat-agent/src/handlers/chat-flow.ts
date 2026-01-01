@@ -10,6 +10,7 @@ import {
   InputIntent,
   FMStatus,
   getStateTransition,
+  ReservationState,
 } from "@/ai-agents/agent.types";
 import { renderAssistantText } from "@/ai-agents/tools/helpers";
 import {
@@ -24,6 +25,8 @@ import { HandlerResult, StateHandler } from "./handlers.types";
 import { makeHandlers } from "./reservations/make.handlers";
 import { updateHandlers } from "./reservations/update.handlers";
 import { cancellHandlers } from "./reservations/cancel.handlers";
+import businessService from "@/services/business.service";
+import { Appointment } from "@/types/business/cms-types";
 
 /**
  *
@@ -91,6 +94,7 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
       );
       return assistantResponse;
     }
+
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
       // choice 2
       const transition = getStateTransition(FlowOptions.MAKE_RESERVATION);
@@ -101,22 +105,107 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
         customerPhone,
         status: transition.nextStatus, // MAKE_STARTED
       });
-      const responseMsg = systemMessages.getStartMsg({
+      const responseMsg = systemMessages.getCreateMsg({
         userName: customer?.name,
       });
       return humanizerAgent(responseMsg);
     }
+
     if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
       // choice 3
-      const transition = getStateTransition(FlowOptions.UPDATE_RESERVATION);
-      await reservationCacheService.save(reservationKey, {
-        businessId: business?.id,
-        customerId: customer?.id,
-        customerName: customer?.name ?? "",
-        customerPhone,
-        status: transition.nextStatus, // UPDATE_PRE_START
+      if (!customer) {
+        return humanizerAgent(
+          "Por favor, Crea una reserva para poder actualizarla",
+        );
+      }
+      const lastRes = await businessService.getAppointmentsByParams({
+        "where[business][equals]": business.id,
+        "where[customer][equals]": customer?.id,
+        "where[status][equals]": "confirmed",
+        sort: "-updatedAt", // the last reservation
+        limit: 1, // only one reservation
       });
-      const responseMsg = systemMessages.enterReservationId();
+
+      if (lastRes.status !== 200) {
+        return humanizerAgent(
+          "Ocurrió un error al buscar la reserva, intenta de nuevo",
+        );
+      }
+      const reservation = (
+        (await lastRes.json()) as { docs: Appointment[] }
+      ).docs.at(0);
+
+      if (!reservation) {
+        return humanizerAgent(
+          "Reserva no encontrada. Seguro que ya has creado una reserva?",
+        );
+      }
+      console.log({ reservation });
+      const transition = getStateTransition(FlowOptions.UPDATE_RESERVATION);
+      const previousState = {
+        id: reservation.id,
+        customerName: reservation.customerName || customer?.name || "",
+        startDateTime: reservation.startDateTime || "",
+        endDateTime: reservation.endDateTime,
+        numberOfPeople: reservation.numberOfPeople || 0,
+        businessId: business.id,
+        customerId: customer.id,
+        customerPhone,
+        status: transition.nextStatus, // UPDATE_STARTED
+      } satisfies Partial<ReservationState>;
+
+      console.log({ previousState });
+      await reservationCacheService.save(reservationKey, previousState);
+      const responseMsg = systemMessages.getUpdateMsg(previousState);
+      return humanizerAgent(responseMsg);
+    }
+
+    if (customerMessage == FlowOptions.CANCEL_RESERVATION) {
+      // choice 3
+      if (!customer) {
+        return humanizerAgent(
+          "Por favor, Crea una reserva para poder actualizarla",
+        );
+      }
+      const lastRes = await businessService.getAppointmentsByParams({
+        "where[business][equals]": business.id,
+        "where[customer][equals]": customer?.id,
+        "where[status][equals]": "confirmed",
+        sort: "-updatedAt", // the last reservation
+        limit: 1, // only one reservation
+      });
+
+      if (lastRes.status !== 200) {
+        return humanizerAgent(
+          "Ocurrió un error al buscar la reserva, intenta de nuevo",
+        );
+      }
+      const reservation = (
+        (await lastRes.json()) as { docs: Appointment[] }
+      ).docs.at(0);
+
+      if (!reservation) {
+        return humanizerAgent(
+          "Reserva no encontrada. Seguro que ya has creado una reserva?",
+        );
+      }
+      console.log({ reservation });
+      const transition = getStateTransition(FlowOptions.CANCEL_RESERVATION);
+      const previousState = {
+        id: reservation.id,
+        customerName: reservation.customerName || customer?.name || "",
+        startDateTime: reservation.startDateTime || "",
+        endDateTime: reservation.endDateTime,
+        numberOfPeople: reservation.numberOfPeople || 0,
+        businessId: business.id,
+        customerId: customer.id,
+        customerPhone,
+        status: transition.nextStatus, // CANCEL_STARTED
+      } satisfies Partial<ReservationState>;
+
+      console.log({ previousState });
+      await reservationCacheService.save(reservationKey, previousState);
+      const responseMsg = systemMessages.getCancelMsg(previousState);
       return humanizerAgent(responseMsg);
     }
   }
@@ -171,7 +260,6 @@ export async function runChatSession(ctx: AppContext): Promise<string> {
   stateRouter
     .on("MAKE_STARTED", makeHandlers.started)
     .on("MAKE_VALIDATED", makeHandlers.validated)
-    .on("UPDATE_PRE_START", updateHandlers.preStart)
     .on("UPDATE_STARTED", updateHandlers.started)
     .on("UPDATE_VALIDATED", updateHandlers.validated)
     .on("CANCEL_STARTED", cancellHandlers.started);

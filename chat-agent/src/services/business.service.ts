@@ -18,7 +18,7 @@ export interface BusinessQueryParams {
   limit?: number;
   page?: number;
   depth?: number;
-  sort?: "-createdAt"; // -createdAt
+  sort?: "-createdAt" | "-updatedAt"; // -createdAt
   "where[business][equals]"?: string; // businessId,
   "where[customer][equals]"?: string; // businessId,
 
@@ -26,10 +26,10 @@ export interface BusinessQueryParams {
   "where[numberOfPeople][equals]"?: number; // businessId,
   "where[startDateTime][equals]"?: string; // 2024-03-15
   "where[endDateTime][equals]"?: string; // 2024-03-15
+  "where[status][equals]"?: Appointment["status"]; // 2024-03-15
 
   // COSTUMER:
   "where[phoneNumber][like]"?: string; // 2024-03-15
-  averageTime?: number;
   // "where[name][equals]"?: string | Date; // 2024-03-15
   // "where[business][equals]"?: string; // businessId,
 }
@@ -185,7 +185,7 @@ class BusinessService {
     });
   }
 
-  public getAppointmentByCustomerIdAndDate(queryParams: BusinessQueryParams) {
+  public getAppointmentsByParams(queryParams: BusinessQueryParams) {
     const url = generateUrl(`appointments`, { depth: 0, ...queryParams });
     return fetch(url, {
       method: "GET",

@@ -93,7 +93,6 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
       const aiDataCollector = validationAgent.collector(business, error);
       return aiDataCollector; // agent try to collect missing data
     }
-
     const isWithinSchedule = isStartDateTimeWithinSchedule(
       data.startDateTime,
       business.schedule,
@@ -175,8 +174,8 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
       newCustomer = (
         (await (
           await businessService.createCostumer({
-            business: business?.id ?? "",
-            phoneNumber: customerPhone ?? "",
+            business: business?.id || "",
+            phoneNumber: customerPhone || "",
             name: customerName,
           })
         ).json()) as { doc: Customer }
@@ -185,20 +184,16 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
     // finally, we create the reservation
     if (newCustomer?.id && business?.id) {
       const res = await businessService.createAppointment({
-        business: business?.id,
+        business: business.id,
         customer: newCustomer.id,
         startDateTime,
-        customerName: newCustomer.name ?? customerName,
+        customerName: newCustomer.name || customerName,
         numberOfPeople,
         endDateTime,
         status: "confirmed",
       });
       const reservation = (await res.json()) as { doc: Appointment };
-      const assistantMsg = systemMessages.getSuccessMsg(reservation?.doc, {
-        customerName: newCustomer.name ?? customerName,
-        numberOfPeople,
-        restaurantName: business?.name ?? "",
-      });
+      const assistantMsg = systemMessages.getSuccessMsg(reservation?.doc);
       await reservationCacheService.delete(reservationKey ?? "");
       return humanizerAgent(assistantMsg);
     }
@@ -215,7 +210,7 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
   // FINAL OPTION: 3. REINGRESAR DATOS
   if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
     // RESTART
-    const assistantResponse = systemMessages.getStartMsg(
+    const assistantResponse = systemMessages.getCreateMsg(
       {
         userName: customer?.name,
       },
@@ -224,8 +219,7 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
     await reservationCacheService.save(reservationKey ?? "", {
       businessId: business?.id,
       customerId: customer?.id,
-      customerName: customer?.name ?? "",
-      customerPhone,
+      ...RESERVATION_CACHE,
       status: ReservationStatuses.MAKE_STARTED,
     });
     return humanizerAgent(assistantResponse);
