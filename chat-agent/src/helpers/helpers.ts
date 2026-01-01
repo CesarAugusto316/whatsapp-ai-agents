@@ -1,6 +1,6 @@
 import { GenerateTextResult, ToolSet } from "ai";
 import { Day } from "@/types/business/cms-types";
-import { WEEK_DAYS, WeekDay } from "@/ai-agents/agent.types";
+import { WEEK_DAYS, WeekDay } from "@/types/reservation/reservation.types";
 
 /**
  *

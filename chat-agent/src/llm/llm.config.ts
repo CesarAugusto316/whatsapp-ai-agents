@@ -7,7 +7,7 @@ import {
   CLASSIFIER_PROMPT,
   validationPrompts,
   humanizerPrompt,
-} from "./tools/prompts";
+} from "./prompts";
 import {
   AgentArgs,
   CUSTOMER_INTENT,
@@ -15,14 +15,14 @@ import {
   InputIntent,
   ReservationInput,
   ReservationStatus,
-} from "./agent.types";
+} from "../types/reservation/reservation.types";
 import { Business } from "@/types/business/cms-types";
 import z, { safeParse, ZodError } from "zod";
 import {
   customerIntentSchema,
   inputIntentSchema,
   reservationSchemas,
-} from "./schemas";
+} from "../types/reservation/schemas";
 
 /**
  *

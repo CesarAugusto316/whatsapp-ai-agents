@@ -1,12 +1,15 @@
+import { humanizerAgent } from "@/llm/llm.config";
+import {
+  CustomerActions,
+  FMStatus,
+} from "@/types/reservation/reservation.types";
+import { systemMessages } from "@/llm/prompts";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
-import { CustomerActions, FMStatus } from "@/ai-agents/agent.types";
-import { systemMessages } from "@/ai-agents/tools/prompts";
-import { humanizerAgent } from "@/ai-agents/agent.config";
 import { AppContext } from "@/types/hono.types";
-import { StateHandler } from "@/ai-agents/finite-state-machine/state-handler.types";
+import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 
-const started: StateHandler<AppContext, FMStatus> = async (ctx) => {
+const started: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;
 
   if (!customer) {
@@ -39,4 +42,4 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx) => {
   }
 };
 
-export const cancellHandlers = { started };
+export const cancellWorkflow = { started };

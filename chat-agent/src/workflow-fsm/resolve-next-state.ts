@@ -4,7 +4,7 @@ import {
   FMStatus,
   ReservationInput,
   ReservationStatuses,
-} from "../agent.types";
+} from "../types/reservation/reservation.types";
 
 export interface ReservationState extends ReservationInput {
   id: string;
@@ -27,7 +27,7 @@ export interface StateTransition {
  * @param status
  * @returns
  */
-export function getStateTransition(status: FMStatus): StateTransition {
+export function resolveNextState(status: FMStatus): StateTransition {
   switch (status) {
     // CREATE
     case FlowOptions.MAKE_RESERVATION:

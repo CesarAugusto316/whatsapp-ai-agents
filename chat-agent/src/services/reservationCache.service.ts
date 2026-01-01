@@ -1,5 +1,5 @@
-import { ReservationState } from "@/ai-agents/finite-state-machine/get-state-transition.";
 import { redis } from "@/storage/cache-storage.config";
+import { ReservationState } from "@/workflow-fsm/resolve-next-state";
 
 const EXPIRATION_TIME = 60 * 60 * 1; // 1 hora
 

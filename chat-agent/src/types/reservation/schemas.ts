@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CUSTOMER_INTENT, InputIntent } from "./agent.types";
+import { CUSTOMER_INTENT, InputIntent } from "./reservation.types";
 
 export const phase1 = z
   .object({

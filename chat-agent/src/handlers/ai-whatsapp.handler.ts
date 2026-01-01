@@ -1,7 +1,7 @@
 import whatsappService from "@/services/whatsapp.service";
 import { CTX, AppContext } from "@/types/hono.types";
 import { Handler } from "hono/types";
-import { runChatSession } from "./reservations/state-router";
+import { runReservationWorkflow } from "../workflows/reservations/state-dispatcher";
 
 export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
   const state = {
@@ -27,7 +27,7 @@ export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
       session: state.session,
       chatId: state.customerPhone,
     },
-    async () => runChatSession(state),
+    async () => runReservationWorkflow(state),
   );
 
   // 2. Send AI response to customer

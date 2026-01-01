@@ -1,6 +1,6 @@
 import { CTX, AppContext } from "@/types/hono.types";
 import { Handler } from "hono/types";
-import { runChatSession } from "./reservations/state-router";
+import { runReservationWorkflow } from "../workflows/reservations/state-dispatcher";
 
 /**
  *
@@ -19,5 +19,8 @@ export const aiTestHandler: Handler<CTX> = async (ctx) => {
     reservationKey: ctx.get("reservationKey"),
   } as AppContext;
 
-  return ctx.json({ received: true, text: await runChatSession(args) });
+  return ctx.json({
+    received: true,
+    text: await runReservationWorkflow(args),
+  });
 };

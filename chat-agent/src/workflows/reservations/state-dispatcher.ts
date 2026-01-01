@@ -3,39 +3,37 @@ import {
   customerIntentClassifier,
   humanizerAgent,
   infoReservationAgent,
-} from "@/ai-agents/agent.config";
+} from "@/llm/llm.config";
 import {
   CUSTOMER_INTENT,
   FlowOptions,
   FMStatus,
   InputIntent,
-} from "@/ai-agents/agent.types";
+} from "@/types/reservation/reservation.types";
 import {
-  getStateTransition,
   ReservationState,
-} from "@/ai-agents/finite-state-machine/get-state-transition.";
-import { StateRouter } from "@/ai-agents/finite-state-machine/state-router";
-import {
-  howSystemWorksPrompt,
-  systemMessages,
-} from "@/ai-agents/tools/prompts";
+  resolveNextState,
+} from "@/workflow-fsm/resolve-next-state";
 import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { Appointment } from "@/types/business/cms-types";
 import { AppContext } from "@/types/hono.types";
 import { ModelMessage } from "ai";
-import { makeHandlers } from "./make.handlers";
-import { updateHandlers } from "./update.handlers";
-import { cancellHandlers } from "./cancel.handlers";
+import { makeWorflow } from "./make.workflow";
+import { updateWorkflow } from "./update.workflow";
+import { cancellWorkflow } from "./cancel.workflow";
 import { renderAssistantText } from "@/helpers/helpers";
+import { StateWorkflowRunner } from "@/workflow-fsm/state-dispatcher";
+import { howSystemWorksPrompt, systemMessages } from "@/llm/prompts";
 
 /**
  *
- * @description no-deterministic chat flow, here we can use ai-agents,
- * no-critical logic lives here.
+ * @description Conversational fallback resolver.
+ * Handles unstructured or out-of-FSM interactions using AI agents.
+ * No authoritative business logic lives here.
  */
-async function conversationalHandler(ctx: AppContext): Promise<string> {
+async function resolveConversationalFallback(ctx: AppContext): Promise<string> {
   const {
     RESERVATION_CACHE,
     customerMessage = "",
@@ -46,7 +44,7 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
     chatKey = "",
   } = ctx;
 
-  // 1. DETERMINISTIC FLOW AND CORE BUSINESS LOGIC
+  // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
   if (!RESERVATION_CACHE) {
     //
     const chatHistoryCache = await chatHistoryService.get(chatKey);
@@ -70,7 +68,7 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
 
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
       // choice 2
-      const transition = getStateTransition(FlowOptions.MAKE_RESERVATION);
+      const transition = resolveNextState(FlowOptions.MAKE_RESERVATION);
       await reservationCacheService.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
@@ -114,10 +112,10 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
         );
       }
       console.log({ reservation });
-      const transition = getStateTransition(FlowOptions.UPDATE_RESERVATION);
+      const transition = resolveNextState(FlowOptions.UPDATE_RESERVATION);
       const previousState = {
         id: reservation.id,
-        customerName: reservation.customerName || customer?.name || "",
+        customerName: reservation.customerName || customer.name || "",
         startDateTime: reservation.startDateTime || "",
         endDateTime: reservation.endDateTime,
         numberOfPeople: reservation.numberOfPeople || 0,
@@ -163,7 +161,7 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
         );
       }
       console.log({ reservation });
-      const transition = getStateTransition(FlowOptions.CANCEL_RESERVATION);
+      const transition = resolveNextState(FlowOptions.CANCEL_RESERVATION);
       const previousState = {
         id: reservation.id,
         customerName: reservation.customerName || customer?.name || "",
@@ -224,20 +222,20 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
  * @param ctx
  * @returns Promise<string>
  */
-export async function runChatSession(ctx: AppContext): Promise<string> {
-  const stateRouter = new StateRouter<AppContext, FMStatus>(
+export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
+  const dispatcher = new StateWorkflowRunner<AppContext, FMStatus>(
     ctx,
     ctx.RESERVATION_CACHE?.status,
   );
 
-  stateRouter
-    .on("MAKE_STARTED", makeHandlers.started)
-    .on("MAKE_VALIDATED", makeHandlers.validated)
-    .on("UPDATE_STARTED", updateHandlers.started)
-    .on("UPDATE_VALIDATED", updateHandlers.validated)
-    .on("CANCEL_STARTED", cancellHandlers.started);
+  dispatcher
+    .on("MAKE_STARTED", makeWorflow.started)
+    .on("MAKE_VALIDATED", makeWorflow.validated)
+    .on("UPDATE_STARTED", updateWorkflow.started)
+    .on("UPDATE_VALIDATED", updateWorkflow.validated)
+    .on("CANCEL_STARTED", cancellWorkflow.started);
 
-  const stateResult = await stateRouter.run();
+  const stateResult = await dispatcher.run();
 
   if (stateResult && stateResult !== InputIntent.CUSTOMER_QUESTION) {
     await chatHistoryService.save(
@@ -257,7 +255,7 @@ export async function runChatSession(ctx: AppContext): Promise<string> {
    * @see updateStarted
    * @see {InputIntent}
    */
-  const convResult = await conversationalHandler(ctx);
-  await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, convResult);
-  return convResult;
+  const fallback: string = await resolveConversationalFallback(ctx);
+  await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, fallback);
+  return fallback;
 }

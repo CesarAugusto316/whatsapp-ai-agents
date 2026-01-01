@@ -1,6 +1,6 @@
 import { Appointment, Business } from "@/types/business/cms-types";
-import { formatSchedule } from "../../helpers/helpers";
-import { TOOLS_NAME } from "./restaurant/reservation.tools";
+import { formatSchedule } from "../helpers/helpers";
+import { TOOLS_NAME } from "./tools/restaurant/reservation.tools";
 import {
   CUSTOMER_INTENT,
   CustomerActions,
@@ -8,8 +8,8 @@ import {
   ReservationInput,
   InputIntent,
   FMStatus,
-} from "../agent.types";
-import { getStateTransition } from "../finite-state-machine/get-state-transition.";
+} from "../types/reservation/reservation.types";
+import { resolveNextState } from "../workflow-fsm/resolve-next-state";
 
 const AGENT_NAME = "Lua";
 
@@ -92,7 +92,7 @@ const WRITING_STYLE = `
 `;
 
 const buildGuidancePrompt = (status?: FMStatus): string => {
-  const guidance = status ? getStateTransition(status) : undefined;
+  const guidance = status ? resolveNextState(status) : undefined;
 
   return guidance
     ? `

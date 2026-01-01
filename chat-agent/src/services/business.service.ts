@@ -1,4 +1,3 @@
-import { BOOL } from "@/ai-agents/agent.types";
 import { redis } from "@/storage/cache-storage.config";
 import {
   Appointment,
@@ -7,6 +6,7 @@ import {
   CreateCustomer,
   Customer,
 } from "@/types/business/cms-types";
+import { BOOL } from "@/types/reservation/reservation.types";
 import { env, fetch } from "bun";
 
 const apiUrl = env.CMS_API;

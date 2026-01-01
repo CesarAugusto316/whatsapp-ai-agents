@@ -1,4 +1,4 @@
-import { StateHandler } from "@/ai-agents/finite-state-machine/state-handler.types";
+import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
@@ -8,19 +8,19 @@ import {
   InputIntent,
   FlowOptions,
   FMStatus,
-} from "@/ai-agents/agent.types";
-import { systemMessages } from "@/ai-agents/tools/prompts";
+} from "@/types/reservation/reservation.types";
+import { systemMessages } from "@/llm/prompts";
 import { Appointment, Customer } from "@/types/business/cms-types";
 import {
   humanizerAgent,
   inputIntentClassifier,
   validationAgent,
-} from "@/ai-agents/agent.config";
+} from "@/llm/llm.config";
 import { AppContext } from "@/types/hono.types";
 import {
-  getStateTransition,
+  resolveNextState,
   ReservationState,
-} from "@/ai-agents/finite-state-machine/get-state-transition.";
+} from "@/workflow-fsm/resolve-next-state";
 import { isStartDateTimeWithinSchedule } from "@/helpers/helpers";
 
 export const ATTEMPTS = 4;
@@ -31,7 +31,10 @@ export const ATTEMPTS = 4;
  * @param currStatus
  * @returns
  */
-const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
+const started: StateWorkflowHandler<AppContext, FMStatus> = async (
+  ctx,
+  currStatus,
+) => {
   const {
     RESERVATION_CACHE,
     business,
@@ -129,7 +132,7 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
     }
 
     // 2. ✅ INPUT DATA VALIDATED
-    const transition = getStateTransition(currStatus);
+    const transition = resolveNextState(currStatus);
     await reservationCacheService.save(reservationKey, {
       ...RESERVATION_CACHE,
       ...data,
@@ -152,7 +155,7 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
  * @param ctx
  * @returns
  */
-const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
+const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   const {
     RESERVATION_CACHE,
     business,
@@ -162,6 +165,8 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
     reservationKey,
   } = ctx;
 
+  if (!RESERVATION_CACHE) return;
+
   // FINAL OPTION: 1. CONFIRMAR
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
@@ -169,7 +174,7 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
       endDateTime = "",
       startDateTime = "",
       numberOfPeople = 1,
-    } = RESERVATION_CACHE as ReservationState;
+    } = RESERVATION_CACHE;
 
     let newCustomer = customer;
     if (!customer) {
@@ -239,4 +244,4 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
   // }
 };
 
-export const makeHandlers = { started, validated };
+export const makeWorflow = { started, validated };
