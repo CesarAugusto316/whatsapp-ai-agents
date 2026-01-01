@@ -53,7 +53,7 @@ const config = {
  */
 export function infoReservationAgent(
   { messages, business }: AgentArgs,
-  ctxStatus?: ReservationStatus|FlowOption,
+  ctxStatus?: ReservationStatus | FlowOption,
 ) {
   return generateText({
     ...config,
@@ -181,30 +181,28 @@ export async function humanizerAgent(message: string, temperature = 0.5) {
   return content;
 }
 
-function extractMissingFields(zodError: z.ZodError): string[] {
-  const fields = new Set<string>();
+// Tipo para el resultado del collector
+type FieldError = {
+  field: string;
+  error: string; // "" si el campo está vacío / requerido pero no provisto
+};
+
+// Función que extrae los errores de Zod
+function extractMissingFields(zodError: ZodError): FieldError[] {
+  const result: FieldError[] = [];
 
   for (const issue of zodError.issues) {
     const field = issue.path[0];
     if (typeof field === "string") {
-      fields.add(field);
+      result.push({
+        field,
+        // usamos issue.message si existe, si no ponemos "" indicando campo vacío
+        error: issue.message || "",
+      });
     }
   }
 
-  return [...fields];
-}
-
-/** @todo DELETE day and Only keep startDateTime, startDateTime. THEN CHANGE THE PROMPT */
-const FIELD_MAP: Record<string, string> = {
-  customerName: "customerName",
-  day: "date",
-  startDateTime: "time",
-  endDateTime: "time",
-  numberOfPeople: "numberOfPeople",
-};
-
-function toConversationalFields(fields: string[]) {
-  return [...new Set(fields.map((f) => FIELD_MAP[f]).filter(Boolean))];
+  return result;
 }
 
 export const validationAgent = {
@@ -233,7 +231,6 @@ export const validationAgent = {
     }
     const mergeState = {
       customerName: phase1.data?.customerName || previousState.customerName,
-      day: phase1.data?.day || previousState.day,
       startDateTime: phase1.data?.startDateTime || previousState.startDateTime,
       endDateTime: phase1.data?.endDateTime || previousState.endDateTime,
       numberOfPeople:
@@ -260,21 +257,6 @@ export const validationAgent = {
     temp = 0.6,
   ) {
     const COLLECTOR_PROMPT = parserPrompts.collector(business);
-    // ISSUES:
-    // {
-    //    "origin": "number",
-    //    "code": "too_small",
-    //    "minimum": 1,
-    //    "inclusive": true,
-    //    "path": [
-    //      "numberOfPeople"
-    //    ],
-    //    "message": "Too small: expected number to be >=1"
-    //  }
-    const conversationalContext = {
-      missingFields: toConversationalFields(extractMissingFields(error)),
-      lastError: error.issues.at(0)?.message,
-    };
     const aiDataCollector = aiClient(
       [
         {
@@ -282,8 +264,7 @@ export const validationAgent = {
           /** @todo improve COLLECTOR_PROMPT and INPUT_SCHEMA (content message)  */
           content: `
               Context for clarification:
-              missingFields: ${JSON.stringify(conversationalContext.missingFields)}
-              error: ${conversationalContext.lastError}
+              ${JSON.stringify(extractMissingFields(error), null, 2)}
             `,
         },
       ],

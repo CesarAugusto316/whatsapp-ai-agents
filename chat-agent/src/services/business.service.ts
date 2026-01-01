@@ -21,7 +21,9 @@ export interface BusinessQueryParams {
   sort?: "-createdAt"; // -createdAt
   "where[business][equals]"?: string; // businessId,
   "where[customer][equals]"?: string; // businessId,
-  "where[day][equals]"?: string; // 2024-03-15
+
+  // APPOINTMENT
+  "where[numberOfPeople][equals]"?: number; // businessId,
   "where[startDateTime][equals]"?: string; // 2024-03-15
   "where[endDateTime][equals]"?: string; // 2024-03-15
 
@@ -99,9 +101,9 @@ class BusinessService {
   public async checkAvailability(
     queryParams: Pick<
       BusinessQueryParams,
-      | "where[day][equals]"
       | "where[startDateTime][equals]"
       | "where[endDateTime][equals]"
+      | "where[numberOfPeople][equals]"
     >, // where[phoneNumber][equals]=${phoneNumber}
   ) {
     const url = generateUrl("appointments", {

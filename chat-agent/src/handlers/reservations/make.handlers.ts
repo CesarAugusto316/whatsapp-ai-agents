@@ -19,6 +19,7 @@ import {
   validationAgent,
 } from "@/ai-agents/agent.config";
 import { AppContext } from "@/types/hono.types";
+import { isStartDateTimeWithinSchedule } from "@/ai-agents/tools/helpers";
 
 export const ATTEMPTS = 4;
 
@@ -39,7 +40,6 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
 
   const previousState = {
     customerName: RESERVATION_CACHE?.customerName || customer?.name || "",
-    day: RESERVATION_CACHE?.day || "",
     startDateTime: RESERVATION_CACHE?.startDateTime || "",
     endDateTime: RESERVATION_CACHE?.endDateTime,
     numberOfPeople: RESERVATION_CACHE?.numberOfPeople || 0,
@@ -76,6 +76,7 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
       previousState,
     );
     if (!result) {
+      // very low probability to happen
       return humanizerAgent(
         "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
       );
@@ -93,10 +94,21 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
       return aiDataCollector; // agent try to collect missing data
     }
 
+    const isWithinSchedule = isStartDateTimeWithinSchedule(
+      data.startDateTime,
+      business.schedule,
+      business.general.timezone,
+    );
+    if (!isWithinSchedule) {
+      return `
+        😔 Lo sentimos, la fecha y hora seleccionada no está dentro del horario
+        de atención del negocio. Por favor, selecciona otra fecha y hora.
+      `;
+    }
     const isAvailable = await businessService.checkAvailability({
-      "where[day][equals]": data.day ?? "",
-      "where[startDateTime][equals]": data.startDateTime ?? "",
-      "where[endDateTime][equals]": data.endDateTime ?? "",
+      "where[numberOfPeople][equals]": data.numberOfPeople,
+      "where[startDateTime][equals]": data.startDateTime,
+      "where[endDateTime][equals]": data.endDateTime,
     });
     if (!isAvailable) {
       const retries = (RESERVATION_CACHE?.attempts || 0) + 1;
@@ -106,6 +118,7 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
         attempts: retries,
       } satisfies Partial<ReservationState>);
 
+      /** @todo MOSTRAR OTRAS FECHAS U HORARIOS DISPONIBLES PARA MEJOR UX */
       return humanizerAgent(
         `
           Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.
@@ -152,7 +165,6 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
       customerName = "",
-      day = "",
       endDateTime = "",
       startDateTime = "",
       numberOfPeople = 1,
@@ -179,7 +191,6 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
         customerName: newCustomer.name ?? customerName,
         numberOfPeople,
         endDateTime,
-        day,
         status: "confirmed",
       });
       const reservation = (await res.json()) as { doc: Appointment };

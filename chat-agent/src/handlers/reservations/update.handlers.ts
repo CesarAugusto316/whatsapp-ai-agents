@@ -21,6 +21,7 @@ import {
 } from "@/ai-agents/agent.config";
 import { ATTEMPTS } from "./make.handlers";
 import { AppContext } from "@/types/hono.types";
+import { isStartDateTimeWithinSchedule } from "@/ai-agents/tools/helpers";
 
 const preStart: StateHandler<AppContext, FMStatus> = async (
   ctx,
@@ -126,7 +127,6 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
 
   const previousState = {
     customerName: RESERVATION_CACHE?.customerName || customer?.name || "",
-    day: RESERVATION_CACHE?.day || "",
     startDateTime: RESERVATION_CACHE?.startDateTime || "",
     endDateTime: RESERVATION_CACHE?.endDateTime,
     numberOfPeople: RESERVATION_CACHE?.numberOfPeople || 0,
@@ -181,6 +181,18 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
         return aiDataCollector;
       }
 
+      const isWithinSchedule = isStartDateTimeWithinSchedule(
+        data.startDateTime,
+        business.schedule,
+        business.general.timezone,
+      );
+      if (!isWithinSchedule) {
+        return `
+          😔 Lo sentimos, la fecha y hora seleccionada no está dentro del horario
+          de atención del negocio. Por favor, selecciona otra fecha y hora.
+        `;
+      }
+
       /**
        *
        * @todo debemos que validar si la nueva fecha o
@@ -189,7 +201,6 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
        * antes de asignar un nuevo timeSlot
        */
       const isAvailable = await businessService.checkAvailability({
-        "where[day][equals]": data.day ?? "",
         "where[startDateTime][equals]": data.startDateTime ?? "",
         "where[endDateTime][equals]": data.endDateTime ?? "",
       });
@@ -253,7 +264,6 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
   // FINAL OPTION: 1. CONFIRMAR
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
-      day = "",
       startDateTime = "",
       endDateTime = "",
       numberOfPeople = 1,
@@ -270,7 +280,6 @@ const validated: StateHandler<AppContext, FMStatus> = async (ctx) => {
           endDateTime,
           numberOfPeople,
           customerName: customer.name ?? "",
-          day,
           status: "confirmed",
         },
       );

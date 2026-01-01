@@ -47,7 +47,7 @@ export type ReservationStatus = keyof typeof ReservationStatuses;
 
 export type ReservationInput = Pick<
   Appointment,
-  "customerName" | "startDateTime" | "endDateTime" | "day" | "numberOfPeople"
+  "customerName" | "startDateTime" | "endDateTime" | "numberOfPeople"
 >;
 
 export type FlowOption = "1" | "2";

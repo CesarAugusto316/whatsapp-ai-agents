@@ -357,8 +357,7 @@ export const parserPrompts = {
   },
 
   dataParser(business: Business) {
-    const { schedule, general } = business;
-    const scheduleBlock = formatSchedule(schedule, general?.timezone);
+    const { general } = business;
     const currentDateTime = new Date().toLocaleString("en-GB", {
       dateStyle: "full",
       timeStyle: "full",
@@ -367,64 +366,48 @@ export const parserPrompts = {
 
     return `
       You are a deterministic parsing and normalization module for a reservation system.
-
       Your ONLY task is to interpret a user's message and extract structured data.
-      This is NOT a conversational task.
+      This is NOT a conversational task. You do NOT validate availability or schedules.
 
       STRICT RULES:
 
       1. The input is a single free-text message written by a user in Spanish.
-      2. You must extract, if explicitly present:
-        - Customer name
-        - Reservation date (day, month, year)
-        - Start time
-        - End time (optional)
-        - Number of people
-      3. If the user does NOT provide an end time AND a valid start time exists:
-        - endDateTime = startDateTime + exactly  ${business.schedule?.averageTime * 60}  minutes.
+      2. Extract, if explicitly present:
+         - Customer name
+         - Reservation date (day, month, year)
+         - Start time
+         - End time (optional)
+         - Number of people
+      3. If no end time is provided but a valid start time exists:
+         - endDateTime = startDateTime + exactly ${business.schedule?.averageTime} minutes
       4. All dates and times MUST be returned in ISO 8601 format in UTC (Z).
       5. Do NOT invent, infer, guess, or assume missing or implicit values.
-      6. Relative dates (e.g. "mañana", "hoy", "pasado mañana") MUST be resolved using the reference time.
-      7. If required information is missing, contradictory, or ambiguous, return an ERROR object.
-      8. Do NOT include explanations, comments, markdown, or extra text.
-      9. Output MUST be a single valid JSON object.
-      10. Always consider the following reference date and time as "now": ${currentDateTime}
-      11. Schedule validation MUST be applied ONLY if a valid startDateTime exists.
-          If schedule validation applies:
-            - startDateTime MUST fall within the restaurant schedule.
-            - if an endDateTime exists (explicit or derived), it MUST also fall within the schedule.
-          If any validated time is OUTSIDE the schedule, return an ERROR object.
-      12. All user-provided times MUST be interpreted in the restaurant's local timezone.
-      13. Schedule validation MUST be performed using the restaurant's local timezone.
-      14. Conversion to UTC MUST occur ONLY after schedule validation succeeds.
+      6. Resolve relative dates (e.g., "mañana", "hoy") using the reference time.
+      7. If required information is missing or ambiguous:
+         - Use "" for strings or dates
+         - Use 0 for numbers
+      8. Output MUST be a single valid JSON object.
+      9. Always consider the following reference date and time as "now": ${currentDateTime}
+      10. All user-provided times are in the restaurant's local timezone.
+      11. Always convert all valid startDateTime and endDateTime to ISO 8601 UTC (Z) using the restaurant's local timezone as reference.
+          Example:
+          - User message: "A las 20:00" (restaurant timezone America/Guayaquil, UTC-5)
+          - Parsed: "startDateTime": "2025-12-30T20:00:00-05:00"
+          - Output in UTC: "startDateTime": "2025-12-31T01:00:00.000Z"
+      12. Conversion to UTC occurs only after parsing is complete.
 
       ==============================
-      RESTAURANT SCHEDULE (AUTHORITATIVE)
-      ==============================
-      ${scheduleBlock}
-
-      - Estimated dining duration: ${business.schedule?.averageTime * 60} minutes
-
-      ==============================
-      SCHEDULE VALIDATION RULES
-      ==============================
-
-      - The restaurant schedule is authoritative.
-      - Any time outside the schedule invalidates the reservation.
-
-
       OUTPUT FORMAT (EXACT KEYS AND TYPES):
+      ==============================
 
       {
         "customerName": "string",
-        "day": "YYYY-MM-DDT00:00:00.000Z",
         "startDateTime": "YYYY-MM-DDTHH:mm:00.000Z",
         "endDateTime": "YYYY-MM-DDTHH:mm:00.000Z",
-        "numberOfPeople": number,
+        "numberOfPeople": number
       }
 
       EXAMPLES:
-      Note: The times are converted from the restaurant's local timezone (Europe/Madrid, UTC+1) to UTC.
 
       Input:
       "A nombre de Sergio Rivera para el 25 de diciembre a las 8 de la noche para 4 personas"
@@ -432,10 +415,9 @@ export const parserPrompts = {
       Output:
       {
         "customerName": "Sergio Rivera",
-        "day": "2025-12-25T00:00:00.000Z",
         "startDateTime": "2025-12-25T19:00:00.000Z",
         "endDateTime": "2025-12-25T20:00:00.000Z",
-        "numberOfPeople": 4,
+        "numberOfPeople": 4
       }
 
       Input:
@@ -444,10 +426,9 @@ export const parserPrompts = {
       Output:
       {
         "customerName": "Raúl Lara",
-        "day": "2025-12-29T00:00:00.000Z",
         "startDateTime": "2025-12-29T18:00:00.000Z",
         "endDateTime": "2025-12-29T19:00:00.000Z",
-        "numberOfPeople": 2,
+        "numberOfPeople": 2
       }
 
       Input:
@@ -456,32 +437,31 @@ export const parserPrompts = {
       Output:
       {
         "customerName": "",
-        "day": "",
         "startDateTime": "",
         "endDateTime": "",
         "numberOfPeople": 3
       }
 
       Input:
-      "El domingo a las 23 horas" (According to the provided restaurant schedule)
+      "El domingo a las 20 horas"
 
       Output:
       {
         "customerName": "",
-        "day": "",
-        "startDateTime": "",
-        "endDateTime": "",
-        "numberOfPeople": 0,
+        "startDateTime": "2025-12-29T20:00:00.000Z",
+        "endDateTime": "2025-12-29T21:00:00.000Z",
+        "numberOfPeople": 0
       }
 
       ==============================
       REMEMBER
       ==============================
 
-      - The schedule block is authoritative.
-      - Invalid time = invalid reservation.
-      - No corrections. No suggestions. No negotiation.
-  `.trim();
+      - Only parse and normalize the data.
+      - Always return the output as the specified JSON object.
+      - Do NOT validate availability or schedules.
+      - Use empty strings for missing strings/dates and 0 for missing numbers.
+    `.trim();
   },
 
   /**
@@ -500,75 +480,90 @@ export const parserPrompts = {
     return `
       You are a response-generation module for a reservation system.
 
-      Your ONLY function is to convert a structured validation error
-      into a clear, short, and human-friendly message for the user.
+      Your ONLY task is to take an array of structured errors ({field, error})
+      and convert them into a clear, short, human-friendly message for the end user.
 
-      You do NOT:
-      - parse or interpret user input
-      - validate or normalize data
-      - infer missing values
+      You MUST NOT:
+      - interpret or validate user input
+      - infer or fill in missing values
       - manage conversation state
       - confirm or create reservations
-      - examples unless they help clarify what is missing.
-      - ask for information that is not listed in "missingFields".
-
-      You receive a structured context produced by another system.
-      That context is authoritative.
+      - mention internal systems, validation, or technical structures
+      - invent examples or fields not present in the received array
 
       ----------------------------------
       INPUT CONTEXT (always structured):
 
-      - missingFields: array of missing or invalid data
-        Possible values:
-        ["customerName", "date", "time", "numberOfPeople"]
-
-      - error: a short, human-readable summary of what went wrong
+      - errors: array of objects with shape {field: string, error: string}
+        - field: name of the problematic field ("customerName", "startDateTime", "endDateTime", "numberOfPeople")
+        - error: technical message or "" if the field is empty/required
 
       ----------------------------------
-      YOUR RESPONSIBILITIES:
+      RESPONSIBILITIES:
 
-      1. Explain, in natural Spanish, what information is missing or unclear.
-      2. Mention ONLY the fields listed in "missingFields".
-      3. Use non-technical, user-friendly language.
-      4. Ask the user to provide the missing information.
-      5. Keep the message short, precise, and polite.
-      6. Never invent, assume, or suggest values.
-      7. Never mention internal systems, parsing, schemas, or validation.
-      8. Always respond in Spanish.
-      9. Produce a SINGLE message addressed directly to the user.
+      1. Explain in natural Spanish what information is missing or incorrect.
+      2. Mention only the fields present in the "errors" array.
+      3. Use non-technical, friendly, and direct language.
+      4. Ask the user to provide missing data or correct invalid values.
+      5. Keep the message precise, and polite.
+      6. Do not invent, assume, or suggest values.
+      7. Always respond in Spanish.
+      8. Produce a SINGLE message covering all detected errors.
 
       ----------------------------------
-      REFERENCE DATE (for wording only, not reasoning):
+      REFERENCE DATE (for wording/style only):
       ${currentDateTime}
 
       ----------------------------------
       STYLE GUIDELINES:
-
-       ${WRITING_STYLE}
-
-      ----------------------------------
-      EXAMPLES OF VALID OUTPUTS (You should improve them using STYLE GUIDELINES):
-
-      • If missingFields = ["date", "time"]:
-        "Para continuar necesito que me indiques el día de la reserva y la hora."
-
-      • If missingFields = ["customerName"]:
-        "¿A nombre de quién sería la reserva?"
-
-      • If missingFields = ["customerName"] and error = "too_small: length must be >= 3":
-        "Ese nombre es muy corto. Debe tener al menos 3 caracteres. Por favor, ingresa un nombre correcto"
-
-      • If missingFields = ["numberOfPeople"]:
-        "¿Para cuántas personas sería la reserva?"
-
-      • If missingFields = ["numberOfPeople"] and error = "too_small: Value must be >= 1":
-        "Las reservas deben ser al menos para 1 persona"
+      ${WRITING_STYLE}
 
       ----------------------------------
-      Remember:
-      You translate system state into human language.
-      Nothing more.
-  `.trim();
+      ----------------------------------
+      EXAMPLES OF OUTPUT:
+
+      • errors = [
+          {field: "customerName", error: ""},
+          {field: "numberOfPeople", error: "too_small: Value must be >= 1"}
+        ]
+
+        Suggested message:
+        "👋 Para poder reservar tu mesa necesito que me indiques tu nombre completo. Además, verifica que el número de personas sea al menos 1. ¡Gracias! 😊"
+
+      • errors = [
+          {field: "startDateTime", error: ""}
+        ]
+
+        Suggested message:
+        "📅 Por favor, indícame la fecha y la hora en la que deseas hacer la reserva, así podremos asegurarnos de tener todo listo para ti. ⏰"
+
+      • errors = [
+          {field: "customerName", error: "too_short: length < 3"}
+        ]
+
+        Suggested message:
+        "⚠️ El nombre que ingresaste es demasiado corto. Debe tener al menos 3 caracteres para poder procesar la reserva correctamente. Por favor, ingresa un nombre completo y correcto. 🙏"
+
+      • errors = [
+          {field: "numberOfPeople", error: "too_large: Value must be <= 20"}
+        ]
+
+        Suggested message:
+        "😅 Parece que el número de personas indicado es demasiado grande. Actualmente podemos gestionar reservas de hasta 20 personas. Por favor, ajusta la cantidad de invitados."
+
+      • errors = [
+          {field: "startDateTime", error: "invalid_date"}
+        ]
+
+        Suggested message:
+        "⏰ La fecha y hora que proporcionaste no parecen válidas. Por favor, ingresa una fecha y hora correctas para que podamos reservar tu mesa sin problemas. 😊"
+
+
+      ----------------------------------
+      REMEMBER:
+      You only translate system state (errors) into human language.
+      Do nothing else.
+    `.trim();
   },
 };
 
@@ -631,7 +626,6 @@ export const systemMessages = {
       Por favor revisa antes de confirmar la ${copy.process} de tu reserva:
 
       👤 Nombre: ${data?.customerName}
-      📅 Fecha: ${data.day}
       ⏰ Hora de entrada: ${data.startDateTime}
       ⏰ Hora de salida: ${data.endDateTime}
       👥 Número de personas: ${data.numberOfPeople}
@@ -672,7 +666,6 @@ export const systemMessages = {
 
       📍 Restaurante: ${restaurantName}
       👤 Nombre: ${customerName}
-      📅 Fecha: ${appointment.day}
       ⏰ Hora: ${appointment.startDateTime}
       👥 Personas: ${numberOfPeople}
 

@@ -4,7 +4,6 @@ import { CUSTOMER_INTENT, InputIntent } from "./agent.types";
 export const phase1 = z
   .object({
     customerName: z.string(),
-    day: z.iso.datetime(),
     startDateTime: z.iso.datetime(),
     endDateTime: z.iso.datetime(),
     numberOfPeople: z.number(),
@@ -13,7 +12,6 @@ export const phase1 = z
 
 export const phase2 = z.object({
   customerName: z.string().min(3).max(30),
-  day: z.iso.datetime(),
   startDateTime: z.iso.datetime(),
   endDateTime: z.iso.datetime(),
   numberOfPeople: z.number().int().positive().min(1).max(100),

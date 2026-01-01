@@ -1,5 +1,6 @@
 import { GenerateTextResult, ToolSet } from "ai";
 import { WEEK_DAYS, WeekDay } from "../agent.types";
+import { Day } from "@/types/business/cms-types";
 
 /**
  *
@@ -37,24 +38,21 @@ export function renderAssistantText<T>(result: T): string {
     .trim();
 }
 
-function formatTime(isoString: string, timezone: string): string {
-  const date = new Date(isoString);
-
-  return date.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: timezone,
-  });
+function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
 /**
  *
  * @example
  * TIMEZONE: America/Guayaquil
+ *
  * DAY: MONDAY
  * STATUS: OPEN
- * RANGE: 18:00-23:00
+ * RANGE: 08:00-12:00
+ * RANGE: 14:00-20:00
  *
  * DAY: TUESDAY
  * STATUS: CLOSED
@@ -63,6 +61,15 @@ function formatTime(isoString: string, timezone: string): string {
  * STATUS: OPEN
  * RANGE: 12:00-15:00
  * RANGE: 18:00-22:00
+ *
+ * DAY: THURSDAY
+ * STATUS: OPEN
+ * RANGE: 08:00-12:00
+ *
+ * DAY: FRIDAY
+ * STATUS: OPEN
+ * RANGE: 09:00-
+ *
  * @param schedule
  * @param timezone
  * @returns
@@ -74,7 +81,6 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
   for (const day of WEEK_DAYS) {
     const slots = schedule?.[day];
 
-    console.log(slots);
     lines.push(``);
     lines.push(`DAY: ${day.toUpperCase()}`);
 
@@ -86,11 +92,76 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
     lines.push(`STATUS: OPEN`);
 
     for (const slot of slots) {
-      const start = formatTime(slot.startTime, timezone);
-      const end = formatTime(slot.endTime, timezone);
+      const start = formatMinutes(slot.open); // ya no necesitas iso ni Date
+      const end = formatMinutes(slot.close);
       lines.push(`RANGE: ${start}-${end}`);
     }
   }
   console.log({ lines });
   return lines.join("\n");
 }
+
+type Schedule = {
+  monday?: Day[] | null;
+  tuesday?: Day[] | null;
+  wednesday?: Day[] | null;
+  thursday?: Day[] | null;
+  friday?: Day[] | null;
+  saturday?: Day[] | null;
+  sunday?: Day[] | null;
+};
+
+export function isStartDateTimeWithinSchedule(
+  startDateTimeUtc: string,
+  schedule: Schedule,
+  timezone: string,
+): boolean {
+  // Convertimos la fecha UTC a la zona horaria del negocio
+  const date = new Date(startDateTimeUtc);
+  const localDateStr = date.toLocaleString("en-US", { timeZone: timezone });
+  const localDate = new Date(localDateStr);
+
+  // Obtenemos el día de la semana en minúsculas
+  const days: Record<number, keyof Schedule> = {
+    0: "sunday",
+    1: "monday",
+    2: "tuesday",
+    3: "wednesday",
+    4: "thursday",
+    5: "friday",
+    6: "saturday",
+  };
+  const dayKey = days[localDate.getDay()];
+  const daySchedule = schedule[dayKey];
+
+  if (!daySchedule || daySchedule.length === 0) return false;
+
+  // Calculamos minutos desde medianoche
+  const minutes = localDate.getHours() * 60 + localDate.getMinutes();
+
+  // Verificamos si cae en algún rango
+  for (const range of daySchedule) {
+    if (minutes >= range.open && minutes < range.close) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// ===== Ejemplo de uso =====
+const scheduleExample: Schedule = {
+  monday: [
+    { open: 480, close: 720 },
+    { open: 840, close: 1200 },
+  ], // 08:00-12:00 y 14:00-20:00
+  tuesday: [{ open: 480, close: 720 }],
+};
+
+console.log(
+  isStartDateTimeWithinSchedule(
+    "2025-12-29T18:00:00.000Z",
+    scheduleExample,
+    "America/Guayaquil",
+  ),
+); // true o false

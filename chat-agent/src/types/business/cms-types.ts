@@ -32,7 +32,6 @@ export interface Appointment {
   customer: string | Customer;
   customerName: string;
   numberOfPeople: number;
-  day: string;
   startDateTime: string;
   endDateTime?: string;
   status: "pending" | "confirmed" | "cancelled" | "completed";
@@ -45,6 +44,12 @@ export type CreateAppointment = Omit<
   Appointment,
   "id" | "updatedAt" | "createdAt"
 >;
+
+export type Day = {
+  open: number;
+  close: number;
+  id?: string | null;
+};
 
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -84,59 +89,18 @@ export interface Business {
   };
   schedule: {
     averageTime: number;
-    monday?:
-      | {
-          startTime: string;
-          endTime: string;
-          id?: string | null;
-        }[]
-      | null;
-    tuesday?:
-      | {
-          startTime: string;
-          endTime: string;
-          id?: string | null;
-        }[]
-      | null;
-    wednesday?:
-      | {
-          startTime: string;
-          endTime: string;
-          id?: string | null;
-        }[]
-      | null;
-    thursday?:
-      | {
-          startTime: string;
-          endTime: string;
-          id?: string | null;
-        }[]
-      | null;
-    friday?:
-      | {
-          startTime: string;
-          endTime: string;
-          id?: string | null;
-        }[]
-      | null;
-    saturday?:
-      | {
-          startTime: string;
-          endTime: string;
-          id?: string | null;
-        }[]
-      | null;
-    sunday?:
-      | {
-          startTime: string;
-          endTime: string;
-          id?: string | null;
-        }[]
-      | null;
+    monday?: Day[] | null;
+    tuesday?: Day[] | null;
+    wednesday?: Day[] | null;
+    thursday?: Day[] | null;
+    friday?: Day[] | null;
+    saturday?: Day[] | null;
+    sunday?: Day[] | null;
   };
   updatedAt: string;
   createdAt: string;
 }
+
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "customers".
