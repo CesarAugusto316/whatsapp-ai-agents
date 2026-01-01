@@ -7,55 +7,28 @@ import {
 import {
   CUSTOMER_INTENT,
   FlowOptions,
-  InputIntent,
   FMStatus,
+  InputIntent,
+} from "@/ai-agents/agent.types";
+import {
   getStateTransition,
   ReservationState,
-} from "@/ai-agents/agent.types";
-import { renderAssistantText } from "@/ai-agents/tools/helpers";
+} from "@/ai-agents/finite-state-machine/get-state-transition.";
+import { StateRouter } from "@/ai-agents/finite-state-machine/state-router";
 import {
   howSystemWorksPrompt,
   systemMessages,
 } from "@/ai-agents/tools/prompts";
+import businessService from "@/services/business.service";
 import chatHistoryService from "@/services/chatHistory.service";
 import reservationCacheService from "@/services/reservationCache.service";
+import { Appointment } from "@/types/business/cms-types";
 import { AppContext } from "@/types/hono.types";
 import { ModelMessage } from "ai";
-import { HandlerResult, StateHandler } from "./handlers.types";
-import { makeHandlers } from "./reservations/make.handlers";
-import { updateHandlers } from "./reservations/update.handlers";
-import { cancellHandlers } from "./reservations/cancel.handlers";
-import businessService from "@/services/business.service";
-import { Appointment } from "@/types/business/cms-types";
-
-/**
- *
- * @description deterministic chat flow, here core business logic lives
- */
-class StateRouter<Ctx, S extends string> {
-  private handlers: Partial<Record<S, StateHandler<Ctx, S>[]>> = {};
-
-  constructor(
-    private readonly ctx: Readonly<Ctx>,
-    private readonly status?: S,
-  ) {}
-
-  on(state: S, handler: StateHandler<Ctx, S>): this {
-    (this.handlers[state] ??= []).push(handler);
-    return this;
-  }
-
-  async run(): Promise<HandlerResult> {
-    const status = this.status;
-    if (!status) return;
-
-    const handlers = this.handlers[status] ?? [];
-    for (const h of handlers) {
-      const res = await h(this.ctx, status);
-      if (res) return res;
-    }
-  }
-}
+import { makeHandlers } from "./make.handlers";
+import { updateHandlers } from "./update.handlers";
+import { cancellHandlers } from "./cancel.handlers";
+import { renderAssistantText } from "@/helpers/helpers";
 
 /**
  *
@@ -120,7 +93,7 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
       }
       const lastRes = await businessService.getAppointmentsByParams({
         "where[business][equals]": business.id,
-        "where[customer][equals]": customer?.id,
+        "where[customer][equals]": customer.id,
         "where[status][equals]": "confirmed",
         sort: "-updatedAt", // the last reservation
         limit: 1, // only one reservation
@@ -169,7 +142,7 @@ async function conversationalHandler(ctx: AppContext): Promise<string> {
       }
       const lastRes = await businessService.getAppointmentsByParams({
         "where[business][equals]": business.id,
-        "where[customer][equals]": customer?.id,
+        "where[customer][equals]": customer.id,
         "where[status][equals]": "confirmed",
         sort: "-updatedAt", // the last reservation
         limit: 1, // only one reservation

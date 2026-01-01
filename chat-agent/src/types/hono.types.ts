@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { Business, Customer } from "./business/cms-types";
-import { ReservationState } from "@/ai-agents/agent.types";
+import { ReservationState } from "@/ai-agents/finite-state-machine/get-state-transition.";
 
 export type AppContext = {
   whatsappEvent: string;

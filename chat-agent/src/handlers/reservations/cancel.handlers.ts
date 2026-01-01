@@ -1,10 +1,10 @@
-import { StateHandler } from "../handlers.types";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { CustomerActions, FMStatus } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
 import { humanizerAgent } from "@/ai-agents/agent.config";
 import { AppContext } from "@/types/hono.types";
+import { StateHandler } from "@/ai-agents/finite-state-machine/state-handler.types";
 
 const started: StateHandler<AppContext, FMStatus> = async (ctx) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;

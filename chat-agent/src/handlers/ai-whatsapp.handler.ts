@@ -1,7 +1,7 @@
 import whatsappService from "@/services/whatsapp.service";
 import { CTX, AppContext } from "@/types/hono.types";
 import { Handler } from "hono/types";
-import { runChatSession } from "./chat-flow";
+import { runChatSession } from "./reservations/state-router";
 
 export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
   const state = {

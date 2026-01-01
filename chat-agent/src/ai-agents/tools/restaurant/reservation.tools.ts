@@ -1,7 +1,7 @@
+import { parseInput } from "@/helpers/helpers";
 import businessService from "@/services/business.service";
 import { tool } from "ai";
 import z from "zod";
-import { parseInput } from "../helpers";
 
 export const TOOLS_NAME = {
   isScheduleAvailable: "isScheduleAvailable",

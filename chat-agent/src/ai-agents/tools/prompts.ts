@@ -1,5 +1,5 @@
 import { Appointment, Business } from "@/types/business/cms-types";
-import { formatSchedule } from "./helpers";
+import { formatSchedule } from "../../helpers/helpers";
 import { TOOLS_NAME } from "./restaurant/reservation.tools";
 import {
   CUSTOMER_INTENT,
@@ -7,9 +7,9 @@ import {
   FlowOptions,
   ReservationInput,
   InputIntent,
-  getStateTransition,
   FMStatus,
 } from "../agent.types";
+import { getStateTransition } from "../finite-state-machine/get-state-transition.";
 
 const AGENT_NAME = "Lua";
 

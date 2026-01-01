@@ -1,4 +1,4 @@
-import { ReservationState } from "@/ai-agents/agent.types";
+import { ReservationState } from "@/ai-agents/finite-state-machine/get-state-transition.";
 import { redis } from "@/storage/cache-storage.config";
 
 const EXPIRATION_TIME = 60 * 60 * 1; // 1 hora

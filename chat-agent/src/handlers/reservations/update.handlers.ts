@@ -1,14 +1,12 @@
-import { StateHandler } from "../handlers.types";
+import { StateHandler } from "@/ai-agents/finite-state-machine/state-handler.types";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
   CustomerActions,
   ReservationInput,
-  ReservationState,
   ReservationStatuses,
   InputIntent,
   FlowOptions,
-  getStateTransition,
   FMStatus,
 } from "@/ai-agents/agent.types";
 import { systemMessages } from "@/ai-agents/tools/prompts";
@@ -20,7 +18,11 @@ import {
 } from "@/ai-agents/agent.config";
 import { ATTEMPTS } from "./make.handlers";
 import { AppContext } from "@/types/hono.types";
-import { isStartDateTimeWithinSchedule } from "@/ai-agents/tools/helpers";
+import {
+  getStateTransition,
+  ReservationState,
+} from "@/ai-agents/finite-state-machine/get-state-transition.";
+import { isStartDateTimeWithinSchedule } from "@/helpers/helpers";
 
 const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
   const {

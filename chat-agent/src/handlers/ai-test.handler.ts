@@ -1,6 +1,6 @@
 import { CTX, AppContext } from "@/types/hono.types";
 import { Handler } from "hono/types";
-import { runChatSession } from "./chat-flow";
+import { runChatSession } from "./reservations/state-router";
 
 /**
  *
