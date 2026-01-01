@@ -62,8 +62,6 @@ export const CustomerActions = {
   CONFIRM: "CONFIRMAR",
   RESTART: "REINGRESAR",
   EXIT: "SALIR",
-  UPDATE: "CAMBIAR",
-  CANCEL: "CANCELAR",
 } as const;
 
 export interface ReservationState extends ReservationInput {
@@ -109,7 +107,7 @@ export function getStateTransition(status: FMStatus): StateTransition {
         suggestedActions: [
           CustomerActions.CONFIRM,
           CustomerActions.RESTART,
-          CustomerActions.CANCEL,
+          CustomerActions.EXIT,
         ],
         messageHint:
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
@@ -135,7 +133,7 @@ export function getStateTransition(status: FMStatus): StateTransition {
         suggestedActions: [
           CustomerActions.CONFIRM,
           CustomerActions.RESTART,
-          CustomerActions.CANCEL,
+          CustomerActions.EXIT,
         ],
         messageHint:
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",

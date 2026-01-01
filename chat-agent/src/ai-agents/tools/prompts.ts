@@ -113,7 +113,7 @@ const buildGuidancePrompt = (status?: FMStatus): string => {
     GUIDANCE FOR YOUR RESPONSE:
     - ${guidance?.messageHint}
     - Answer the user's question normally.
-    - If relevant, you MAY add a brief reminder at the end about how to continue or exit.
+    - If relevant, add a brief reminder at the end about how to continue or exit.
     - You MUST NOT ask for data.
     - You MUST NOT advance, confirm, cancel, or modify any reservation.
   `.trim()
