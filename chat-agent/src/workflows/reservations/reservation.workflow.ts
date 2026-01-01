@@ -24,7 +24,7 @@ import { makeWorflow } from "./make.workflow";
 import { updateWorkflow } from "./update.workflow";
 import { cancellWorkflow } from "./cancel.workflow";
 import { renderAssistantText } from "@/helpers/helpers";
-import { StateWorkflowRunner } from "@/workflow-fsm/state-dispatcher";
+import { StateWorkflowRunner } from "@/workflow-fsm/state-workflow-runner";
 import { howSystemWorksPrompt, systemMessages } from "@/llm/prompts";
 
 /**
@@ -74,7 +74,7 @@ async function resolveConversationalFallback(ctx: AppContext): Promise<string> {
         customerId: customer?.id,
         customerName: customer?.name ?? "",
         customerPhone,
-        status: transition.nextStatus, // MAKE_STARTED
+        status: transition.nextState, // MAKE_STARTED
       });
       const responseMsg = systemMessages.getCreateMsg({
         userName: customer?.name,
@@ -122,7 +122,7 @@ async function resolveConversationalFallback(ctx: AppContext): Promise<string> {
         businessId: business.id,
         customerId: customer.id,
         customerPhone,
-        status: transition.nextStatus, // UPDATE_STARTED
+        status: transition.nextState, // UPDATE_STARTED
       } satisfies Partial<ReservationState>;
 
       console.log({ previousState });
@@ -171,7 +171,7 @@ async function resolveConversationalFallback(ctx: AppContext): Promise<string> {
         businessId: business.id,
         customerId: customer.id,
         customerPhone,
-        status: transition.nextStatus, // CANCEL_STARTED
+        status: transition.nextState, // CANCEL_STARTED
       } satisfies Partial<ReservationState>;
 
       console.log({ previousState });
@@ -223,27 +223,25 @@ async function resolveConversationalFallback(ctx: AppContext): Promise<string> {
  * @returns Promise<string>
  */
 export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
-  const dispatcher = new StateWorkflowRunner<AppContext, FMStatus>(
-    ctx,
-    ctx.RESERVATION_CACHE?.status,
-  );
+  const status = ctx.RESERVATION_CACHE?.status;
+  const workflow = new StateWorkflowRunner<AppContext, FMStatus>(ctx, status);
 
-  dispatcher
+  workflow
     .on("MAKE_STARTED", makeWorflow.started)
     .on("MAKE_VALIDATED", makeWorflow.validated)
     .on("UPDATE_STARTED", updateWorkflow.started)
     .on("UPDATE_VALIDATED", updateWorkflow.validated)
     .on("CANCEL_STARTED", cancellWorkflow.started);
 
-  const stateResult = await dispatcher.run();
+  const workflowResult = await workflow.run();
 
-  if (stateResult && stateResult !== InputIntent.CUSTOMER_QUESTION) {
+  if (workflowResult && workflowResult !== InputIntent.CUSTOMER_QUESTION) {
     await chatHistoryService.save(
       ctx.chatKey,
       ctx.customerMessage,
-      stateResult,
+      workflowResult,
     );
-    return stateResult;
+    return workflowResult;
   }
 
   /**

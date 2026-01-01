@@ -1,6 +1,6 @@
 import { CTX, AppContext } from "@/types/hono.types";
+import { runReservationWorkflow } from "@/workflows/reservations/reservation.workflow";
 import { Handler } from "hono/types";
-import { runReservationWorkflow } from "../workflows/reservations/state-dispatcher";
 
 /**
  *
@@ -9,7 +9,7 @@ import { runReservationWorkflow } from "../workflows/reservations/state-dispatch
  * @returns
  */
 export const aiTestHandler: Handler<CTX> = async (ctx) => {
-  const args = {
+  const appContext = {
     RESERVATION_CACHE: ctx.get("RESERVATION_CACHE"),
     business: ctx.get("business"),
     customerMessage: ctx.get("customerMessage"),
@@ -21,6 +21,6 @@ export const aiTestHandler: Handler<CTX> = async (ctx) => {
 
   return ctx.json({
     received: true,
-    text: await runReservationWorkflow(args),
+    text: await runReservationWorkflow(appContext),
   });
 };

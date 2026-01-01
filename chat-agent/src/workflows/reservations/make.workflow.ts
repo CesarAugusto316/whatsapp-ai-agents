@@ -136,7 +136,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
     await reservationCacheService.save(reservationKey, {
       ...RESERVATION_CACHE,
       ...data,
-      status: transition.nextStatus, // MAKE_VALIDATED
+      status: transition.nextState, // MAKE_VALIDATED
     } satisfies Partial<ReservationState>);
 
     const responseMsg = systemMessages.getConfirmationMsg(data);
