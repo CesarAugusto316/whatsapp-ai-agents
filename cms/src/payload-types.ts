@@ -207,7 +207,6 @@ export interface Appointment {
   business: string | Business;
   customer: string | Customer;
   customerName?: string | null;
-  day: string;
   startDateTime: string;
   endDateTime?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -250,50 +249,50 @@ export interface Business {
     averageTime: number;
     monday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     tuesday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     wednesday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     thursday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     friday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     saturday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     sunday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
@@ -472,7 +471,6 @@ export interface AppointmentsSelect<T extends boolean = true> {
   business?: T;
   customer?: T;
   customerName?: T;
-  day?: T;
   startDateTime?: T;
   endDateTime?: T;
   status?: T;
@@ -526,50 +524,50 @@ export interface BusinessesSelect<T extends boolean = true> {
         monday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         tuesday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         wednesday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         thursday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         friday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         saturday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         sunday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
       };

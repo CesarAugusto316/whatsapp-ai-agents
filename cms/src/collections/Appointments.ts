@@ -131,33 +131,6 @@ export const Appointments: CollectionConfig = {
       type: "text",
       label: { en: "Customer Name", es: "A nombre de" },
     },
-    // day
-    {
-      name: "day",
-      index: true,
-      type: "date",
-      label: {
-        en: "Day",
-        es: "Día",
-      },
-      required: true,
-      access: {
-        update: ({ req }) => {
-          if (req?.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" &&
-            (req?.user?.role === "admin" || req?.user?.role === "business")
-          );
-        },
-      },
-      admin: {
-        date: {
-          pickerAppearance: "dayOnly",
-        },
-      },
-    },
     // time: startDateTime - endDateTime
     {
       type: "row",

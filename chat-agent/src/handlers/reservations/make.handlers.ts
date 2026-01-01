@@ -83,7 +83,7 @@ const started: StateHandler<AppContext, FMStatus> = async (ctx, currStatus) => {
     const { mergedData, parsedData } = result;
     const { success, data, error } = parsedData;
 
-    if (!success && error) {
+    if (!success) {
       await reservationCacheService.save(reservationKey, {
         ...RESERVATION_CACHE,
         ...mergedData,

@@ -1,11 +1,90 @@
-import { CollectionConfig, CollectionSlug } from "payload";
+import { CollectionConfig, CollectionSlug, Field } from "payload";
 import { Users } from "./Users";
 
-const date = (hour: number) => {
-  const now = new Date(); // fecha actual
-  now.setHours(hour, 0, 0, 0); // ajusta la hora local del navegador
-  return now.toISOString(); // Payload convertirá a UTC
+// ===== TIME DOMAIN =====
+
+// Un día abstracto
+export const DAY_START = 0; // 00:00
+export const DAY_END = 23 * 60 + 59; // 1439
+
+// Resolución del sistema (15 min)
+export const TIME_STEP = 15;
+
+// Horarios comunes
+export const MORNING_BLOCK = {
+  open: 8 * 60, // 08:00
+  close: 12 * 60, // 12:00
 };
+
+export const AFTERNOON_BLOCK = {
+  open: 14 * 60, // 14:00
+  close: 20 * 60, // 20:00
+};
+
+// Sábado típico
+export const SATURDAY_BLOCK = {
+  open: 8 * 60,
+  close: 12 * 60,
+};
+
+// Duración de citas (en minutos)
+export const APPOINTMENT_MIN = 15;
+export const APPOINTMENT_MAX = 8 * 60; // 8 horas
+export const APPOINTMENT_DEFAULT = 60; // 1 hora
+
+const timeBlockFields: Field[] = [
+  {
+    type: "row",
+    fields: [
+      {
+        name: "open",
+        type: "number",
+        required: true,
+        min: DAY_START,
+        max: DAY_END,
+        admin: {
+          step: TIME_STEP,
+        },
+        label: {
+          en: "Open Time",
+          es: "Hora de apertura",
+        },
+      },
+      {
+        name: "close",
+        type: "number",
+        required: true,
+        min: DAY_START,
+        max: DAY_END,
+        admin: {
+          step: TIME_STEP,
+        },
+        label: {
+          en: "End Time",
+          es: "Hora de cierre",
+        },
+      },
+    ],
+  },
+];
+
+const workDay = (
+  name: string,
+  label: { en: string; es: string },
+  defaultBlocks: { open: number; close: number }[] = [],
+): Field => ({
+  type: "array",
+  name,
+  label,
+  labels: {
+    singular: { en: "Block", es: "Bloque" },
+    plural: { en: "Blocks", es: "Bloques" },
+  },
+  minRows: 0,
+  maxRows: 2,
+  defaultValue: () => defaultBlocks,
+  fields: timeBlockFields,
+});
 
 // TODO: NORMALIZE DATES
 export const Business: CollectionConfig = {
@@ -297,585 +376,41 @@ export const Business: CollectionConfig = {
               name: "averageTime",
               type: "number",
               required: true,
-              defaultValue: 1,
-              min: 1,
-              max: 3,
+              defaultValue: APPOINTMENT_DEFAULT,
+              min: APPOINTMENT_MIN,
+              max: APPOINTMENT_MAX,
               label: {
-                en: "Average appointment Duration (hours)",
-                es: "Duración de la reserva en promedio (horas)",
+                en: "Average appointment duration (minutes)",
+                es: "Duración promedio de la cita (minutos)",
               },
             },
             {
               type: "group",
               fields: [
-                {
-                  type: "array",
-                  name: "monday",
-                  label: {
-                    en: "Monday",
-                    es: "Lunes",
-                  },
-                  labels: {
-                    singular: {
-                      en: "Block",
-                      es: "Bloque",
-                    },
-                    plural: {
-                      en: "Blocks",
-                      es: "Bloques",
-                    },
-                  },
-                  minRows: 0,
-                  maxRows: 2,
-                  defaultValue: () => [
-                    {
-                      startTime: date(8),
-                      endTime: date(12),
-                    },
-                    {
-                      startTime: date(14),
-                      endTime: date(20),
-                    },
-                  ],
-                  fields: [
-                    {
-                      type: "row",
-                      fields: [
-                        {
-                          name: "startTime",
-                          type: "date",
-                          label: {
-                            en: "Start Time",
-                            es: "Hora de inicio",
-                          },
-                          localized: false,
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          defaultValue: () => date(8),
-                          required: true,
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                        {
-                          name: "endTime",
-                          type: "date",
-                          label: {
-                            en: "End Time",
-                            es: "Hora de fin",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          defaultValue: () => date(12),
-                          required: true,
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: "array",
-                  name: "tuesday",
-                  minRows: 0,
-                  maxRows: 2,
-                  label: {
-                    en: "Tuesday",
-                    es: "Martes",
-                  },
-                  labels: {
-                    singular: {
-                      en: "Block",
-                      es: "Bloque",
-                    },
-                    plural: {
-                      en: "Blocks",
-                      es: "Bloques",
-                    },
-                  },
-                  defaultValue: () => [
-                    {
-                      startTime: date(8),
-                      endTime: date(12),
-                    },
-                    {
-                      startTime: date(14),
-                      endTime: date(20),
-                    },
-                  ],
-                  fields: [
-                    {
-                      type: "row",
-                      fields: [
-                        {
-                          name: "startTime",
-                          type: "date",
-                          label: {
-                            en: "Start Time",
-                            es: "Hora de inicio",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(8),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                        {
-                          name: "endTime",
-                          type: "date",
-                          label: {
-                            en: "End Time",
-                            es: "Hora de fin",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(12),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: "array",
-                  name: "wednesday",
-                  minRows: 0,
-                  maxRows: 2,
-                  label: {
-                    en: "Wednesday",
-                    es: "Miércoles",
-                  },
-                  labels: {
-                    singular: {
-                      en: "Block",
-                      es: "Bloque",
-                    },
-                    plural: {
-                      en: "Blocks",
-                      es: "Bloques",
-                    },
-                  },
-                  defaultValue: () => [
-                    {
-                      startTime: date(8),
-                      endTime: date(12),
-                    },
-                    {
-                      startTime: date(14),
-                      endTime: date(20),
-                    },
-                  ],
-                  fields: [
-                    {
-                      type: "row",
-                      fields: [
-                        {
-                          name: "startTime",
-                          type: "date",
-                          label: {
-                            en: "Start Time",
-                            es: "Hora de inicio",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(8),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                        {
-                          name: "endTime",
-                          type: "date",
-                          label: {
-                            en: "End Time",
-                            es: "Hora de fin",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(12),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: "array",
-                  name: "thursday",
-                  minRows: 0,
-                  maxRows: 2,
-                  label: {
-                    en: "Thursday",
-                    es: "Jueves",
-                  },
-                  labels: {
-                    singular: {
-                      en: "Block",
-                      es: "Bloque",
-                    },
-                    plural: {
-                      en: "Blocks",
-                      es: "Bloques",
-                    },
-                  },
-                  defaultValue: () => [
-                    {
-                      startTime: date(8),
-                      endTime: date(12),
-                    },
-                    {
-                      startTime: date(14),
-                      endTime: date(20),
-                    },
-                  ],
-                  fields: [
-                    {
-                      type: "row",
-                      fields: [
-                        {
-                          name: "startTime",
-                          type: "date",
-                          label: {
-                            en: "Start Time",
-                            es: "Hora de inicio",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(8),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                        {
-                          name: "endTime",
-                          type: "date",
-                          label: {
-                            en: "End Time",
-                            es: "Hora de fin",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(12),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: "array",
-                  name: "friday",
-                  minRows: 0,
-                  maxRows: 2,
-                  label: {
-                    en: "Friday",
-                    es: "Viernes",
-                  },
-                  labels: {
-                    singular: {
-                      en: "Block",
-                      es: "Bloque",
-                    },
-                    plural: {
-                      en: "Blocks",
-                      es: "Bloques",
-                    },
-                  },
-                  defaultValue: () => [
-                    {
-                      startTime: date(8),
-                      endTime: date(12),
-                    },
-                    {
-                      startTime: date(14),
-                      endTime: date(20),
-                    },
-                  ],
-                  fields: [
-                    {
-                      type: "row",
-                      fields: [
-                        {
-                          name: "startTime",
-                          type: "date",
-                          label: {
-                            en: "Start Time",
-                            es: "Hora de inicio",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(8),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                        {
-                          name: "endTime",
-                          type: "date",
-                          label: {
-                            en: "End Time",
-                            es: "Hora de fin",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(12),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: "array",
-                  name: "saturday",
-                  minRows: 0,
-                  maxRows: 2,
-                  label: {
-                    en: "Saturday",
-                    es: "Sábado",
-                  },
-                  labels: {
-                    singular: {
-                      en: "Block",
-                      es: "Bloque",
-                    },
-                    plural: {
-                      en: "Blocks",
-                      es: "Bloques",
-                    },
-                  },
-                  defaultValue: () => [
-                    {
-                      startTime: date(8),
-                      endTime: date(12),
-                    },
-                  ],
-                  fields: [
-                    {
-                      type: "row",
-                      fields: [
-                        {
-                          name: "startTime",
-                          type: "date",
-                          label: {
-                            en: "Start Time",
-                            es: "Hora de inicio",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(8),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                        {
-                          name: "endTime",
-                          type: "date",
-                          label: {
-                            en: "End Time",
-                            es: "Hora de fin",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(12),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
-                {
-                  type: "array",
-                  name: "sunday",
-                  minRows: 0,
-                  maxRows: 2,
-                  label: {
-                    en: "Sunday",
-                    es: "Domingo",
-                  },
-                  labels: {
-                    singular: {
-                      en: "Block",
-                      es: "Bloque",
-                    },
-                    plural: {
-                      en: "Blocks",
-                      es: "Bloques",
-                    },
-                  },
-                  fields: [
-                    {
-                      type: "row",
-                      fields: [
-                        {
-                          name: "startTime",
-                          type: "date",
-                          label: {
-                            en: "Start Time",
-                            es: "Hora de inicio",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(8),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                        {
-                          name: "endTime",
-                          type: "date",
-                          label: {
-                            en: "End Time",
-                            es: "Hora de fin",
-                          },
-                          // timezone: {
-                          //   defaultTimezone: "UTC",
-                          //   supportedTimezones: [
-                          //     { label: "UTC", value: "UTC" },
-                          //   ],
-                          // },
-                          required: true,
-                          defaultValue: () => date(12),
-                          admin: {
-                            date: {
-                              pickerAppearance: "timeOnly",
-                              timeFormat: "HH:mm",
-                              displayFormat: "HH:mm",
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                },
+                workDay("monday", { en: "Monday", es: "Lunes" }, [
+                  MORNING_BLOCK,
+                  AFTERNOON_BLOCK,
+                ]),
+                workDay("tuesday", { en: "Tuesday", es: "Martes" }, [
+                  MORNING_BLOCK,
+                  AFTERNOON_BLOCK,
+                ]),
+                workDay("wednesday", { en: "Wednesday", es: "Miércoles" }, [
+                  MORNING_BLOCK,
+                  AFTERNOON_BLOCK,
+                ]),
+                workDay("thursday", { en: "Thursday", es: "Jueves" }, [
+                  MORNING_BLOCK,
+                  AFTERNOON_BLOCK,
+                ]),
+                workDay("friday", { en: "Friday", es: "Viernes" }, [
+                  MORNING_BLOCK,
+                  AFTERNOON_BLOCK,
+                ]),
+                workDay("saturday", { en: "Saturday", es: "Sábado" }, [
+                  SATURDAY_BLOCK,
+                ]),
+                workDay("sunday", { en: "Sunday", es: "Domingo" }),
               ],
             },
           ],
@@ -884,15 +419,3 @@ export const Business: CollectionConfig = {
     },
   ],
 };
-
-/**
- *
- * @description Obtén offset actual desde el identificador tz
- * @param timeZone
- * @returns string { 11/29/2025, 7:35:49 PM EST }
- */
-export const timeOffset = (timeZone = "America/New_York") =>
-  new Date().toLocaleString("en", {
-    timeZone,
-    timeZoneName: "short",
-  });
