@@ -1,11 +1,11 @@
 import { Business } from "@/types/business/cms-types";
-import { formatSchedule } from "../../helpers/helpers";
 import { TOOLS_NAME } from "../tools/restaurant/reservation.tools";
 import {
   FlowOptions,
   FMStatus,
 } from "../../types/reservation/reservation.types";
 import { resolveNextState } from "../../workflow-fsm/resolve-next-state";
+import { formatSchedule } from "@/helpers/datetime-converters";
 
 const AGENT_NAME = "Lua";
 

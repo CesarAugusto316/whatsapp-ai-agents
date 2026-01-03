@@ -71,8 +71,9 @@ export const phase2 = z.object({
           !data.start.time ||
           !data.end.date ||
           !data.end.time
-        )
+        ) {
           return true;
+        }
 
         const startDateTime = new Date(`${data.start.date}T${data.start.time}`);
         const endDateTime = new Date(`${data.end.date}T${data.end.time}`);

@@ -20,6 +20,8 @@ import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
 import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 import { systemMessages } from "@/llm/prompts/system-messages";
 import { mergeReservationData } from "@/helpers/merge-state";
+import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
+import { localDateTimeToUTC } from "@/helpers/datetime-converters";
 
 const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   ctx,
@@ -85,38 +87,42 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
           "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
         );
       }
-      const { parsedData } = result;
+      const { parsedData, mergedData } = result;
       const { success, data, error } = parsedData;
 
       if (!success) {
         await reservationCacheService.save(reservationKey, {
           ...RESERVATION_CACHE,
-          // ...mergedData,
+          ...mergedData,
         } satisfies Partial<ReservationState>);
 
         const aiDataCollector = validationAgent.collector(business, error);
         return aiDataCollector;
       }
-      const { endDateTime, startDateTime } = convertToBackendFormat(
-        data.datetime,
-      );
-      // const dataWithDates = {
-      //   customerName: data.customerName,
-      //   numberOfPeople: data.numberOfPeople,
-      //   // startDateTime,
-      //   // endDateTime,
-      // } as ReservationState;
 
-      const isWithinSchedule = isDateTimeWithinSchedule(
-        startDateTime,
-        business.schedule,
-      );
-      if (!isWithinSchedule) {
+      const timezone = business.general.timezone;
+      const { start, end } = data.datetime;
+      const isWithinSchedule = {
+        start: isWithinBusinessHours(business.schedule, timezone, start),
+        end: isWithinBusinessHours(business.schedule, timezone, end),
+      };
+
+      console.log({
+        data,
+        isWithinSchedule,
+        schedule: JSON.stringify(business.schedule),
+        timezone,
+      });
+
+      if (!isWithinSchedule.start || !isWithinSchedule.end) {
+        /** @todo proponer otras fechas de reservación */
         return `
           😔 Lo sentimos, la fecha y hora seleccionada no está dentro del horario
           de atención del negocio. Por favor, selecciona otra fecha y hora.
         `;
       }
+      const startDateTime = localDateTimeToUTC(start, timezone);
+      const endDateTime = localDateTimeToUTC(end, timezone);
 
       /**
        *

@@ -20,7 +20,7 @@ import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
 import { systemMessages } from "@/llm/prompts/system-messages";
 import { mergeReservationData } from "@/helpers/merge-state";
 import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
-import { localDateTimeToUTC } from "@/helpers/helpers";
+import { localDateTimeToUTC } from "@/helpers/datetime-converters";
 
 export const ATTEMPTS = 4;
 
@@ -97,11 +97,12 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
     }
 
     const timezone = business.general.timezone;
-    const isWithinSchedule = isWithinBusinessHours(
-      business.schedule,
-      timezone,
-      data.datetime.start,
-    );
+    const { start, end } = data.datetime;
+    const isWithinSchedule = {
+      start: isWithinBusinessHours(business.schedule, timezone, start),
+      end: isWithinBusinessHours(business.schedule, timezone, end),
+    };
+
     console.log({
       data,
       isWithinSchedule,
@@ -109,16 +110,15 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
       timezone,
     });
 
-    if (!isWithinSchedule) {
+    if (!isWithinSchedule.start || !isWithinSchedule.end) {
       /** @todo proponer otras fechas de reservación */
       return `
         😔 Lo sentimos, la fecha y hora seleccionada no está dentro del horario
         de atención del negocio. Por favor, selecciona otra fecha y hora.
       `;
     }
-
-    const startDateTime = localDateTimeToUTC(data.datetime.start, timezone);
-    const endDateTime = localDateTimeToUTC(data.datetime.end, timezone);
+    const startDateTime = localDateTimeToUTC(start, timezone);
+    const endDateTime = localDateTimeToUTC(end, timezone);
 
     const isAvailable = await businessService.checkAvailability({
       "where[numberOfPeople][equals]": data.numberOfPeople,
@@ -181,13 +181,12 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
       customerName = "",
-      // endDateTime = "",
-      // startDateTime = "",
+      datetime,
       numberOfPeople = 1,
-    } = RESERVATION_CACHE;
+    } = RESERVATION_CACHE as ReservationState;
 
     let newCustomer = customer;
-    if (!customer) {
+    if (!customer && customerName) {
       newCustomer = (
         (await (
           await businessService.createCostumer({
@@ -200,11 +199,14 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
     }
     // finally, we create the reservation
     if (newCustomer?.id && business?.id) {
+      const timezone = business.general.timezone;
+      const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
+      const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
       const res = await businessService.createAppointment({
         business: business.id,
         customer: newCustomer.id,
-        // startDateTime,
-        // endDateTime,
+        startDateTime,
+        endDateTime,
         customerName: newCustomer.name || customerName,
         numberOfPeople,
         status: "confirmed",
@@ -214,7 +216,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       await reservationCacheService.delete(reservationKey ?? "");
       return humanizerAgent(assistantMsg);
     }
-    return humanizerAgent("Cliente no pudo ser creado");
+    return humanizerAgent("Cliente no pudo ser creado, falta el nombre");
   }
 
   // FINAL OPTION: 2. SALIR
