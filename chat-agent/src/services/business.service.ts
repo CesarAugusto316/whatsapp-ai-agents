@@ -116,6 +116,7 @@ class BusinessService {
     });
 
     const res = (await appointments.json()) as { docs: Appointment[] };
+    console.log({ res: appointments });
     return res.docs.length === 0 ? BOOL.YES : BOOL.NO;
   }
 

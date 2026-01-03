@@ -3,12 +3,17 @@ import {
   CustomerActions,
   FMStatus,
 } from "@/types/reservation/reservation.types";
-import { systemMessages } from "@/llm/prompts";
 import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { AppContext } from "@/types/hono.types";
 import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
+import { systemMessages } from "@/llm/prompts/system-messages";
 
+/**
+ *
+ * @param ctx
+ * @returns
+ */
 const started: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   const { RESERVATION_CACHE, customerMessage, reservationKey, customer } = ctx;
 

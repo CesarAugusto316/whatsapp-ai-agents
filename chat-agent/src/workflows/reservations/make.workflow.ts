@@ -3,13 +3,12 @@ import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
   CustomerActions,
-  ReservationInput,
+  ReservationState,
   ReservationStatuses,
   InputIntent,
   FlowOptions,
   FMStatus,
 } from "@/types/reservation/reservation.types";
-import { systemMessages } from "@/llm/prompts";
 import { Appointment, Customer } from "@/types/business/cms-types";
 import {
   humanizerAgent,
@@ -17,11 +16,11 @@ import {
   validationAgent,
 } from "@/llm/llm.config";
 import { AppContext } from "@/types/hono.types";
-import {
-  resolveNextState,
-  ReservationState,
-} from "@/workflow-fsm/resolve-next-state";
-import { isDateTimeWithinSchedule } from "@/helpers/helpers";
+import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
+import { systemMessages } from "@/llm/prompts/system-messages";
+import { mergeReservationData } from "@/helpers/merge-state";
+import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
+import { localDateTimeToUTC } from "@/helpers/helpers";
 
 export const ATTEMPTS = 4;
 
@@ -43,13 +42,11 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
     customer,
   } = ctx;
 
-  const previousState = {
-    customerName: RESERVATION_CACHE?.customerName || customer?.name || "",
-    startDateTime: RESERVATION_CACHE?.startDateTime || "",
-    endDateTime: RESERVATION_CACHE?.endDateTime,
-    numberOfPeople: RESERVATION_CACHE?.numberOfPeople || 0,
-    //
-  } satisfies ReservationInput;
+  if (!RESERVATION_CACHE) return;
+
+  const previousState = mergeReservationData(RESERVATION_CACHE, {
+    customerName: customer?.name,
+  });
 
   try {
     // OPTION: 1. SALIR
@@ -86,7 +83,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
         "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
       );
     }
-    const { mergedData, parsedData } = result;
+    const { parsedData, mergedData } = result;
     const { success, data, error } = parsedData;
 
     if (!success) {
@@ -96,23 +93,37 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
       } satisfies Partial<ReservationState>);
 
       const aiDataCollector = validationAgent.collector(business, error);
-      return aiDataCollector; // agent try to collect missing data
+      return aiDataCollector; // agent tries to collect missing data
     }
-    const isWithinSchedule = isDateTimeWithinSchedule(
-      data.startDateTime,
+
+    const timezone = business.general.timezone;
+    const isWithinSchedule = isWithinBusinessHours(
       business.schedule,
-      business.general.timezone,
+      timezone,
+      data.datetime.start,
     );
+    console.log({
+      data,
+      isWithinSchedule,
+      schedule: JSON.stringify(business.schedule),
+      timezone,
+    });
+
     if (!isWithinSchedule) {
+      /** @todo proponer otras fechas de reservación */
       return `
         😔 Lo sentimos, la fecha y hora seleccionada no está dentro del horario
         de atención del negocio. Por favor, selecciona otra fecha y hora.
       `;
     }
+
+    const startDateTime = localDateTimeToUTC(data.datetime.start, timezone);
+    const endDateTime = localDateTimeToUTC(data.datetime.end, timezone);
+
     const isAvailable = await businessService.checkAvailability({
       "where[numberOfPeople][equals]": data.numberOfPeople,
-      "where[startDateTime][equals]": data.startDateTime,
-      "where[endDateTime][equals]": data.endDateTime,
+      "where[startDateTime][equals]": startDateTime,
+      "where[endDateTime][equals]": endDateTime,
     });
     if (!isAvailable) {
       const retries = (RESERVATION_CACHE?.attempts || 0) + 1;
@@ -142,7 +153,6 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
     const responseMsg = systemMessages.getConfirmationMsg(data);
     return humanizerAgent(responseMsg);
   } catch (error) {
-    //
     // BORRAR CACHE y REINICIAR
     return humanizerAgent(
       "Ocurrió un problema inesperado. ¿Podemos intentar de nuevo con los datos de la reserva?",
@@ -171,8 +181,8 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
       customerName = "",
-      endDateTime = "",
-      startDateTime = "",
+      // endDateTime = "",
+      // startDateTime = "",
       numberOfPeople = 1,
     } = RESERVATION_CACHE;
 
@@ -193,10 +203,10 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       const res = await businessService.createAppointment({
         business: business.id,
         customer: newCustomer.id,
-        startDateTime,
+        // startDateTime,
+        // endDateTime,
         customerName: newCustomer.name || customerName,
         numberOfPeople,
-        endDateTime,
         status: "confirmed",
       });
       const reservation = (await res.json()) as { doc: Appointment };

@@ -2,7 +2,7 @@ import businessService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
   CustomerActions,
-  ReservationInput,
+  ReservationState,
   ReservationStatuses,
   InputIntent,
   FlowOptions,
@@ -16,13 +16,10 @@ import {
 } from "@/llm/llm.config";
 import { ATTEMPTS } from "./make.workflow";
 import { AppContext } from "@/types/hono.types";
-import { isDateTimeWithinSchedule } from "@/helpers/helpers";
-import {
-  ReservationState,
-  resolveNextState,
-} from "@/workflow-fsm/resolve-next-state";
+import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
 import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
-import { systemMessages } from "@/llm/prompts";
+import { systemMessages } from "@/llm/prompts/system-messages";
+import { mergeReservationData } from "@/helpers/merge-state";
 
 const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   ctx,
@@ -40,13 +37,18 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
     return "Aún no te has registrado, por favor has tu primera reserva para registrarte";
   }
 
-  const previousState = {
-    customerName: RESERVATION_CACHE?.customerName || customer?.name || "",
-    startDateTime: RESERVATION_CACHE?.startDateTime || "",
-    endDateTime: RESERVATION_CACHE?.endDateTime,
-    numberOfPeople: RESERVATION_CACHE?.numberOfPeople || 0,
-    //
-  } satisfies ReservationInput;
+  if (!RESERVATION_CACHE) return;
+
+  const previousState = mergeReservationData(RESERVATION_CACHE, {
+    customerName: customer?.name,
+  });
+  // const previousState = {
+  //   customerName: RESERVATION_CACHE?.customerName || customer?.name || "",
+  //   startDateTime: RESERVATION_CACHE?.startDateTime || "",
+  //   endDateTime: RESERVATION_CACHE?.endDateTime,
+  //   numberOfPeople: RESERVATION_CACHE?.numberOfPeople || 0,
+  //   //
+  // } satisfies ReservationState;
 
   try {
     // OPTION: 1. SALIR
@@ -83,23 +85,31 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
           "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
         );
       }
-      const { mergedData, parsedData } = result;
+      const { parsedData } = result;
       const { success, data, error } = parsedData;
 
       if (!success) {
         await reservationCacheService.save(reservationKey, {
           ...RESERVATION_CACHE,
-          ...mergedData,
+          // ...mergedData,
         } satisfies Partial<ReservationState>);
 
         const aiDataCollector = validationAgent.collector(business, error);
         return aiDataCollector;
       }
+      const { endDateTime, startDateTime } = convertToBackendFormat(
+        data.datetime,
+      );
+      // const dataWithDates = {
+      //   customerName: data.customerName,
+      //   numberOfPeople: data.numberOfPeople,
+      //   // startDateTime,
+      //   // endDateTime,
+      // } as ReservationState;
 
       const isWithinSchedule = isDateTimeWithinSchedule(
-        data.startDateTime,
+        startDateTime,
         business.schedule,
-        business.general.timezone,
       );
       if (!isWithinSchedule) {
         return `
@@ -107,6 +117,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
           de atención del negocio. Por favor, selecciona otra fecha y hora.
         `;
       }
+
       /**
        *
        * @todo debemos que validar si la nueva fecha o
@@ -116,8 +127,8 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
        */
       const isAvailable = await businessService.checkAvailability({
         "where[numberOfPeople][equals]": data.numberOfPeople,
-        "where[startDateTime][equals]": data.startDateTime,
-        "where[endDateTime][equals]": data.endDateTime,
+        "where[startDateTime][equals]": startDateTime,
+        "where[endDateTime][equals]": endDateTime,
       });
       if (!isAvailable) {
         const retries = (RESERVATION_CACHE?.attempts || 0) + 1;
@@ -173,8 +184,8 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
       customerName,
-      startDateTime = "",
-      endDateTime = "",
+      // startDateTime = "",
+      // endDateTime = "",
       numberOfPeople = 1,
     } = RESERVATION_CACHE;
 
@@ -185,8 +196,8 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
         {
           business: business?.id,
           customer: customer?.id,
-          startDateTime,
-          endDateTime,
+          // startDateTime,
+          // endDateTime,
           numberOfPeople,
           customerName: customerName || customer.name || "",
           status: "confirmed",

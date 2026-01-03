@@ -3,26 +3,26 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env } from "bun";
 import { getReservationStatusById } from "./tools/restaurant/reservation.tools";
 import {
-  buildInfoReservationsSystemPrompt,
-  CLASSIFIER_PROMPT,
-  validationPrompts,
-  humanizerPrompt,
-} from "./prompts";
-import {
   AgentArgs,
   CUSTOMER_INTENT,
   FlowOption,
   InputIntent,
-  ReservationInput,
   ReservationStatus,
 } from "../types/reservation/reservation.types";
 import { Business } from "@/types/business/cms-types";
-import z, { safeParse, ZodError } from "zod";
+import { safeParse, ZodError } from "zod";
 import {
   customerIntentSchema,
   inputIntentSchema,
+  mapZodErrorsToCollector,
+  ReservationSchema,
   reservationSchemas,
 } from "../types/reservation/schemas";
+import { buildInfoReservationsSystemPrompt } from "./prompts/conversational-prompts";
+import { CLASSIFIER_PROMPT } from "./prompts/classifier-prompts";
+import { validationPrompts } from "./prompts/validation-prompts";
+import { humanizerPrompt } from "./prompts/humanizer-prompt";
+import { mergeReservationData } from "@/helpers/merge-state";
 
 /**
  *
@@ -181,12 +181,6 @@ export async function humanizerAgent(message: string, temperature = 0.5) {
   return content;
 }
 
-// Tipo para el resultado del collector
-type FieldError = {
-  field: string;
-  error: string; // "" si el campo está vacío / requerido pero no provisto
-};
-
 export const validationAgent = {
   /**
    *
@@ -195,7 +189,7 @@ export const validationAgent = {
   async parser(
     business: Business,
     customerMessage: string,
-    previousState: ReservationInput,
+    previousState: ReservationSchema,
     temp = 0.1,
   ) {
     const PARSER_PROMPT = validationPrompts.dataParser(business);
@@ -209,20 +203,14 @@ export const validationAgent = {
       JSON.parse(aiValidator),
     );
     if (!phase1.success) {
+      console.log(phase1, aiValidator);
       return;
     }
-    const mergeState = {
-      customerName: phase1.data?.customerName || previousState.customerName,
-      startDateTime: phase1.data?.startDateTime || previousState.startDateTime,
-      endDateTime: phase1.data?.endDateTime || previousState.endDateTime,
-      numberOfPeople:
-        phase1.data?.numberOfPeople || previousState.numberOfPeople,
-      //
-    } satisfies ReservationInput;
-
     // ✅ Required fields
-    const phase2 = safeParse(reservationSchemas.phase2, mergeState);
-    return { parsedData: phase2, mergedData: mergeState };
+    const mergedData = mergeReservationData(phase1.data, previousState);
+    const phase2 = safeParse(reservationSchemas.phase2, phase1.data);
+    console.log({ phase1, phase2 });
+    return { parsedData: phase2, mergedData };
   },
 
   /**
@@ -230,41 +218,24 @@ export const validationAgent = {
    * @description converts ZodError into human readable message and asks to complete
    * the process
    * @param business
-   * @param error
+   * @param errors
    * @returns
    */
-  async collector(
-    business: Business,
-    error: ZodError<ReservationInput>,
-    temp = 0.7,
-  ) {
-    // Función que extrae los errores de Zod
-    function extractMissingFields(zodError: ZodError): FieldError[] {
-      const result: FieldError[] = [];
+  async collector(business: Business, errors: ZodError, temp = 0.7) {
+    const COLLECTOR_PROMPT = validationPrompts.collector(business);
+    const mappedErrors = mapZodErrorsToCollector(errors);
 
-      for (const issue of zodError.issues) {
-        const field = issue.path[0];
-        if (typeof field === "string") {
-          result.push({
-            field,
-            // usamos issue.message si existe, si no ponemos "" indicando campo vacío
-            error: issue.message || "",
-          });
-        }
-      }
-      return result;
+    // Validar que hay errores para procesar
+    if (!mappedErrors || mappedErrors.length === 0) {
+      return "No se detectaron errores específicos para corregir.";
     }
 
-    const COLLECTOR_PROMPT = validationPrompts.collector(business);
+    console.log({ errors, mappedErrors });
     const aiDataCollector = aiClient(
       [
         {
           role: "user",
-          /** @todo improve COLLECTOR_PROMPT and INPUT_SCHEMA (content message)  */
-          content: `
-              Context for clarification:
-              ${JSON.stringify(extractMissingFields(error), null, 2)}
-            `,
+          content: JSON.stringify(mappedErrors),
         },
       ],
       COLLECTOR_PROMPT,

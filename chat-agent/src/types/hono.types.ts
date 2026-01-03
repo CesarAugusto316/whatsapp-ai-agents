@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { Business, Customer } from "./business/cms-types";
-import { ReservationState } from "@/workflow-fsm/resolve-next-state";
+import { ReservationState } from "./reservation/reservation.types";
 
 export type AppContext = {
   whatsappEvent: string;

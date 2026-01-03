@@ -1,5 +1,4 @@
 import { GenerateTextResult, ToolSet } from "ai";
-import { Day } from "@/types/business/cms-types";
 import { WEEK_DAYS, WeekDay } from "@/types/reservation/reservation.types";
 
 /**
@@ -101,49 +100,70 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
   return lines.join("\n");
 }
 
-type Schedule = {
-  monday?: Day[] | null;
-  tuesday?: Day[] | null;
-  wednesday?: Day[] | null;
-  thursday?: Day[] | null;
-  friday?: Day[] | null;
-  saturday?: Day[] | null;
-  sunday?: Day[] | null;
-};
+/**
+ *
+ * @example
+ *  localDateTimeToUTC(
+ *   "2026-01-02",
+ *   "20:00:00",
+ *   "America/Guayaquil"
+ * );
+ * // → "2026-01-03T01:00:00.000Z"
+ * @param date
+ * @param time
+ * @param timeZone
+ * @returns
+ */
+export function localDateTimeToUTC(
+  dateTime: { date: string; time: string },
+  timeZone: string,
+): string {
+  const { date, time } = dateTime;
+  const localISO = `${date}T${time}`;
 
-export function isDateTimeWithinSchedule(
-  startDateTimeUtc: string,
-  schedule: Schedule,
-  timezone: string,
-): boolean {
-  const date = new Date(startDateTimeUtc);
+  const zonedDate = new Date(
+    new Date(localISO).toLocaleString("en-US", { timeZone }),
+  );
 
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    weekday: "long",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
-  }).formatToParts(date);
-
-  const get = (type: string) =>
-    Number(parts.find((p) => p.type === type)?.value);
-
-  const weekday = parts
-    .find((p) => p.type === "weekday")!
-    .value.toLowerCase() as keyof Schedule;
-
-  const minutes = get("hour") * 60 + get("minute");
-
-  const daySchedule = schedule[weekday];
-  if (!daySchedule?.length) return false;
-
-  return daySchedule.some((r) => minutes >= r.open && minutes < r.close);
+  return new Date(
+    zonedDate.getTime() - zonedDate.getTimezoneOffset() * 60_000,
+  ).toISOString();
 }
 
-export function daysFromNowUTC(days: number, hourUTC: number) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + days);
-  d.setUTCHours(hourUTC, 0, 0, 0);
-  return d.toISOString();
+/**
+ *
+ * @example
+ *  utcToLocalDateTime(
+ *   "2026-01-03T01:00:00.000Z",
+ *   "America/Guayaquil"
+ * );
+ * // → { date: "2026-01-02", time: "20:00:00" }
+ * @param utcISO
+ * @param timeZone
+ * @returns
+ */
+export function utcToLocalDateTime(
+  utcISO: string,
+  timeZone: string,
+): { date: string; time: string } {
+  const date = new Date(utcISO);
+
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(date);
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+
+  return {
+    date: `${map.year}-${map.month}-${map.day}`,
+    time: `${map.hour}:${map.minute}:${map.second}`,
+  };
 }

@@ -1,5 +1,6 @@
-import { Appointment, Business } from "@/types/business/cms-types";
+import { Business } from "@/types/business/cms-types";
 import { ModelMessage } from "ai";
+import { ReservationSchema } from "./schemas";
 
 export const BOOL = {
   YES: true,
@@ -44,10 +45,13 @@ export const ReservationStatuses = {
 
 export type ReservationStatus = keyof typeof ReservationStatuses;
 
-export type ReservationInput = Pick<
-  Appointment,
-  "customerName" | "startDateTime" | "endDateTime" | "numberOfPeople"
->;
+export interface ReservationState extends ReservationSchema {
+  id: string;
+  status: FMStatus;
+  customerId: string;
+  businessId: string;
+  attempts: number;
+}
 
 export type FlowOption = "1" | "2" | "3";
 export type FMStatus = ReservationStatus | FlowOption;

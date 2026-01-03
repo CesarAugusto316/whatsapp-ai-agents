@@ -1,5 +1,5 @@
 import { redis } from "@/storage/cache-storage.config";
-import { ReservationState } from "@/workflow-fsm/resolve-next-state";
+import { ReservationState } from "@/types/reservation/reservation.types";
 
 const EXPIRATION_TIME = 60 * 60 * 1; // 1 hora
 

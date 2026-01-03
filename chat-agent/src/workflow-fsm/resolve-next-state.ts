@@ -2,18 +2,8 @@ import {
   CustomerActions,
   FlowOptions,
   FMStatus,
-  ReservationInput,
   ReservationStatuses,
 } from "../types/reservation/reservation.types";
-
-export interface ReservationState extends ReservationInput {
-  id: string;
-  status: FMStatus;
-  customerPhone: string;
-  customerId: string;
-  businessId: string;
-  attempts: number;
-}
 
 export interface StateTransition {
   nextState: FMStatus;
