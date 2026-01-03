@@ -4,7 +4,7 @@ import {
   ReservationState,
 } from "@/types/reservation/reservation.types";
 
-type ReservationMode = "create" | "update";
+export type ReservationMode = "create" | "update";
 
 /**
  *
