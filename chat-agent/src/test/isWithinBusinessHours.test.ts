@@ -1,6 +1,6 @@
 import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
 import { WeekDay } from "@/types/reservation/reservation.types";
-import { describe, expect, test, mock } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 describe("isWithinBusinessHours", () => {
   // Horario de ejemplo que cubre múltiples casos
