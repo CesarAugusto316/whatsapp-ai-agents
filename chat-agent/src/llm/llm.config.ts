@@ -10,7 +10,7 @@ import {
   ReservationStatus,
 } from "../types/reservation/reservation.types";
 import { Business } from "@/types/business/cms-types";
-import { safeParse, ZodError } from "zod";
+import { ZodError } from "zod";
 import {
   customerIntentSchema,
   inputIntentSchema,
@@ -122,7 +122,7 @@ export async function customerIntentClassifier(
       temperature,
     ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
 
-    const { success, data } = safeParse(customerIntentSchema, raw);
+    const { success, data } = customerIntentSchema.safeParse(raw);
     if (success) return data;
     return CUSTOMER_INTENT.WHAT; // fallback
   } catch (err) {
@@ -148,7 +148,7 @@ export async function inputIntentClassifier(
       temperature,
     ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
 
-    const { success, data } = safeParse(inputIntentSchema, raw);
+    const { success, data } = inputIntentSchema.safeParse(raw);
     if (success) return data;
     return InputIntent.CUSTOMER_QUESTION; // fallback
   } catch (err) {
@@ -181,12 +181,12 @@ export async function humanizerAgent(message: string, temperature = 0.5) {
   return content;
 }
 
-export const validationAgent = {
+export const validatorAgent = {
   /**
    *
    * @description Validates the customer's input and returns a parsed object
    */
-  async parser(
+  async parse(
     business: Business,
     customerMessage: string,
     previousState: ReservationSchema,
@@ -198,17 +198,14 @@ export const validationAgent = {
     ];
     const aiValidator: string = await aiClient(messages, PARSER_PROMPT, temp);
     // ✨ Optional fields
-    const phase1 = safeParse(
-      reservationSchemas.phase1,
-      JSON.parse(aiValidator),
-    );
+    const phase1 = reservationSchemas.phase1.safeParse(JSON.parse(aiValidator));
     if (!phase1.success) {
       console.log(phase1, aiValidator);
       return;
     }
     // ✅ Required fields
     const mergedData = mergeReservationData(phase1.data, previousState);
-    const phase2 = safeParse(reservationSchemas.phase2, phase1.data);
+    const phase2 = reservationSchemas.phase2.safeParse(phase1.data);
     console.log({ phase1, phase2 });
     return { parsedData: phase2, mergedData };
   },
@@ -221,8 +218,8 @@ export const validationAgent = {
    * @param errors
    * @returns
    */
-  async collector(business: Business, errors: ZodError, temp = 0.7) {
-    const COLLECTOR_PROMPT = validationPrompts.collector(business);
+  async humanizeErrors(business: Business, errors: ZodError, temp = 0.7) {
+    const COLLECTOR_PROMPT = validationPrompts.humanizeErrors(business);
     const mappedErrors = mapZodErrorsToCollector(errors);
 
     // Validar que hay errores para procesar

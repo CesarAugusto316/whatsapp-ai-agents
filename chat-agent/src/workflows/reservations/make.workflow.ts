@@ -13,7 +13,7 @@ import { Appointment, Customer } from "@/types/business/cms-types";
 import {
   humanizerAgent,
   inputIntentClassifier,
-  validationAgent,
+  validatorAgent,
 } from "@/llm/llm.config";
 import { AppContext } from "@/types/hono.types";
 import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
@@ -72,7 +72,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
     }
 
     // ✅ All fields are required here
-    const result = await validationAgent.parser(
+    const result = await validatorAgent.parse(
       business,
       customerMessage,
       previousState,
@@ -92,7 +92,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
         ...mergedData,
       } satisfies Partial<ReservationState>);
 
-      const aiDataCollector = validationAgent.collector(business, error);
+      const aiDataCollector = validatorAgent.humanizeErrors(business, error);
       return aiDataCollector; // agent tries to collect missing data
     }
 

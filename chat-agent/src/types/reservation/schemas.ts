@@ -94,7 +94,7 @@ export const phase2 = z.object({
     .max(100, "too_large: Máximo 100 personas"),
 });
 
-// Función de mapeo mejorada
+// Función de mapeo mejorada con filtrado de errores humanos
 export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
   const fieldMap: Record<string, string> = {
     customerName: "customerName",
@@ -106,15 +106,88 @@ export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
     datetime: "datetime", // Para validación cruzada
   };
 
-  return zodError.issues.map((issue) => {
+  // Recolectar errores primero
+  const allErrors = zodError.issues.map((issue) => {
     const path = issue.path.join(".");
     const field = fieldMap[path] || issue.path[0];
-
     return {
       field,
       error: issue.message || "",
     };
   });
+
+  // Filtrar y priorizar errores: solo mantener los relevantes para humanos
+  const filteredErrors: Array<{ field: PropertyKey; error: string }> = [];
+
+  // Agrupar por campo para procesar múltiples errores
+  const errorsByField: Record<
+    string,
+    Array<{ field: PropertyKey; error: string }>
+  > = {};
+
+  allErrors.forEach((error) => {
+    if (!errorsByField[error.field as string]) {
+      errorsByField[error.field as string] = [];
+    }
+    errorsByField[error.field as string].push(error);
+  });
+
+  // Para cada campo, seleccionar el error más relevante para humanos
+  Object.keys(errorsByField).forEach((field) => {
+    const fieldErrors = errorsByField[field];
+
+    // Si solo hay un error, mantenerlo
+    if (fieldErrors.length === 1) {
+      filteredErrors.push(fieldErrors[0]);
+      return;
+    }
+
+    // Para campos de fecha/hora: priorizar errores de FORMATO sobre errores técnicos
+    if (field === "startDate" || field === "endDate") {
+      // Prioridad: invalid_date_format > invalid_date
+      const formatError = fieldErrors.find((e) =>
+        e.error.includes("invalid_date_format"),
+      );
+      if (formatError) {
+        filteredErrors.push(formatError);
+      } else {
+        filteredErrors.push(fieldErrors[0]); // Fallback al primer error
+      }
+    } else if (field === "startTime" || field === "endTime") {
+      // Prioridad: invalid_time_format > invalid_time
+      const formatError = fieldErrors.find((e) =>
+        e.error.includes("invalid_time_format"),
+      );
+      if (formatError) {
+        filteredErrors.push(formatError);
+      } else {
+        filteredErrors.push(fieldErrors[0]);
+      }
+    } else if (field === "customerName") {
+      // Para nombre: priorizar errores de longitud sobre formato
+      const lengthError = fieldErrors.find(
+        (e) => e.error.includes("too_short") || e.error.includes("too_long"),
+      );
+      if (lengthError) {
+        filteredErrors.push(lengthError);
+      } else {
+        // Si no hay error de longitud, usar el de formato
+        const formatError = fieldErrors.find((e) =>
+          e.error.includes("invalid_format"),
+        );
+        if (formatError) {
+          filteredErrors.push(formatError);
+        } else {
+          filteredErrors.push(fieldErrors[0]);
+        }
+      }
+    } else {
+      // Para otros campos, usar el primer error
+      filteredErrors.push(fieldErrors[0]);
+    }
+  });
+
+  return filteredErrors;
 };
 
 export type ReservationSchema = z.infer<typeof phase2>;

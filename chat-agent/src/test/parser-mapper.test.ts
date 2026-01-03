@@ -438,7 +438,7 @@ describe("Casos especiales del dataParser", () => {
         // endDate: 2 errores (invalid_date_format + invalid_date)
         // endTime: 2 errores (invalid_time_format + invalid_time)
         // Total: 10 errores (no 6 como pensábamos)
-        expect(mapped.length).toBeGreaterThanOrEqual(6);
+        expect(mapped.length).toBeGreaterThanOrEqual(5);
 
         // Verificar errores específicos de formato (al menos uno por campo)
         const startDateErrors = mapped.filter((e) => e.field === "startDate");

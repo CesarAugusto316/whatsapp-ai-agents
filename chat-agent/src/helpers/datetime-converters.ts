@@ -84,13 +84,18 @@ export function localDateTimeToUTC(
   const { date, time } = dateTime;
   const localISO = `${date}T${time}`;
 
-  const zonedDate = new Date(
-    new Date(localISO).toLocaleString("en-US", { timeZone }),
-  );
+  // Crear la fecha en la zona horaria local
+  const localDate = new Date(localISO);
 
-  return new Date(
-    zonedDate.getTime() - zonedDate.getTimezoneOffset() * 60_000,
-  ).toISOString();
+  // Obtener el offset en minutos para esta fecha en la zona horaria especificada
+  const offsetMs =
+    new Date(localDate.toLocaleString("en-US", { timeZone })).getTime() -
+    new Date(localDate.toLocaleString("en-US", { timeZone: "UTC" })).getTime();
+
+  // Ajustar al UTC
+  const utcDate = new Date(localDate.getTime() - offsetMs);
+
+  return utcDate.toISOString();
 }
 
 /**
@@ -111,7 +116,7 @@ export function utcToLocalDateTime(
 ): { date: string; time: string } {
   const date = new Date(utcISO);
 
-  const formatter = new Intl.DateTimeFormat("en-CA", {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",
     month: "2-digit",

@@ -12,7 +12,7 @@ import { Appointment } from "@/types/business/cms-types";
 import {
   humanizerAgent,
   inputIntentClassifier,
-  validationAgent,
+  validatorAgent,
 } from "@/llm/llm.config";
 import { ATTEMPTS } from "./make.workflow";
 import { AppContext } from "@/types/hono.types";
@@ -44,13 +44,6 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   const previousState = mergeReservationData(RESERVATION_CACHE, {
     customerName: customer?.name,
   });
-  // const previousState = {
-  //   customerName: RESERVATION_CACHE?.customerName || customer?.name || "",
-  //   startDateTime: RESERVATION_CACHE?.startDateTime || "",
-  //   endDateTime: RESERVATION_CACHE?.endDateTime,
-  //   numberOfPeople: RESERVATION_CACHE?.numberOfPeople || 0,
-  //   //
-  // } satisfies ReservationState;
 
   try {
     // OPTION: 1. SALIR
@@ -77,7 +70,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
 
     if (RESERVATION_CACHE?.id) {
       // ✅ All fields are required here
-      const result = await validationAgent.parser(
+      const result = await validatorAgent.parse(
         business,
         customerMessage,
         previousState,
@@ -96,7 +89,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
           ...mergedData,
         } satisfies Partial<ReservationState>);
 
-        const aiDataCollector = validationAgent.collector(business, error);
+        const aiDataCollector = validatorAgent.humanizeErrors(business, error);
         return aiDataCollector;
       }
 
@@ -190,20 +183,24 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
       customerName,
-      // startDateTime = "",
-      // endDateTime = "",
+      datetime,
       numberOfPeople = 1,
-    } = RESERVATION_CACHE;
+    } = RESERVATION_CACHE as ReservationState;
 
     // finally, we create the reservation
     if (customer?.id && business?.id && RESERVATION_CACHE?.id) {
+      const timezone = business.general.timezone;
+      const { start, end } = datetime;
+      const startDateTime = localDateTimeToUTC(start, timezone);
+      const endDateTime = localDateTimeToUTC(end, timezone);
+
       const res = await businessService.updateAppointment(
         RESERVATION_CACHE?.id,
         {
           business: business?.id,
           customer: customer?.id,
-          // startDateTime,
-          // endDateTime,
+          startDateTime,
+          endDateTime,
           numberOfPeople,
           customerName: customerName || customer.name || "",
           status: "confirmed",
