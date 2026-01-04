@@ -33,7 +33,6 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   } = ctx;
 
   if (!RESERVATION_CACHE) return;
-  if (!customer) return;
 
   return collecDataTask({
     reservation: RESERVATION_CACHE,
@@ -93,12 +92,16 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
         customer: newCustomer.id,
         startDateTime,
         endDateTime,
-        customerName: newCustomer.name || customerName,
+        customerName: newCustomer.name,
         numberOfPeople,
         status: "confirmed",
       });
       const reservation = (await res.json()) as { doc: Appointment };
-      const assistantMsg = systemMessages.getSuccessMsg(reservation?.doc);
+      const assistantMsg = systemMessages.getSuccessMsg({
+        id: reservation?.doc.id,
+        datetime,
+        numberOfPeople,
+      });
       await reservationCacheService.delete(reservationKey ?? "");
       return humanizerAgent(assistantMsg);
     }
@@ -115,12 +118,9 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   // FINAL OPTION: 3. REINGRESAR DATOS
   if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
     // RESTART
-    const assistantResponse = systemMessages.getCreateMsg(
-      {
-        userName: customer?.name,
-      },
-      "update",
-    );
+    const assistantResponse = systemMessages.getCreateMsg({
+      userName: customer?.name,
+    });
     await reservationCacheService.save(reservationKey ?? "", {
       businessId: business?.id,
       customerId: customer?.id,

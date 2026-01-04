@@ -26,6 +26,11 @@ const ACTION_MODES = {
   },
 } as const;
 
+type ReservationPayload = Pick<
+  Appointment,
+  "id" | "customerName" | "startDateTime" | "endDateTime" | "numberOfPeople"
+>;
+
 /**
  *
  * @description deterministic messages sent to the user
@@ -45,10 +50,7 @@ export const systemMessages = {
     `.trim();
   },
 
-  getCreateMsg(
-    { userName }: { userName?: string },
-    mode: ReservationMode = "create",
-  ) {
+  getCreateMsg({ userName }: { userName?: string }) {
     if (userName) {
       return `
         ✌🏽Para crear tu reserva es muy simple, comentame:
@@ -80,10 +82,10 @@ export const systemMessages = {
       2.  Hemos CONFIRMADO que hay disponibilidad ✅.
       Por favor revisa antes de confirmar la ${copy.process} de tu reserva:
 
-      👤 Nombre: ${data?.customerName}
-      ⏰ Hora de entrada: ${data?.datetime?.start?.date} - ${data?.datetime?.start?.time}
-      ⏰ Hora de salida: ${data?.datetime?.end?.date} - ${data?.datetime?.end?.time}
-      👥 Número de personas: ${data.numberOfPeople}
+      👤 **Nombre**: ${data?.customerName}
+      ⏰ **Hora de entrada**: ${data?.datetime?.start?.date} - ${data?.datetime?.start?.time}
+      ⏰ **Hora de salida**: ${data?.datetime?.end?.date} - ${data?.datetime?.end?.time}
+      👥 **Número de personas**: ${data.numberOfPeople}
 
       Si los datos son correctos, escribe:
       ✅ ${CustomerActions.CONFIRM}
@@ -100,10 +102,10 @@ export const systemMessages = {
     return `
       ✨ Hemos encontrado tu más reciente reserva!
 
-      👤 A nombre de: ${data?.customerName}
-      ⏰ Hora de entrada: ${data?.datetime?.start?.date} - ${data?.datetime?.start?.time}
-      ⏰ Hora de salida: ${data?.datetime?.end?.date} - ${data?.datetime?.end?.time}
-      👥 Número de personas: ${data.numberOfPeople}
+      👤 A **nombre** de: ${data?.customerName}
+      ⏰ Hora de **entrada**: ${data?.datetime?.start?.date} - ${data?.datetime?.start?.time}
+      ⏰ Hora de **salida**: ${data?.datetime?.end?.date} - ${data?.datetime?.end?.time}
+      👥 **Número de personas**: ${data.numberOfPeople}
 
       Si gustas cambiarla ayudanos con tus nuevos datos.
       Por ejemplo:
@@ -117,9 +119,9 @@ export const systemMessages = {
     return `
       ✨ Hemos encontrado tu más reciente reserva!
 
-      👤 A nombre de: ${data?.customerName}
-      ⏰ Hora de entrada: ${data?.datetime?.start?.date} - ${data?.datetime?.start?.time}
-      ⏰ Hora de salida: ${data?.datetime?.end?.date} - ${data?.datetime?.end?.time}
+      👤 A **nombre** de: ${data?.customerName}
+      ⏰ Hora de **entrada**: ${data?.datetime?.start?.date} - ${data?.datetime?.start?.time}
+      ⏰ Hora de **salida**: ${data?.datetime?.end?.date} - ${data?.datetime?.end?.time}
       👥 Número de personas: ${data.numberOfPeople}
 
       Si deseas cancelarla, escribe:
@@ -134,19 +136,18 @@ export const systemMessages = {
    * @todo SIMPLIFICAR ESTOS ARGUMENTOS
    */
   getSuccessMsg(
-    appointment: Appointment,
+    appointment: Partial<ReservationState>,
     mode: ReservationMode = "create",
   ): string {
-    const { customerName, startDateTime, endDateTime, numberOfPeople } =
-      appointment;
+    const { customerName, datetime, numberOfPeople } = appointment;
     const copy = ACTION_MODES[mode];
 
     return `
       ✅ Tu reserva ha sido ${copy.verb} con éxito.
 
       👤 Nombre: ${customerName}
-      ⏰ Hora de entrada: ${startDateTime}
-      ⏰ Hora de salida: ${endDateTime}
+      ⏰ Hora de **entrada**: ${datetime?.start?.date} - ${datetime?.start?.time}
+      ⏰ Hora de **salida**: ${datetime?.end?.date} - ${datetime?.end?.time}
       👥 Personas: ${numberOfPeople}
 
       🆔 ID de reserva: ${appointment.id}

@@ -21,7 +21,7 @@ import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
 
 type Args = {
   reservation: Partial<ReservationState>;
-  customer: Customer;
+  customer?: Customer;
   business: Business;
   reservationKey: string;
   fmStatus: FMStatus;
@@ -47,7 +47,7 @@ export async function collecDataTask({
 }: Args) {
   //
   const previousState = mergeReservationData(reservation, {
-    customerName: customer?.name,
+    customerName: customer?.name || "",
   });
 
   try {
@@ -107,7 +107,6 @@ export async function collecDataTask({
     console.log({
       data,
       isWithinSchedule,
-      schedule: JSON.stringify(business.schedule),
       timezone,
     });
 

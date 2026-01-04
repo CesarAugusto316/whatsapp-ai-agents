@@ -59,7 +59,6 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
       lines.push(`RANGE: ${start}-${end}`);
     }
   }
-  console.log({ lines });
   return lines.join("\n");
 }
 

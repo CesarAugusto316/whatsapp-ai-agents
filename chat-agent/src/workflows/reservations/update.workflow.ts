@@ -11,7 +11,10 @@ import { humanizerAgent } from "@/llm/llm.config";
 import { AppContext } from "@/types/hono.types";
 import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 import { systemMessages } from "@/llm/prompts/system-messages";
-import { localDateTimeToUTC } from "@/helpers/datetime-converters";
+import {
+  localDateTimeToUTC,
+  utcToLocalDateTime,
+} from "@/helpers/datetime-converters";
 import { collecDataTask } from "./tasks/collect-data.task";
 
 const started: StateWorkflowHandler<AppContext, FMStatus> = async (
@@ -87,7 +90,11 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       );
       const reservation = (await res.json()) as { doc: Appointment };
       const responseMsg = systemMessages.getSuccessMsg(
-        reservation?.doc,
+        {
+          id: reservation?.doc.id,
+          datetime,
+          numberOfPeople,
+        },
         "update",
       );
       await reservationCacheService.delete(reservationKey ?? "");
