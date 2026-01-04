@@ -114,9 +114,10 @@ class BusinessService {
       method: "GET",
       headers: this.headers,
     });
-
+    if (appointments.status !== 200) {
+      return;
+    }
     const res = (await appointments.json()) as { docs: Appointment[] };
-    console.log({ res: appointments, queryParams });
     return res.docs.length === 0 ? BOOL.YES : BOOL.NO;
   }
 
@@ -132,7 +133,7 @@ class BusinessService {
       "where[phoneNumber][like]": phoneNumber,
     } = queryParams;
 
-    const key = `business:${businessId}:phoneNumber:${phoneNumber}`;
+    const key = `customer:business:${businessId}:phoneNumber:${phoneNumber}`;
     const cache = await redis.get(key);
 
     if (cache) {
@@ -143,14 +144,16 @@ class BusinessService {
       limit: 1,
       ...queryParams,
     });
-    const response = (await (
-      await fetch(url, {
-        method: "GET",
-        headers: this.headers,
-      })
-    ).json()) as { docs: Customer[] };
-
-    const customer = response?.docs.at(0);
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+    if (response.status !== 200) {
+      return;
+    }
+    const customer = ((await response.json()) as { docs: Customer[] }).docs.at(
+      0,
+    );
     if (customer) {
       await redis.set(key, JSON.stringify(customer), "EX", 60 * 60 * 24 * 7); // 7 days
     }

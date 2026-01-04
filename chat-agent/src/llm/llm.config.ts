@@ -197,17 +197,12 @@ export const validatorAgent = {
       { role: "user", content: customerMessage },
     ];
     const aiValidator: string = await aiClient(messages, PARSER_PROMPT, temp);
-    // ✨ Optional fields
-    const phase1 = reservationSchemas.phase1.safeParse(JSON.parse(aiValidator));
-    if (!phase1.success) {
-      console.log(phase1, aiValidator);
-      return;
-    }
     // ✅ Required fields
-    const mergedData = mergeReservationData(phase1.data, previousState);
-    const phase2 = reservationSchemas.phase2.safeParse(phase1.data);
-    console.log({ phase1, phase2 });
-    return { parsedData: phase2, mergedData };
+    const rawObj = JSON.parse(aiValidator);
+    const mergedData = mergeReservationData(rawObj, previousState);
+    const parsedData = reservationSchemas.phase2.safeParse(mergedData);
+
+    return { parsedData, mergedData };
   },
 
   /**
@@ -227,7 +222,6 @@ export const validatorAgent = {
       return "No se detectaron errores específicos para corregir.";
     }
 
-    console.log({ errors, mappedErrors });
     const aiDataCollector = aiClient(
       [
         {

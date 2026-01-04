@@ -13,6 +13,7 @@ import { AppContext } from "@/types/hono.types";
 import {
   CUSTOMER_INTENT,
   FlowOptions,
+  ReservationState,
 } from "@/types/reservation/reservation.types";
 import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
 import { ModelMessage } from "ai";
@@ -35,7 +36,7 @@ export async function resolveConversationalFallback(
     customer,
     business,
     chatKey = "",
-  } = ctx;
+  } = Object.freeze(structuredClone(ctx));
 
   // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
   if (!RESERVATION_CACHE) {
@@ -65,7 +66,7 @@ export async function resolveConversationalFallback(
       await reservationCacheService.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
-        customerName: customer?.name ?? "",
+        customerName: customer?.name || "",
         status: transition.nextState, // MAKE_STARTED
       });
       const responseMsg = systemMessages.getCreateMsg({

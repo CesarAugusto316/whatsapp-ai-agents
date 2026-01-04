@@ -5,7 +5,8 @@ export function mergeReservationData(
   previous?: Partial<ReservationSchema>,
 ): ReservationSchema {
   return {
-    customerName: incoming.customerName || previous?.customerName || "",
+    customerName:
+      incoming.customerName?.trim() || previous?.customerName?.trim() || "",
     datetime: {
       start: {
         date:

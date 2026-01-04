@@ -58,7 +58,6 @@ export const initReservationChange = async ({
       "Reserva no encontrada. Seguro que ya has creado una reserva?",
     );
   }
-  console.log({ reservation });
   const timezone = business.general.timezone;
   const transition = resolveNextState(flowOption);
   const start = utcToLocalDateTime(reservation.startDateTime, timezone);
@@ -76,7 +75,6 @@ export const initReservationChange = async ({
     status: transition.nextState, // FlowOption
   } satisfies Partial<ReservationState>;
 
-  console.log({ previousState });
   await reservationCacheService.save(reservationKey, previousState);
   return humanizerAgent(getMessage(previousState));
 };

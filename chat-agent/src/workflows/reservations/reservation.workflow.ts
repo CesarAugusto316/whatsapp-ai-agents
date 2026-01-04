@@ -15,7 +15,7 @@ import { resolveConversationalFallback } from "./conversational-fallback";
  */
 export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
   const status = ctx.RESERVATION_CACHE?.status;
-  const workflow = new StateWorkflowRunner<AppContext, FMStatus>(ctx, status);
+  const workflow = new StateWorkflowRunner(ctx, status);
 
   workflow
     .on("MAKE_STARTED", makeWorflow.started)

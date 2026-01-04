@@ -24,7 +24,7 @@ type Args = {
   customer: Customer;
   business: Business;
   reservationKey: string;
-  flowOption: FMStatus;
+  fmStatus: FMStatus;
   customerMessage: string;
   mode: ReservationMode;
 };
@@ -41,7 +41,7 @@ export async function collecDataTask({
   customer,
   business,
   reservationKey,
-  flowOption,
+  fmStatus,
   customerMessage,
   mode,
 }: Args) {
@@ -150,7 +150,7 @@ export async function collecDataTask({
     }
 
     // 2. ✅ INPUT DATA VALIDATED
-    const transition = resolveNextState(flowOption);
+    const transition = resolveNextState(fmStatus);
     await reservationCacheService.save(reservationKey, {
       ...reservation,
       ...data,

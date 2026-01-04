@@ -29,12 +29,12 @@ export const contextMiddleware: Handler<CTX> = async (ctx, next) => {
   ctx.set("businessId", businessId);
   ctx.set("business", business);
   ctx.set("customerPhone", customerPhone);
-  ctx.set("customer", customer);
   ctx.set("customerMessage", customerMessage);
   ctx.set("chatKey", chatKey);
   ctx.set("whatsappEvent", event);
   ctx.set("reservationKey", reservationKey);
   ctx.set("RESERVATION_CACHE", currentReservation);
+  ctx.set("customer", customer);
 
   if (!customerMessage) {
     return ctx.json({ error: "Customer message not received" }, 400);

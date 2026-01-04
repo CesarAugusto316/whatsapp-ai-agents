@@ -16,7 +16,7 @@ import { collecDataTask } from "./tasks/collect-data.task";
 
 const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   ctx,
-  currStatus,
+  fmStatus,
 ) => {
   const {
     RESERVATION_CACHE,
@@ -33,14 +33,12 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   if (!RESERVATION_CACHE) return;
   if (!RESERVATION_CACHE.id) return;
 
-  if (!customer) return;
-
   return collecDataTask({
     reservation: RESERVATION_CACHE,
     customer,
     business,
     reservationKey,
-    flowOption: currStatus,
+    fmStatus,
     customerMessage,
     mode: "update",
   });
