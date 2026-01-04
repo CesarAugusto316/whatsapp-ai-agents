@@ -95,6 +95,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
           datetime,
           numberOfPeople,
         },
+        timezone,
         "update",
       );
       await reservationCacheService.delete(reservationKey ?? "");

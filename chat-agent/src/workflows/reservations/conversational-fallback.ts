@@ -76,21 +76,23 @@ export async function resolveConversationalFallback(
     }
 
     if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
+      const timezone = business.general.timezone;
       return initReservationChange({
         business,
         customer,
         flowOption: FlowOptions.UPDATE_RESERVATION,
-        getMessage: (state) => systemMessages.getUpdateMsg(state),
+        getMessage: (state) => systemMessages.getUpdateMsg(state, timezone),
         reservationKey,
       });
     }
 
     if (customerMessage == FlowOptions.CANCEL_RESERVATION) {
+      const timezone = business.general.timezone;
       return initReservationChange({
         business,
         customer,
         flowOption: FlowOptions.CANCEL_RESERVATION,
-        getMessage: (state) => systemMessages.getCancelMsg(state),
+        getMessage: (state) => systemMessages.getCancelMsg(state, timezone),
         reservationKey,
       });
     }

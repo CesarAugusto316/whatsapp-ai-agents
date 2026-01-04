@@ -134,3 +134,123 @@ export function utcToLocalDateTime(
     time: `${map.hour}:${map.minute}:${map.second}`,
   };
 }
+
+export function formatLocalDateTime(
+  dateTime: { date: string; time: string },
+  timeZone: string,
+): string {
+  // Convertir la fecha/hora local (en la zona horaria dada) a UTC
+  const utcISO = localDateTimeToUTC(dateTime, timeZone);
+  const date = new Date(utcISO);
+
+  // Formatear la fecha en la zona horaria dada
+  const dateFormatter = new Intl.DateTimeFormat("es-ES", {
+    timeZone: timeZone,
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Formatear la hora en la zona horaria dada
+  const timeFormatter = new Intl.DateTimeFormat("es-ES", {
+    timeZone: timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const dateParts = dateFormatter.formatToParts(date);
+  const timeParts = timeFormatter.formatToParts(date);
+
+  // Extraer valores de las partes de fecha
+  const getPartValue = (type: string) =>
+    dateParts.find((part) => part.type === type)?.value || "";
+
+  const weekday = getPartValue("weekday");
+  const day = getPartValue("day");
+  const month = getPartValue("month");
+  const year = getPartValue("year");
+
+  // Extraer valores de las partes de hora
+  const hour = timeParts.find((part) => part.type === "hour")?.value || "";
+  const minute = timeParts.find((part) => part.type === "minute")?.value || "";
+  const dayPeriod =
+    timeParts.find((part) => part.type === "dayPeriod")?.value || "";
+
+  // Capitalizar primera letra
+  const capitalize = (str: string) =>
+    str.charAt(0).toUpperCase() + str.slice(1);
+
+  // Formatear hora: convertir "a. m."/ "p. m." a "am"/"pm"
+  const formattedDayPeriod = dayPeriod
+    .replace("a. m.", "am")
+    .replace("p. m.", "pm")
+    .replace("a.m.", "am")
+    .replace("p.m.", "pm")
+    .trim();
+
+  return `${capitalize(weekday)} ${day} de ${month} del ${year}, ${hour}:${minute}${formattedDayPeriod}`;
+}
+
+/**
+ *
+ * @todo use luxon: https://moment.github.io/luxon/#/zones
+ * @param dateTime
+ * @param timeZone
+ * @returns
+ */
+export function formatLocalDateTimeDST(
+  dateTime: { date: string; time: string },
+  timeZone: string,
+): string {
+  // 1. Crear fecha directamente sin conversiones complicadas
+  const localDateStr = `${dateTime.date}T${dateTime.time}`;
+  const date = new Date(localDateStr);
+
+  // 2. Verificar si la fecha es válida
+  if (isNaN(date.getTime())) {
+    throw new Error(`Fecha inválida: ${dateTime.date} ${dateTime.time}`);
+  }
+
+  // 3. Formateador de fecha CON zona horaria (para día correcto)
+  const dateFormatter = new Intl.DateTimeFormat("es-ES", {
+    timeZone: timeZone,
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // 4. Formateador de hora SIN zona horaria (mantiene la hora local)
+  const timeFormatter = new Intl.DateTimeFormat("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const dateParts = dateFormatter.formatToParts(date);
+  const timeParts = timeFormatter.formatToParts(date);
+
+  // Extraer partes
+  const getPartValue = (type: string, parts: any[]) =>
+    parts.find((part) => part.type === type)?.value || "";
+
+  const weekday = getPartValue("weekday", dateParts);
+  const day = getPartValue("day", dateParts);
+  const month = getPartValue("month", dateParts);
+  const year = getPartValue("year", dateParts);
+
+  const hour = getPartValue("hour", timeParts);
+  const minute = getPartValue("minute", timeParts);
+  const dayPeriod = getPartValue("dayPeriod", timeParts);
+
+  // Formatear AM/PM
+  const ampm = dayPeriod.includes("p.") ? "pm" : "am";
+
+  // Capitalizar día
+  const capitalize = (str: string) =>
+    str.charAt(0).toUpperCase() + str.slice(1);
+
+  return `${capitalize(weekday)} ${day} de ${month} del ${year}, ${hour}:${minute}${ampm}`;
+}

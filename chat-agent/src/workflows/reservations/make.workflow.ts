@@ -97,11 +97,15 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
         status: "confirmed",
       });
       const reservation = (await res.json()) as { doc: Appointment };
-      const assistantMsg = systemMessages.getSuccessMsg({
-        id: reservation?.doc.id,
-        datetime,
-        numberOfPeople,
-      });
+      const assistantMsg = systemMessages.getSuccessMsg(
+        {
+          id: reservation?.doc.id,
+          datetime,
+          numberOfPeople,
+        },
+        timezone,
+        "create",
+      );
       await reservationCacheService.delete(reservationKey ?? "");
       return humanizerAgent(assistantMsg);
     }
