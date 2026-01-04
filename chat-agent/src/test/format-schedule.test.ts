@@ -29,34 +29,36 @@ describe("formatSchedule", () => {
     const timezone = "America/Guayaquil";
     const result = formatSchedule(schedule, timezone);
 
-    const expected = `TIMEZONE: ${timezone}
-      DAY: MONDAY
-      STATUS: OPEN
-      RANGE: 08:00-12:00
-      RANGE: 14:00-20:00
+    const expected = `
+TIMEZONE: ${timezone}
 
-      DAY: TUESDAY
-      STATUS: CLOSED
+DAY: MONDAY
+STATUS: OPEN
+RANGE: 08:00-12:00
+RANGE: 14:00-20:00
 
-      DAY: WEDNESDAY
-      STATUS: OPEN
-      RANGE: 12:00-15:00
-      RANGE: 18:00-22:00
+DAY: TUESDAY
+STATUS: CLOSED
 
-      DAY: THURSDAY
-      STATUS: OPEN
-      RANGE: 08:00-12:00
+DAY: WEDNESDAY
+STATUS: OPEN
+RANGE: 12:00-15:00
+RANGE: 18:00-22:00
 
-      DAY: FRIDAY
-      STATUS: OPEN
-      RANGE: 09:00-17:30
+DAY: THURSDAY
+STATUS: OPEN
+RANGE: 08:00-12:00
 
-      DAY: SATURDAY
-      STATUS: CLOSED
+DAY: FRIDAY
+STATUS: OPEN
+RANGE: 09:00-17:30
 
-      DAY: SUNDAY
-      STATUS: CLOSED
-    `;
+DAY: SATURDAY
+STATUS: CLOSED
+
+DAY: SUNDAY
+STATUS: CLOSED
+`.trim();
 
     expect(result).toBe(expected);
   });
