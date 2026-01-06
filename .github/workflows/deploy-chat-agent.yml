@@ -1,0 +1,37 @@
+name: Deploy CMS (Next.js)
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "chat-agent/**"
+      - "!chat-agent/**/*.md" # ignorar cambios en READMEs
+      - "chat-agent/Dockerfile"
+      - "chat-agent/package.json"
+      # 'whatsapp-api/**'
+      # 'chat-agent/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-push-dockerfile-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: chat-agent
+          file: chat-agent/Dockerfile
+          push: true
+          tags: |
+            cesarrivera316/chat-agent:latest
+          platforms: linux/amd64
