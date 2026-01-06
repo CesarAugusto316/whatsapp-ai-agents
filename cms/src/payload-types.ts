@@ -64,10 +64,12 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    'third-party-access': ThirdPartyAccessAuthOperations;
   };
   blocks: {};
   collections: {
     users: User;
+    'third-party-access': ThirdPartyAccess;
     appointments: Appointment;
     customers: Customer;
     businesses: Business;
@@ -79,6 +81,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    'third-party-access': ThirdPartyAccessSelect<false> | ThirdPartyAccessSelect<true>;
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     businesses: BusinessesSelect<false> | BusinessesSelect<true>;
@@ -93,15 +96,37 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  user: User & {
-    collection: 'users';
-  };
+  user:
+    | (User & {
+        collection: 'users';
+      })
+    | (ThirdPartyAccess & {
+        collection: 'third-party-access';
+      });
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface ThirdPartyAccessAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -148,15 +173,44 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "third-party-access".
+ */
+export interface ThirdPartyAccess {
+  id: string;
+  updatedAt: string;
+  createdAt: string;
+  enableAPIKey?: boolean | null;
+  apiKey?: string | null;
+  apiKeyIndex?: string | null;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointments".
  */
 export interface Appointment {
   id: string;
   business: string | Business;
   customer: string | Customer;
+  customerName?: string | null;
   startDateTime: string;
-  endDateTime: string;
+  endDateTime?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  numberOfPeople?: number | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -195,50 +249,50 @@ export interface Business {
     averageTime: number;
     monday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     tuesday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     wednesday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     thursday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     friday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     saturday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
     sunday?:
       | {
-          startTime: string;
-          endTime: string;
+          open: number;
+          close: number;
           id?: string | null;
         }[]
       | null;
@@ -292,6 +346,10 @@ export interface PayloadLockedDocument {
         value: string | User;
       } | null)
     | ({
+        relationTo: 'third-party-access';
+        value: string | ThirdPartyAccess;
+      } | null)
+    | ({
         relationTo: 'appointments';
         value: string | Appointment;
       } | null)
@@ -304,10 +362,15 @@ export interface PayloadLockedDocument {
         value: string | Business;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: string | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: string | User;
+      }
+    | {
+        relationTo: 'third-party-access';
+        value: string | ThirdPartyAccess;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -317,10 +380,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: string;
-  user: {
-    relationTo: 'users';
-    value: string | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: string | User;
+      }
+    | {
+        relationTo: 'third-party-access';
+        value: string | ThirdPartyAccess;
+      };
   key?: string | null;
   value?:
     | {
@@ -372,14 +440,41 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "third-party-access_select".
+ */
+export interface ThirdPartyAccessSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+  enableAPIKey?: T;
+  apiKey?: T;
+  apiKeyIndex?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointments_select".
  */
 export interface AppointmentsSelect<T extends boolean = true> {
   business?: T;
   customer?: T;
+  customerName?: T;
   startDateTime?: T;
   endDateTime?: T;
   status?: T;
+  numberOfPeople?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -429,50 +524,50 @@ export interface BusinessesSelect<T extends boolean = true> {
         monday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         tuesday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         wednesday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         thursday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         friday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         saturday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
         sunday?:
           | T
           | {
-              startTime?: T;
-              endTime?: T;
+              open?: T;
+              close?: T;
               id?: T;
             };
       };

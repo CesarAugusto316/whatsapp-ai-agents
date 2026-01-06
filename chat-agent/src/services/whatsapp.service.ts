@@ -1,3 +1,4 @@
+import { GetChatMessagesQueryParams } from "@/types/whatsapp/get-message";
 import { SendEventPayload } from "@/types/whatsapp/send-appointment";
 import { SendContactPayload } from "@/types/whatsapp/send-contact";
 import { SendLocationPayload } from "@/types/whatsapp/send-location";
@@ -5,9 +6,10 @@ import {
   SendMessagePayload,
   SendSeenPayload,
 } from "@/types/whatsapp/send-message";
+import { env, fetch } from "bun";
 
-const apiUrl = process.env.WAHA_API;
-const apiKey = process.env.WAHA_API_KEY; // waha API key
+const apiUrl = env.WAHA_API;
+const apiKey = env.WAHA_API_KEY; // waha API key
 
 /**
  *
@@ -26,6 +28,23 @@ class WhatsappService {
     "Content-Type": "application/json",
     "X-Api-Key": apiKey || "",
   };
+
+  public getMessages(
+    session: string,
+    chatId: string,
+    queryParams?: GetChatMessagesQueryParams,
+  ) {
+    const url = new URL(`${apiUrl}/${session}/chats/${chatId}/messages`);
+    if (queryParams) {
+      for (const [key, value] of Object.entries(queryParams)) {
+        url.searchParams.append(key, value);
+      }
+    }
+    return fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+  }
 
   /**
    *
@@ -68,7 +87,7 @@ class WhatsappService {
 
   public async beforeSend(
     args: SendSeenPayload,
-    callAI: () => Promise<string>,
+    flowHandler: () => Promise<string>,
   ) {
     // send seen
     await Promise.all([
@@ -76,8 +95,8 @@ class WhatsappService {
       this.timeOut(),
     ]);
     // start typing
-    const [aiResponse] = await Promise.all([
-      callAI(),
+    const [flowResponse] = await Promise.all([
+      flowHandler(),
       this.sendStartTyping({ session: args.session, chatId: args.chatId }),
       this.timeOut(),
     ]);
@@ -86,7 +105,7 @@ class WhatsappService {
       this.sendStopTyping({ session: args.session, chatId: args.chatId }),
       this.timeOut(),
     ]);
-    return aiResponse;
+    return flowResponse;
   }
 
   public async sendText({ session, text, chatId }: SendMessagePayload) {

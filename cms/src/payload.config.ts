@@ -4,11 +4,12 @@ import path from "path";
 import { buildConfig } from "payload";
 import { fileURLToPath } from "url";
 import { Users } from "./collections/Users";
-import { Appointments } from "./collections/Appointments";
 import { Customers } from "./collections/Costumers";
 import { Business } from "./collections/Businesses";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { resendAdapter } from "@payloadcms/email-resend";
+import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
+import { Appointments } from "./collections/appointments/Appointments";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -23,12 +24,24 @@ export default buildConfig({
     supportedLanguages: { en, es },
   },
   admin: {
+    timezones: {
+      // supportedTimezones: [
+      //   {
+      //     label: "UTC",
+      //     value: "UTC",
+      //   },
+      //   // ...other timezones
+      // ],
+      defaultTimezone: "UTC",
+    },
+    dateFormat: "MMMM do, yyyy",
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Appointments, Customers, Business],
+  maxDepth: 4,
+  collections: [Users, ThirdPartyAccess, Appointments, Customers, Business],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
@@ -42,7 +55,8 @@ export default buildConfig({
   db: postgresAdapter({
     // MORE INFO ABOUT PRODUCTION MIGRATIONS:
     // https://payloadcms.com/docs/database/migrations#running-migrations-in-production
-    push: process.env.NODE_ENV === "development",
+    // push: process.env.NODE_ENV === "development",
+    push: false,
     idType: "uuid",
     pool: {
       connectionString: process.env.DATABASE_URI!,

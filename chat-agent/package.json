@@ -2,7 +2,12 @@
   "name": "worker-ai",
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot ./src/index.ts",
+    "dev": "bun --hot ./src/index.ts",
+    "test": "bun test",
+    "debug": "bun --inspect=localhost:4000/prefix ./src/index.ts",
+    "build:standalone": "bun build --compile --minify --sourcemap ./src/index.ts --outfile=myapp",
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
+    "start": "bun ./dist/index.js",
     "db:tunnel": "cloudflared access tcp --hostname pg-tunnel.osit4s.com --url localhost:15432"
   },
   "dependencies": {

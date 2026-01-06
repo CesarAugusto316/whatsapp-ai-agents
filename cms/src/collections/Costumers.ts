@@ -18,9 +18,15 @@ export const Customers: CollectionConfig = {
   },
   access: {
     create: ({ req }) => {
-      return req.user?.role === "admin";
+      if (req?.user?.collection === "third-party-access") {
+        return true;
+      }
+      return req?.user?.collection === "users" && req?.user?.role === "admin";
     },
     read: async ({ req }) => {
+      if (req?.user?.collection === "third-party-access") {
+        return true;
+      }
       // Si el usuario es un administrador, permite el acceso a todos los documentos.
       if (!req?.user) {
         return false;
@@ -58,13 +64,24 @@ export const Customers: CollectionConfig = {
       name: "phoneNumber",
       type: "text",
       required: true,
+      index: true,
       unique: false, // un cliente puede el mismo numero y usar en negocios diferentes
       label: { en: "Phone Number", es: "Número de Teléfono" },
       defaultValue: "+34",
       minLength: 7,
       maxLength: 20,
+      admin: {
+        readOnly: true,
+      },
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" && req?.user?.role === "admin"
+          );
+        },
       },
     },
     {
@@ -76,8 +93,18 @@ export const Customers: CollectionConfig = {
       },
       relationTo: Business.slug as CollectionSlug,
       required: true,
+      admin: {
+        readOnly: true,
+      },
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" && req?.user?.role === "admin"
+          );
+        },
       },
     },
     {
@@ -86,7 +113,15 @@ export const Customers: CollectionConfig = {
       required: true,
       label: { en: "Full Name", es: "Nombre Completo" },
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
+          );
+        },
       },
     },
     {
@@ -110,7 +145,15 @@ export const Customers: CollectionConfig = {
       type: "email",
       label: { en: "Email", es: "Correo Electrónico" },
       access: {
-        update: ({ req }) => req.user?.role === "admin",
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
+          );
+        },
       },
     },
   ],

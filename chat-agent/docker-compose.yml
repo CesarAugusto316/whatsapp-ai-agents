@@ -1,0 +1,30 @@
+services:
+  # app:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env
+  redis:
+    image: redis:alpine
+    container_name: redis-agent
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server
+    healthcheck: # Verifica que Redis esté listo[citation:1]
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+# volumes:
+#   redis_data:
+#     driver: local
+
+# networks:
+#   default:
+#     name: redis_bot_network

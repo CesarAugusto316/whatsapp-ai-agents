@@ -1,13 +1,12 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import {
-  aiAgentHandler,
-  aiAgentTestHandler,
-} from "./handlers/ai-agent.handler";
+import { aiWhatsappHandler } from "@/handlers/ai-whatsapp.handler";
+import { aiTestHandler } from "@/handlers/ai-test.handler";
+import { CTX } from "@/types/hono.types";
+import { env } from "bun";
+import { contextMiddleware } from "@/middlewares/context.middleware";
 
-// AI SDK PROJECT EXAMPLE
-// https://github.com/gopinav/Next.js-AI-Tutorials/tree/main/src/app/api
-const app = new Hono();
+const app = new Hono<CTX>();
 
 app.use(
   cors({
@@ -17,11 +16,12 @@ app.use(
   }),
 );
 
-app.post("/received-messages/:businessId", aiAgentHandler);
-app.post("/test-ai", aiAgentTestHandler);
+app.use("/*", contextMiddleware);
+app.post("/received-messages", aiWhatsappHandler);
+app.post("/test-ai", aiTestHandler);
 
 // export default app;
 export default {
-  port: 3000,
+  port: env?.PORT ?? 3000,
   fetch: app.fetch,
 };

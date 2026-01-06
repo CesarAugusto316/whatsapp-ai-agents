@@ -1,6 +1,13 @@
 import type { Access, CollectionConfig } from "payload";
 
-const isAdmin: Access = ({ req }) => req?.user?.role === "admin";
+const isAdmin: Access = ({ req }) => {
+  if (req.user?.collection === "users") {
+    return req?.user?.role === "admin";
+  }
+  if (req.user?.collection === "third-party-access") {
+    return true;
+  }
+};
 
 export const Users: CollectionConfig = {
   slug: "users",
@@ -18,7 +25,7 @@ export const Users: CollectionConfig = {
   admin: {
     // hide all the page if user is not admin
     hidden: ({ user }) => {
-      return user?.role !== "admin";
+      return user?.collection === "users" && user?.role !== "admin";
     },
     useAsTitle: "name", // header title is taken from "name" field
   },
@@ -29,30 +36,10 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   auth: true,
-  // auth: {
-  //   verify: {
-  //     generateEmailHTML: ({ req, token, user }) => {
-  //       // Use the token provided to allow your user to verify their account
-  //       const url = `https://yourfrontend.com/verify?token=${token}`;
-
-  //       return `Hey ${user.email}, verify your email by clicking here: ${url}`;
-  //     },
-  //   },
-  // },
   /**
    *
    * @description UUIDV7: https://payloadcms.com/community-help/github/how-to-implement-automatic-custom-id
    */
-  // hooks: {
-  //     beforeValidate: [({ data }) => {
-  //       if (!data.id) {
-  //         // replace with your own way to generate IDs
-  //         const customID = uuid()
-  //         return {...data, id: customID }
-  //       }
-  //       return data
-  //     }],
-  //   },
   fields: [
     // Email added by default
     // Add more fields as needed

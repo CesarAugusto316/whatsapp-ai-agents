@@ -11,6 +11,7 @@ export default async function HomePage() {
   const payloadConfig = await config;
   const payload = await getPayload({ config: payloadConfig });
   const { user } = await payload.auth({ headers });
+  const userData = user?.collection === "users" ? user : undefined;
   // const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`;
   return (
     <div className="home">
@@ -25,7 +26,7 @@ export default async function HomePage() {
           />
         </picture>
         {!user && <h1>Welcome to your new project.</h1>}
-        {user && <h1>Bienvenido, {user?.name || user?.email}</h1>}
+        {user && <h1>Bienvenido, {userData?.name || userData?.email}</h1>}
         <div className="links">
           <a
             className="admin"
@@ -34,7 +35,7 @@ export default async function HomePage() {
           >
             Go to admin panel
           </a>
-          {user?.role === "admin" && (
+          {userData?.role === "admin" && (
             <a
               className="docs"
               href="https://payloadcms.com/docs"
