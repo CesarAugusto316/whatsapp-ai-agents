@@ -18,6 +18,7 @@ import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
 import businessService from "@/services/business.service";
 import { localDateTimeToUTC } from "@/helpers/datetime-converters";
 import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
+import { isWithinHolydayRange } from "./check-next-holyday";
 
 type Args = {
   reservation: Partial<ReservationState>;
@@ -113,12 +114,21 @@ export async function collecDataTask({
     if (!isWithinSchedule.start || !isWithinSchedule.end) {
       /** @todo proponer otras fechas de reservación */
       return `
-          😔 Lo sentimos, la fecha y hora seleccionada no está dentro del horario
-          de atención del negocio. Por favor, selecciona otra fecha y hora.
+          😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
+          de atención del negocio. Por favor, selecciona otro día y hora.
         `;
     }
     const startDateTime = localDateTimeToUTC(start, timezone);
     const endDateTime = localDateTimeToUTC(end, timezone);
+
+    const { isWithinRange, message } = isWithinHolydayRange(
+      business,
+      startDateTime,
+    );
+
+    if (isWithinRange) {
+      return message;
+    }
 
     /**
      *
@@ -127,7 +137,7 @@ export async function collecDataTask({
      * la fecha que ya tenemos seleccionada, hay que evaluar algunas condiciones
      * antes de asignar un nuevo timeSlot
      */
-    const isAvailable = await businessService.checkAvailability({
+    const isAvailable = await businessService.findAppointmentByParams({
       "where[numberOfPeople][equals]": data.numberOfPeople,
       "where[startDateTime][equals]": startDateTime,
       "where[endDateTime][equals]": endDateTime,

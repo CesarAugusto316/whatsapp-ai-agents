@@ -6,6 +6,7 @@ import {
   CreateCustomer,
   Customer,
 } from "@/types/business/cms-types";
+import { AvailabilityResponse } from "@/types/reservation/chek-availability.types";
 import { BOOL } from "@/types/reservation/reservation.types";
 import { env, fetch } from "bun";
 
@@ -98,13 +99,13 @@ class BusinessService {
    * @param queryParams
    * @returns boolean
    */
-  public async checkAvailability(
+  public async findAppointmentByParams(
     queryParams: Pick<
       BusinessQueryParams,
       | "where[startDateTime][equals]"
       | "where[endDateTime][equals]"
       | "where[numberOfPeople][equals]"
-    >, // where[phoneNumber][equals]=${phoneNumber}
+    >,
   ) {
     const url = generateUrl("appointments", {
       depth: 0,
@@ -119,6 +120,29 @@ class BusinessService {
     }
     const res = (await appointments.json()) as { docs: Appointment[] };
     return res.docs.length === 0 ? BOOL.YES : BOOL.NO;
+  }
+
+  public async checkAvailability(
+    queryParams: Pick<
+      BusinessQueryParams,
+      | "where[startDateTime][equals]"
+      | "where[endDateTime][equals]"
+      | "where[numberOfPeople][equals]"
+      | "where[business][equals]"
+    >,
+  ) {
+    const url = generateUrl("appointments/check-availability", {
+      depth: 0,
+      ...queryParams,
+    });
+    const appointments = await fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+    if (appointments.status !== 200) {
+      return;
+    }
+    return appointments.json() as Promise<AvailabilityResponse>;
   }
 
   // TODO phoneNumber as primary key

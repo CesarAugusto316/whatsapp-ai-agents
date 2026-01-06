@@ -4,12 +4,12 @@ import path from "path";
 import { buildConfig } from "payload";
 import { fileURLToPath } from "url";
 import { Users } from "./collections/Users";
-import { Appointments } from "./collections/Appointments";
 import { Customers } from "./collections/Costumers";
 import { Business } from "./collections/Businesses";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
+import { Appointments } from "./collections/appointments/Appointments";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);

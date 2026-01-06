@@ -4,14 +4,6 @@ import { WeekDay } from "@/types/reservation/reservation.types";
  * Verifica si una fecha/hora específica cae dentro del horario de atención del restaurante
  *
  * @param schedule - Horario del restaurante
- * @param timezone - Timezone del restaurante (ej: "America/Guayaquil")
- * @param dateTime - Objeto con fecha y hora a verificar (ASUMIENDO que ya está en el timezone del restaurante)
- * @returns boolean - true si está dentro del horario, false si no
- */
-/**
- * Verifica si una fecha/hora específica cae dentro del horario de atención del restaurante
- *
- * @param schedule - Horario del restaurante
  * @param timezone - Timezone del restaurante (ej: "America/Guayaquil") - USADO SOLO PARA EL DÍA
  * @param dateTime - Objeto con fecha y hora a verificar (ASUMIENDO que ya está en hora local del restaurante)
  * @returns boolean - true si está dentro del horario, false si no

@@ -1,4 +1,4 @@
-import { FMStatus, InputIntent } from "@/types/reservation/reservation.types";
+import { InputIntent } from "@/types/reservation/reservation.types";
 import chatHistoryService from "@/services/chatHistory.service";
 import { AppContext } from "@/types/hono.types";
 import { makeWorflow } from "./make.workflow";
@@ -15,7 +15,12 @@ import { resolveConversationalFallback } from "./conversational-fallback";
  */
 export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
   const status = ctx.RESERVATION_CACHE?.status;
+  const business = ctx.business;
   const workflow = new StateWorkflowRunner(ctx, status);
+
+  if (!business.general.isActive) {
+    return "El negocio está fuera de servicio, por favor inténtalo más tarde.";
+  }
 
   workflow
     .on("MAKE_STARTED", makeWorflow.started)

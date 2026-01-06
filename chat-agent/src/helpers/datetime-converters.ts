@@ -135,6 +135,13 @@ export function utcToLocalDateTime(
   };
 }
 
+/**
+ *
+ * @todo use luxon: https://moment.github.io/luxon/#/zones
+ * @param dateTime
+ * @param timeZone
+ * @returns
+ */
 export function formatLocalDateTime(
   dateTime: { date: string; time: string },
   timeZone: string,
