@@ -35,8 +35,8 @@ export const systemMessages = {
   initialGreeting(message: string, customerName?: string) {
     return `
        Este es un mensaje inicial, además de responder a mi pregunta debes saludarme,
-       presentarte brevemente y finalmente guiarme en:
-        - Cómo hacer una reserva en pasos muy simples.
+       presentarte brevemente y explicarme:
+        - Cómo hacer una reserva de forma facil y simple.
 
        ${customerName ? `Mi nombre es ${customerName}` : ""}
 

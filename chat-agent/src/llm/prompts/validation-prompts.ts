@@ -581,6 +581,12 @@ export const validationPrompts = {
               - "Me ayudas con..."
               - "Para completar tu reserva..."
 
+              CRITICAL FORMATTING REMINDER:
+              - Your response will be displayed on WhatsApp
+              - Use SINGLE asterisks for bold: *texto*
+              - NEVER use double asterisks **texto** or Markdown
+              - This is non-negotiable
+
               REMEMBER:
               - You're a friendly host, not a system validator
               - Always ask questions, never state requirements
