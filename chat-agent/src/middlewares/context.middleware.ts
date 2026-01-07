@@ -12,7 +12,7 @@ import { Handler } from "hono/types";
  */
 export const contextMiddleware: Handler<CTX> = async (ctx, next) => {
   const custumerRecievedEvent = await ctx.req.json<WahaRecievedEvent>();
-  const businessId = custumerRecievedEvent.metadata?.businessId;
+  const businessId = ctx.req.param("businessId");
   const session = custumerRecievedEvent.session;
   const event = custumerRecievedEvent.event;
   const customerMessage = (custumerRecievedEvent.payload.body || "").trim();
