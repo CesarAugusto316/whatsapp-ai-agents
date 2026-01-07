@@ -3,6 +3,7 @@ import {
   CustomerActions,
   InputIntent,
 } from "@/types/reservation/reservation.types";
+import { WRITING_STYLE } from "./conversational-prompts";
 
 export const validationPrompts = {
   /**
@@ -18,7 +19,7 @@ export const validationPrompts = {
 
         Your only task is to classify the user's input message into exactly one of two categories:
 
-        1. "${InputIntent.INPUT_DATA}" → if the message contains **any explicit information for a reservation**, including:
+        1. "${InputIntent.INPUT_DATA}" → if the message contains *any explicit information for a reservation*, including:
            - Customer name
            - Reservation date (absolute or relative, e.g., "mañana", "pasado mañana")
            - Reservation start time or end time
@@ -28,16 +29,16 @@ export const validationPrompts = {
         2. "${InputIntent.CUSTOMER_QUESTION}" → if the message:
            - Asks about restaurant hours, availability, menu, or policies
            - Is a comment, doubt, or inquiry
-           - Mentions dates or times but **does not provide any data about the user’s reservation**
+           - Mentions dates or times but *does not provide any data about the user's reservation*
            - Is purely interrogative, without attempting to send reservation information
 
         STRICT RULES:
         - Input messages are in Spanish.
         - Only return one of the exact strings: "${InputIntent.INPUT_DATA}" or "${InputIntent.CUSTOMER_QUESTION}".
         - Do NOT include explanations, examples, quotes, or extra text.
-        - Do NOT guess or infer missing information; classify **based only on explicit presence of user reservation data**.
+        - Do NOT guess or infer missing information; classify *based only on explicit presence of user reservation data*.
         - Partial, relative, or abbreviated data counts as "${InputIntent.INPUT_DATA}".
-        - If the message combines a question with reservation data, prioritize the **presence of reservation data**: classify as "${InputIntent.INPUT_DATA}".
+        - If the message combines a question with reservation data, prioritize the *presence of reservation data*: classify as "${InputIntent.INPUT_DATA}".
 
         INPUT EXAMPLES AND INTENDED OUTPUT (for reference only, do not output these):
         - "A nombre de Sergio Rivera para el 25 de diciembre a las 8 de la noche para 4 personas" → "${InputIntent.INPUT_DATA}"
@@ -117,21 +118,21 @@ export const validationPrompts = {
             - Reservation end time (optional)
             - Number of people
 
-          3. CRITICAL END TIME RULE: If the user explicitly provides BOTH start and end times
+          3. *CRITICAL END TIME RULE*: If the user explicitly provides BOTH start and end times
              (e.g., "de 8 a 10", "de 22:00 a 01:00", "entre 14 y 16 horas"):
              - Populate BOTH start and end objects with user-provided times
              - If the end time is earlier than the start time, assume it occurs on the next calendar day
              - Format must include date and time with seconds explicitly: "HH:mm:00"
-             - CRITICAL: If the user provides hours without minutes (e.g., "de 8 a 10"),
+             - *CRITICAL*: If the user provides hours without minutes (e.g., "de 8 a 10"),
                interpret as "08:00:00" to "10:00:00"
-             - CRITICAL: If the user provides 12-hour format (e.g., "8pm"), convert to 24-hour format: "20:00:00"
+             - *CRITICAL*: If the user provides 12-hour format (e.g., "8pm"), convert to 24-hour format: "20:00:00"
 
-          4. CRITICAL END TIME DEFAULT: If the user provides ONLY a start time WITHOUT an explicit end time
+          4. *CRITICAL END TIME DEFAULT*: If the user provides ONLY a start time WITHOUT an explicit end time
              (e.g., "a las 8pm", "para las 14:30", "a la 1 de la tarde"):
              - Calculate end time by adding ${averageTimeMinutes} minutes to the start time
              - This is the business's default reservation duration
              - Format must include date and time with seconds explicitly: "HH:mm:00"
-             - IMPORTANT: This rule applies ONLY when the user DOES NOT provide a time range
+             - *IMPORTANT*: This rule applies ONLY when the user DOES NOT provide a time range
              - If the calculated end time crosses midnight (end time < start time), the end date must be the next day AFTER the start date
 
           5. All user-provided dates and times are expressed
@@ -157,7 +158,7 @@ export const validationPrompts = {
           8. Do NOT invent or assume missing values, except for calculating end time as per rule 4:
              - Use "" for missing strings or date-times
              - Use 0 for missing numbers
-             - CRITICAL: Do NOT infer customer name from context or previous messages
+             - *CRITICAL*: Do NOT infer customer name from context or previous messages
 
           9. Output MUST be a single valid JSON object
              with EXACT keys and types:
@@ -479,6 +480,8 @@ export const validationPrompts = {
   humanizeErrors(business: Business) {
     return `
               TASK: You are a deterministic translation module that converts validation error arrays into warm, helpful Spanish messages.
+
+              ${WRITING_STYLE}
 
               INPUT: An array of error objects in format: [{field: string, error: string}]
                 - field: "customerName", "startDate", "startTime", "endDate", "endTime", "numberOfPeople", "datetime"

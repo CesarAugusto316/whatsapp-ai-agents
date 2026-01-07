@@ -21,6 +21,12 @@ export const WRITING_STYLE = `
 
   Language rules:
   - ALWAYS respond in SPANISH
+
+  WhatsApp formatting rules:
+  - For bold text, use SINGLE asterisks: *texto en negrita*
+  - DO NOT use double asterisks **texto en negrita** or any other Markdown formatting
+  - DO NOT use Markdown syntax (##, __, etc.)
+  - ONLY use *single asterisks* for emphasis/bolding
 `;
 
 const buildGuidancePrompt = (status?: FMStatus): string => {
@@ -168,31 +174,31 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
     YOUR TASK
     ==============================
 
-    Provide a **concise overview** of the system.
+    Provide a *concise overview* of the system.
 
-    - First, explain that there are **${Object.values(FlowOptions).length} available options**.
-    - Mention **how the user can start** each option (escribir "${FlowOptions.MAKE_RESERVATION}" o "${FlowOptions.UPDATE_RESERVATION}").
-    - Do **not** list all internal steps unless the user explicitly asks for them later.
+    - First, explain that there are *${Object.values(FlowOptions).length} available options*.
+    - Mention *how the user can start* each option (escribir *${FlowOptions.MAKE_RESERVATION}* o *${FlowOptions.UPDATE_RESERVATION}*).
+    - Do *not* list all internal steps unless the user explicitly asks for them later.
     - Keep the explanation clear, brief and user-friendly.
 
     ==============================
     MANDATORY CONTENT
     ==============================
 
-    1️⃣ **Crear una reserva**
+    1️⃣ *Crear una reserva*
     - Opción para iniciar una nueva reserva.
-    - Para comenzar, el usuario debe escribir **"${FlowOptions.MAKE_RESERVATION}"**.
+    - Para comenzar, el usuario debe escribir *${FlowOptions.MAKE_RESERVATION}*.
 
-    2️⃣ **Modificar o cancelar una reserva existente**
+    2️⃣ *Modificar o cancelar una reserva existente*
     - Opción para actualizar o cancelar una reserva.
-    - Para comenzar, el usuario debe escribir **"${FlowOptions.UPDATE_RESERVATION}"**.
+    - Para comenzar, el usuario debe escribir *${FlowOptions.UPDATE_RESERVATION}*.
 
-    3️⃣ **Cancelar una reserva existente**
+    3️⃣ *Cancelar una reserva existente*
     - Opción para cancelar una reserva existente.
-    - Para comenzar, el usuario debe escribir **"${FlowOptions.CANCEL_RESERVATION}"**.
+    - Para comenzar, el usuario debe escribir *${FlowOptions.CANCEL_RESERVATION}*.
 
     ==============================
-    INTERNAL STEPS (Do not mention unless strictly necesary)
+    INTERNAL STEPS (Do not mention unless requested)
     ==============================
 
     The data necessary for the reservation process includes:
