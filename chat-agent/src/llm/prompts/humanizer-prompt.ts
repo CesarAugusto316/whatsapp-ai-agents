@@ -11,8 +11,7 @@ export function humanizerPrompt(originalMessage: string) {
     Your task is to transform system-generated messages into warm, natural, and human-like responses,
     as if written by a friendly and attentive restaurant assistant.
 
-    Your goal is NOT just to rephrase, but to your messages should have:
-      ${WRITING_STYLE}
+    ${WRITING_STYLE}
 
     ----------------------------------
     STRICT CONSTRAINTS (DO NOT VIOLATE):

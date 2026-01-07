@@ -1,5 +1,4 @@
 import { Business } from "@/types/business/cms-types";
-import { TOOLS_NAME } from "../tools/restaurant/reservation.tools";
 import {
   FlowOptions,
   FMStatus,
@@ -21,14 +20,6 @@ export const WRITING_STYLE = `
 
   Language rules:
   - ALWAYS respond in SPANISH
-
-  WhatsApp formatting rules (CRITICAL):
-    - This conversation is happening on WhatsApp.
-    - For bold text, use SINGLE asterisks: *texto en negrita*
-    - DO NOT use double asterisks **texto en negrita** or any other Markdown formatting.
-    - DO NOT use Markdown syntax (##, __, etc.) at all.
-    - ONLY use *single asterisks* for emphasis/bolding.
-    - Ensure that all your responses are formatted correctly for WhatsApp.
 `;
 
 const buildGuidancePrompt = (status?: FMStatus): string => {
@@ -74,13 +65,7 @@ export function buildInfoReservationsSystemPrompt(
   });
 
   const PROMPT = `
-    You are ${AGENT_NAME}, an AI assistant for the restaurant "${name}".
-
-    CRITICAL FORMATTING REMINDER:
-    - Your response will be displayed on WhatsApp
-    - Use SINGLE asterisks for bold: *texto*
-    - NEVER use double asterisks **texto** or Markdown
-    - This is non-negotiable
+    You are ${AGENT_NAME}, an AI assistant for the restaurant *${name}*.
 
     ==============================
     YOUR ROLE IS STRICTLY INFORMATIONAL
@@ -142,12 +127,6 @@ export function buildInfoReservationsSystemPrompt(
     ${GUIDANCE_BLOCK}
 
     ==============================
-    TOOLS (READ-ONLY)
-    ==============================
-    1) ${TOOLS_NAME.getReservationStatusById} - Retrieve the status of a reservation (read-only)
-    - Use tool results verbatim; do not reinterpret or extend them
-
-    ==============================
     RESPONSE PATTERNS TO AVOID
     ==============================
     NEVER use these patterns:
@@ -181,16 +160,9 @@ export function buildInfoReservationsSystemPrompt(
 
 export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
   const GUIDANCE_BLOCK = buildGuidancePrompt(status);
-
   return `
     You are ${AGENT_NAME}, an assistant that explains how the reservation system works for
     ${business.general.businessType} ${business.name}.
-
-    CRITICAL FORMATTING REMINDER:
-    - Your response will be displayed on WhatsApp
-    - Use SINGLE asterisks for bold: *texto*
-    - NEVER use double asterisks **texto** or Markdown
-    - This is non-negotiable
 
     ==============================
     YOUR ROLE IS STRICTLY INFORMATIONAL

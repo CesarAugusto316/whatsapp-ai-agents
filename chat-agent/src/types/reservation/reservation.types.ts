@@ -1,6 +1,6 @@
 import { Business } from "@/types/business/cms-types";
-import { ModelMessage } from "ai";
 import { ReservationSchema } from "./schemas";
+import { ModelMessage } from "../hono.types";
 
 export const BOOL = {
   YES: true,

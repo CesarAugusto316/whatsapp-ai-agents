@@ -11,8 +11,6 @@
     "db:tunnel": "cloudflared access tcp --hostname pg-tunnel.osit4s.com --url localhost:15432"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^1.0.28",
-    "ai": "^5.0.108",
     "hono": "^4.10.8",
     "zod": "^4.1.13"
   },

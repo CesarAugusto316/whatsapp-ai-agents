@@ -1,23 +1,23 @@
-import { renderAssistantText } from "@/helpers/helpers";
 import {
   aiClient,
   customerIntentClassifier,
   humanizerAgent,
-  infoReservationAgent,
 } from "@/llm/llm.config";
-import { howSystemWorksPrompt } from "@/llm/prompts/conversational-prompts";
+import {
+  buildInfoReservationsSystemPrompt,
+  howSystemWorksPrompt,
+} from "@/llm/prompts/conversational-prompts";
 import { systemMessages } from "@/llm/prompts/system-messages";
 import chatHistoryService from "@/services/chatHistory.service";
 import reservationCacheService from "@/services/reservationCache.service";
-import { AppContext } from "@/types/hono.types";
+import { AppContext, ModelMessage } from "@/types/hono.types";
 import {
   CUSTOMER_INTENT,
   FlowOptions,
-  ReservationState,
 } from "@/types/reservation/reservation.types";
 import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
-import { ModelMessage } from "ai";
 import { initReservationChange } from "./tasks/init-reservation-update.task";
+import { formatForWhatsApp } from "@/helpers/helpers";
 
 /**
  *
@@ -31,7 +31,6 @@ export async function resolveConversationalFallback(
   const {
     RESERVATION_CACHE,
     customerMessage = "",
-    customerPhone = "",
     reservationKey = "",
     customer,
     business,
@@ -53,11 +52,11 @@ export async function resolveConversationalFallback(
           ),
         },
       ];
-      const assistantResponse = aiClient(
+      const assistantResponse = await aiClient(
         messages,
         howSystemWorksPrompt(business),
       );
-      return assistantResponse;
+      return formatForWhatsApp(assistantResponse);
     }
 
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
@@ -113,22 +112,17 @@ export async function resolveConversationalFallback(
   // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS
   if (customerIntent === CUSTOMER_INTENT.HOW) {
     // choice 4 again
-    const assistantResponse = aiClient(
+    const assistantResponse = await aiClient(
       messages,
       howSystemWorksPrompt(business, RESERVATION_CACHE?.status),
     );
-    return assistantResponse;
+    return formatForWhatsApp(assistantResponse);
   }
 
   // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
-  const result = await infoReservationAgent(
-    {
-      messages,
-      business,
-      customerPhone,
-    },
-    RESERVATION_CACHE?.status,
+  const assistantResponse = await aiClient(
+    messages,
+    buildInfoReservationsSystemPrompt(business, RESERVATION_CACHE?.status),
   );
-  const assistantResponse = renderAssistantText(result);
-  return assistantResponse;
+  return formatForWhatsApp(assistantResponse);
 }
