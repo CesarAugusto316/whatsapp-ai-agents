@@ -1,29 +1,6 @@
 import { z } from "zod";
 import { CUSTOMER_INTENT, InputIntent } from "./reservation.types";
 
-export const phase1 = z
-  .object({
-    customerName: z.string(),
-    dateTime: z
-      .object({
-        start: z
-          .object({
-            date: z.string(),
-            time: z.string(),
-          })
-          .partial(),
-        end: z
-          .object({
-            date: z.string(),
-            time: z.string(),
-          })
-          .partial(),
-      })
-      .partial(),
-    numberOfPeople: z.number(),
-  })
-  .partial();
-
 // Esquema mejorado con validaciones más claras
 const dateTime = z.object({
   date: z
@@ -192,7 +169,7 @@ export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
 
 export type ReservationSchema = z.infer<typeof phase2>;
 
-export const reservationSchemas = { phase1, phase2 };
+export const reservationSchemas = { phase2 };
 
 export const customerIntentSchema = z.enum([
   CUSTOMER_INTENT.WHAT,

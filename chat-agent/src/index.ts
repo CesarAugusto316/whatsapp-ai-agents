@@ -16,9 +16,12 @@ app.use(
   }),
 );
 
-app.use("/*", contextMiddleware);
-app.post("/received-messages", aiWhatsappHandler);
-app.post("/test-ai", aiTestHandler);
+app.post(
+  "/received-messages/:businessId",
+  contextMiddleware,
+  aiWhatsappHandler,
+);
+app.post("/test-ai/:businessId", contextMiddleware, aiTestHandler);
 
 // export default app;
 export default {
