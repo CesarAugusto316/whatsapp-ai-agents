@@ -1,4 +1,4 @@
-name: Deploy CMS (Next.js)
+name: Deploy Chat Agent (Hono + Bun)
 on:
   push:
     branches:
