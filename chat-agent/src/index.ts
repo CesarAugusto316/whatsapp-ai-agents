@@ -10,7 +10,7 @@ const app = new Hono<CTX>();
 
 app.use(
   cors({
-    origin: ["*"],
+    origin: ["http://localhost:3000", env?.WAHA_API!, env?.CMS_API!],
     allowHeaders: ["Content-Type"],
     allowMethods: ["POST", "OPTIONS"],
   }),

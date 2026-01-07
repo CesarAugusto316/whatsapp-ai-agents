@@ -8,7 +8,7 @@ import {
 } from "@/types/whatsapp/send-message";
 import { env, fetch } from "bun";
 
-const apiUrl = env.WAHA_API;
+const apiUrl = env.WAHA_API + "/api";
 const apiKey = env.WAHA_API_KEY; // waha API key
 
 /**

@@ -10,7 +10,7 @@ import { AvailabilityResponse } from "@/types/reservation/chek-availability.type
 import { BOOL } from "@/types/reservation/reservation.types";
 import { env, fetch } from "bun";
 
-const apiUrl = env.CMS_API;
+const apiUrl = env.CMS_API + "/api";
 const slug = env.CMS_SLUG || "third-party-access";
 const apiKey = env.CMS_API_KEY;
 
