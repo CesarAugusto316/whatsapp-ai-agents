@@ -114,12 +114,6 @@ export async function collecDataTask({
       end: isWithinBusinessHours(business.schedule, timezone, end),
     };
 
-    console.log({
-      data,
-      isWithinSchedule,
-      timezone,
-    });
-
     if (!isWithinSchedule.start || !isWithinSchedule.end) {
       const schedule = business.schedule;
       const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);

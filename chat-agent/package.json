@@ -10,7 +10,6 @@
     "start": "bun ./dist/index.js"
   },
   "dependencies": {
-    "@hono/sentry": "^1.2.2",
     "@sentry/bun": "^10.32.1",
     "hono": "^4.10.8",
     "hono-rate-limiter": "^0.5.3",
