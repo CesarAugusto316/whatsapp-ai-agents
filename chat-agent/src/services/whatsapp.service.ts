@@ -76,9 +76,9 @@ class WhatsAppService {
   }
 
   private randomTime() {
-    const min = 1_000;
-    const max = 2_000;
-    return Math.floor(Math.random() * (max - min + 1)) + min / 2;
+    const min = 1_500;
+    const max = 3_000;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
   private timeOut() {
