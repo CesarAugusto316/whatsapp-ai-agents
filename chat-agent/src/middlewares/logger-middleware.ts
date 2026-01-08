@@ -1,72 +1,6 @@
 import { MiddlewareHandler } from "hono";
 import { CTX } from "@/types/hono.types";
 
-export const unifiedLogger = (): MiddlewareHandler<CTX> => {
-  return async (c, next) => {
-    const start = Date.now();
-    const method = c.req.method;
-    const path = c.req.path;
-
-    // Ejecutamos todos los siguientes middlewares y handlers
-    await next();
-
-    const end = Date.now();
-    const elapsed = end - start;
-    const status = c.res.status;
-
-    // Ahora tenemos acceso al contexto gracias a que contextMiddleware ya se ejecutó
-    const businessId =
-      c.get("businessId") || c.req.param("businessId") || "N/A";
-    const customerPhone = c.get("customerPhone") || "N/A";
-    const session = c.get("session") || "N/A";
-    const customerMessage = c.get("customerMessage") || "N/A";
-    const event = c.get("whatsappEvent") || "N/A";
-
-    // Colores para consola
-    const colorStatus = (status: number): string => {
-      if (status >= 500) return `\x1b[31m${status}\x1b[0m`;
-      if (status >= 400) return `\x1b[33m${status}\x1b[0m`;
-      if (status >= 300) return `\x1b[36m${status}\x1b[0m`;
-      if (status >= 200) return `\x1b[32m${status}\x1b[0m`;
-      return `${status}`;
-    };
-
-    const formatTime = (ms: number): string => {
-      if (ms < 1000) return `${ms}ms`;
-      return `${(ms / 1000).toFixed(2)}s`;
-    };
-
-    // Log principal (estilo Hono)
-    console.log(
-      `\x1b[34m${method} ${path} ${colorStatus(status)} ${formatTime(elapsed)}\x1b[0m`,
-    );
-
-    // Log adicional para rutas específicas (solo si tenemos contexto)
-    if (businessId && businessId !== "N/A") {
-      console.log(
-        `  📱 [Business: ${businessId}, Phone: ${customerPhone}, Session: ${session}]`,
-      );
-
-      if (customerMessage && customerMessage !== "N/A") {
-        const truncatedMsg =
-          customerMessage.length > 100
-            ? customerMessage.substring(0, 100) + "..."
-            : customerMessage;
-        console.log(`  💬 ${event}: "${truncatedMsg}"`);
-      }
-    }
-
-    // Log de errores (si hay error en el body de respuesta)
-    if (status >= 400) {
-      console.error(`  ❌ Error: ${c.res.statusText}`);
-    }
-  };
-};
-
-// middlewares/professionalLogger.middleware.ts
-// import { MiddlewareHandler } from "hono";
-// import { CTX } from "@/types/hono.types";
-
 // Tipos para diferentes niveles de log
 type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
 type LogData = {
@@ -88,7 +22,7 @@ type LogData = {
   traceId?: string;
 };
 
-export const professionalLogger = (): MiddlewareHandler<CTX> => {
+export const loggerMiddleware = (): MiddlewareHandler<CTX> => {
   return async (c, next) => {
     const start = performance.now(); // Más preciso que Date.now()
     const method = c.req.method;

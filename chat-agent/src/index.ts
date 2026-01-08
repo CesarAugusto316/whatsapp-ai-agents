@@ -6,10 +6,20 @@ import { CTX } from "@/types/hono.types";
 import { env } from "bun";
 import { contextMiddleware } from "@/middlewares/context.middleware";
 import { rateLimiter } from "hono-rate-limiter";
-import { sentry } from "@hono/sentry";
-import { professionalLogger, unifiedLogger } from "./middlewares/observability";
+import * as Sentry from "@sentry/bun";
+import { loggerMiddleware } from "./middlewares/logger-middleware";
+import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
 
 const app = new Hono<CTX>();
+
+Sentry.init({
+  dsn: env?.SENTRY_DSN,
+  integrations: [
+    Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
+  ],
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
+});
 
 app.use(
   cors({
@@ -22,13 +32,7 @@ app.use(
 // Rate limiter
 app.use(
   "*",
-  professionalLogger(),
-  sentry({
-    dsn: env?.SENTRY_DSN,
-    // Tracing
-    enableTracing: true,
-    tracesSampleRate: 1.0, // Capture 100% of the transactions
-  }),
+  loggerMiddleware(),
   rateLimiter({
     // handler
     windowMs: 10 * 60 * 1000, // 10 minutes
@@ -39,21 +43,27 @@ app.use(
 
 app.post(
   "/received-messages/:businessId",
-  contextMiddleware,
+  contextMiddleware(),
   aiWhatsappHandler,
 );
 
-app.post("/test-ai/:businessId", contextMiddleware, aiTestHandler);
+app.post("/test-ai/:businessId", contextMiddleware(), aiTestHandler);
+
+app.get("/test-sentry-async-error", async (c) => {
+  await Promise.reject(new Error("Second error"));
+  return c.json({ message: "No debería llegar aquí" }, 500);
+});
 
 app.onError((error, c) => {
-  // Enviar a Sentry
-  c.get("sentry").captureException(error);
+  const status: StatusCode =
+    c.res.status >= 400 ? (c.res.status as ContentfulStatusCode) : 500;
 
+  Sentry.captureException(error);
   return c.json(
     {
-      error: "Internal server error",
+      error: error.message,
     },
-    500,
+    status,
   );
 });
 
