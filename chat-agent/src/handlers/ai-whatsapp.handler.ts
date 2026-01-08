@@ -1,4 +1,4 @@
-import { formatForWhatsApp } from "@/helpers/helpers";
+import { formatForWhatsApp } from "@/helpers/format-for-whatsapp";
 import whatsAppService from "@/services/whatsapp.service";
 import { CTX, AppContext } from "@/types/hono.types";
 import { runReservationWorkflow } from "@/workflows/reservations/reservation.workflow";

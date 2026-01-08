@@ -5,8 +5,21 @@ import { aiTestHandler } from "@/handlers/ai-test.handler";
 import { CTX } from "@/types/hono.types";
 import { env } from "bun";
 import { contextMiddleware } from "@/middlewares/context.middleware";
+import { rateLimiter } from "hono-rate-limiter";
+import * as Sentry from "@sentry/bun";
+import { loggerMiddleware } from "./middlewares/logger-middleware";
+import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
 
 const app = new Hono<CTX>();
+
+Sentry.init({
+  dsn: env?.SENTRY_DSN,
+  integrations: [
+    Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
+  ],
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
+});
 
 app.use(
   cors({
@@ -16,12 +29,43 @@ app.use(
   }),
 );
 
+// Rate limiter
+app.use(
+  "*",
+  loggerMiddleware(),
+  rateLimiter({
+    // handler
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    limit: 200, // Limit each client to 100 requests per window
+    keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "", // Use IP address as key
+  }),
+);
+
 app.post(
   "/received-messages/:businessId",
-  contextMiddleware,
+  contextMiddleware(),
   aiWhatsappHandler,
 );
-app.post("/test-ai/:businessId", contextMiddleware, aiTestHandler);
+
+app.post("/test-ai/:businessId", contextMiddleware(), aiTestHandler);
+
+app.get("/test-sentry-async-error", async (c) => {
+  await Promise.reject(new Error("Second error"));
+  return c.json({ message: "No debería llegar aquí" }, 500);
+});
+
+app.onError((error, c) => {
+  const status: StatusCode =
+    c.res.status >= 400 ? (c.res.status as ContentfulStatusCode) : 500;
+
+  Sentry.captureException(error);
+  return c.json(
+    {
+      error: error.message,
+    },
+    status,
+  );
+});
 
 // export default app;
 export default {

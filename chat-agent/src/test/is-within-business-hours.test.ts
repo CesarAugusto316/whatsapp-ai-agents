@@ -1,4 +1,4 @@
-import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
+import { isWithinBusinessHours } from "@/helpers/is-within-business-hours";
 import { WeekDay } from "@/types/reservation/reservation.types";
 import { describe, expect, test } from "bun:test";
 

@@ -6,12 +6,14 @@
     "test": "bun test",
     "debug": "bun --inspect=localhost:4000/prefix ./src/index.ts",
     "build:standalone": "bun build --compile --minify --sourcemap ./src/index.ts --outfile=myapp",
-    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
-    "start": "bun ./dist/index.js",
-    "db:tunnel": "cloudflared access tcp --hostname pg-tunnel.osit4s.com --url localhost:15432"
+    "build": "bun build --minify ./src/index.ts --outdir ./dist --target bun",
+    "start": "bun ./dist/index.js"
   },
   "dependencies": {
+    "@hono/sentry": "^1.2.2",
+    "@sentry/bun": "^10.32.1",
     "hono": "^4.10.8",
+    "hono-rate-limiter": "^0.5.3",
     "zod": "^4.1.13"
   },
   "devDependencies": {
