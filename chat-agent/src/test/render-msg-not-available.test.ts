@@ -2,7 +2,7 @@ import {
   formatLocalDateTime,
   utcToLocalDateTime,
 } from "@/helpers/datetime-converters";
-import { renderMsgNotAvailable } from "@/workflows/reservations/tasks/renderNoAvailableMsg";
+import { renderMsgNotAvailable } from "@/workflows/reservations/tasks/render-msg-not-available";
 import { describe, expect, test } from "bun:test";
 
 const TIMEZONE = "America/Lima";
