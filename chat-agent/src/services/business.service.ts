@@ -14,7 +14,7 @@ const slug = env.CMS_SLUG || "third-party-access";
 const apiKey = env.CMS_API_KEY;
 
 // more info: https://payloadcms.com/docs/queries/sort
-export interface BusinessQueryParams {
+export interface CMSQueryParams {
   limit?: number;
   page?: number;
   depth?: number;
@@ -42,7 +42,7 @@ const defaultQueryParams = {
 
 const generateUrl = (
   path: string,
-  queryParams: BusinessQueryParams = defaultQueryParams,
+  queryParams: CMSQueryParams = defaultQueryParams,
 ) => {
   if (path.startsWith("/")) {
     path = path.slice(1);
@@ -56,7 +56,7 @@ const generateUrl = (
   return url;
 };
 
-class BusinessService {
+class CMSService {
   private headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -92,7 +92,7 @@ class BusinessService {
 
   public async checkAvailability(
     queryParams: Pick<
-      BusinessQueryParams,
+      CMSQueryParams,
       | "where[startDateTime][equals]"
       | "where[endDateTime][equals]"
       | "where[numberOfPeople][equals]"
@@ -116,7 +116,7 @@ class BusinessService {
   // TODO phoneNumber as primary key
   public async getCostumerByPhone(
     queryParams: Pick<
-      BusinessQueryParams,
+      CMSQueryParams,
       "where[phoneNumber][like]" | "where[business][equals]" | "limit" | "depth"
     >, // where[phoneNumber][equals]=${phoneNumber}
   ): Promise<Customer | undefined> {
@@ -181,7 +181,7 @@ class BusinessService {
     });
   }
 
-  public getAppointmentsByParams(queryParams: BusinessQueryParams) {
+  public getAppointmentsByParams(queryParams: CMSQueryParams) {
     const url = generateUrl(`appointments`, { depth: 0, ...queryParams });
     return fetch(url, {
       method: "GET",
@@ -219,4 +219,4 @@ class BusinessService {
   }
 }
 
-export default new BusinessService();
+export default new CMSService();

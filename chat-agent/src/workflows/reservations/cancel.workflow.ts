@@ -3,7 +3,7 @@ import {
   CustomerActions,
   FMStatus,
 } from "@/types/reservation/reservation.types";
-import businessService from "@/services/business.service";
+import cmsService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { AppContext } from "@/types/hono.types";
 import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
@@ -24,10 +24,9 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   if (RESERVATION_CACHE?.id) {
     //
     if (customerMessage.toUpperCase() === CustomerActions.CONFIRM) {
-      const res = await businessService.updateAppointment(
-        RESERVATION_CACHE.id,
-        { status: "cancelled" },
-      );
+      const res = await cmsService.updateAppointment(RESERVATION_CACHE.id, {
+        status: "cancelled",
+      });
       if (res.status !== 200) {
         return `Error al cancelar la reserva ${RESERVATION_CACHE.id}`;
       }

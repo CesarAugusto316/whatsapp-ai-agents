@@ -1,6 +1,6 @@
 import { utcToLocalDateTime } from "@/helpers/datetime-converters";
 import { humanizerAgent } from "@/llm/llm.config";
-import businessService from "@/services/business.service";
+import cmsService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { Appointment, Business, Customer } from "@/types/business/cms-types";
 import {
@@ -36,7 +36,7 @@ export const initReservationChange = async ({
   if (!customer) {
     return humanizerAgent("Por favor, Crea una reserva para poder continuar");
   }
-  const lastRes = await businessService.getAppointmentsByParams({
+  const lastRes = await cmsService.getAppointmentsByParams({
     "where[business][equals]": business.id,
     "where[customer][equals]": customer.id,
     "where[status][equals]": "confirmed",

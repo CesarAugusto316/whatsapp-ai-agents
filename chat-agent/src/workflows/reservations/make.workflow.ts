@@ -1,5 +1,5 @@
 import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
-import businessService from "@/services/business.service";
+import cmsService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
   CustomerActions,
@@ -74,7 +74,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
     if (!customer && customerName) {
       newCustomer = (
         (await (
-          await businessService.createCostumer({
+          await cmsService.createCostumer({
             business: business?.id || "",
             phoneNumber: customerPhone || "",
             name: customerName,
@@ -87,7 +87,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       const timezone = business.general.timezone;
       const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
       const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
-      const res = await businessService.createAppointment({
+      const res = await cmsService.createAppointment({
         business: business.id,
         customer: newCustomer.id,
         startDateTime,

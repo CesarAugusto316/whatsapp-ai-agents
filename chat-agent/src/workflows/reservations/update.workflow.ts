@@ -1,4 +1,4 @@
-import businessService from "@/services/business.service";
+import cmsService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
   CustomerActions,
@@ -73,18 +73,15 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       const startDateTime = localDateTimeToUTC(start, timezone);
       const endDateTime = localDateTimeToUTC(end, timezone);
 
-      const res = await businessService.updateAppointment(
-        RESERVATION_CACHE?.id,
-        {
-          business: business?.id,
-          customer: customer?.id,
-          startDateTime,
-          endDateTime,
-          numberOfPeople,
-          customerName: customerName || customer.name || "",
-          status: "confirmed",
-        },
-      );
+      const res = await cmsService.updateAppointment(RESERVATION_CACHE?.id, {
+        business: business?.id,
+        customer: customer?.id,
+        startDateTime,
+        endDateTime,
+        numberOfPeople,
+        customerName: customerName || customer.name || "",
+        status: "confirmed",
+      });
       const reservation = (await res.json()) as { doc: Appointment };
       const responseMsg = systemMessages.getSuccessMsg(
         {

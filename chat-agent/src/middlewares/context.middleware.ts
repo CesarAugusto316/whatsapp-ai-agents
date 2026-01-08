@@ -1,4 +1,4 @@
-import businessService from "@/services/business.service";
+import cmsService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import { CTX } from "@/types/hono.types";
 import { WahaRecievedEvent } from "@/types/whatsapp/received-event";
@@ -19,11 +19,11 @@ export const contextMiddleware: Handler<CTX> = async (ctx, next) => {
   const customerPhone = custumerRecievedEvent.payload.from;
   const chatKey = `chat:${businessId}:${customerPhone}`;
   const reservationKey = `reservation:${businessId}:${customerPhone}`;
-  const customer = await businessService.getCostumerByPhone({
+  const customer = await cmsService.getCostumerByPhone({
     "where[business][equals]": businessId,
     "where[phoneNumber][like]": customerPhone,
   });
-  const business = await businessService.getBusinessById(businessId);
+  const business = await cmsService.getBusinessById(businessId);
   const currentReservation = await reservationCacheService.get(reservationKey);
   ctx.set("session", session);
   ctx.set("businessId", businessId);

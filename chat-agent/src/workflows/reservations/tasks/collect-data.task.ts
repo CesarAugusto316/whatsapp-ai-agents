@@ -15,12 +15,12 @@ import {
   ReservationState,
 } from "@/types/reservation/reservation.types";
 import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
-import businessService from "@/services/business.service";
+import cmsService from "@/services/business.service";
 import {
   formatSchedule,
   localDateTimeToUTC,
 } from "@/helpers/datetime-converters";
-import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
+import { isWithinBusinessHours } from "@/helpers/is-within-business-hours";
 import { isWithinHolydayRange } from "./check-next-holyday";
 import { renderMsgNotAvailable } from "./render-msg-not-available";
 
@@ -124,14 +124,14 @@ export async function collecDataTask({
       const schedule = business.schedule;
       const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);
       return humanizerAgent(`
-          😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
-          de atención del negocio. Por favor, selecciona otro día y hora.
+        😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
+        de atención del negocio. Por favor, selecciona otro día y hora.
 
-          ==============================
-          HORARIO DE ATENCION
-          ==============================
-          ${SCHEDULE_BLOCK}
-        `);
+        ==============================
+        HORARIO DE ATENCION
+        ==============================
+        ${SCHEDULE_BLOCK}
+      `);
     }
     const startDateTime = localDateTimeToUTC(start, timezone);
     const endDateTime = localDateTimeToUTC(end, timezone);
@@ -143,7 +143,7 @@ export async function collecDataTask({
     if (isWithinRange) {
       return message;
     }
-    const availability = await businessService.checkAvailability({
+    const availability = await cmsService.checkAvailability({
       "where[business][equals]": reservation.businessId,
       "where[startDateTime][equals]": startDateTime,
       "where[endDateTime][equals]": endDateTime,
