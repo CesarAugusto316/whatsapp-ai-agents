@@ -22,7 +22,7 @@ const apiKey = env.WAHA_API_KEY; // waha API key
  * @description Waha API
  * more info: https://waha.devlike.pro/docs/how-to/send-messages/
  */
-class WhatsappService {
+class WhatsAppService {
   private headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -148,4 +148,4 @@ class WhatsappService {
   }
 }
 
-export default new WhatsappService();
+export default new WhatsAppService();

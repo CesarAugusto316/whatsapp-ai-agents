@@ -69,7 +69,7 @@ class BusinessService {
    * more info: https://waha.devlike.pro/docs/how-to/send-messages/
    * @description Send a seen message to the chat always before sending a message
    */
-  public async getBusinessById(id: string): Promise<Business> {
+  public async getBusinessById(id: string): Promise<Business | undefined> {
     const url = generateUrl(`businesses/${id}`, { depth: 0 });
     const key = `business:${id}`;
     const cache = await redis.get(key);
@@ -77,17 +77,18 @@ class BusinessService {
     if (cache) {
       return JSON.parse(cache) satisfies Business;
     }
-    const response = (await (
-      await fetch(url, {
-        method: "GET",
-        headers: this.headers,
-      })
-    ).json()) as Business;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    });
+    if (res.status !== 200) return;
 
-    if (response) {
-      redis.set(key, JSON.stringify(response), "EX", 60 * 60 * 12);
+    const business = (await res.json()) as Business;
+
+    if (business) {
+      redis.set(key, JSON.stringify(business), "EX", 60 * 60 * 12);
     }
-    return response;
+    return business;
   }
 
   /**

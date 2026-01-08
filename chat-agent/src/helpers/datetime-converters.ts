@@ -62,6 +62,16 @@ export function formatSchedule(schedule: WeekDay, timezone: string): string {
   return lines.join("\n");
 }
 
+// Funciones auxiliares para formatear fechas y hora
+
+export function formatHour(date: Date, timeZone: string): string {
+  return date.toLocaleTimeString("es-ES", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /**
  *
  * @example

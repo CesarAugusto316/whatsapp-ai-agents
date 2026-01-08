@@ -17,7 +17,6 @@ import { validationPrompts } from "./prompts/validation-prompts";
 import { humanizerPrompt } from "./prompts/humanizer-prompt";
 import { mergeReservationData } from "@/helpers/merge-state";
 import { ModelMessage } from "@/types/hono.types";
-import { formatForWhatsApp } from "@/helpers/helpers";
 
 /**
  *
@@ -149,7 +148,7 @@ export async function humanizerAgent(message: string, temperature = 0.5) {
   if (!content) {
     throw new Error("No se recibió respuesta del humanizer agent");
   }
-  return formatForWhatsApp(content);
+  return content;
 }
 
 export const validatorAgent = {
@@ -193,7 +192,7 @@ export const validatorAgent = {
       return "No se detectaron errores específicos para corregir.";
     }
 
-    const aiDataCollector = await aiClient(
+    const aiDataCollector = aiClient(
       [
         {
           role: "user",
@@ -203,6 +202,6 @@ export const validatorAgent = {
       COLLECTOR_PROMPT,
       temp,
     );
-    return formatForWhatsApp(aiDataCollector);
+    return aiDataCollector;
   },
 };
