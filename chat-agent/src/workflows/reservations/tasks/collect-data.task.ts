@@ -22,7 +22,7 @@ import {
 } from "@/helpers/datetime-converters";
 import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
 import { isWithinHolydayRange } from "./check-next-holyday";
-import { renderMsgNotAvailable } from "./renderNoAvailableMsg";
+import { renderMsgNotAvailable } from "./render-msg-not-available";
 
 type Args = {
   reservation: Partial<ReservationState>;
@@ -64,18 +64,23 @@ export async function collecDataTask({
     }
     if ((reservation?.attempts ?? 0) >= ATTEMPTS) {
       await reservationCacheService.delete(reservationKey);
+      const action =
+        mode === "create"
+          ? FlowOptions.MAKE_RESERVATION
+          : FlowOptions.UPDATE_RESERVATION;
+      const verb = mode === "create" ? "iniciar" : "actualizar";
       return humanizerAgent(`
-        Has llegado al límite de intentos fallidos al checkear disponibilidad.
-        Empecemos de nuevo desde cero. Escribe "${FlowOptions.UPDATE_RESERVATION}"
-        para iniciar otro proceso de reserva.
+        Has llegado al límite de *intentos fallidos* al checkear disponibilidad.
+
+        Empecemos de nuevo desde cero.
+        Escribe *${action}* para ${verb} otro proceso de reserva.
       `);
     }
     const inputIntent = await inputIntentClassifier(customerMessage);
 
     if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
       return InputIntent.CUSTOMER_QUESTION;
-      // This breaks the flow and the fallback AGENT takes control
-      // (Just for this time)
+      // This breaks the flow and the fallback AGENT takes control back
     }
 
     // ✅ All fields are required here
@@ -116,7 +121,6 @@ export async function collecDataTask({
     });
 
     if (!isWithinSchedule.start || !isWithinSchedule.end) {
-      /** @todo proponer otras fechas de reservación */
       const schedule = business.schedule;
       const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);
       return humanizerAgent(`
@@ -136,11 +140,9 @@ export async function collecDataTask({
       business,
       startDateTime,
     );
-
     if (isWithinRange) {
       return message;
     }
-
     const availability = await businessService.checkAvailability({
       "where[business][equals]": reservation.businessId,
       "where[startDateTime][equals]": startDateTime,

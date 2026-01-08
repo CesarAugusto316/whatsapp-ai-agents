@@ -7,7 +7,6 @@ import {
   Customer,
 } from "@/types/business/cms-types";
 import { AvailabilityResponse } from "@/types/reservation/chek-availability.types";
-import { BOOL } from "@/types/reservation/reservation.types";
 import { env, fetch } from "bun";
 
 const apiUrl = env.CMS_API + "/api";
