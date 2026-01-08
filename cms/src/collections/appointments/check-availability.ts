@@ -1,8 +1,11 @@
 export interface AvailabilityRequest {
-  businessId: string;
-  startDateTime: string;
-  endDateTime: string;
-  numberOfPeople?: number;
+  depth: string;
+  where: {
+    business: { equals: string };
+    startDateTime: { equals: string };
+    endDateTime: { equals: string };
+    numberOfPeople: { equals: string };
+  };
 }
 
 interface TimeSlot {
@@ -111,76 +114,6 @@ export function calculateAvailability(
 
   return { timeSlots, isFullyAvailable };
 }
-
-/**
- * Genera sugerencias de horarios alternativos (pura)
- * Esta versión NO hace llamadas a la base de datos
- */
-// export function suggestAlternativeTimes(
-//   existingAppointments: AppointmentSlot[],
-//   maxCapacityPerHour: number,
-//   originalStart: Date,
-//   numberOfPeople: number,
-//   hoursToCheck: number = 4,
-//   intervalMinutes: number = 30,
-// ): string[] {
-//   const suggestedTimes: string[] = [];
-//   const now = new Date();
-
-//   // Buscar en las próximas N horas
-//   const maxIntervals = Math.floor((hoursToCheck * 60) / intervalMinutes);
-
-//   for (let i = 1; i <= maxIntervals; i++) {
-//     const checkTime = new Date(
-//       originalStart.getTime() + intervalMinutes * 60 * 1000 * i,
-//     );
-
-//     // No sugerir tiempos en el pasado
-//     if (checkTime < now) continue;
-
-//     // Calcular disponibilidad para esta hora específica (1 hora de duración)
-//     const hourStart = new Date(checkTime);
-//     hourStart.setMinutes(0, 0, 0);
-//     const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
-
-//     // Filtrar reservas que se superponen con esta hora
-//     const overlappingAppointments = existingAppointments.filter(
-//       (appointment) => {
-//         if (
-//           !(
-//             appointment.status === "confirmed" ||
-//             appointment.status === "pending"
-//           )
-//         ) {
-//           return false;
-//         }
-
-//         const apptStart = new Date(appointment.startDateTime);
-//         const apptEnd = appointment.endDateTime
-//           ? new Date(appointment.endDateTime)
-//           : new Date(apptStart.getTime() + 60 * 60 * 1000);
-
-//         // Verificar superposición: la reserva debe empezar antes de que termine la hora
-//         // y terminar después de que empiece la hora
-//         return apptStart < hourEnd && apptEnd > hourStart;
-//       },
-//     );
-
-//     const reservedPeople = overlappingAppointments.reduce(
-//       (sum, appt) => sum + (appt.numberOfPeople || 0),
-//       0,
-//     );
-
-//     if (maxCapacityPerHour - reservedPeople >= numberOfPeople) {
-//       suggestedTimes.push(checkTime.toISOString());
-
-//       // Limitar a 3 sugerencias
-//       if (suggestedTimes.length >= 3) break;
-//     }
-//   }
-
-//   return suggestedTimes;
-// }
 
 /**
  * Genera sugerencias de horarios alternativos (pura)

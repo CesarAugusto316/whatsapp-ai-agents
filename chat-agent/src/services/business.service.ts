@@ -91,38 +91,6 @@ class BusinessService {
     return business;
   }
 
-  /**
-   *
-   * TODO: return a boolean
-   *
-   * MORE INFO: https://payloadcms.com/docs/queries/overview
-   * MORE INFO: https://payloadcms.com/docs/queries/select
-   * @param queryParams
-   * @returns boolean
-   */
-  public async findAppointmentByParams(
-    queryParams: Pick<
-      BusinessQueryParams,
-      | "where[startDateTime][equals]"
-      | "where[endDateTime][equals]"
-      | "where[numberOfPeople][equals]"
-    >,
-  ) {
-    const url = generateUrl("appointments", {
-      depth: 0,
-      ...queryParams,
-    });
-    const appointments = await fetch(url, {
-      method: "GET",
-      headers: this.headers,
-    });
-    if (appointments.status !== 200) {
-      return;
-    }
-    const res = (await appointments.json()) as { docs: Appointment[] };
-    return res.docs.length === 0 ? BOOL.YES : BOOL.NO;
-  }
-
   public async checkAvailability(
     queryParams: Pick<
       BusinessQueryParams,

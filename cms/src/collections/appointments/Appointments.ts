@@ -77,11 +77,13 @@ export const Appointments: CollectionConfig = {
       method: "get",
       handler: async (req) => {
         try {
-          const { businessId, startDateTime, endDateTime, numberOfPeople } =
-            req.query as unknown as AvailabilityRequest;
+          const { where } = req.query as unknown as AvailabilityRequest;
+
+          const { business, endDateTime, numberOfPeople, startDateTime } =
+            where;
 
           // Validar parámetros requeridos
-          if (!businessId || !startDateTime) {
+          if (!business.equals || !startDateTime.equals) {
             return Response.json(
               {
                 success: false,
@@ -92,12 +94,12 @@ export const Appointments: CollectionConfig = {
           }
 
           // Obtener el negocio
-          const business: IBusiness = await req.payload.findByID({
+          const businessFound: IBusiness = await req.payload.findByID({
             collection: "businesses",
-            id: businessId,
+            id: business.equals,
           });
 
-          if (!business) {
+          if (!businessFound) {
             return Response.json(
               {
                 success: false,
@@ -107,12 +109,12 @@ export const Appointments: CollectionConfig = {
             );
           }
 
-          const maxCapacityPerHour = business.general.tables || 20;
+          const maxCapacityPerHour = businessFound.general.tables || 20;
 
           // Parsear fechas (Payload usa UTC)
-          const startDate = new Date(startDateTime);
+          const startDate = new Date(startDateTime.equals);
           const endDate = endDateTime
-            ? new Date(endDateTime)
+            ? new Date(endDateTime.equals)
             : new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hora por defecto
 
           // Obtener reservas existentes para el rango solicitado
@@ -131,9 +133,7 @@ export const Appointments: CollectionConfig = {
               where: {
                 and: [
                   {
-                    business: {
-                      equals: businessId,
-                    },
+                    business,
                   },
                   {
                     status: {
@@ -181,12 +181,12 @@ export const Appointments: CollectionConfig = {
             maxCapacityPerHour,
             startDate,
             endDate,
-            numberOfPeople,
+            +numberOfPeople.equals,
           );
 
           // Si no hay disponibilidad, obtener más datos para sugerencias
           let suggestedTimes: string[] = [];
-          if (!isFullyAvailable && numberOfPeople) {
+          if (!isFullyAvailable && +numberOfPeople.equals) {
             // Obtener más reservas para las próximas horas para sugerencias
             const endDateForSuggestions = new Date(
               startDate.getTime() + 5 * 60 * 60 * 1000,
@@ -198,9 +198,7 @@ export const Appointments: CollectionConfig = {
                 where: {
                   and: [
                     {
-                      business: {
-                        equals: businessId,
-                      },
+                      business,
                     },
                     {
                       status: {
@@ -235,16 +233,16 @@ export const Appointments: CollectionConfig = {
               allAppointmentSlots,
               maxCapacityPerHour,
               startDate,
-              numberOfPeople,
+              +numberOfPeople.equals,
             );
           }
 
           const response: AvailabilityResponse = {
             success: true,
-            businessId,
+            businessId: business.equals,
             requestedStart: startDate.toISOString(),
             requestedEnd: endDate.toISOString(),
-            requestedPeople: numberOfPeople,
+            requestedPeople: +numberOfPeople.equals,
             totalCapacityPerHour: maxCapacityPerHour,
             availableSlotsPerHour: timeSlots,
             isFullyAvailable,
