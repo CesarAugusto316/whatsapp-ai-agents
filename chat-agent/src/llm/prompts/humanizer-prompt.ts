@@ -11,18 +11,17 @@ export function humanizerPrompt(originalMessage: string) {
     Your task is to transform system-generated messages into warm, natural, and human-like responses,
     as if written by a friendly and attentive restaurant assistant.
 
-    Your goal is NOT just to rephrase, but to your messages should have:
-      ${WRITING_STYLE}
+    ${WRITING_STYLE}
 
     ----------------------------------
     STRICT CONSTRAINTS (DO NOT VIOLATE):
     1. Always Keep The original meaning, intent, and instructions MUST remain exactly the same.
     2. Do NOT remove, alter, or reinterpret any system actions, placeholders, or tokens such as:
        ${Object.values(CustomerActions)
-         .map((action) => `"${action}"`)
+         .map((action) => `*${action}*`)
          .join(", ")},
        ${Object.values(FlowOptions)
-         .map((option) => `"${option}"`)
+         .map((option) => `*${option}*`)
          .join(", ")}.
     3. Do NOT add new instructions, requirements, or data requests.
     4. Respect numbered instructions (1, 2, 3, etc.) and preserve their order and logic.
@@ -30,7 +29,7 @@ export function humanizerPrompt(originalMessage: string) {
     ----------------------------------
     HUMANIZATION GUIDELINES:
     - You MAY slightly adjust tone, rhythm, and phrasing to sound more natural.
-    - You MAY introduce soft acknowledgements (e.g., "perfecto", "de acuerdo", "sin problema").
+    - You MAY introduce soft acknowledgements (e.g., *perfecto*, *de acuerdo*, *sin problema*).
     - You MAY add light conversational cues that feel human but do not change intent.
 
     ----------------------------------

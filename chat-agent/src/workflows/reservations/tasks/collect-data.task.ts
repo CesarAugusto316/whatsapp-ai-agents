@@ -16,9 +16,13 @@ import {
 } from "@/types/reservation/reservation.types";
 import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
 import businessService from "@/services/business.service";
-import { localDateTimeToUTC } from "@/helpers/datetime-converters";
+import {
+  formatSchedule,
+  localDateTimeToUTC,
+} from "@/helpers/datetime-converters";
 import { isWithinBusinessHours } from "@/helpers/isDateWithinSchedule";
 import { isWithinHolydayRange } from "./check-next-holyday";
+import { renderMsgNotAvailable } from "./renderNoAvailableMsg";
 
 type Args = {
   reservation: Partial<ReservationState>;
@@ -113,10 +117,17 @@ export async function collecDataTask({
 
     if (!isWithinSchedule.start || !isWithinSchedule.end) {
       /** @todo proponer otras fechas de reservación */
-      return `
+      const schedule = business.schedule;
+      const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);
+      return humanizerAgent(`
           😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
           de atención del negocio. Por favor, selecciona otro día y hora.
-        `;
+
+          ==============================
+          HORARIO DE ATENCION
+          ==============================
+          ${SCHEDULE_BLOCK}
+        `);
     }
     const startDateTime = localDateTimeToUTC(start, timezone);
     const endDateTime = localDateTimeToUTC(end, timezone);
@@ -130,19 +141,14 @@ export async function collecDataTask({
       return message;
     }
 
-    /**
-     *
-     * @todo debemos que validar si la nueva fecha o
-     * rango de tiempo (startTime - endTime) esta libre exluyendo
-     * la fecha que ya tenemos seleccionada, hay que evaluar algunas condiciones
-     * antes de asignar un nuevo timeSlot
-     */
-    const isAvailable = await businessService.findAppointmentByParams({
-      "where[numberOfPeople][equals]": data.numberOfPeople,
+    const availability = await businessService.checkAvailability({
+      "where[business][equals]": reservation.businessId,
       "where[startDateTime][equals]": startDateTime,
       "where[endDateTime][equals]": endDateTime,
+      "where[numberOfPeople][equals]": data.numberOfPeople,
     });
-    if (!isAvailable) {
+
+    if (availability && !availability?.isFullyAvailable) {
       const retries = (reservation?.attempts || 0) + 1;
       await reservationCacheService.save(reservationKey, {
         ...reservation,
@@ -150,12 +156,12 @@ export async function collecDataTask({
         attempts: retries,
       } satisfies Partial<ReservationState>);
 
-      return humanizerAgent(
-        `
-            Lo sentimos, no hay disponibilidad para esa fecha y hora. Selecciona otra fecha y hora.
-            Tienes ${ATTEMPTS - retries} intentos restantes.
-          `,
-      );
+      const msg = renderMsgNotAvailable({
+        availability,
+        business,
+        data,
+      });
+      return humanizerAgent(msg);
     }
 
     // 2. ✅ INPUT DATA VALIDATED

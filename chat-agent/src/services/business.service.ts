@@ -69,7 +69,7 @@ class BusinessService {
    * more info: https://waha.devlike.pro/docs/how-to/send-messages/
    * @description Send a seen message to the chat always before sending a message
    */
-  public async getBusinessById(id: string): Promise<Business> {
+  public async getBusinessById(id: string): Promise<Business | undefined> {
     const url = generateUrl(`businesses/${id}`, { depth: 0 });
     const key = `business:${id}`;
     const cache = await redis.get(key);
@@ -77,49 +77,18 @@ class BusinessService {
     if (cache) {
       return JSON.parse(cache) satisfies Business;
     }
-    const response = (await (
-      await fetch(url, {
-        method: "GET",
-        headers: this.headers,
-      })
-    ).json()) as Business;
-
-    if (response) {
-      redis.set(key, JSON.stringify(response), "EX", 60 * 60 * 12);
-    }
-    return response;
-  }
-
-  /**
-   *
-   * TODO: return a boolean
-   *
-   * MORE INFO: https://payloadcms.com/docs/queries/overview
-   * MORE INFO: https://payloadcms.com/docs/queries/select
-   * @param queryParams
-   * @returns boolean
-   */
-  public async findAppointmentByParams(
-    queryParams: Pick<
-      BusinessQueryParams,
-      | "where[startDateTime][equals]"
-      | "where[endDateTime][equals]"
-      | "where[numberOfPeople][equals]"
-    >,
-  ) {
-    const url = generateUrl("appointments", {
-      depth: 0,
-      ...queryParams,
-    });
-    const appointments = await fetch(url, {
+    const res = await fetch(url, {
       method: "GET",
       headers: this.headers,
     });
-    if (appointments.status !== 200) {
-      return;
+    if (res.status !== 200) return;
+
+    const business = (await res.json()) as Business;
+
+    if (business) {
+      redis.set(key, JSON.stringify(business), "EX", 60 * 60 * 12);
     }
-    const res = (await appointments.json()) as { docs: Appointment[] };
-    return res.docs.length === 0 ? BOOL.YES : BOOL.NO;
+    return business;
   }
 
   public async checkAvailability(

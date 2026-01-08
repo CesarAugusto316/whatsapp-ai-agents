@@ -1,13 +1,7 @@
-import { generateText, ModelMessage, stepCountIs } from "ai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { env } from "bun";
-import { getReservationStatusById } from "./tools/restaurant/reservation.tools";
 import {
-  AgentArgs,
   CUSTOMER_INTENT,
-  FlowOption,
   InputIntent,
-  ReservationStatus,
 } from "../types/reservation/reservation.types";
 import { Business } from "@/types/business/cms-types";
 import { ZodError } from "zod";
@@ -18,11 +12,11 @@ import {
   ReservationSchema,
   reservationSchemas,
 } from "../types/reservation/schemas";
-import { buildInfoReservationsSystemPrompt } from "./prompts/conversational-prompts";
 import { CLASSIFIER_PROMPT } from "./prompts/classifier-prompts";
 import { validationPrompts } from "./prompts/validation-prompts";
 import { humanizerPrompt } from "./prompts/humanizer-prompt";
 import { mergeReservationData } from "@/helpers/merge-state";
+import { ModelMessage } from "@/types/hono.types";
 
 /**
  *
@@ -30,44 +24,20 @@ import { mergeReservationData } from "@/helpers/merge-state";
  * MORE INFO: https://developers.cloudflare.com/workers-ai/models/granite-4.0-h-micro/
  * DOCS: https://www.ibm.com/granite/docs/models/granite
  */
-const provider = createOpenAICompatible({
-  name: "cloudflare",
-  baseURL: `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
-  headers: {
-    Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
-  },
-  // includeUsage: true, // Include usage information in streaming responses
-});
+// const provider = createOpenAICompatible({
+//   name: "cloudflare",
+//   baseURL: `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
+//   headers: {
+//     Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
+//   },
+//   // includeUsage: true, // Include usage information in streaming responses
+// });
+// const config = {
+//   model: provider(model),
+//   maxOutputTokens: 2048, // 512, 1024
+// };
 
 const model = "@cf/ibm-granite/granite-4.0-h-micro"; // "@cf/meta/llama-4-scout-17b-16e-instruct"; // "@cf/ibm-granite/granite-4.0-h-micro"
-
-const config = {
-  model: provider(model),
-  maxOutputTokens: 2048, // 512, 1024
-};
-
-/**
- *
- * @description Configure the agent with the model, system prompt, tools, and stop conditions.
- * MORE INFO: https://ai-sdk.dev/docs/agents/loop-control
- */
-export function infoReservationAgent(
-  { messages, business }: AgentArgs,
-  ctxStatus?: ReservationStatus | FlowOption,
-) {
-  return generateText({
-    ...config,
-    // temperature: 0.2,
-    system: buildInfoReservationsSystemPrompt(business, ctxStatus),
-    messages,
-    tools: {
-      getReservationStatusById: getReservationStatusById(),
-    },
-    stopWhen: [
-      stepCountIs(10), // Maximum 10 steps
-    ],
-  });
-}
 
 /**
  *

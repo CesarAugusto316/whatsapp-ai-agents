@@ -27,7 +27,6 @@ export const contextMiddleware: Handler<CTX> = async (ctx, next) => {
   const currentReservation = await reservationCacheService.get(reservationKey);
   ctx.set("session", session);
   ctx.set("businessId", businessId);
-  ctx.set("business", business);
   ctx.set("customerPhone", customerPhone);
   ctx.set("customerMessage", customerMessage);
   ctx.set("chatKey", chatKey);
@@ -46,5 +45,6 @@ export const contextMiddleware: Handler<CTX> = async (ctx, next) => {
     return ctx.json({ error: "Customer phone not received" }, 400);
   }
 
+  ctx.set("business", business);
   await next();
 };

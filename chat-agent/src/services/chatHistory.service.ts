@@ -1,5 +1,5 @@
 import { redis } from "@/storage/cache-storage.config";
-import { ModelMessage } from "ai";
+import { ModelMessage } from "@/types/hono.types";
 
 // COMMANDS REDDIS
 // KEYS chat:*

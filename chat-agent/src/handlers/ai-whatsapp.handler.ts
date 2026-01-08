@@ -1,4 +1,5 @@
-import whatsappService from "@/services/whatsapp.service";
+import { formatForWhatsApp } from "@/helpers/helpers";
+import whatsAppService from "@/services/whatsapp.service";
 import { CTX, AppContext } from "@/types/hono.types";
 import { runReservationWorkflow } from "@/workflows/reservations/reservation.workflow";
 import { Handler } from "hono/types";
@@ -15,14 +16,14 @@ export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
     businessId: ctx.get("businessId"),
     chatKey: ctx.get("chatKey"),
     reservationKey: ctx.get("reservationKey"),
-  } as AppContext;
+  } satisfies AppContext;
 
   if (appContext.whatsappEvent !== "message") {
     return ctx.json({ message: "Invalid event" });
   }
 
   // 1. Set message as seen & call the core-flow & get a response
-  const chatResponse: string = await whatsappService.beforeSend(
+  const textResponse: string = await whatsAppService.beforeSend(
     {
       session: appContext.session,
       chatId: appContext.customerPhone,
@@ -31,9 +32,9 @@ export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
   );
 
   // 2. Send AI response to customer
-  await whatsappService.sendText({
+  await whatsAppService.sendText({
     chatId: appContext.customerPhone,
-    text: chatResponse,
+    text: formatForWhatsApp(textResponse),
     session: appContext.session,
   });
 
