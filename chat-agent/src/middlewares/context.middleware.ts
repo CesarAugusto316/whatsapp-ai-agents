@@ -20,34 +20,40 @@ export const contextMiddleware = (): MiddlewareHandler<CTX> => {
     const customerPhone = custumerRecievedEvent.payload.from;
     const chatKey = `chat:${businessId}:${customerPhone}`;
     const reservationKey = `reservation:${businessId}:${customerPhone}`;
-    const customer = await cmsService.getCostumerByPhone({
-      "where[business][equals]": businessId,
-      "where[phoneNumber][like]": customerPhone,
-    });
-    const business = await cmsService.getBusinessById(businessId);
     const currentReservation =
       await reservationCacheService.get(reservationKey);
     ctx.set("session", session);
-    ctx.set("businessId", businessId);
-    ctx.set("customerPhone", customerPhone);
-    ctx.set("customerMessage", customerMessage);
     ctx.set("chatKey", chatKey);
     ctx.set("whatsappEvent", event);
     ctx.set("reservationKey", reservationKey);
     ctx.set("RESERVATION_CACHE", currentReservation);
-    ctx.set("customer", customer);
 
+    if (!businessId) {
+      return ctx.json({ error: "Business ID not received" }, 400);
+    }
     if (!customerMessage) {
       return ctx.json({ error: "Customer message not received" }, 400);
-    }
-    if (!business) {
-      return ctx.json({ error: "Business not found" }, 404);
     }
     if (!customerPhone) {
       return ctx.json({ error: "Customer phone not received" }, 400);
     }
 
+    ctx.set("businessId", businessId);
+    ctx.set("customerMessage", customerMessage);
+    ctx.set("customerPhone", customerPhone);
+
+    const customer = await cmsService.getCostumerByPhone({
+      "where[business][equals]": businessId,
+      "where[phoneNumber][like]": customerPhone,
+    });
+    const business = await cmsService.getBusinessById(businessId);
+
+    if (!business) {
+      return ctx.json({ error: "Business not found" }, 404);
+    }
+    ctx.set("customer", customer); // can be undefined
     ctx.set("business", business);
+
     await next();
   };
 };
