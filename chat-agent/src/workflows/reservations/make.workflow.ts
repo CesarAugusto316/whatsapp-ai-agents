@@ -13,6 +13,7 @@ import { AppContext } from "@/types/hono.types";
 import { systemMessages } from "@/llm/prompts/system-messages";
 import { localDateTimeToUTC } from "@/helpers/datetime-converters";
 import { collecDataTask } from "./tasks/collect-data.task";
+import { logger } from "@/middlewares/logger-middleware";
 
 /**
  *
@@ -110,6 +111,10 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       await reservationCacheService.delete(reservationKey ?? "");
       return humanizerAgent(assistantMsg);
     }
+    logger.info("Customer selected an option", {
+      customerAction: CustomerActions.CONFIRM,
+      customerMessage,
+    });
     return humanizerAgent("Cliente no pudo ser creado, falta el nombre");
   }
 
@@ -117,6 +122,10 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
     await reservationCacheService.delete(reservationKey ?? "");
     const assistantMsg = systemMessages.getExitMsg();
+    logger.info("Customer selected an option", {
+      customerAction: CustomerActions.EXIT,
+      customerMessage,
+    });
     return assistantMsg;
   }
 
@@ -131,6 +140,10 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       customerId: customer?.id,
       ...RESERVATION_CACHE,
       status: ReservationStatuses.MAKE_STARTED,
+    });
+    logger.info("Customer selected an option", {
+      customerAction: CustomerActions.RESTART,
+      customerMessage,
     });
     return humanizerAgent(assistantResponse);
   }
