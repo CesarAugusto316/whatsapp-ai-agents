@@ -14,6 +14,7 @@ const app = new Hono<CTX>();
 
 Sentry.init({
   dsn: env?.SENTRY_DSN,
+  enabled: env.NODE_ENV === "production",
   integrations: [
     Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
   ],

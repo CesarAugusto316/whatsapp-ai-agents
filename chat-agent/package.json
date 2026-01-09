@@ -7,7 +7,8 @@
     "debug": "bun --inspect=localhost:4000/prefix ./src/index.ts",
     "build:standalone": "bun build --compile --minify --sourcemap ./src/index.ts --outfile=myapp",
     "build": "bun build --minify ./src/index.ts --outdir ./dist --target bun",
-    "start": "bun ./dist/index.js"
+    "start": "bun ./dist/index.js",
+    "dokploy:dashbord": "ssh -L 3000:localhost:3000 cesar@168.119.115.194"
   },
   "dependencies": {
     "@sentry/bun": "^10.32.1",

@@ -86,6 +86,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       const responseMsg = systemMessages.getSuccessMsg(
         {
           id: reservation?.doc.id,
+          customerName: customerName || customer?.name || "",
           datetime,
           numberOfPeople,
         },

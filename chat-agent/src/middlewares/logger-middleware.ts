@@ -1,5 +1,7 @@
 import { MiddlewareHandler } from "hono";
 import { CTX } from "@/types/hono.types";
+import { env } from "bun";
+import { ReservationState } from "@/types/reservation/reservation.types";
 
 // Tipos para diferentes niveles de log
 type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
@@ -20,6 +22,8 @@ type LogData = {
   userAgent?: string;
   error?: string;
   traceId?: string;
+  state?: Partial<ReservationState>;
+  response?: unknown;
 };
 
 export const loggerMiddleware = (): MiddlewareHandler<CTX> => {
@@ -27,8 +31,6 @@ export const loggerMiddleware = (): MiddlewareHandler<CTX> => {
     const start = performance.now(); // Más preciso que Date.now()
     const method = c.req.method;
     const path = c.req.path;
-    const url = new URL(c.req.url);
-    const queryParams = Object.fromEntries(url.searchParams);
 
     // Headers útiles para logging
     const userAgent = c.req.header("User-Agent") || "N/A";
@@ -74,6 +76,8 @@ export const loggerMiddleware = (): MiddlewareHandler<CTX> => {
             ? userAgent.substring(0, 50) + (userAgent.length > 50 ? "..." : "")
             : undefined,
         traceId,
+        state: c.get("RESERVATION_CACHE"),
+        response: await c.res.clone().json(),
       };
 
       // Solo agregar datos específicos si existen
@@ -89,13 +93,8 @@ export const loggerMiddleware = (): MiddlewareHandler<CTX> => {
             : customerMessage;
       }
 
-      // Query params (solo si existen y no son sensibles)
-      if (Object.keys(queryParams).length > 0 && !path.includes("auth")) {
-        // Podríamos agregar queryParams filtrados si es necesario
-      }
-
       // Formatear el log según el entorno
-      if (process.env.NODE_ENV === "production") {
+      if (env.NODE_ENV === "production") {
         // En producción: JSON estructurado
         console.log(JSON.stringify(logData));
       } else {
@@ -121,7 +120,7 @@ export const loggerMiddleware = (): MiddlewareHandler<CTX> => {
                   : errorBody,
             };
 
-            if (process.env.NODE_ENV === "production") {
+            if (env.NODE_ENV === "production") {
               console.error(JSON.stringify(errorLog));
             } else {
               console.error(
@@ -150,7 +149,7 @@ export const loggerMiddleware = (): MiddlewareHandler<CTX> => {
         error: error instanceof Error ? error.message : "Unknown error",
       };
 
-      if (process.env.NODE_ENV === "production") {
+      if (env.NODE_ENV === "production") {
         console.error(JSON.stringify(errorLog));
       } else {
         console.error(
@@ -175,6 +174,10 @@ function formatDevLog(data: LogData) {
     customerPhone,
     messagePreview,
     traceId,
+    state,
+    response,
+    duration,
+    event,
   } = data;
 
   // Colores según nivel
@@ -242,59 +245,75 @@ function formatDevLog(data: LogData) {
     contextLines.push(`\x1b[90m│\x1b[0m \x1b[90mTrace ID:\x1b[0m ${traceId}`);
   }
 
+  if (state) {
+    contextLines.push(`\x1b[90m│\x1b[0m \x1b[90mState:\x1b[0m ${state}`);
+  }
+
+  if (response) {
+    contextLines.push(
+      `\x1b[90m│\x1b[0m \x1b[90mResponse:\x1b[0m ${JSON.stringify(response)}`,
+    );
+  }
+
+  if (duration) {
+    contextLines.push(`\x1b[90m│\x1b[0m \x1b[90mDuration:\x1b[0m ${duration}`);
+  }
+
+  if (event) {
+    contextLines.push(
+      `\x1b[90m│\x1b[0m \x1b[90mEvent:\x1b[0m ${JSON.stringify(event)}`,
+    );
+  }
+
   // Mostrar todas las líneas de contexto
   contextLines.forEach((line) => console.log(line));
 
   // Línea final
   console.log(`\x1b[90m╰─\x1b[0m`);
 }
+
 // Opcional: Exportar una función para logging manual desde handlers
-export const createContextLogger = (c: CTX) => {
-  const traceId =
-    c.req.header("x-trace-id") || crypto.randomUUID().split("-")[0];
+export const logger = {
+  info(message: string, data?: any) {
+    const log = {
+      timestamp: new Date().toISOString(),
+      level: "INFO" as LogLevel,
+      message,
+      // traceId,
+      // businessId: c.get("businessId"),
+      // customerPhone: c.get("customerPhone"),
+      data,
+    };
 
-  return {
-    info: (message: string, data?: any) => {
-      const log = {
-        timestamp: new Date().toISOString(),
-        level: "INFO" as LogLevel,
-        message,
-        traceId,
-        businessId: c.get("businessId"),
-        customerPhone: c.get("customerPhone"),
-        data,
-      };
+    if (env.NODE_ENV === "production") {
+      console.log(JSON.stringify(log));
+    } else {
+      console.log(
+        `\x1b[36m[DEBUG] ${message}\x1b[0m`,
+        data ? JSON.stringify(data, null, 2) : "",
+      );
+    }
+  },
 
-      if (process.env.NODE_ENV === "production") {
-        console.log(JSON.stringify(log));
-      } else {
-        console.log(
-          `\x1b[36m[DEBUG] ${message}\x1b[0m`,
-          data ? JSON.stringify(data, null, 2) : "",
-        );
-      }
-    },
+  error(message: string, error?: Error) {
+    const log = {
+      timestamp: new Date().toISOString(),
+      level: "ERROR" as LogLevel,
+      message,
+      // traceId,
+      // businessId: c.get("businessId"),
+      // customerPhone: c.get("customerPhone"),
+      error: error?.message,
+      stack: error?.stack,
+    };
 
-    error: (message: string, error?: Error) => {
-      const log = {
-        timestamp: new Date().toISOString(),
-        level: "ERROR" as LogLevel,
-        message,
-        traceId,
-        businessId: c.get("businessId"),
-        customerPhone: c.get("customerPhone"),
-        error: error?.message,
-        stack: error?.stack,
-      };
-
-      if (process.env.NODE_ENV === "production") {
-        console.error(JSON.stringify(log));
-      } else {
-        console.error(
-          `\x1b[31m[ERROR] ${message}\x1b[0m`,
-          error ? error.message : "",
-        );
-      }
-    },
-  };
+    if (env.NODE_ENV === "production") {
+      console.error(JSON.stringify(log));
+    } else {
+      console.error(
+        `\x1b[31m[ERROR] ${message}\x1b[0m`,
+        error ? error.message : "",
+      );
+    }
+  },
 };
