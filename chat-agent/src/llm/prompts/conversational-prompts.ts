@@ -25,30 +25,42 @@ export const WRITING_STYLE = `
 const buildGuidancePrompt = (status?: FMStatus): string => {
   const guidance = status ? resolveNextState(status) : undefined;
 
-  return guidance
-    ? `
+  if (!guidance) return "";
+
+  // For states with available actions
+  const actionsText =
+    guidance.suggestedActions.length > 0
+      ? `\nAVAILABLE ACTIONS TO CONTINUE:\n${guidance.suggestedActions.map((a) => `• ${a}`).join("\n")}`
+      : "";
+
+  return `
     ==============================
     CONVERSATION CONTEXT (READ-ONLY)
     ==============================
 
-    FACTS:
-    - There is an active reservation-related process.
-    - Current reservation status: ${status}
+    CRITICAL FACTS:
+    • You have an ACTIVE reservation process at this moment
+    • Current process status: ${status}
 
-    ALLOWED USER ACTIONS (VALID OPTIONS):
-      ${guidance?.suggestedActions.map((a) => `- ${a}`).join("\n")}
-    IMPORTANT:
-    - These actions represent valid options user can type to continue the reservation process.
-    - Do NOT instruct the user to type these words verbatim unless explicitly required.
+    ${actionsText}
 
-    GUIDANCE FOR YOUR RESPONSE:
-    - ${guidance?.messageHint}
-    - Answer the user's question normally.
-    - If relevant, add a brief reminder at the end about how to continue or exit.
-    - You MUST NOT ask for data.
-    - You MUST NOT advance, confirm, cancel, or modify any reservation.
-  `.trim()
-    : "";
+    MANDATORY GUIDANCE FOR YOUR RESPONSE:
+    1. First, answer the user's question normally
+    2. THEN, AT THE END of your response, YOU MUST add a reminder about the current process
+    3. The reminder must include:
+      • Mention that there is an active process
+      • The valid options to continue (if they exist)
+      • A subtle call to action
+    4. Reminder format:
+      "Remember that you have [process description]. To continue, you can [available actions]."
+
+    STRICT RULES:
+    • You CANNOT advance, confirm, modify, or cancel reservations
+    • You CANNOT request data from the user
+    • You MUST maintain the reminder in EACH response while there is an active process
+    • The reminder must be natural, friendly, and in Spanish
+    • Use relevant emojis in the reminder (🔄✅❌)
+`.trim();
 };
 
 export function buildInfoReservationsSystemPrompt(
@@ -66,6 +78,8 @@ export function buildInfoReservationsSystemPrompt(
 
   const PROMPT = `
     You are ${AGENT_NAME}, an AI assistant for the restaurant *${name}*.
+
+    ${GUIDANCE_BLOCK}
 
     ==============================
     YOUR ROLE IS STRICTLY INFORMATIONAL
@@ -124,8 +138,6 @@ export function buildInfoReservationsSystemPrompt(
     - Current date/time (for reference only): ${currentDate}
     - Do NOT infer availability, predict, or invent future schedules.
 
-    ${GUIDANCE_BLOCK}
-
     ==============================
     RESPONSE PATTERNS TO AVOID
     ==============================
@@ -163,6 +175,8 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
   return `
     You are ${AGENT_NAME}, an assistant that explains how the reservation system works for
     ${business.general.businessType} ${business.name}.
+
+   ${GUIDANCE_BLOCK}
 
     ==============================
     YOUR ROLE IS STRICTLY INFORMATIONAL
@@ -263,8 +277,6 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
     - Mention internal steps unless explicitly requested
     - Invent additional options or features
     - Make or modify reservations yourself
-
-    ${GUIDANCE_BLOCK}
 
     ==============================
     EXAMPLES - CORRECT RESPONSES
