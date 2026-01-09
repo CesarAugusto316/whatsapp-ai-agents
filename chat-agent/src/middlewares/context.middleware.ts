@@ -34,6 +34,9 @@ export const contextMiddleware = (): MiddlewareHandler<CTX> => {
     if (!customerMessage) {
       return ctx.json({ error: "Customer message not received" }, 400);
     }
+    if (customerPhone === "status@broadcast") {
+      return ctx.json({ error: "Broadcast status not allowed" }, 400);
+    }
     if (!customerPhone) {
       return ctx.json({ error: "Customer phone not received" }, 400);
     }

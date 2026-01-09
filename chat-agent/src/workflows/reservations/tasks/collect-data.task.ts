@@ -206,7 +206,7 @@ export async function collecDataTask({
       currentStatus: reservation.status,
       nextStatus: transition.nextState,
     });
-    const responseMsg = systemMessages.getConfirmationMsg(data, mode);
+    const responseMsg = systemMessages.getConfirmationMsg(data, timezone, mode);
     return humanizerAgent(responseMsg);
   } catch (error) {
     logger.error("❌ Error validating reservation data", error as Error);
