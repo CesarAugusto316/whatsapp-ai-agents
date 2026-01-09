@@ -13,6 +13,7 @@ import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 import { systemMessages } from "@/llm/prompts/system-messages";
 import { localDateTimeToUTC } from "@/helpers/datetime-converters";
 import { collecDataTask } from "./tasks/collect-data.task";
+import { logger } from "@/middlewares/logger-middleware";
 
 const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   ctx,
@@ -96,6 +97,10 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       await reservationCacheService.delete(reservationKey ?? "");
       return humanizerAgent(responseMsg);
     }
+    logger.info("Customer selected an option", {
+      customerAction: CustomerActions.CONFIRM,
+      customerMessage,
+    });
     return humanizerAgent("Customer not created");
   }
 
@@ -103,6 +108,10 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
     await reservationCacheService.delete(reservationKey ?? "");
     const assistantMsg = systemMessages.getExitMsg();
+    logger.info("Customer selected an option", {
+      customerAction: CustomerActions.EXIT,
+      customerMessage,
+    });
     return assistantMsg;
   }
 
@@ -117,6 +126,10 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       customerId: customer?.id,
       ...RESERVATION_CACHE,
       status: ReservationStatuses.UPDATE_STARTED,
+    });
+    logger.info("Customer selected an option", {
+      customerAction: CustomerActions.RESTART,
+      customerMessage,
     });
     return assistantResponse;
   }

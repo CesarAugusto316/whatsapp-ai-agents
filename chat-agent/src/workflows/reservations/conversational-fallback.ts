@@ -56,6 +56,10 @@ export async function resolveConversationalFallback(
         messages,
         howSystemWorksPrompt(business),
       );
+      logger.info("AI Fallback executed", {
+        isFirstMessage,
+        customerMessage,
+      });
       return assistantResponse;
     }
 
@@ -71,11 +75,17 @@ export async function resolveConversationalFallback(
       const responseMsg = systemMessages.getCreateMsg({
         userName: customer?.name,
       });
+      logger.info("AI Fallback executed", {
+        FlowOption: FlowOptions.MAKE_RESERVATION,
+      });
       return humanizerAgent(responseMsg);
     }
 
     if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
       const timezone = business.general.timezone;
+      logger.info("AI Fallback executed", {
+        FlowOption: FlowOptions.UPDATE_RESERVATION,
+      });
       return initReservationChange({
         business,
         customer,
@@ -87,6 +97,9 @@ export async function resolveConversationalFallback(
 
     if (customerMessage == FlowOptions.CANCEL_RESERVATION) {
       const timezone = business.general.timezone;
+      logger.info("AI Fallback executed", {
+        FlowOption: FlowOptions.CANCEL_RESERVATION,
+      });
       return initReservationChange({
         business,
         customer,
@@ -110,6 +123,7 @@ export async function resolveConversationalFallback(
   const customerIntent = await customerIntentClassifier(customerMessage);
   logger.info("AI Fallback executed", {
     customerIntent,
+    customerMessage,
   });
 
   // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS

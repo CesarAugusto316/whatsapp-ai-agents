@@ -61,6 +61,10 @@ export async function collecDataTask({
     if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
       await reservationCacheService.delete(reservationKey);
       const responseMsg = systemMessages.getExitMsg();
+      logger.info("Customer asked a question", {
+        customerAction: CustomerActions.EXIT,
+        customerMessage,
+      });
       return humanizerAgent(responseMsg);
     }
     if ((reservation?.attempts ?? 0) >= ATTEMPTS) {
@@ -80,7 +84,10 @@ export async function collecDataTask({
     const inputIntent = await inputIntentClassifier(customerMessage);
 
     if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
-      logger.info("Customer asked a question", { inputIntent });
+      logger.info("Customer asked a question", {
+        inputIntent,
+        customerMessage,
+      });
       return InputIntent.CUSTOMER_QUESTION;
       // This breaks the flow and the fallback AGENT takes control back
     }
@@ -129,6 +136,7 @@ export async function collecDataTask({
 
     if (!isWithinSchedule.start || !isWithinSchedule.end) {
       logger.info("Reservation out of business hours", {
+        customerMessage,
         isWithinSchedule,
       });
       await reservationCacheService.save(reservationKey, {
@@ -158,6 +166,7 @@ export async function collecDataTask({
     if (isWithinRange) {
       logger.info("Reservation within business hours", {
         isWithinRange,
+        customerMessage,
       });
       await reservationCacheService.save(reservationKey, {
         ...reservation,
@@ -175,6 +184,7 @@ export async function collecDataTask({
     if (availability && !availability?.isFullyAvailable) {
       logger.info("Reservation not available", {
         availability,
+        customerMessage,
       });
       const retries = (reservation?.attempts || 0) + 1;
       await reservationCacheService.save(reservationKey, {
@@ -205,13 +215,12 @@ export async function collecDataTask({
       },
       currentStatus: reservation.status,
       nextStatus: transition.nextState,
+      customerMessage,
     });
     const responseMsg = systemMessages.getConfirmationMsg(data, timezone, mode);
     return humanizerAgent(responseMsg);
   } catch (error) {
     logger.error("❌ Error validating reservation data", error as Error);
-    return humanizerAgent(
-      "Ocurrió un problema inesperado. ¿Podemos intentar de nuevo con los datos de la reserva?",
-    );
+    throw error;
   }
 }
