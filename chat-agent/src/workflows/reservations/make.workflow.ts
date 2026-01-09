@@ -101,6 +101,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
         {
           id: reservation?.doc.id,
           datetime,
+          customerName: customerName || customer?.name || "",
           numberOfPeople,
         },
         timezone,

@@ -49,7 +49,7 @@ export function isWithinHolydayRange(
 
        La fecha seleccionada coincide con nuestro período de vacaciones programadas:
 
-       **${holiday.startLocal} al ${holiday.endLocal}**
+       *${holiday.startLocal} al ${holiday.endLocal}*
 
        Para continuar con la reserva, por favor selecciona una fecha fuera de este rango.
 

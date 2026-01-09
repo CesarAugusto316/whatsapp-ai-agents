@@ -17,6 +17,7 @@ import {
 } from "@/types/reservation/reservation.types";
 import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
 import { initReservationChange } from "./tasks/init-reservation-update.task";
+import { logger } from "@/middlewares/logger-middleware";
 
 /**
  *
@@ -107,6 +108,9 @@ export async function resolveConversationalFallback(
 
   // 2. INTENT HANDLING WHEN CUSTOMER ASKS THE HOW OF SOMETHING
   const customerIntent = await customerIntentClassifier(customerMessage);
+  logger.info("AI Fallback executed", {
+    customerIntent,
+  });
 
   // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS
   if (customerIntent === CUSTOMER_INTENT.HOW) {

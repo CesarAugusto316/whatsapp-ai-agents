@@ -32,12 +32,13 @@ export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
   );
 
   // 2. Send AI response to customer
-  await whatsAppService.sendText({
+  const whatsappResponse = {
     chatId: appContext.customerPhone,
     text: formatForWhatsApp(textResponse),
     session: appContext.session,
-  });
+  };
+  await whatsAppService.sendText(whatsappResponse);
 
   // 3. Return response
-  return ctx.json({ received: true, message: "AI Agent Response" });
+  return ctx.json({ received: true, message: whatsappResponse.text });
 };

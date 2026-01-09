@@ -23,6 +23,7 @@ import {
 import { isWithinBusinessHours } from "@/helpers/is-within-business-hours";
 import { isWithinHolydayRange } from "./check-next-holyday";
 import { renderMsgNotAvailable } from "./render-msg-not-available";
+import { logger } from "@/middlewares/logger-middleware";
 
 type Args = {
   reservation: Partial<ReservationState>;
@@ -79,6 +80,7 @@ export async function collecDataTask({
     const inputIntent = await inputIntentClassifier(customerMessage);
 
     if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
+      logger.info("Customer asked a question", { inputIntent });
       return InputIntent.CUSTOMER_QUESTION;
       // This breaks the flow and the fallback AGENT takes control back
     }
@@ -90,6 +92,10 @@ export async function collecDataTask({
       previousState,
     );
     if (!result) {
+      logger.info("Failed to parse customer data", {
+        customerMessage,
+        previousState,
+      });
       return humanizerAgent(
         "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
       );
@@ -98,6 +104,13 @@ export async function collecDataTask({
     const { success, data, error } = parsedData;
 
     if (!success) {
+      logger.info("Zod failed to parse customer data", {
+        customerMessage,
+        previousState,
+        success,
+        data,
+        error,
+      });
       await reservationCacheService.save(reservationKey, {
         ...reservation,
         ...mergedData,
@@ -115,6 +128,14 @@ export async function collecDataTask({
     };
 
     if (!isWithinSchedule.start || !isWithinSchedule.end) {
+      logger.info("Reservation out of business hours", {
+        isWithinSchedule,
+      });
+      await reservationCacheService.save(reservationKey, {
+        ...reservation,
+        ...data,
+      } satisfies Partial<ReservationState>);
+
       const schedule = business.schedule;
       const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);
       return humanizerAgent(`
@@ -130,12 +151,19 @@ export async function collecDataTask({
     const startDateTime = localDateTimeToUTC(start, timezone);
     const endDateTime = localDateTimeToUTC(end, timezone);
 
-    const { isWithinRange, message } = isWithinHolydayRange(
+    const { isWithinRange, message: holidayMsg } = isWithinHolydayRange(
       business,
       startDateTime,
     );
     if (isWithinRange) {
-      return message;
+      logger.info("Reservation within business hours", {
+        isWithinRange,
+      });
+      await reservationCacheService.save(reservationKey, {
+        ...reservation,
+        ...data,
+      } satisfies Partial<ReservationState>);
+      return holidayMsg;
     }
     const availability = await cmsService.checkAvailability({
       "where[business][equals]": reservation.businessId,
@@ -145,6 +173,9 @@ export async function collecDataTask({
     });
 
     if (availability && !availability?.isFullyAvailable) {
+      logger.info("Reservation not available", {
+        availability,
+      });
       const retries = (reservation?.attempts || 0) + 1;
       await reservationCacheService.save(reservationKey, {
         ...reservation,
@@ -167,10 +198,18 @@ export async function collecDataTask({
       ...data,
       status: transition.nextState, // UPDATE_VALIDATED,
     } satisfies Partial<ReservationState>);
-
+    logger.info("✅ Reservation data validated", {
+      reservation: {
+        ...reservation,
+        ...data,
+      },
+      currentStatus: reservation.status,
+      nextStatus: transition.nextState,
+    });
     const responseMsg = systemMessages.getConfirmationMsg(data, mode);
     return humanizerAgent(responseMsg);
-  } catch {
+  } catch (error) {
+    logger.error("❌ Error validating reservation data", error as Error);
     return humanizerAgent(
       "Ocurrió un problema inesperado. ¿Podemos intentar de nuevo con los datos de la reserva?",
     );
