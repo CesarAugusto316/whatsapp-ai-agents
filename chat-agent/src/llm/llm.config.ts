@@ -17,27 +17,10 @@ import { validationPrompts } from "./prompts/validation-prompts";
 import { humanizerPrompt } from "./prompts/humanizer-prompt";
 import { mergeReservationData } from "@/helpers/merge-state";
 import { ModelMessage } from "@/types/hono.types";
+import { DBOS } from "@dbos-inc/dbos-sdk";
+import { logger } from "@/middlewares/logger-middleware";
 
-/**
- *
- * @description provider("@cf/ibm-granite/granite-4.0-h-micro");
- * MORE INFO: https://developers.cloudflare.com/workers-ai/models/granite-4.0-h-micro/
- * DOCS: https://www.ibm.com/granite/docs/models/granite
- */
-// const provider = createOpenAICompatible({
-//   name: "cloudflare",
-//   baseURL: `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
-//   headers: {
-//     Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
-//   },
-//   // includeUsage: true, // Include usage information in streaming responses
-// });
-// const config = {
-//   model: provider(model),
-//   maxOutputTokens: 2048, // 512, 1024
-// };
-
-const model = "@cf/ibm-granite/granite-4.0-h-micro"; // "@cf/meta/llama-4-scout-17b-16e-instruct"; // "@cf/ibm-granite/granite-4.0-h-micro"
+const model = "@cf/ibm-granite/granite-4.0-h-micro"; // "@cf/meta/llama-4-scout-17b-16e-instruct";
 
 /**
  *
@@ -166,9 +149,12 @@ export const validatorAgent = {
     const messages: ModelMessage[] = [
       { role: "user", content: customerMessage },
     ];
-    const aiValidator: string = await aiClient(messages, PARSER_PROMPT, temp);
-    // ✅ Required fields
+    const aiValidator: string = await DBOS.runStep(
+      () => aiClient(messages, PARSER_PROMPT, temp),
+      { name: "validatorAgent.parse" },
+    );
 
+    // ✅ Required fields
     const rawObj = JSON.parse(aiValidator || "{}");
     const mergedData = mergeReservationData(rawObj, previousState);
     const parsedData = reservationSchemas.phase2.safeParse(mergedData);
@@ -186,24 +172,27 @@ export const validatorAgent = {
    */
   async humanizeErrors(business: Business, errors: ZodError, temp = 0.7) {
     const COLLECTOR_PROMPT = validationPrompts.humanizeErrors(business);
-    console.log({ errors });
     const mappedErrors = mapZodErrorsToCollector(errors);
+
+    logger.info("Errors mapped completed", mappedErrors);
 
     // Validar que hay errores para procesar
     if (!mappedErrors || mappedErrors.length === 0) {
       return "No se detectaron errores específicos para corregir.";
     }
-
-    const aiDataCollector = aiClient(
-      [
-        {
-          role: "user",
-          content: JSON.stringify(mappedErrors),
-        },
-      ],
-      COLLECTOR_PROMPT,
-      temp,
+    return DBOS.runStep(
+      () =>
+        aiClient(
+          [
+            {
+              role: "user",
+              content: JSON.stringify(mappedErrors),
+            },
+          ],
+          COLLECTOR_PROMPT,
+          temp,
+        ),
+      { name: "validatorAgent.humanizeErrors" },
     );
-    return aiDataCollector;
   },
 };

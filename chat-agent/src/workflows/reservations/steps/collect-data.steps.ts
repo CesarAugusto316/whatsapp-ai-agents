@@ -114,11 +114,7 @@ export async function collecDataSteps({
       return InputIntent.CUSTOMER_QUESTION;
     }
 
-    // OPTION: 4. PARSE USER INPUT
-    // const result = await DBOS.runStep(
-    //   () => validatorAgent.parse(business, customerMessage, previousState),
-    //   { name: "validatorAgent.parse" },
-    // );
+    // OPTION: 4. PARSE USER INPUT (This is internally handled with DBOS)
     const result = await validatorAgent.parse(
       business,
       customerMessage,
@@ -157,12 +153,8 @@ export async function collecDataSteps({
           } satisfies Partial<ReservationState>),
         { name: "reservationCacheService.save" },
       );
-
-      const aiDataCollector = DBOS.runStep(
-        () => validatorAgent.humanizeErrors(business, error),
-        { name: "validatorAgent.humanizeErrors" },
-      );
-      return aiDataCollector;
+      // (This is internally handled with DBOS)
+      return validatorAgent.humanizeErrors(business, error);
     }
 
     const timezone = business.general.timezone;

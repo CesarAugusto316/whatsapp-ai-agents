@@ -207,8 +207,6 @@ export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
       filteredErrors.push(fieldErrors[0]);
     }
   });
-
-  console.log({ filteredErrors });
   return filteredErrors;
 };
 
