@@ -114,12 +114,12 @@ export async function collecDataSteps({
       return InputIntent.CUSTOMER_QUESTION;
     }
 
-    // OPTION: 4. PARSE USER INPUT (This is internally handled with DBOS)
-    const result = await validatorAgent.parse(
-      business,
-      customerMessage,
-      previousState,
+    // OPTION: 4. PARSE USER INPUT
+    const result = await DBOS.runStep(
+      () => validatorAgent.parse(business, customerMessage, previousState),
+      { name: "validatorAgent.parse" },
     );
+
     // DATA VALIDATION
     if (!result) {
       logger.info("Failed to parse customer data", {
@@ -136,7 +136,7 @@ export async function collecDataSteps({
       );
     }
     const { parsedData, mergedData } = result;
-    const { success, data, error } = parsedData;
+    const { success, data, errors } = parsedData;
 
     // OPTION: 5. ASK FOR MISSING DATA
     if (!success) {
@@ -153,12 +153,15 @@ export async function collecDataSteps({
           } satisfies Partial<ReservationState>),
         { name: "reservationCacheService.save" },
       );
-      // (This is internally handled with DBOS)
-      return validatorAgent.humanizeErrors(business, error);
+
+      return DBOS.runStep(
+        () => validatorAgent.humanizeErrors(business, errors),
+        { name: "validatorAgent.humanizeErrors" },
+      );
     }
 
     const timezone = business.general.timezone;
-    const { start, end } = data.datetime;
+    const { start, end } = data?.datetime;
     const isWithinSchedule = {
       start: isWithinBusinessHours(business.schedule, timezone, start),
       end: isWithinBusinessHours(business.schedule, timezone, end),

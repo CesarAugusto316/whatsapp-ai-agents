@@ -4,7 +4,7 @@ import {
   InputIntent,
 } from "../types/reservation/reservation.types";
 import { Business } from "@/types/business/cms-types";
-import { ZodError } from "zod";
+import z, { ZodError } from "zod";
 import {
   customerIntentSchema,
   inputIntentSchema,
@@ -149,17 +149,25 @@ export const validatorAgent = {
     const messages: ModelMessage[] = [
       { role: "user", content: customerMessage },
     ];
-    const aiValidator: string = await DBOS.runStep(
-      () => aiClient(messages, PARSER_PROMPT, temp),
-      { name: "validatorAgent.parse" },
-    );
+    const aiValidator: string = await aiClient(messages, PARSER_PROMPT, temp);
 
     // ✅ Required fields
     const rawObj = JSON.parse(aiValidator || "{}");
     const mergedData = mergeReservationData(rawObj, previousState);
     const parsedData = reservationSchemas.phase2.safeParse(mergedData);
 
-    return { parsedData, mergedData };
+    return {
+      parsedData: {
+        data: parsedData.data as ReservationSchema,
+        success: parsedData.success,
+        errors: (parsedData.error?.issues ?? []).map((issue) => ({
+          path: issue.path as PropertyKey[],
+          code: issue.code,
+          message: issue.message,
+        })),
+      },
+      mergedData,
+    };
   },
 
   /**
@@ -170,7 +178,11 @@ export const validatorAgent = {
    * @param errors
    * @returns
    */
-  async humanizeErrors(business: Business, errors: ZodError, temp = 0.7) {
+  async humanizeErrors(
+    business: Business,
+    errors: Partial<z.core.$ZodIssue>[],
+    temp = 0.7,
+  ) {
     const COLLECTOR_PROMPT = validationPrompts.humanizeErrors(business);
     const mappedErrors = mapZodErrorsToCollector(errors);
 
@@ -180,19 +192,16 @@ export const validatorAgent = {
     if (!mappedErrors || mappedErrors.length === 0) {
       return "No se detectaron errores específicos para corregir.";
     }
-    return DBOS.runStep(
-      () =>
-        aiClient(
-          [
-            {
-              role: "user",
-              content: JSON.stringify(mappedErrors),
-            },
-          ],
-          COLLECTOR_PROMPT,
-          temp,
-        ),
-      { name: "validatorAgent.humanizeErrors" },
+
+    return aiClient(
+      [
+        {
+          role: "user",
+          content: JSON.stringify(mappedErrors),
+        },
+      ],
+      COLLECTOR_PROMPT,
+      temp,
     );
   },
 };

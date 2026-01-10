@@ -72,17 +72,19 @@ export const phase2 = z.object({
 });
 
 // Función de mapeo mejorada con filtrado de errores humanos
-export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
+export const mapZodErrorsToCollector = (
+  zodError: z.ZodError | Partial<z.core.$ZodIssue>[],
+) => {
   // Manejar diferentes formatos de entrada
-  let issues: z.core.$ZodIssue[] = [];
+  let issues: Partial<z.core.$ZodIssue>[] = [];
 
   // Caso 1: Es un objeto ZodError directo
-  if (zodError && Array.isArray(zodError.issues)) {
-    issues = zodError.issues;
+  if (zodError && Array.isArray(zodError)) {
+    issues = zodError;
   }
   // Caso 2: Está envuelto en un objeto con propiedad ZodError
-  else if (zodError && Array.isArray(zodError)) {
-    issues = zodError;
+  else if (zodError?.issues && Array.isArray(zodError?.issues)) {
+    issues = zodError?.issues;
   }
   // Caso 3: Es un STRING que contiene el array JSON (¡NUEVO CASO CRÍTICO!)
   else if (typeof zodError === "string") {
@@ -129,8 +131,8 @@ export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
 
   // Recolectar errores primero
   const allErrors = issues.map((issue) => {
-    const path = issue.path.join(".");
-    const field = fieldMap?.[path] || issue.path[0];
+    const path = issue?.path?.join(".") ?? "";
+    const field = fieldMap?.[path] || issue?.path?.[0];
     return {
       field,
       error: issue?.message || "",
@@ -146,11 +148,14 @@ export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
     Array<{ field: PropertyKey; error: string }>
   > = {};
 
-  allErrors.forEach((error) => {
+  (allErrors ?? []).forEach((error) => {
     if (!errorsByField[error.field as string]) {
       errorsByField[error.field as string] = [];
     }
-    errorsByField[error.field as string].push(error);
+    if (typeof error === "object")
+      errorsByField[error.field as string].push(
+        error as { field: PropertyKey; error: string },
+      );
   });
 
   // Para cada campo, seleccionar el error más relevante para humanos

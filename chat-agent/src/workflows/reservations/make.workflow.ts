@@ -94,20 +94,22 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       const timezone = business.general.timezone;
       const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
       const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
-      const res = await DBOS.runStep(
-        () =>
-          cmsService.createAppointment({
-            business: business.id,
-            customer: newCustomer.id,
-            startDateTime,
-            endDateTime,
-            customerName: newCustomer.name,
-            numberOfPeople,
-            status: "confirmed",
-          }),
+      const reservation = await DBOS.runStep(
+        async () => {
+          return (await (
+            await cmsService.createAppointment({
+              business: business.id,
+              customer: newCustomer.id,
+              startDateTime,
+              endDateTime,
+              customerName: newCustomer.name,
+              numberOfPeople,
+              status: "confirmed",
+            })
+          ).json()) as { doc: Appointment };
+        },
         { name: "cmsService.createAppointment" },
       );
-      const reservation = (await res.json()) as { doc: Appointment };
       const assistantMsg = systemMessages.getSuccessMsg(
         {
           id: reservation?.doc.id,
