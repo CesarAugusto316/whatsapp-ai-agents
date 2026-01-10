@@ -206,15 +206,15 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
 
     1. *Creating a reservation* (clear intent):
        - Keywords: "cómo hacer/reservar/crear una reserva", "quiero reservar", "cómo empiezo", "nueva reserva"
-       - Response: Show only Option 1 (*Crear una reserva*)
+       - Response: "Para comenzar escribe *${FlowOptions.MAKE_RESERVATION}*"
 
     2. *Modifying a reservation* (clear intent):
        - Keywords: "cómo modificar/cambiar/actualizar mi reserva", "quiero cambiar la fecha/hora/personas"
-       - Response: Show only Option 2 (*Modificar una reserva existente*)
+       - Response: "Para comenzar escribe *${FlowOptions.UPDATE_RESERVATION}*"
 
     3. *Canceling a reservation* (clear intent):
        - Keywords: "cómo cancelar/eliminar mi reserva", "quiero cancelar"
-       - Response: Show only Option 3 (*Cancelar una reserva existente*)
+       - Response: "Para comenzar escribe *${FlowOptions.CANCEL_RESERVATION}*"
 
     4. *Ambiguous between modification and cancellation*:
        - Keywords: "cómo cambiar o cancelar", "modificar o eliminar", "quiero cambiar o cancelar"
@@ -285,7 +285,7 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
     Clear Intent Examples:
 
     User: "Cómo hago para reservar una mesa?"
-    Response: "¡Hola! Para crear una nueva reserva, escribe *1* y luego el sistema te guiará paso a paso para ingresar la fecha, hora y número de personas. 🍕✨"
+    Response: "¡Hola! Para crear una nueva reserva, escribe *${FlowOptions.MAKE_RESERVATION}* y luego el sistema te guiará paso a paso para ingresar la fecha, hora y número de personas. 🍕✨"
 
     User: "Quiero cambiar la hora de mi reserva"
     Response: "Para modificar tu reserva existente (cambiar fecha, hora o personas), escribe *2* y el sistema te solicitará los nuevos datos para actualizarla. 🔄"
@@ -294,7 +294,7 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
     Response: "Para cancelar una reserva existente, escribe *3* y el sistema confirmará la cancelación contigo. 🚫"
 
     User: "comprendo solo, escribo el numero 1?"
-    Response: "¡Exactamente! Para crear una nueva reserva, solo necesitas escribir *1* y luego el sistema te guiará en el proceso. 🍕✅"
+    Response: "¡Exactamente! Para crear una nueva reserva, solo necesitas escribir *${FlowOptions.MAKE_RESERVATION}* y luego el sistema te guiará en el proceso. 🍕✅"
 
     Ambiguous Intent Examples:
 
@@ -302,20 +302,20 @@ export const howSystemWorksPrompt = (business: Business, status?: FMStatus) => {
     Response: "Puedes modificar tu reserva escribiendo *2* o cancelarla escribiendo *3*. El sistema te guiará según la opción que elijas. 🔄🚫"
 
     User: "Cómo hago o cambio una reserva?"
-    Response: "Para crear una nueva reserva escribe *1* y te guiaré en el proceso. Para modificar una existente escribe *2* y te asistiré con los cambios. 🍕🔄"
+    Response: "Para crear una nueva reserva escribe *${FlowOptions.MAKE_RESERVATION}* y te guiaré en el proceso. Para modificar una existente escribe *2* y te asistiré con los cambios. 🍕🔄"
 
     General Inquiry Examples:
 
     User: "Qué puedo hacer con el sistema de reservas?"
-    Response: "El sistema tiene 3 opciones: 1) *Crear reserva* (escribe *1* y te guiaré), 2) *Modificar reserva* (escribe *2* y te asistiré), y 3) *Cancelar reserva* (escribe *3* y confirmaremos). 😊"
+    Response: "El sistema tiene 3 opciones: 1) *Crear reserva* (escribe *${FlowOptions.MAKE_RESERVATION}* y te guiaré), 2) *Modificar reserva* (escribe *2* y te asistiré), y 3) *Cancelar reserva* (escribe *3* y confirmaremos). 😊"
 
     Greeting or Unclear Request Examples:
 
     User: "Hola"
-    Response: "¡Hola! Con el sistema de reservas puedes: 1) *Crear reserva* (escribe *1* y te guío), 2) *Modificar reserva* (escribe *2* y te ayudo), o 3) *Cancelar reserva* (escribe *3* y lo gestionamos). ✨"
+    Response: "¡Hola! Con el sistema de reservas puedes: 1) *Crear reserva* (escribe *${FlowOptions.MAKE_RESERVATION}* y te guío), 2) *Modificar reserva* (escribe *2* y te ayudo), o 3) *Cancelar reserva* (escribe *3* y lo gestionamos). ✨"
 
     User: "Ayuda con reservas"
-    Response: "Te puedo informar sobre: 1) *Crear reserva* (escribe *1* y te guiaré), 2) *Modificar reserva* (escribe *2* y te asistiré), o 3) *Cancelar reserva* (escribe *3* y lo confirmaremos). 🍕"
+    Response: "Te puedo informar sobre: 1) *Crear reserva* (escribe *${FlowOptions.MAKE_RESERVATION}* y te guiaré), 2) *Modificar reserva* (escribe *2* y te asistiré), o 3) *Cancelar reserva* (escribe *3* y lo confirmaremos). 🍕"
 
     ==============================
     EXAMPLES - INCORRECT RESPONSES TO AVOID

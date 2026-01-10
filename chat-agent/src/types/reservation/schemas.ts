@@ -73,6 +73,50 @@ export const phase2 = z.object({
 
 // Función de mapeo mejorada con filtrado de errores humanos
 export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
+  // Manejar diferentes formatos de entrada
+  let issues: z.core.$ZodIssue[] = [];
+
+  // Caso 1: Es un objeto ZodError directo
+  if (zodError && Array.isArray(zodError.issues)) {
+    issues = zodError.issues;
+  }
+  // Caso 2: Está envuelto en un objeto con propiedad ZodError
+  else if (zodError && Array.isArray(zodError)) {
+    issues = zodError;
+  }
+  // Caso 3: Es un STRING que contiene el array JSON (¡NUEVO CASO CRÍTICO!)
+  else if (typeof zodError === "string") {
+    try {
+      // Intenta encontrar el patrón "ZodError: [" y extraer el array JSON
+      const match = (zodError as unknown as string).match(
+        /ZodError:\s*(\[.*\])/s,
+      );
+      if (match) {
+        const jsonArrayString = match[1];
+        issues = JSON.parse(jsonArrayString);
+      } else {
+        console.error(
+          "No se pudo extraer array ZodError del string:",
+          (zodError as unknown as string).substring(0, 200),
+        );
+        return [];
+      }
+    } catch (parseError) {
+      console.error(
+        "Error parseando JSON extraído:",
+        parseError,
+        "Input:",
+        (zodError as unknown as string).substring(0, 200),
+      );
+      return [];
+    }
+  }
+  // Caso 4: Si no podemos extraer issues, retornar array vacío
+  else {
+    console.error("Formato de ZodError no reconocido:", zodError);
+    return [];
+  }
+
   const fieldMap: Record<string, string> = {
     customerName: "customerName",
     "datetime.start.date": "startDate",
@@ -84,12 +128,12 @@ export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
   };
 
   // Recolectar errores primero
-  const allErrors = zodError.issues.map((issue) => {
+  const allErrors = issues.map((issue) => {
     const path = issue.path.join(".");
-    const field = fieldMap[path] || issue.path[0];
+    const field = fieldMap?.[path] || issue.path[0];
     return {
       field,
-      error: issue.message || "",
+      error: issue?.message || "",
     };
   });
 
@@ -164,6 +208,7 @@ export const mapZodErrorsToCollector = (zodError: z.ZodError) => {
     }
   });
 
+  console.log({ filteredErrors });
   return filteredErrors;
 };
 

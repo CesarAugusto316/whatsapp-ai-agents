@@ -12,8 +12,9 @@ import { humanizerAgent } from "@/llm/llm.config";
 import { AppContext } from "@/types/hono.types";
 import { systemMessages } from "@/llm/prompts/system-messages";
 import { localDateTimeToUTC } from "@/helpers/datetime-converters";
-import { collecDataTask } from "./tasks/collect-data.task";
+import { collecDataSteps } from "./steps/collect-data.steps";
 import { logger } from "@/middlewares/logger-middleware";
+import { DBOS } from "@dbos-inc/dbos-sdk";
 
 /**
  *
@@ -35,7 +36,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
 
   if (!RESERVATION_CACHE) return;
 
-  return collecDataTask({
+  return collecDataSteps({
     reservation: RESERVATION_CACHE,
     customer,
     business,
@@ -73,30 +74,39 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
 
     let newCustomer = customer;
     if (!customer && customerName) {
-      newCustomer = (
-        (await (
-          await cmsService.createCostumer({
-            business: business?.id || "",
-            phoneNumber: customerPhone || "",
-            name: customerName,
-          })
-        ).json()) as { doc: Customer }
-      ).doc;
+      newCustomer = await DBOS.runStep(
+        async () =>
+          (
+            (await (
+              await cmsService.createCostumer({
+                business: business?.id || "",
+                phoneNumber: customerPhone || "",
+                name: customerName,
+              })
+            ).json()) as { doc: Customer }
+          ).doc,
+        { name: "cmsService.createCostumer" },
+      );
     }
+
     // finally, we create the reservation
     if (newCustomer?.id && business?.id) {
       const timezone = business.general.timezone;
       const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
       const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
-      const res = await cmsService.createAppointment({
-        business: business.id,
-        customer: newCustomer.id,
-        startDateTime,
-        endDateTime,
-        customerName: newCustomer.name,
-        numberOfPeople,
-        status: "confirmed",
-      });
+      const res = await DBOS.runStep(
+        () =>
+          cmsService.createAppointment({
+            business: business.id,
+            customer: newCustomer.id,
+            startDateTime,
+            endDateTime,
+            customerName: newCustomer.name,
+            numberOfPeople,
+            status: "confirmed",
+          }),
+        { name: "cmsService.createAppointment" },
+      );
       const reservation = (await res.json()) as { doc: Appointment };
       const assistantMsg = systemMessages.getSuccessMsg(
         {
@@ -160,4 +170,12 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   // }
 };
 
-export const makeWorflow = { started, validated };
+// export const makeWorflow = { started, validated };
+export const makeWorkflow = {
+  started: DBOS.registerWorkflow(started, {
+    name: ReservationStatuses.MAKE_STARTED,
+  }),
+  validated: DBOS.registerWorkflow(validated, {
+    name: ReservationStatuses.MAKE_VALIDATED,
+  }),
+};

@@ -168,7 +168,8 @@ export const validatorAgent = {
     ];
     const aiValidator: string = await aiClient(messages, PARSER_PROMPT, temp);
     // ✅ Required fields
-    const rawObj = JSON.parse(aiValidator);
+
+    const rawObj = JSON.parse(aiValidator || "{}");
     const mergedData = mergeReservationData(rawObj, previousState);
     const parsedData = reservationSchemas.phase2.safeParse(mergedData);
 
@@ -185,6 +186,7 @@ export const validatorAgent = {
    */
   async humanizeErrors(business: Business, errors: ZodError, temp = 0.7) {
     const COLLECTOR_PROMPT = validationPrompts.humanizeErrors(business);
+    console.log({ errors });
     const mappedErrors = mapZodErrorsToCollector(errors);
 
     // Validar que hay errores para procesar

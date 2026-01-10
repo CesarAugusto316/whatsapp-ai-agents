@@ -2,15 +2,16 @@
   "name": "worker-ai",
   "type": "module",
   "scripts": {
-    "dev": "bun --hot ./src/index.ts",
+    "dev": "bun --hot ./src/index.ts --external @dbos-inc/dbos-sdk --external superjson",
     "test": "bun test",
-    "debug": "bun --inspect=localhost:4000/prefix ./src/index.ts",
-    "build:standalone": "bun build --compile --minify --sourcemap ./src/index.ts --outfile=myapp",
-    "build": "bun build --minify ./src/index.ts --outdir ./dist --target bun",
+    "debug": "bun --inspect=localhost:4000/prefix ./src/index.ts --external @dbos-inc/dbos-sdk --external superjson",
+    "build:standalone": "bun build --compile --minify --sourcemap ./src/index.ts --outfile=myapp --external @dbos-inc/dbos-sdk --external superjson",
+    "build": "bun build --minify ./src/index.ts --outdir ./dist --target bun --external @dbos-inc/dbos-sdk --external superjson",
     "start": "bun ./dist/index.js",
     "dokploy:dashbord": "ssh -L 3000:localhost:3000 cesar@168.119.115.194"
   },
   "dependencies": {
+    "@dbos-inc/dbos-sdk": "^4.6.11",
     "@sentry/bun": "^10.32.1",
     "hono": "^4.10.8",
     "hono-rate-limiter": "^0.5.3",

@@ -16,8 +16,8 @@ import {
   FlowOptions,
 } from "@/types/reservation/reservation.types";
 import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
-import { initReservationChange } from "./tasks/init-reservation-update.task";
 import { logger } from "@/middlewares/logger-middleware";
+import { initReservationChangeSteps } from "./steps/init-reservation-update.steps";
 
 /**
  *
@@ -86,7 +86,7 @@ export async function resolveConversationalFallback(
       logger.info("AI Fallback executed", {
         FlowOption: FlowOptions.UPDATE_RESERVATION,
       });
-      return initReservationChange({
+      return initReservationChangeSteps({
         business,
         customer,
         flowOption: FlowOptions.UPDATE_RESERVATION,
@@ -100,7 +100,7 @@ export async function resolveConversationalFallback(
       logger.info("AI Fallback executed", {
         FlowOption: FlowOptions.CANCEL_RESERVATION,
       });
-      return initReservationChange({
+      return initReservationChangeSteps({
         business,
         customer,
         flowOption: FlowOptions.CANCEL_RESERVATION,

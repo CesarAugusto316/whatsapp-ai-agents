@@ -1,7 +1,7 @@
 import { InputIntent } from "@/types/reservation/reservation.types";
 import chatHistoryService from "@/services/chatHistory.service";
 import { AppContext } from "@/types/hono.types";
-import { makeWorflow } from "./make.workflow";
+import { makeWorkflow } from "./make.workflow";
 import { updateWorkflow } from "./update.workflow";
 import { cancellWorkflow } from "./cancel.workflow";
 import { StateWorkflowRunner } from "@/workflow-fsm/state-workflow-runner";
@@ -23,8 +23,8 @@ export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
   }
 
   workflow
-    .on("MAKE_STARTED", makeWorflow.started)
-    .on("MAKE_VALIDATED", makeWorflow.validated)
+    .on("MAKE_STARTED", makeWorkflow.started)
+    .on("MAKE_VALIDATED", makeWorkflow.validated)
     .on("UPDATE_STARTED", updateWorkflow.started)
     .on("UPDATE_VALIDATED", updateWorkflow.validated)
     .on("CANCEL_STARTED", cancellWorkflow.started);

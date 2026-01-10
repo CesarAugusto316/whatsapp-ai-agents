@@ -9,6 +9,7 @@ import { rateLimiter } from "hono-rate-limiter";
 import * as Sentry from "@sentry/bun";
 import { loggerMiddleware } from "./middlewares/logger-middleware";
 import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
+import { DBOS } from "@dbos-inc/dbos-sdk";
 
 const app = new Hono<CTX>();
 
@@ -68,8 +69,22 @@ app.onError((error, c) => {
   );
 });
 
-// export default app;
+DBOS.setConfig({
+  name: "chat-agent",
+  adminPort: Number(env?.DBOS_PORT) || 3002,
+  systemDatabaseUrl: env?.DBOS_SYSTEM_DATABASE_URL,
+  applicationVersion: "0.0.1",
+});
+
+/**
+ *
+ * @description launch dbos and connects to dbos console
+ * @link https://console.dbos.dev/conductor/applications/chat-agent/workflows
+ */
+await DBOS.launch();
+
 export default {
   port: env?.PORT ?? 3000,
   fetch: app.fetch,
+  // external: ["@dbos-inc/dbos-sdk", "superjson"], // Bibliotecas externas
 };

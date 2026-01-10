@@ -19,7 +19,7 @@ type Args = {
   getMessage: (state: ReservationSchema) => string;
 };
 
-export const initReservationChange = async ({
+export const initReservationChangeSteps = async ({
   customer,
   business,
   reservationKey,

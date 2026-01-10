@@ -10,7 +10,7 @@ import {
   suggestAlternativeTimes,
 } from "./check-availability";
 
-// TODO: NORMALIZE DATES
+/** @todo corregir en el dashboard para que muestre año/mes/dia en la tabla de reservas */
 export const Appointments: CollectionConfig = {
   slug: "appointments",
   labels: {

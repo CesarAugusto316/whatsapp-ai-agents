@@ -12,8 +12,8 @@ import { AppContext } from "@/types/hono.types";
 import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 import { systemMessages } from "@/llm/prompts/system-messages";
 import { localDateTimeToUTC } from "@/helpers/datetime-converters";
-import { collecDataTask } from "./tasks/collect-data.task";
 import { logger } from "@/middlewares/logger-middleware";
+import { collecDataSteps } from "./steps/collect-data.steps";
 
 const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   ctx,
@@ -34,7 +34,7 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   if (!RESERVATION_CACHE) return;
   if (!RESERVATION_CACHE.id) return;
 
-  return collecDataTask({
+  return collecDataSteps({
     reservation: RESERVATION_CACHE,
     customer,
     business,
