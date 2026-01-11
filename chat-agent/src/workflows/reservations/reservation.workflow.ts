@@ -1,11 +1,10 @@
-import { InputIntent } from "@/types/reservation/reservation.types";
 import chatHistoryService from "@/services/chatHistory.service";
 import { AppContext } from "@/types/hono.types";
 import { makeWorkflow } from "./make.workflow";
 import { updateWorkflow } from "./update.workflow";
 import { cancellWorkflow } from "./cancel.workflow";
 import { StateWorkflowRunner } from "@/workflow-fsm/state-workflow-runner";
-import { resolveConversationalFallback } from "./conversational-fallback";
+import { conversationalFallbackWorkflow as fallbackWorkflow } from "./conversational-fallback";
 
 /**
  *
@@ -16,28 +15,28 @@ import { resolveConversationalFallback } from "./conversational-fallback";
 export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
   const status = ctx.RESERVATION_CACHE?.status;
   const business = ctx.business;
-  const workflow = new StateWorkflowRunner(ctx, status);
+  const optionsWorkflow = new StateWorkflowRunner(ctx, status);
 
   if (!business.general.isActive) {
     return "El negocio está fuera de servicio, por favor inténtalo más tarde.";
   }
 
-  workflow
+  optionsWorkflow
     .on("MAKE_STARTED", makeWorkflow.started)
     .on("MAKE_VALIDATED", makeWorkflow.validated)
     .on("UPDATE_STARTED", updateWorkflow.started)
     .on("UPDATE_VALIDATED", updateWorkflow.validated)
     .on("CANCEL_STARTED", cancellWorkflow.started);
 
-  const workflowResult = await workflow.run();
+  const w1Result = await optionsWorkflow.run("reservation");
 
-  if (workflowResult && workflowResult !== InputIntent.CUSTOMER_QUESTION) {
+  if (w1Result?.success) {
     await chatHistoryService.save(
       ctx.chatKey,
       ctx.customerMessage,
-      workflowResult,
+      w1Result.message,
     );
-    return workflowResult;
+    return w1Result.message;
   }
 
   /**
@@ -49,7 +48,7 @@ export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
    * @see updateStarted
    * @see {InputIntent}
    */
-  const fallback: string = await resolveConversationalFallback(ctx);
-  await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, fallback);
-  return fallback;
+  const w2Result: string = await fallbackWorkflow(ctx);
+  await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, w2Result);
+  return w2Result;
 }

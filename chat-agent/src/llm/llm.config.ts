@@ -4,7 +4,7 @@ import {
   InputIntent,
 } from "../types/reservation/reservation.types";
 import { Business } from "@/types/business/cms-types";
-import z, { ZodError } from "zod";
+import z from "zod";
 import {
   customerIntentSchema,
   inputIntentSchema,
@@ -17,7 +17,6 @@ import { validationPrompts } from "./prompts/validation-prompts";
 import { humanizerPrompt } from "./prompts/humanizer-prompt";
 import { mergeReservationData } from "@/helpers/merge-state";
 import { ModelMessage } from "@/types/hono.types";
-import { DBOS } from "@dbos-inc/dbos-sdk";
 import { logger } from "@/middlewares/logger-middleware";
 
 const model = "@cf/ibm-granite/granite-4.0-h-micro"; // "@cf/meta/llama-4-scout-17b-16e-instruct";

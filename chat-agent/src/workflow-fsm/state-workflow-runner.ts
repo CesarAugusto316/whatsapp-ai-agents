@@ -1,4 +1,6 @@
-import { WorkflowResult, StateWorkflowHandler } from "./state-workflow.types";
+import { DBOS } from "@dbos-inc/dbos-sdk";
+import { StateWorkflowHandler } from "./state-workflow.types";
+import { InputIntent } from "@/types/reservation/reservation.types";
 
 /**
  *
@@ -16,19 +18,24 @@ export class StateWorkflowRunner<Ctx, S extends string> {
     this.status = status;
   }
 
-  on(state: S, handler: StateWorkflowHandler<Ctx, S>): this {
-    (this.handlers[state] ??= []).push(handler);
+  on(fmStatus: S, handler: StateWorkflowHandler<Ctx, S>): this {
+    (this.handlers[fmStatus] ??= []).push(handler);
     return this;
   }
 
-  async run(): Promise<WorkflowResult> {
+  async run(key: string) {
     const status = this.status;
     if (!status) return;
 
-    const handlers = this.handlers[status] ?? [];
-    for (const h of handlers) {
-      const res = await h(this.ctx, status);
-      if (res) return res;
+    const workflows = this.handlers[status] ?? [];
+    for (const w of workflows) {
+      const workFlow = DBOS.registerWorkflow(w, { name: `${key}:${status}` });
+      const res = await workFlow(this.ctx, status);
+
+      if (res && res !== InputIntent.CUSTOMER_QUESTION) {
+        return { success: true, message: res };
+      }
+      return { success: false, message: "" };
     }
   }
 }

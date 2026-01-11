@@ -51,7 +51,8 @@ class WhatsAppService {
    * more info: https://waha.devlike.pro/docs/how-to/send-messages/
    * @description Send a seen message to the chat always before sending a message
    */
-  private sendSeen(args: SendSeenPayload) {
+  public async sendSeen(args: SendSeenPayload) {
+    await this.timeOut();
     return fetch(`${apiUrl}/sendSeen`, {
       method: "POST",
       headers: this.headers,
@@ -59,7 +60,8 @@ class WhatsAppService {
     });
   }
 
-  private sendStartTyping(args: SendSeenPayload) {
+  public async sendStartTyping(args: SendSeenPayload) {
+    await this.timeOut();
     return fetch(`${apiUrl}/startTyping`, {
       method: "POST",
       headers: this.headers,
@@ -67,7 +69,7 @@ class WhatsAppService {
     });
   }
 
-  private sendStopTyping(args: SendSeenPayload) {
+  public async sendStopTyping(args: SendSeenPayload) {
     return fetch(`${apiUrl}/stopTyping`, {
       method: "POST",
       headers: this.headers,
@@ -76,8 +78,8 @@ class WhatsAppService {
   }
 
   private randomTime() {
-    const min = 1_600;
-    const max = 3_200;
+    const min = 1_400;
+    const max = 2_800;
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
@@ -85,30 +87,8 @@ class WhatsAppService {
     return new Promise((resolve) => setTimeout(resolve, this.randomTime()));
   }
 
-  public async beforeSend(
-    args: SendSeenPayload,
-    flowHandler: () => Promise<string>,
-  ) {
-    // send seen
-    await Promise.all([
-      this.sendSeen({ session: args.session, chatId: args.chatId }),
-      this.timeOut(),
-    ]);
-    // start typing
-    const [flowResponse] = await Promise.all([
-      flowHandler(),
-      this.sendStartTyping({ session: args.session, chatId: args.chatId }),
-      this.timeOut(),
-    ]);
-    // stop typing
-    await Promise.all([
-      this.sendStopTyping({ session: args.session, chatId: args.chatId }),
-      this.timeOut(),
-    ]);
-    return flowResponse;
-  }
-
   public async sendText({ session, text, chatId }: SendMessagePayload) {
+    await this.timeOut();
     return fetch(`${apiUrl}/sendText`, {
       method: "POST",
       headers: this.headers,

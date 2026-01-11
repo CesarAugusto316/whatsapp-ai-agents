@@ -34,6 +34,7 @@ export const contextMiddleware = (): MiddlewareHandler<CTX> => {
     if (!customerMessage) {
       return ctx.json({ error: "Customer message not received" }, 400);
     }
+    /** @todo validate customerPhone with zod schema */
     if (customerPhone === "status@broadcast") {
       return ctx.json({ error: "Broadcast status not allowed" }, 400);
     }

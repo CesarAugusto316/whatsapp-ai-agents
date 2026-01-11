@@ -84,7 +84,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
                 name: customerName,
               })
             ).json()) as { doc: Customer }
-          ).doc,
+          )?.doc,
         { name: "cmsService.createCostumer" },
       );
     }
@@ -172,12 +172,4 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   // }
 };
 
-// export const makeWorflow = { started, validated };
-export const makeWorkflow = {
-  started: DBOS.registerWorkflow(started, {
-    name: ReservationStatuses.MAKE_STARTED,
-  }),
-  validated: DBOS.registerWorkflow(validated, {
-    name: ReservationStatuses.MAKE_VALIDATED,
-  }),
-};
+export const makeWorkflow = { started, validated };
