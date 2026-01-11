@@ -4,23 +4,23 @@ import { Handler } from "hono/types";
 
 /**
  *
- * @param ctx
+ * @param c
  * @param next
  * @returns
  */
-export const aiTestHandler: Handler<CTX> = async (ctx) => {
-  const appContext = {
-    RESERVATION_CACHE: ctx.get("RESERVATION_CACHE"),
-    business: ctx.get("business"),
-    customerMessage: ctx.get("customerMessage"),
-    customerPhone: ctx.get("customerPhone"),
-    customer: ctx.get("customer"),
-    chatKey: ctx.get("chatKey"),
-    reservationKey: ctx.get("reservationKey"),
+export const aiTestHandler: Handler<CTX> = async (c) => {
+  const ctx = {
+    RESERVATION_CACHE: c.get("RESERVATION_CACHE"),
+    business: c.get("business"),
+    customerMessage: c.get("customerMessage"),
+    customerPhone: c.get("customerPhone"),
+    customer: c.get("customer"),
+    chatKey: c.get("chatKey"),
+    reservationKey: c.get("reservationKey"),
   } as AppContext;
 
-  return ctx.json({
+  return c.json({
     received: true,
-    text: await runReservationWorkflow(appContext),
+    text: await runReservationWorkflow(ctx),
   });
 };

@@ -1,3 +1,4 @@
+import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 import cmsService from "@/services/business.service";
 import reservationCacheService from "@/services/reservationCache.service";
 import {
@@ -6,33 +7,34 @@ import {
   ReservationStatuses,
   FMStatus,
 } from "@/types/reservation/reservation.types";
-import { Appointment } from "@/types/business/cms-types";
+import { Appointment, Customer } from "@/types/business/cms-types";
 import { humanizerAgent } from "@/llm/llm.config";
 import { AppContext } from "@/types/hono.types";
-import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 import { systemMessages } from "@/llm/prompts/system-messages";
 import { localDateTimeToUTC } from "@/helpers/datetime-converters";
+import { collecDataSteps } from "../steps/collect-data.steps";
 import { logger } from "@/middlewares/logger-middleware";
-import { collecDataSteps } from "./steps/collect-data.steps";
+import { DBOS } from "@dbos-inc/dbos-sdk";
 
+/**
+ *
+ * @param ctx
+ * @param fmStatus
+ * @returns
+ */
 const started: StateWorkflowHandler<AppContext, FMStatus> = async (
   ctx,
   fmStatus,
 ) => {
   const {
     RESERVATION_CACHE,
+    business,
     customerMessage,
     reservationKey,
     customer,
-    business,
   } = ctx;
 
-  if (!customer) {
-    return "Aún no te has registrado, por favor has tu primera reserva para registrarte";
-  }
-
   if (!RESERVATION_CACHE) return;
-  if (!RESERVATION_CACHE.id) return;
 
   return collecDataSteps({
     reservation: RESERVATION_CACHE,
@@ -41,67 +43,91 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (
     reservationKey,
     fmStatus,
     customerMessage,
-    mode: "update",
+    mode: "create",
   });
 };
 
+/**
+ *
+ * @param ctx
+ * @returns
+ */
 const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   const {
     RESERVATION_CACHE,
-    customerMessage,
-    reservationKey,
-    customer,
     business,
+    customerMessage,
+    customerPhone,
+    customer,
+    reservationKey,
   } = ctx;
 
   if (!RESERVATION_CACHE) return;
-  if (!customer) {
-    return "Aún no te has registrado, por favor has tu primera reserva para registrarte";
-  }
 
   // FINAL OPTION: 1. CONFIRMAR
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
     const {
-      customerName,
+      customerName = "",
       datetime,
       numberOfPeople = 1,
     } = RESERVATION_CACHE as ReservationState;
 
-    // finally, we create the reservation
-    if (customer?.id && business?.id && RESERVATION_CACHE?.id) {
-      const timezone = business.general.timezone;
-      const { start, end } = datetime;
-      const startDateTime = localDateTimeToUTC(start, timezone);
-      const endDateTime = localDateTimeToUTC(end, timezone);
+    let newCustomer = customer;
+    if (!customer && customerName) {
+      newCustomer = await DBOS.runStep(
+        async () =>
+          (
+            (await (
+              await cmsService.createCostumer({
+                business: business?.id || "",
+                phoneNumber: customerPhone || "",
+                name: customerName,
+              })
+            ).json()) as { doc: Customer }
+          )?.doc,
+        { name: "cmsService.createCostumer" },
+      );
+    }
 
-      const res = await cmsService.updateAppointment(RESERVATION_CACHE?.id, {
-        business: business?.id,
-        customer: customer?.id,
-        startDateTime,
-        endDateTime,
-        numberOfPeople,
-        customerName: customerName || customer.name || "",
-        status: "confirmed",
-      });
-      const reservation = (await res.json()) as { doc: Appointment };
-      const responseMsg = systemMessages.getSuccessMsg(
+    // finally, we create the reservation
+    if (newCustomer?.id && business?.id) {
+      const timezone = business.general.timezone;
+      const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
+      const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
+      const reservation = await DBOS.runStep(
+        async () => {
+          return (await (
+            await cmsService.createAppointment({
+              business: business.id,
+              customer: newCustomer.id,
+              startDateTime,
+              endDateTime,
+              customerName: newCustomer.name,
+              numberOfPeople,
+              status: "confirmed",
+            })
+          ).json()) as { doc: Appointment };
+        },
+        { name: "cmsService.createAppointment" },
+      );
+      const assistantMsg = systemMessages.getSuccessMsg(
         {
           id: reservation?.doc.id,
-          customerName: customerName || customer?.name || "",
           datetime,
+          customerName: customerName || customer?.name || "",
           numberOfPeople,
         },
         timezone,
-        "update",
+        "create",
       );
       await reservationCacheService.delete(reservationKey ?? "");
-      return humanizerAgent(responseMsg);
+      return humanizerAgent(assistantMsg);
     }
     logger.info("Customer selected an option", {
       customerAction: CustomerActions.CONFIRM,
       customerMessage,
     });
-    return humanizerAgent("Customer not created");
+    return humanizerAgent("Cliente no pudo ser creado, falta el nombre");
   }
 
   // FINAL OPTION: 2. SALIR
@@ -125,20 +151,25 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       businessId: business?.id,
       customerId: customer?.id,
       ...RESERVATION_CACHE,
-      status: ReservationStatuses.UPDATE_STARTED,
+      status: ReservationStatuses.MAKE_STARTED,
     });
     logger.info("Customer selected an option", {
       customerAction: CustomerActions.RESTART,
       customerMessage,
     });
-    return assistantResponse;
+    return humanizerAgent(assistantResponse);
   }
 
-  // FALLBACK
-  // if (customerMessage) {
-  //   const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva, ${CustomerActions.RESTART} para cambiar algun dato, ó ${CustomerActions.EXIT} para salir`;
+  // // FALLBACK
+  // if (customerMessage && RESERVATION_CACHE) {
+  //   const assistanceMsg = `
+  //     Tienes una reserva disponible. Escribe:
+  //     - ${CustomerActions.CONFIRM} para confirmar reserva ó
+  //     - ${CustomerActions.RESTART} para cambiar algun dato que quieras cambiar
+  //     - ${CustomerActions.EXIT} para salir de este proceso
+  //     `;
   //   return humanizerAgent(assistanceMsg);
   // }
 };
 
-export const updateWorkflow = { started, validated };
+export const makeWorkflow = { started, validated };

@@ -9,7 +9,7 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
  * @param childWorkflow
  * @returns
  */
-export async function whatsappWorkflow(
+async function whatsappWorkflow(
   appContext: AppContext,
   childWorkflow: (ctx: AppContext) => Promise<string>,
 ) {
@@ -64,3 +64,13 @@ export async function whatsappWorkflow(
 
   return argsWithText;
 }
+
+/**
+ *
+ * @param appContext
+ * @param childWorkflow
+ * @returns
+ */
+export const runWhatsappWorkflow = DBOS.registerWorkflow(whatsappWorkflow, {
+  name: "whatsapp",
+});

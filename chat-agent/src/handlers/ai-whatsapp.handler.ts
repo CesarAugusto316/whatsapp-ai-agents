@@ -1,38 +1,29 @@
 import { CTX, AppContext } from "@/types/hono.types";
 import { runReservationWorkflow } from "@/workflows/reservations/reservation.workflow";
-import { whatsappWorkflow } from "@/workflows/whatsapp/whatsapp.workflow";
-import { DBOS } from "@dbos-inc/dbos-sdk";
+import { runWhatsappWorkflow } from "@/workflows/whatsapp/whatsapp.workflow";
 import { Handler } from "hono/types";
 
-export const aiWhatsappHandler: Handler<CTX> = async (ctx) => {
-  const appContext = {
-    session: ctx.get("session"),
-    whatsappEvent: ctx.get("whatsappEvent"),
-    RESERVATION_CACHE: ctx.get("RESERVATION_CACHE"),
-    customerMessage: ctx.get("customerMessage"),
-    customerPhone: ctx.get("customerPhone"),
-    business: ctx.get("business"),
-    customer: ctx.get("customer"),
-    businessId: ctx.get("businessId"),
-    chatKey: ctx.get("chatKey"),
-    reservationKey: ctx.get("reservationKey"),
+export const aiWhatsappHandler: Handler<CTX> = async (c) => {
+  const ctx = {
+    session: c.get("session"),
+    whatsappEvent: c.get("whatsappEvent"),
+    RESERVATION_CACHE: c.get("RESERVATION_CACHE"),
+    customerMessage: c.get("customerMessage"),
+    customerPhone: c.get("customerPhone"),
+    business: c.get("business"),
+    customer: c.get("customer"),
+    businessId: c.get("businessId"),
+    chatKey: c.get("chatKey"),
+    reservationKey: c.get("reservationKey"),
   } satisfies AppContext;
 
-  if (appContext.whatsappEvent !== "message") {
-    return ctx.json({ message: "Invalid event" });
+  if (ctx.whatsappEvent !== "message") {
+    return c.json({ message: "Invalid event" });
   }
 
-  // 1. Register workflow
-  const runWhatsappWorkflow = DBOS.registerWorkflow(whatsappWorkflow, {
-    name: "whatsapp",
-  });
+  // 1. Run workflow
+  const result = await runWhatsappWorkflow(ctx, runReservationWorkflow);
 
-  // 2. Run workflow
-  const whatsappRes = await runWhatsappWorkflow(
-    appContext,
-    runReservationWorkflow,
-  );
-
-  // 3. Return response
-  return ctx.json({ received: true, message: whatsappRes.text });
+  // 2. Return response
+  return c.json({ received: true, message: result.text });
 };

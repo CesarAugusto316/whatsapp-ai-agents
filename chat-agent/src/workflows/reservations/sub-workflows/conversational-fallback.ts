@@ -17,8 +17,7 @@ import {
 } from "@/types/reservation/reservation.types";
 import { resolveNextState } from "@/workflow-fsm/resolve-next-state";
 import { logger } from "@/middlewares/logger-middleware";
-import { initReservationChangeSteps } from "./steps/init-reservation-update.steps";
-import { DBOS } from "@dbos-inc/dbos-sdk";
+import { initReservationChangeSteps } from "../steps/init-reservation-update.steps";
 
 /**
  *
@@ -26,7 +25,7 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
  * Handles unstructured or out-of-FSM interactions using AI agents.
  * No authoritative business logic lives here.
  */
-async function resolveConversationalFallback(ctx: AppContext): Promise<string> {
+export async function fallbackWorkflow(ctx: AppContext): Promise<string> {
   const {
     RESERVATION_CACHE,
     customerMessage = "",
@@ -142,14 +141,3 @@ async function resolveConversationalFallback(ctx: AppContext): Promise<string> {
   );
   return assistantResponse;
 }
-
-/**
- *
- * @description Conversational fallback workflow.
- * Handles unstructured or out-of-FSM interactions using AI agents.
- * No authoritative business logic lives here.
- */
-export const conversationalFallbackWorkflow = DBOS.registerWorkflow(
-  resolveConversationalFallback,
-  { name: "reservation:fallback" },
-);

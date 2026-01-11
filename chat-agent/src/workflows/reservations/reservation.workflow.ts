@@ -1,10 +1,11 @@
 import chatHistoryService from "@/services/chatHistory.service";
 import { AppContext } from "@/types/hono.types";
-import { makeWorkflow } from "./make.workflow";
-import { updateWorkflow } from "./update.workflow";
-import { cancellWorkflow } from "./cancel.workflow";
+import { makeWorkflow } from "./sub-workflows/make.workflow";
+import { updateWorkflow } from "./sub-workflows/update.workflow";
+import { cancellWorkflow } from "./sub-workflows/cancel.workflow";
 import { StateWorkflowRunner } from "@/workflow-fsm/state-workflow-runner";
-import { conversationalFallbackWorkflow as fallbackWorkflow } from "./conversational-fallback";
+import { fallbackWorkflow } from "./sub-workflows/conversational-fallback";
+import { DBOS } from "@dbos-inc/dbos-sdk";
 
 /**
  *
@@ -12,7 +13,7 @@ import { conversationalFallbackWorkflow as fallbackWorkflow } from "./conversati
  * @param ctx
  * @returns Promise<string>
  */
-export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
+async function reservationWorkflow(ctx: AppContext): Promise<string> {
   const status = ctx.RESERVATION_CACHE?.status;
   const business = ctx.business;
   const optionsWorkflow = new StateWorkflowRunner(ctx, status);
@@ -28,7 +29,7 @@ export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
     .on("UPDATE_VALIDATED", updateWorkflow.validated)
     .on("CANCEL_STARTED", cancellWorkflow.started);
 
-  const w1Result = await optionsWorkflow.run("reservation");
+  const w1Result = await optionsWorkflow.run();
 
   if (w1Result?.success) {
     await chatHistoryService.save(
@@ -52,3 +53,14 @@ export async function runReservationWorkflow(ctx: AppContext): Promise<string> {
   await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, w2Result);
   return w2Result;
 }
+
+/**
+ *
+ * @description run the reservation workflow
+ * @param ctx
+ * @returns Promise<string>
+ */
+export const runReservationWorkflow = DBOS.registerWorkflow(
+  reservationWorkflow,
+  { name: "reservation" },
+);
