@@ -6,6 +6,7 @@ import { cancellWorkflow } from "./sub-workflows/cancel.workflow";
 import { StateWorkflowRunner } from "@/workflow-fsm/state-workflow-runner";
 import { fallbackWorkflow } from "./sub-workflows/conversational-fallback";
 import { DBOS } from "@dbos-inc/dbos-sdk";
+import { logger } from "@/middlewares/logger-middleware";
 
 /**
  *
@@ -37,6 +38,7 @@ async function reservationWorkflow(ctx: AppContext): Promise<string> {
       ctx.customerMessage,
       w1Result.message,
     );
+    logger.info("✅ Reservation workflow completed");
     return w1Result.message;
   }
 
@@ -51,6 +53,7 @@ async function reservationWorkflow(ctx: AppContext): Promise<string> {
    */
   const w2Result: string = await fallbackWorkflow(ctx);
   await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, w2Result);
+  logger.info("✅ Reservation fallback workflow completed");
   return w2Result;
 }
 

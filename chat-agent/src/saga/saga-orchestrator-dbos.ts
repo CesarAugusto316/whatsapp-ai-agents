@@ -138,8 +138,8 @@ export class SagaOrchestrator<Ctx> {
   }
 
   execute<T = Bag>(name: string): Promise<T> {
-    const run = DBOS.registerWorkflow(() => this.workflow(), { name });
-    return run() as Promise<T>;
+    const runWorkflow = DBOS.registerWorkflow(() => this.workflow(), { name });
+    return runWorkflow() as Promise<T>;
   }
 
   getBag(): Bag {

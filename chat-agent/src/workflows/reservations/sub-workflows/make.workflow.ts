@@ -112,6 +112,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
           },
           { name: "cmsService.createAppointment" },
         );
+
         const assistantMsg = systemMessages.getSuccessMsg(
           {
             id: reservation?.doc?.id,
@@ -128,9 +129,9 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
           customerMessage,
         });
         return humanizerAgent(assistantMsg);
+      } else {
+        return "Tu perfil no pudo ser creado, Intentalo más tarde";
       }
-
-      return "Tu perfil no pudo ser creado, Intentalo más tarde";
     } catch (error) {
       if (reservation && reservation?.doc?.id) {
         await DBOS.runStep(

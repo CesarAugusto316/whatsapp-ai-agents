@@ -39,9 +39,7 @@ type Args = {
 export const ATTEMPTS = 4;
 
 /**
- *
- * @description
- * @returns
+ * @description Reestructuración con 3 DBOS.runStep agrupados coherentemente
  */
 export async function collecDataSteps({
   reservation,
@@ -58,234 +56,266 @@ export async function collecDataSteps({
   });
 
   try {
-    // OPTION: 1. SALIR
-    if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-      await DBOS.runStep(() => reservationCacheService.delete(reservationKey), {
-        name: "reservationCacheService.delete",
-      });
-      const responseMsg = systemMessages.getExitMsg();
-      logger.info("Customer asked a question", {
-        customerAction: CustomerActions.EXIT,
-        customerMessage,
-      });
+    // ============================================
+    // PASO 1: Manejo de condiciones tempranas (EXIT y máximo intentos)
+    // ============================================
+    const earlyConditionsResult = await DBOS.runStep(
+      async () => {
+        // OPTION: 1. SALIR
+        if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
+          await reservationCacheService.delete(reservationKey);
+          logger.info("Customer asked a question", {
+            customerAction: CustomerActions.EXIT,
+            customerMessage,
+          });
+          return { type: "exit" as const };
+        }
 
-      return DBOS.runStep(() => humanizerAgent(responseMsg), {
-        name: "humanizerAgent",
-      });
+        // OPTION: 2. REINICIAR FOR MAXIMUM ATTEMPTS REACHED
+        if ((reservation?.attempts ?? 0) >= ATTEMPTS) {
+          await reservationCacheService.delete(reservationKey);
+          return { type: "retry" as const };
+        }
+
+        return { type: "continue" as const };
+      },
+      { name: "earlyConditions" },
+    );
+
+    // Procesar resultados tempranos fuera del paso durable
+    if (earlyConditionsResult.type === "exit") {
+      const responseMsg = systemMessages.getExitMsg();
+      return humanizerAgent(responseMsg);
     }
 
-    // OPTION: 2. REINICIAR FOR MAXIMUM ATTEMPTS REACHED
-    if ((reservation?.attempts ?? 0) >= ATTEMPTS) {
-      await DBOS.runStep(() => reservationCacheService.delete(reservationKey), {
-        name: "reservationCacheService.delete",
-      });
+    if (earlyConditionsResult.type === "retry") {
       const action =
         mode === "create"
           ? FlowOptions.MAKE_RESERVATION
           : FlowOptions.UPDATE_RESERVATION;
       const verb = mode === "create" ? "iniciar" : "actualizar";
 
-      return DBOS.runStep(
-        () =>
-          humanizerAgent(`
-            Has llegado al límite de *intentos fallidos* al checkear disponibilidad.
+      return humanizerAgent(`
+        Has llegado al límite de *intentos fallidos* al checkear disponibilidad.
 
-            Empecemos de nuevo desde cero.
-            Escribe *${action}* para ${verb} otro proceso de reserva.
-      `),
-        {
-          name: "humanizerAgent",
-        },
-      );
+        Empecemos de nuevo desde cero.
+        Escribe *${action}* para ${verb} otro proceso de reserva.
+      `);
     }
 
-    // OPTION: 3. CLASSIFY INPUT
-    const inputIntent = await DBOS.runStep(
-      () => inputIntentClassifier(customerMessage),
-      { name: "inputIntentClassifier" },
+    // ============================================
+    // PASO 2: Clasificación de intención, parseo y validación básica
+    // ============================================
+    const parsingResult = await DBOS.runStep(
+      async () => {
+        // OPTION: 3. CLASSIFY INPUT
+        const inputIntent = await inputIntentClassifier(customerMessage);
+
+        if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
+          logger.info("Customer asked a question", {
+            inputIntent,
+            customerMessage,
+          });
+          return { type: "customer_question" as const };
+        }
+
+        // OPTION: 4. PARSE USER INPUT
+        const result = await validatorAgent.parse(
+          business,
+          customerMessage,
+          previousState,
+        );
+
+        // DATA VALIDATION
+        if (!result) {
+          logger.info("Failed to parse customer data", {
+            customerMessage,
+            previousState,
+          });
+          return { type: "parse_failed" as const };
+        }
+
+        const { parsedData, mergedData } = result;
+        const { success, data, errors } = parsedData;
+
+        // OPTION: 5. ASK FOR MISSING DATA
+        if (!success) {
+          logger.info("Zod failed to parse customer data", {
+            customerMessage,
+            previousState,
+            parsedData,
+          });
+
+          // Guardamos el estado parcial en caché
+          await reservationCacheService.save(reservationKey, {
+            ...reservation,
+            ...mergedData,
+          } satisfies Partial<ReservationState>);
+
+          return { type: "validation_failed" as const, errors };
+        }
+
+        return { type: "data_valid" as const, data };
+      },
+      { name: "parseAndValidate" },
     );
 
-    if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
-      logger.info("Customer asked a question", {
-        inputIntent,
-        customerMessage,
-      });
-      // This breaks the flow and the fallback AGENT takes control back
+    // Procesar resultados del parseo
+    if (parsingResult.type === "customer_question") {
       return InputIntent.CUSTOMER_QUESTION;
     }
 
-    // OPTION: 4. PARSE USER INPUT
-    const result = await DBOS.runStep(
-      () => validatorAgent.parse(business, customerMessage, previousState),
-      { name: "validatorAgent.parse" },
-    );
-
-    // DATA VALIDATION
-    if (!result) {
-      logger.info("Failed to parse customer data", {
-        customerMessage,
-        previousState,
-      });
-
-      return DBOS.runStep(
-        () =>
-          humanizerAgent(
-            "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
-          ),
-        { name: "humanizerAgent" },
-      );
-    }
-    const { parsedData, mergedData } = result;
-    const { success, data, errors } = parsedData;
-
-    // OPTION: 5. ASK FOR MISSING DATA
-    if (!success) {
-      logger.info("Zod failed to parse customer data", {
-        customerMessage,
-        previousState,
-        parsedData,
-      });
-      await DBOS.runStep(
-        () =>
-          reservationCacheService.save(reservationKey, {
-            ...reservation,
-            ...mergedData,
-          } satisfies Partial<ReservationState>),
-        { name: "reservationCacheService.save" },
-      );
-
-      return DBOS.runStep(
-        () => validatorAgent.humanizeErrors(business, errors),
-        { name: "validatorAgent.humanizeErrors" },
+    if (parsingResult.type === "parse_failed") {
+      return humanizerAgent(
+        "Lo siento no pude comprender tus datos, podrías escribirlos de nuevo con más claridad?",
       );
     }
 
-    const timezone = business.general.timezone;
-    const { start, end } = data?.datetime;
-    const isWithinSchedule = {
-      start: isWithinBusinessHours(business.schedule, timezone, start),
-      end: isWithinBusinessHours(business.schedule, timezone, end),
-    };
+    if (parsingResult.type === "validation_failed") {
+      return validatorAgent.humanizeErrors(business, parsingResult.errors);
+    }
 
-    if (!isWithinSchedule.start || !isWithinSchedule.end) {
-      logger.info("Reservation out of business hours", {
-        customerMessage,
-        isWithinSchedule,
-      });
-      await DBOS.runStep(
-        () =>
-          reservationCacheService.save(reservationKey, {
+    // ============================================
+    // PASO 3: Validaciones de negocio y operaciones finales
+    // ============================================
+    const businessValidationResult = await DBOS.runStep(
+      async () => {
+        const { data } = parsingResult;
+        const timezone = business.general.timezone;
+        const { start, end } = data?.datetime;
+
+        // Validar horario de atención
+        const isWithinSchedule = {
+          start: isWithinBusinessHours(business.schedule, timezone, start),
+          end: isWithinBusinessHours(business.schedule, timezone, end),
+        };
+
+        if (!isWithinSchedule.start || !isWithinSchedule.end) {
+          logger.info("Reservation out of business hours", {
+            customerMessage,
+            isWithinSchedule,
+          });
+
+          await reservationCacheService.save(reservationKey, {
             ...reservation,
             ...data,
-          } satisfies Partial<ReservationState>),
-        { name: "reservationCacheService.save" },
-      );
+          } satisfies Partial<ReservationState>);
 
-      const schedule = business.schedule;
-      const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);
-      return DBOS.runStep(
-        () =>
-          humanizerAgent(`
-            😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
-            de atención del negocio. Por favor, selecciona otro día y hora.
+          const schedule = business.schedule;
+          const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);
+          return {
+            type: "out_of_hours" as const,
+            scheduleBlock: SCHEDULE_BLOCK,
+          };
+        }
 
-            ==============================
-            HORARIO DE ATENCION
-            ==============================
-            ${SCHEDULE_BLOCK}
-      `),
-        { name: "humanizerAgent" },
-      );
-    }
-    const startDateTime = localDateTimeToUTC(start, timezone);
-    const endDateTime = localDateTimeToUTC(end, timezone);
+        // Convertir a UTC y validar feriados
+        const startDateTime = localDateTimeToUTC(start, timezone);
+        const endDateTime = localDateTimeToUTC(end, timezone);
 
-    const { isWithinRange, message: holidayMsg } = isWithinHolydayRange(
-      business,
-      startDateTime,
-    );
-    if (isWithinRange) {
-      logger.info("Reservation within business hours", {
-        isWithinRange,
-        customerMessage,
-      });
-      await DBOS.runStep(
-        () =>
-          reservationCacheService.save(reservationKey, {
+        const { isWithinRange, message: holidayMsg } = isWithinHolydayRange(
+          business,
+          startDateTime,
+        );
+
+        if (isWithinRange) {
+          logger.info("Reservation within business hours", {
+            isWithinRange,
+            customerMessage,
+          });
+
+          await reservationCacheService.save(reservationKey, {
             ...reservation,
             ...data,
-          } satisfies Partial<ReservationState>),
-        { name: "reservationCacheService.save" },
-      );
+          } satisfies Partial<ReservationState>);
 
-      return holidayMsg;
-    }
-    const availability = await DBOS.runStep(
-      () =>
-        cmsService.checkAvailability({
+          return { type: "holiday" as const, holidayMsg };
+        }
+
+        // Check disponibilidad (con retries implícitos si DBOS lo configura)
+        const availability = await cmsService.checkAvailability({
           "where[business][equals]": reservation.businessId,
           "where[startDateTime][equals]": startDateTime,
           "where[endDateTime][equals]": endDateTime,
           "where[numberOfPeople][equals]": data.numberOfPeople,
-        }),
-      { name: "cmsService.checkAvailability" },
-    );
+        });
 
-    if (availability && !availability?.isFullyAvailable) {
-      logger.info("Reservation not available", {
-        availability,
-        customerMessage,
-      });
-      const retries = (reservation?.attempts || 0) + 1;
-      await DBOS.runStep(
-        () =>
-          reservationCacheService.save(reservationKey, {
+        if (availability && !availability?.isFullyAvailable) {
+          logger.info("Reservation not available", {
+            availability,
+            customerMessage,
+          });
+
+          const retries = (reservation?.attempts || 0) + 1;
+          await reservationCacheService.save(reservationKey, {
             ...reservation,
             ...data,
             attempts: retries,
-          } satisfies Partial<ReservationState>),
-        { name: "reservationCacheService.save" },
-      );
+          } satisfies Partial<ReservationState>);
 
-      const msg = renderMsgNotAvailable({
-        availability,
-        business,
-        data,
-      });
-      return DBOS.runStep(() => humanizerAgent(msg), {
-        name: "humanizerAgent",
-      });
-    }
+          const msg = renderMsgNotAvailable({
+            availability,
+            business,
+            data,
+          });
+          return { type: "not_available" as const, msg };
+        }
 
-    // FINAL: ✅ INPUT DATA VALIDATED
-    const transition = resolveNextState(fmStatus);
-    await DBOS.runStep(
-      () =>
-        reservationCacheService.save(reservationKey, {
+        // FINAL: ✅ INPUT DATA VALIDATED
+        const transition = resolveNextState(fmStatus);
+        await reservationCacheService.save(reservationKey, {
           ...reservation,
           ...data,
-          status: transition.nextState, // UPDATE_VALIDATED,
-        } satisfies Partial<ReservationState>),
-      { name: "reservationCacheService.save" },
+          status: transition.nextState,
+        } satisfies Partial<ReservationState>);
+
+        logger.info("✅ Reservation data validated", {
+          reservation: {
+            ...reservation,
+            ...data,
+          },
+          currentStatus: reservation.status,
+          nextStatus: transition.nextState,
+          customerMessage,
+        });
+
+        const responseMsg = systemMessages.getConfirmationMsg(
+          data,
+          timezone,
+          mode,
+        );
+        return { type: "success" as const, message: responseMsg };
+      },
+      {
+        name: "businessValidation",
+        // Configurar retries solo para checkAvailability si es necesario
+        // DBOS manejará los retries dentro del paso si la función falla
+      },
     );
 
-    logger.info("✅ Reservation data validated", {
-      reservation: {
-        ...reservation,
-        ...data,
-      },
-      currentStatus: reservation.status,
-      nextStatus: transition.nextState,
-      customerMessage,
-    });
-    const responseMsg = systemMessages.getConfirmationMsg(data, timezone, mode);
+    // Procesar resultados finales
+    switch (businessValidationResult.type) {
+      case "out_of_hours":
+        return humanizerAgent(`
+          😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
+          de atención del negocio. Por favor, selecciona otro día y hora.
 
-    // ✨ SEND SUCCESS MESSAGE
-    return DBOS.runStep(() => humanizerAgent(responseMsg), {
-      name: "humanizerAgent",
-    });
+          ==============================
+          HORARIO DE ATENCIÓN
+          ==============================
+          ${businessValidationResult.scheduleBlock}
+        `);
+
+      case "holiday":
+        return businessValidationResult.holidayMsg;
+
+      case "not_available":
+        return humanizerAgent(businessValidationResult.msg);
+
+      case "success":
+        return humanizerAgent(businessValidationResult.message);
+    }
   } catch (error) {
-    //
     logger.error(
       "❌ Error collecting-validating reservation data",
       error as Error,

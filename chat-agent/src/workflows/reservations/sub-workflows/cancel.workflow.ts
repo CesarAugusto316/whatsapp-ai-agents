@@ -8,6 +8,8 @@ import reservationCacheService from "@/services/reservationCache.service";
 import { AppContext } from "@/types/hono.types";
 import { StateWorkflowHandler } from "@/workflow-fsm/state-workflow.types";
 import { systemMessages } from "@/llm/prompts/system-messages";
+import { DBOS } from "@dbos-inc/dbos-sdk";
+import { logger } from "@/middlewares/logger-middleware";
 
 /**
  *
@@ -24,15 +26,39 @@ const started: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   if (RESERVATION_CACHE?.id) {
     //
     if (customerMessage.toUpperCase() === CustomerActions.CONFIRM) {
-      const res = await cmsService.updateAppointment(RESERVATION_CACHE.id, {
-        status: "cancelled",
-      });
-      if (res.status !== 200) {
-        return `Error al cancelar la reserva ${RESERVATION_CACHE.id}`;
+      let deleted = false;
+      try {
+        await DBOS.runStep(
+          async () => {
+            const res = await cmsService.updateAppointment(
+              RESERVATION_CACHE.id!,
+              {
+                status: "cancelled",
+              },
+            );
+            if (res.status !== 200) {
+              throw new Error("Error al cancelar la reserva");
+            }
+          },
+          { name: "cmsService.updateAppointment" },
+        );
+        deleted = true;
+        const assistantResponse = `Hemos cancelado tu reserva  ${RESERVATION_CACHE.id} exitosamente ✅. Gracias por preferirnos`;
+        await reservationCacheService.delete(reservationKey);
+        logger.info(
+          `Reservation ${RESERVATION_CACHE.id} cancelled successfully`,
+        );
+        return humanizerAgent(assistantResponse);
+      } catch (error) {
+        logger.error("Error al cancelar la reserva", error as Error);
+        if (deleted) {
+          const assistantResponse = `Hemos cancelado tu reserva  ${RESERVATION_CACHE.id} exitosamente ✅. Gracias por preferirnos`;
+          await reservationCacheService.delete(reservationKey);
+          return assistantResponse;
+        } else {
+          return "Hubo un problema actualizando tu reserva. Por favor, inténtalo más tarde.";
+        }
       }
-      const assistantResponse = `Hemos cancelado tu reserva  ${RESERVATION_CACHE.id} exitosamente ✅. Gracias por preferirnos`;
-      await reservationCacheService.delete(reservationKey);
-      return humanizerAgent(assistantResponse);
     }
     if (customerMessage.toUpperCase() === CustomerActions.EXIT) {
       const assistantResponse = systemMessages.getExitMsg();

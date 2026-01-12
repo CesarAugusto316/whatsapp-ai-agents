@@ -77,6 +77,7 @@ async function whatsappWorkflow(
       },
     );
 
+    logger.info("✅ Whatsapp workflow completed");
     return argsWithText;
   } catch (error) {
     // Compensación: si se envió typing pero falló algo después, asegurar que se detenga
@@ -88,6 +89,7 @@ async function whatsappWorkflow(
         ...stepConfig,
       });
     }
+    logger.error("❌ Whatsapp workflow failed", error as Error);
     throw error; // DBOS reintentará el flujo desde el último checkpoint
   }
 }
