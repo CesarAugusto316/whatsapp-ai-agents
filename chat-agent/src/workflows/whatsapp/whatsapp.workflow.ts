@@ -1,7 +1,15 @@
 import { formatForWhatsApp } from "@/helpers/format-for-whatsapp";
+import { logger } from "@/middlewares/logger-middleware";
 import whatsAppService from "@/services/whatsapp.service";
 import { AppContext } from "@/types/hono.types";
-import { DBOS } from "@dbos-inc/dbos-sdk";
+import { DBOS, StepConfig } from "@dbos-inc/dbos-sdk";
+
+const stepConfig = {
+  retriesAllowed: true,
+  maxAttempts: 5,
+  intervalSeconds: 2,
+  backoffRate: 2,
+} satisfies StepConfig;
 
 /**
  *
@@ -17,52 +25,71 @@ async function whatsappWorkflow(
     session: appContext.session,
     chatId: appContext.customerPhone,
   };
-
   // 1. send seen
   await DBOS.runStep(
     () => whatsAppService.sendSeen(args).then((r) => r.json()),
     {
       name: "whatsapp:sendSeen",
+      ...stepConfig,
     },
   );
 
-  // 2. send start typing
-  await DBOS.runStep(
-    () => whatsAppService.sendStartTyping(args).then((r) => r.json()),
-    {
-      name: "whatsapp:sendStartTyping",
-    },
-  );
+  // Paso 2: iniciar typing (compensación: enviar stopTyping si falla después)
+  let typingSent = false;
+  try {
+    // 2. send start typing
+    await DBOS.runStep(
+      () => whatsAppService.sendStartTyping(args).then((r) => r.json()),
+      {
+        name: "whatsapp:sendStartTyping",
+        ...stepConfig,
+      },
+    );
+    typingSent = true;
 
-  /**
-   *  3. run child workflow
-   *  This works according to the documentation
-   *  @link https://docs.dbos.dev/faq#can-i-call-a-workflow-from-a-workflow (YES)
-   */
-  const childWorkflowResult: string = await childWorkflow(appContext);
+    /**
+     *  3. run child workflow
+     *  This works according to the documentation
+     *  @link https://docs.dbos.dev/faq#can-i-call-a-workflow-from-a-workflow (YES)
+     */
+    const childWorkflowResult: string = await childWorkflow(appContext);
 
-  // 4. send stop typing
-  await DBOS.runStep(
-    () => whatsAppService.sendStopTyping(args).then((r) => r.json()),
-    {
-      name: "whatsapp:sendStopTyping",
-    },
-  );
+    // 4. send stop typing
+    await DBOS.runStep(
+      () => whatsAppService.sendStopTyping(args).then((r) => r.json()),
+      {
+        name: "whatsapp:sendStopTyping",
+        ...stepConfig,
+      },
+    );
 
-  const argsWithText = {
-    text: formatForWhatsApp(childWorkflowResult),
-    ...args,
-  };
+    const argsWithText = {
+      text: formatForWhatsApp(childWorkflowResult),
+      ...args,
+    };
 
-  // 5. Send AI response to customer
-  await DBOS.runStep(
-    () => whatsAppService.sendText(argsWithText).then((r) => r.json()),
-    {
-      name: "whatsapp:sendText",
-    },
-  );
+    // 5. Send AI response to customer
+    await DBOS.runStep(
+      () => whatsAppService.sendText(argsWithText).then((r) => r.json()),
+      {
+        name: "whatsapp:sendText",
+        ...stepConfig,
+      },
+    );
 
-  return argsWithText;
+    return argsWithText;
+  } catch (error) {
+    // Compensación: si se envió typing pero falló algo después, asegurar que se detenga
+    if (typingSent) {
+      logger.info("whatsapp:compensateStopTyping", { error });
+
+      await DBOS.runStep(() => whatsAppService.sendStopTyping(args), {
+        name: "whatsapp:compensateStopTyping",
+        ...stepConfig,
+      });
+    }
+    throw error; // DBOS reintentará el flujo desde el último checkpoint
+  }
 }
 
 /**
