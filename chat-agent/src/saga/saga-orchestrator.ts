@@ -41,7 +41,6 @@ export interface SagaStep<C, B extends Bag> {
 export class SagaOrchestrator<Ctx, B extends Bag> {
   private steps: SagaStep<Ctx, B>[] = [];
   private bag = {} as B;
-  private durableStep = DBOS.runStep;
   private readonly ctx: Readonly<Ctx>;
   private executedSteps: string[] = []; // Para rastrear qué pasos se ejecutaron
 
@@ -77,7 +76,7 @@ export class SagaOrchestrator<Ctx, B extends Bag> {
         const result = await step.execute(
           this.ctx,
           this.getStepResult,
-          (call) => this.durableStep(call, config),
+          (call) => DBOS.runStep(call, config),
         );
 
         // Actualizar el bag con el resultado
@@ -126,7 +125,7 @@ export class SagaOrchestrator<Ctx, B extends Bag> {
           const result = await step.compensate(
             this.ctx,
             this.getStepResult,
-            (call) => this.durableStep(call, config),
+            (call) => DBOS.runStep(call, config),
           );
 
           // Actualizar bag con resultado de compensación
