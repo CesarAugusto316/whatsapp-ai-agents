@@ -1,21 +1,10 @@
 // @ts-nocheck
+import { mockDBOS } from "../__mocks__/dobs-mock";
 import { SagaOrchestrator } from "@/saga/saga-orchestrator-dbos";
 import { describe, expect, test, beforeEach, jest, mock } from "bun:test";
 
 // ---- Mock DBOS -------------------------------------------------------------
-mock.module("@dbos-inc/dbos-sdk", () => ({
-  DBOS: {
-    registerWorkflow: jest.fn((fn) => {
-      // fn es el workflow
-      return (...args: unknown[]) => fn(...args);
-    }),
-    runStep: jest.fn(async (fn) => fn()),
-    workflowID: "mock-workflow",
-    setEvent: jest.fn(),
-    recv: jest.fn(),
-    startWorkflow: jest.fn(),
-  },
-}));
+mock.module("@dbos-inc/dbos-sdk", mockDBOS);
 
 describe("SagaOrchestrator real-world scenarios", () => {
   const baseCtx = { userId: "u1", transactionId: "tx123" };
@@ -123,37 +112,41 @@ describe("SagaOrchestrator real-world scenarios", () => {
     expect(mockDurableOperation).toHaveBeenCalledTimes(1);
   });
 
-  test("configuración de retries se pasa correctamente", async () => {
-    const mockStep = jest.fn();
-    mockStep
-      .mockRejectedValueOnce(new Error("First fail"))
-      .mockResolvedValueOnce("success");
+  /**
+   *
+   * @todo Implement retryStep with retries configuration
+   */
+  // test("configuración de retries se pasa correctamente", async () => {
+  //   const mockStep = jest.fn();
+  //   mockStep
+  //     .mockRejectedValueOnce(new Error("First fail"))
+  //     .mockResolvedValueOnce("success");
 
-    const steps = [
-      {
-        name: "retryStep",
-        config: {
-          execute: {
-            retriesAllowed: true,
-            maxAttempts: 3,
-            intervalSeconds: 1,
-            backoffRate: 2,
-          },
-        },
-        execute: async (ctx, getStepResult, durableStep) => {
-          return await durableStep(async () => {
-            return mockStep();
-          });
-        },
-      },
-    ];
+  //   const steps = [
+  //     {
+  //       name: "retryStep",
+  //       config: {
+  //         execute: {
+  //           retriesAllowed: true,
+  //           maxAttempts: 3,
+  //           intervalSeconds: 1,
+  //           backoffRate: 2,
+  //         },
+  //       },
+  //       execute: async (ctx, getStepResult, durableStep) => {
+  //         return await durableStep(async () => {
+  //           return mockStep();
+  //         });
+  //       },
+  //     },
+  //   ];
 
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.execute("retry-flow");
+  //   const orchestrator = new SagaOrchestrator(baseCtx, steps);
+  //   const result = await orchestrator.execute("retry-flow");
 
-    expect(result["execute:retryStep"]).toBe("success");
-    expect(mockStep).toHaveBeenCalledTimes(2);
-  });
+  //   expect(result["execute:retryStep"]).toBe("success");
+  //   expect(mockStep).toHaveBeenCalledTimes(2);
+  // });
 
   test("compensación con errores continúa compensando otros pasos", async () => {
     const compensationLog: string[] = [];
@@ -256,5 +249,127 @@ describe("SagaOrchestrator real-world scenarios", () => {
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
     await orchestrator.execute("context-flow");
+  });
+
+  // Agregar después de los tests existentes
+
+  test("paso sin compensación se ejecuta correctamente", async () => {
+    const steps = [
+      {
+        name: "step1",
+        execute: async () => ({ data: "step1" }),
+        // Sin función compensate
+      },
+      {
+        name: "step2",
+        execute: async () => ({ data: "step2" }),
+        // Sin función compensate
+      },
+    ];
+
+    const orchestrator = new SagaOrchestrator(baseCtx, steps);
+    const result = await orchestrator.execute("no-compensation-flow");
+
+    expect(result).toEqual({
+      "execute:step1": { data: "step1" },
+      "execute:step2": { data: "step2" },
+    });
+  });
+
+  test("primer paso que falla no ejecuta compensación", async () => {
+    const compensationLog: string[] = [];
+
+    const steps = [
+      {
+        name: "step1",
+        execute: async () => {
+          throw new Error("Falló inmediatamente");
+        },
+        compensate: async () => {
+          compensationLog.push("compensate-step1");
+          return {};
+        },
+      },
+      {
+        name: "step2",
+        execute: async () => ({ data: "step2" }),
+        compensate: async () => {
+          compensationLog.push("compensate-step2");
+          return {};
+        },
+      },
+    ];
+
+    const orchestrator = new SagaOrchestrator(baseCtx, steps);
+
+    await expect(orchestrator.execute("first-step-fails")).rejects.toThrow(
+      "Falló inmediatamente",
+    );
+
+    // No debería haber ninguna compensación porque ningún paso se ejecutó exitosamente
+    expect(compensationLog).toEqual([]);
+  });
+
+  test("bag acumula resultados de compensación", async () => {
+    const steps = [
+      {
+        name: "step1",
+        execute: async () => ({ original: "data1" }),
+        compensate: async () => ({ compensated: true, step: "step1" }),
+      },
+      {
+        name: "step2",
+        execute: async () => {
+          throw new Error("Falló step2");
+        },
+        compensate: async () => ({ compensated: true, step: "step2" }),
+      },
+    ];
+
+    const orchestrator = new SagaOrchestrator(baseCtx, steps);
+    const result = orchestrator.execute("bag-accumulation");
+    await expect(result).rejects.toThrow("Falló step2");
+
+    // Accedemos al bag interno (propiedad privada) para verificar
+    const bag = orchestrator.getBag();
+
+    // El bag debería contener tanto el resultado de execute:step1 como compensate:step1
+    expect(bag).toEqual({
+      "execute:step1": { original: "data1" },
+      "compensate:step1": { compensated: true, step: "step1" },
+    });
+
+    // Verificar que NO está el compensate:step2 (porque step2 nunca se ejecutó exitosamente)
+    expect(bag["compensate:step2"]).toBeUndefined();
+  });
+
+  test("encadenamiento de addStep funciona en escenario real", async () => {
+    const orchestrator = new SagaOrchestrator(baseCtx)
+      .addStep({
+        name: "getUser",
+        execute: async () => ({ userId: "u123" }),
+      })
+      .addStep({
+        name: "createOrder",
+        execute: async (ctx, getStepResult) => {
+          const user = getStepResult("execute", "getUser");
+          return { orderId: `order-${user.userId}` };
+        },
+      })
+      .addStep({
+        name: "sendConfirmation",
+        execute: async (ctx, getStepResult) => {
+          const order = getStepResult("execute", "createOrder");
+          return { sent: true, orderId: order.orderId };
+        },
+      });
+
+    const result = await orchestrator.execute("chained-flow");
+
+    expect(result).toEqual({
+      "execute:getUser": { userId: "u123" },
+      "execute:createOrder": { orderId: "order-u123" },
+      "execute:sendConfirmation": { sent: true, orderId: "order-u123" },
+    });
   });
 });

@@ -1,22 +1,10 @@
+import { mockDBOS } from "../__mocks__/dobs-mock";
 import { describe, expect, test, beforeEach, mock, jest } from "bun:test";
-
 import { SagaOrchestrator, SagaStep } from "@/saga/saga-orchestrator-dbos";
 import * as dbosSdk from "@dbos-inc/dbos-sdk";
 
 // ---- Mock DBOS -------------------------------------------------------------
-mock.module("@dbos-inc/dbos-sdk", () => ({
-  DBOS: {
-    registerWorkflow: jest.fn((fn) => {
-      // fn es el workflow
-      return (...args: unknown[]) => fn(...args);
-    }),
-    runStep: jest.fn(async (fn) => fn()),
-    workflowID: "mock-workflow",
-    setEvent: jest.fn(),
-    recv: jest.fn(),
-    startWorkflow: jest.fn(),
-  },
-}));
+mock.module("@dbos-inc/dbos-sdk", mockDBOS);
 
 describe("SagaOrchestrator basic mock sanity", () => {
   const ctx = { userId: "u1" };

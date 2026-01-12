@@ -1,16 +1,16 @@
-// Mock de DBOS para testing
-export const DBOS = {
-  runStep: async <T>(func: () => Promise<T>, config?: any): Promise<T> => {
-    // Simulamos la ejecución del paso con posibles configuraciones
-    console.log(
-      `DBOS.runStep called with config: ${config?.name || "no-name"}`,
-    );
-    return await func();
-  },
+import { jest } from "bun:test";
 
-  registerWorkflow: (workflow: any, config?: any) => {
-    return async () => {
-      return await workflow();
-    };
+// ---- Mock DBOS -------------------------------------------------------------
+export const mockDBOS = () => ({
+  DBOS: {
+    registerWorkflow: jest.fn((fn) => {
+      // fn es el workflow
+      return (...args: unknown[]) => fn(...args);
+    }),
+    runStep: jest.fn(async (fn) => fn()),
+    workflowID: "mock-workflow",
+    setEvent: jest.fn(),
+    recv: jest.fn(),
+    startWorkflow: jest.fn(),
   },
-};
+});
