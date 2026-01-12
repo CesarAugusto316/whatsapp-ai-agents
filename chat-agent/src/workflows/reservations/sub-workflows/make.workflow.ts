@@ -63,6 +63,8 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
   } = ctx;
 
   if (!RESERVATION_CACHE) return;
+  let reservation: { doc: Appointment } | undefined;
+  let newCustomer: Customer | undefined;
 
   // FINAL OPTION: 1. CONFIRMAR
   if (customerMessage?.toUpperCase() === CustomerActions.CONFIRM) {
@@ -72,7 +74,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       numberOfPeople = 1,
     } = RESERVATION_CACHE as ReservationState;
 
-    let newCustomer = customer;
+    newCustomer = customer;
     if (!customer && customerName) {
       newCustomer = await DBOS.runStep(
         async () =>
@@ -89,45 +91,57 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
       );
     }
 
-    // finally, we create the reservation
-    if (newCustomer?.id && business?.id) {
-      const timezone = business.general.timezone;
-      const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
-      const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
-      const reservation = await DBOS.runStep(
-        async () => {
-          return (await (
-            await cmsService.createAppointment({
-              business: business.id,
-              customer: newCustomer.id,
-              startDateTime,
-              endDateTime,
-              customerName: newCustomer.name,
-              numberOfPeople,
-              status: "confirmed",
-            })
-          ).json()) as { doc: Appointment };
-        },
-        { name: "cmsService.createAppointment" },
-      );
-      const assistantMsg = systemMessages.getSuccessMsg(
-        {
-          id: reservation?.doc.id,
-          datetime,
-          customerName: customerName || customer?.name || "",
-          numberOfPeople,
-        },
-        timezone,
-        "create",
-      );
-      await reservationCacheService.delete(reservationKey ?? "");
-      return humanizerAgent(assistantMsg);
+    try {
+      if (newCustomer?.id && business?.id) {
+        const timezone = business.general.timezone;
+        const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
+        const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
+        reservation = await DBOS.runStep(
+          async () => {
+            return (await (
+              await cmsService.createAppointment({
+                business: business.id,
+                customer: newCustomer?.id!,
+                startDateTime,
+                endDateTime,
+                customerName: newCustomer?.name!,
+                numberOfPeople,
+                status: "confirmed",
+              })
+            ).json()) as { doc: Appointment };
+          },
+          { name: "cmsService.createAppointment" },
+        );
+        const assistantMsg = systemMessages.getSuccessMsg(
+          {
+            id: reservation?.doc?.id,
+            datetime,
+            customerName: customerName || customer?.name || "",
+            numberOfPeople,
+          },
+          timezone,
+          "create",
+        );
+        await reservationCacheService.delete(reservationKey ?? "");
+        logger.info("Customer selected an option", {
+          customerAction: CustomerActions.CONFIRM,
+          customerMessage,
+        });
+        return humanizerAgent(assistantMsg);
+      }
+
+      return "Tu perfil no pudo ser creado, Intentalo más tarde";
+    } catch (error) {
+      if (reservation && reservation?.doc?.id) {
+        await DBOS.runStep(
+          async () => await cmsService.deleteAppointment(reservation?.doc?.id!),
+          { name: "cmsService.deleteAppointment" },
+        );
+
+        throw error; // DBOS reintentará el flujo desde el último checkpoint
+      }
+      return "Hubo un problema procesando tu reserva. Inténtalo más tarde.";
     }
-    logger.info("Customer selected an option", {
-      customerAction: CustomerActions.CONFIRM,
-      customerMessage,
-    });
-    return humanizerAgent("Cliente no pudo ser creado, falta el nombre");
   }
 
   // FINAL OPTION: 2. SALIR
