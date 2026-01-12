@@ -2,23 +2,35 @@ import { DBOS, StepConfig } from "@dbos-inc/dbos-sdk";
 
 type Bag = Record<string, unknown>;
 
-const stepConfig = {
-  retriesAllowed: true,
-  maxAttempts: 5,
-  intervalSeconds: 2,
-  backoffRate: 2,
-} satisfies StepConfig;
+// const stepConfig = {
+//   retriesAllowed: true,
+//   maxAttempts: 5,
+//   intervalSeconds: 2,
+//   backoffRate: 2,
+// } satisfies StepConfig;
 
 type Retry = Pick<
   StepConfig,
   "retriesAllowed" | "maxAttempts" | "intervalSeconds" | "backoffRate"
 >;
 
-type DurableStep = <T>(func: () => Promise<T>) => Promise<T>;
+type GetStepResult = <T = unknown>(stepKey: string) => T | undefined;
+type DurableStep = <T>(
+  func: () => Promise<T>,
+  config?: StepConfig,
+) => Promise<T>;
 
 export interface SagaStep<C, B extends Bag> {
-  execute(ctx: C, bag: B, dt: DurableStep): Promise<Partial<B>>; // Cambiado a Partial<B>
-  compensate?: (ctx: C, bag: B, dt: DurableStep) => Promise<Partial<B>>; // Cambiado a Partial<B>
+  execute(
+    ctx: C,
+    getStepResult: GetStepResult,
+    dt: DurableStep,
+  ): Promise<Partial<B>>; // Cambiado a Partial<B>
+  compensate?: (
+    ctx: C,
+    getStepResult: GetStepResult,
+    dt: DurableStep,
+  ) => Promise<Partial<B>>; // Cambiado a Partial<B>
   name: string;
   config?: {
     execute?: Retry;
@@ -43,6 +55,10 @@ export class SagaOrchestrator<Ctx, B extends Bag> {
     return this;
   }
 
+  private getStepResult<T>(stepKey: string) {
+    return this.bag[`execute:${stepKey}`] as T;
+  }
+
   private async registerSteps() {
     for (const step of this.steps) {
       const stepName = step.name;
@@ -58,8 +74,10 @@ export class SagaOrchestrator<Ctx, B extends Bag> {
               name: `execute:${stepName}`,
             } satisfies StepConfig);
 
-        const result = await step.execute(this.ctx, this.bag, (call) =>
-          this.durableStep(call, config),
+        const result = await step.execute(
+          this.ctx,
+          this.getStepResult,
+          (call) => this.durableStep(call, config),
         );
 
         // Actualizar el bag con el resultado
@@ -105,8 +123,10 @@ export class SagaOrchestrator<Ctx, B extends Bag> {
                 name: `compensate:${stepName}`,
               } satisfies StepConfig);
 
-          const result = await step.compensate(this.ctx, this.bag, (call) =>
-            this.durableStep(call, config),
+          const result = await step.compensate(
+            this.ctx,
+            this.getStepResult,
+            (call) => this.durableStep(call, config),
           );
 
           // Actualizar bag con resultado de compensación
