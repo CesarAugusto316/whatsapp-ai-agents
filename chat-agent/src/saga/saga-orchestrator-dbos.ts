@@ -48,8 +48,8 @@ export interface ISagaStep<C, B> {
  */
 export class SagaOrchestrator<Context, T extends SagaBag> {
   private readonly ctx: Readonly<Context>;
-  private steps: ISagaStep<Context, T>[];
-  private bag = {} as SagaBag;
+  private steps: ISagaStep<Context, T>[] = [];
+  private bag = {} as Record<string, T>;
   private executedSteps: string[] = [];
   private readonly dbosConfig?: {
     workflowName?: string;
@@ -58,7 +58,6 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
 
   constructor({
     ctx,
-    steps = [],
     dbosConfig,
   }: {
     ctx: Context;
@@ -69,30 +68,30 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
     };
   }) {
     this.ctx = Object.freeze(structuredClone(ctx)) satisfies Readonly<Context>;
-    this.steps = steps;
     this.dbosConfig = Object.freeze(structuredClone(dbosConfig));
   }
 
-  private getStepResult = <T>(mode: SagaMode = "execute", stepKey: string) => {
-    return this.bag[`${mode}:${stepKey}`] as T;
+  private getStepResult = (mode: SagaMode = "execute", stepKey: string) => {
+    return this.bag[`${mode}:${stepKey}`];
   };
 
-  private async runStepMode<R>(
-    runStepMode: FuncSagaStep<Context, R>,
+  private async runStepMode(
+    runStepMode: FuncSagaStep<Context, T>,
     config: StepConfig & { name: string },
   ): Promise<void> {
     //
-    const result = (await runStepMode({
+    const result = await runStepMode({
       ctx: this.ctx,
       getStepResult: this.getStepResult.bind(this),
       durableStep: (func) => DBOS.runStep(func, config),
-    })) as R;
+    });
 
     // Actualizar el bag con el resultado
     this.bag = {
       ...this.bag,
       [`${runStepMode.name}:${config.name}`]: result,
-    } satisfies SagaBag;
+      //
+    } satisfies Record<string, T>;
   }
 
   /**
@@ -125,7 +124,7 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
     }
   }
 
-  private async iterateSagaSteps<T>() {
+  private async iterateSagaSteps() {
     for (const step of this.steps) {
       try {
         const config = step.config?.execute;
@@ -145,7 +144,7 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
         // throw error;
       }
     }
-    return this.bag as T;
+    return this.bag;
   }
 
   addStep(step: ISagaStep<Context, T>) {
@@ -153,13 +152,13 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
     return this;
   }
 
-  async start(): Promise<Record<string, T>> {
+  async start() {
     if (!this.dbosConfig) {
-      return this.iterateSagaSteps<Record<string, T>>();
+      return this.iterateSagaSteps();
     }
     if (this.dbosConfig.workflowName) {
       const registeredSagaSteps = DBOS.registerWorkflow(
-        () => this.iterateSagaSteps<Record<string, T>>(),
+        () => this.iterateSagaSteps(),
         {
           name: this.dbosConfig?.workflowName,
         },
@@ -174,6 +173,6 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
   }
 
   getBag() {
-    return this.bag as Record<string, T>;
+    return this.bag;
   }
 }
