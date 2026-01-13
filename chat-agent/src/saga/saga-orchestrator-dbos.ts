@@ -101,7 +101,7 @@ export class SagaOrchestrator<
   private async iterateCompensateSteps() {
     // Compensar en orden inverso solo los pasos ejecutados
     for (const stepName of [...this.executedSteps].reverse()) {
-      const step = this.steps.find((s) => s.execute?.name === stepName);
+      const step = this.steps.find((s) => s.config.execute?.name === stepName);
       if (step) {
         try {
           const config = step.config?.compensate;
@@ -138,10 +138,12 @@ export class SagaOrchestrator<
         await this.iterateCompensateSteps();
         /**
          *
-         * @todo DELETED not caught exceptions does not recover the workflow
+         * @description throw error DELETED not caught exceptions does not recover the workflow
          * @link https://docs.dbos.dev/typescript/tutorials/workflow-tutorial#workflow-guarantees
          */
-        // throw error;
+        // stops execution if there is an error and all compensation
+        // steps were invoked successfully
+        return this.bag;
       }
     }
     return this.bag;

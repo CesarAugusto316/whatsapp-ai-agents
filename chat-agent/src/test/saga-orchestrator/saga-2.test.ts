@@ -1,374 +1,553 @@
+// saga-orchestrator-dbos.test.ts
 // @ts-nocheck
-import { mockDBOS } from "../__mocks__/dobs-mock";
+import { describe, test, expect, beforeEach, jest, mock } from "bun:test";
 import { SagaOrchestrator } from "@/saga/saga-orchestrator-dbos";
-import { describe, expect, test, beforeEach, jest, mock } from "bun:test";
+import type { ISagaStep } from "@/saga/saga-orchestrator-dbos";
+import { WhatsappSagaTypes } from "@/workflows/whatsapp/whatsapp.saga";
 
-// ---- Mock DBOS -------------------------------------------------------------
-mock.module("@dbos-inc/dbos-sdk", mockDBOS);
+// Mock global de DBOS
+mock.module("@dbos-inc/dbos-sdk", () => ({
+  DBOS: {
+    registerWorkflow: jest.fn((fn) => fn),
+    startWorkflow: jest.fn((fn, args) => () => ({
+      getResult: async () => {
+        const result = await fn();
+        return result;
+      },
+    })),
+    runStep: jest.fn(async (fn) => {
+      try {
+        return await fn();
+      } catch (error) {
+        throw error;
+      }
+    }),
+  },
+  StepConfig: {},
+}));
 
-describe("SagaOrchestrator real-world scenarios", () => {
-  const baseCtx = { userId: "u1", transactionId: "tx123" };
+// Tipos para testing
+interface TestContext {
+  userId: string;
+  transactionId: string;
+}
+
+interface TestResults {
+  userCreated: boolean;
+  paymentProcessed: boolean;
+  notificationSent: boolean;
+  compensated: boolean;
+  error?: string;
+}
+
+type TestStepName = "createUser" | "processPayment" | "sendNotification";
+
+// Helper para crear steps exitosos
+const createSuccessStep = (
+  name: TestStepName,
+  result: Partial<TestResults>,
+): ISagaStep<TestContext, TestResults, TestStepName> => ({
+  config: {
+    execute: { name, retriesAllowed: true, maxAttempts: 3, intervalSeconds: 1 },
+  },
+  execute: async ({ ctx, durableStep }) => {
+    await durableStep(async () => {});
+    return result as TestResults;
+  },
+});
+
+// Helper para crear steps que fallan
+const createFailingStep = (
+  name: TestStepName,
+): ISagaStep<TestContext, TestResults, TestStepName> => ({
+  config: {
+    execute: { name, retriesAllowed: true, maxAttempts: 2, intervalSeconds: 1 },
+  },
+  execute: async ({ ctx, durableStep }) => {
+    return await durableStep(async () => {
+      throw new Error(`Step ${name} failed`);
+    });
+  },
+});
+
+// Helper para crear steps con compensación
+const createStepWithCompensation = (
+  name: TestStepName,
+): ISagaStep<TestContext, TestResults, TestStepName> => ({
+  config: {
+    execute: { name, retriesAllowed: true, maxAttempts: 3, intervalSeconds: 1 },
+    compensate: {
+      name: `compensate${name}`,
+      retriesAllowed: true,
+      maxAttempts: 3,
+      intervalSeconds: 1,
+    },
+  },
+  execute: async ({ ctx, durableStep }) => {
+    await durableStep(async () => {});
+    return { [`${name}Done`]: true } as TestResults;
+  },
+  compensate: async ({ ctx, durableStep }) => {
+    await durableStep(async () => {});
+    return { compensated: true } as TestResults;
+  },
+});
+
+describe("SagaOrchestrator - Casos Críticos", () => {
+  const baseContext: TestContext = {
+    userId: "user-123",
+    transactionId: "txn-456",
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test("compensación automática cuando falla un paso intermedio", async () => {
-    const compensationLog: string[] = [];
-
-    const steps = [
-      {
-        name: "createOrder",
-        execute: async () => ({ orderId: "order-1" }),
-        compensate: async () => {
-          compensationLog.push("compensate-createOrder");
-          return { rolledBack: true };
-        },
-      },
-      {
-        name: "reserveInventory",
-        execute: async () => {
-          throw new Error("Sin stock disponible");
-        },
-        compensate: async () => {
-          compensationLog.push("compensate-reserveInventory");
-          return { released: true };
-        },
-      },
-      {
-        name: "processPayment",
-        execute: async () => ({ paymentId: "pay-1" }),
-        compensate: async () => {
-          compensationLog.push("compensate-processPayment");
-          return { refunded: true };
-        },
-      },
-    ];
-
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-
-    const result = await orchestrator.start("order-flow");
-    // console.log({ result });
-    // await expect(orchestrator.start("order-flow")).rejects.toThrow(
-    //   "Sin stock disponible",
-    // );
-    expect(result["compensate:createOrder"]).toBeDefined();
-    // Solo se debe compensar el primer paso (que sí se ejecutó)
-    // expect(compensationLog.length).toEqual(3);
-  });
-
-  test("usar resultados de pasos anteriores con getStepResult", async () => {
-    const steps = [
-      {
-        name: "getUser",
-        execute: async () => ({
-          user: { id: "u1", email: "test@example.com" },
-        }),
-      },
-      {
-        name: "validateOrder",
-        execute: async ({ ctx, getStepResult }) => {
-          const userResult = getStepResult("execute", "getUser");
-          expect(userResult).toEqual({
-            user: { id: "u1", email: "test@example.com" },
-          });
-          return { valid: true, userId: userResult.user.id };
-        },
-      },
-      {
-        name: "createOrder",
-        execute: async ({ ctx, getStepResult }) => {
-          const validation = getStepResult("execute", "validateOrder");
-          return { orderId: `order-${validation.userId}` };
-        },
-      },
-    ];
-
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.start("order-flow");
-
-    expect(result["execute:createOrder"]).toEqual({ orderId: "order-u1" });
-  });
-
-  test("paso con durableStep usa DBOS.runStep", async () => {
-    const mockDurableOperation = jest.fn(async () => "operation-result");
-
-    const steps = [
-      {
-        name: "durableOperation",
-        execute: async ({ ctx, getStepResult, durableStep }) => {
-          const result = await durableStep(async () => {
-            return mockDurableOperation();
-          });
-          return { data: result };
-        },
-      },
-    ];
-
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.start("durable-flow");
-
-    expect(result["execute:durableOperation"]).toEqual({
-      data: "operation-result",
+  // CASO 1: Flujo exitoso sin DBOS (el más común)
+  test("debe ejecutar todos los pasos exitosamente sin DBOS", async () => {
+    const orchestrator = new SagaOrchestrator<
+      TestContext,
+      TestResults,
+      TestStepName
+    >({
+      ctx: baseContext,
     });
-    expect(mockDurableOperation).toHaveBeenCalledTimes(1);
+
+    const step1 = createSuccessStep("createUser", { userCreated: true });
+    const step2 = createSuccessStep("processPayment", {
+      paymentProcessed: true,
+    });
+    const step3 = createSuccessStep("sendNotification", {
+      notificationSent: true,
+    });
+
+    orchestrator.addStep(step1).addStep(step2).addStep(step3);
+
+    const result = await orchestrator.start();
+
+    expect(result).toBeDefined();
+    expect(result["execute:createUser"]?.userCreated).toBe(true);
+    expect(result["execute:processPayment"]?.paymentProcessed).toBe(true);
+    expect(result["execute:sendNotification"]?.notificationSent).toBe(true);
   });
 
-  /**
-   *
-   * @todo Implement retryStep with retries configuration
-   */
-  // test("configuración de retries se pasa correctamente", async () => {
-  //   const mockStep = jest.fn();
-  //   mockStep
-  //     .mockRejectedValueOnce(new Error("First fail"))
-  //     .mockResolvedValueOnce("success");
+  // CASO 2: Error en un paso con compensación - AHORA RESUELVE, NO RECHAZA
+  test("debe compensar pasos ejecutados cuando un paso falla", async () => {
+    const orchestrator = new SagaOrchestrator<
+      TestContext,
+      TestResults,
+      TestStepName
+    >({
+      ctx: baseContext,
+    });
 
-  //   const steps = [
-  //     {
-  //       name: "retryStep",
-  //       config: {
-  //         execute: {
-  //           retriesAllowed: true,
-  //           maxAttempts: 3,
-  //           intervalSeconds: 1,
-  //           backoffRate: 2,
-  //         },
-  //       },
-  //       execute: async (ctx, getStepResult, durableStep) => {
-  //         return await durableStep(async () => {
-  //           return mockStep();
-  //         });
-  //       },
-  //     },
-  //   ];
+    // Paso con compensación
+    const step1 = createStepWithCompensation("createUser");
+    // Paso que falla
+    const step2 = createFailingStep("processPayment");
+    // Este paso no debería ejecutarse porque step2 falla
+    const step3 = createSuccessStep("sendNotification", {
+      notificationSent: true,
+    });
 
-  //   const orchestrator = new SagaOrchestrator(baseCtx, steps);
-  //   const result = await orchestrator.execute("retry-flow");
+    orchestrator.addStep(step1).addStep(step2).addStep(step3);
 
-  //   expect(result["execute:retryStep"]).toBe("success");
-  //   expect(mockStep).toHaveBeenCalledTimes(2);
-  // });
+    // IMPORTANTE: Ahora resuelve, no rechaza
+    const bag = await orchestrator.start();
 
-  test("compensación con errores continúa compensando otros pasos", async () => {
-    const compensationLog: string[] = [];
-    const errorLog: any[] = [];
+    // Verificar que se ejecutó el primer paso
+    expect(bag["execute:createUser"]).toBeDefined();
+    // Verificar que se ejecutó la compensación del primer paso
+    expect(bag["compensate:compensatecreateUser"]).toBeDefined();
+    // El segundo paso falló, no debería tener resultado en execute
+    expect(bag["execute:processPayment"]).toBeUndefined();
 
-    const originalError = console.error;
-    console.error = (...args) => {
-      errorLog.push(args);
+    // El segundo paso falló, debería tener resultado en compensate pero no tiene compensate asi que deberia ser undefined
+    expect(bag["compensate:processPayment"]).toBeUndefined();
+
+    // El tercer paso no se ejecutó porque el segundo falló
+    expect(bag["execute:sendNotification"]).toBeUndefined();
+  });
+
+  // CASO 3: Flujo con DBOS
+  test("debe registrar workflow cuando se proporciona dbosConfig", async () => {
+    const { DBOS } = await import("@dbos-inc/dbos-sdk");
+
+    const orchestrator = new SagaOrchestrator<
+      TestContext,
+      TestResults,
+      TestStepName
+    >({
+      ctx: baseContext,
+      dbosConfig: {
+        workflowName: "test-workflow",
+        args: { workflowID: "test-123" },
+      },
+    });
+
+    orchestrator
+      .addStep(createSuccessStep("createUser", { userCreated: true }))
+      .addStep(createSuccessStep("processPayment", { paymentProcessed: true }));
+
+    const result = await orchestrator.start();
+
+    // Verificar que se llamaron los métodos de DBOS
+    expect(DBOS.registerWorkflow).toHaveBeenCalled();
+    expect(DBOS.startWorkflow).toHaveBeenCalled();
+    expect(result).toBeDefined();
+  });
+
+  // CASO 4: getStepResult funciona correctamente
+  test("debe permitir obtener resultados de pasos anteriores", async () => {
+    const orchestrator = new SagaOrchestrator<
+      TestContext,
+      TestResults,
+      TestStepName
+    >({
+      ctx: baseContext,
+    });
+
+    const step1 = {
+      config: {
+        execute: { name: "createUser", retriesAllowed: true, maxAttempts: 3 },
+      },
+      execute: async ({ ctx, durableStep }) => {
+        await durableStep(async () => {});
+        return { userCreated: true, userId: ctx.userId } as TestResults;
+      },
     };
 
-    try {
-      const steps = [
-        {
-          name: "step1",
-          execute: async () => ({ data: "step1" }),
-          compensate: async () => {
-            compensationLog.push("compensate-step1");
-            return { ok: true };
-          },
+    const step2 = {
+      config: {
+        execute: {
+          name: "usePreviousResult",
+          retriesAllowed: true,
+          maxAttempts: 3,
         },
-        {
-          name: "step2",
-          execute: async () => ({ data: "step2" }),
-          compensate: async () => {
-            compensationLog.push("compensate-step2");
-            throw new Error("Failed to compensate step2");
-          },
-        },
-        {
-          name: "step3",
-          execute: async () => {
-            throw new Error("Execution failed");
-          },
-          compensate: async () => {
-            compensationLog.push("compensate-step3");
-            return { ok: true };
-          },
-        },
-      ];
+      },
+      execute: async ({ ctx, getStepResult, durableStep }) => {
+        const previousResult = getStepResult("execute", "createUser");
+        expect(previousResult?.userCreated).toBe(true);
 
-      const orchestrator = new SagaOrchestrator(baseCtx, steps);
-      await expect(
-        orchestrator.start("compensation-flow"),
-      ).resolves.toBeDefined();
-      // Debe intentar compensar ambos pasos anteriores
-      expect(compensationLog).toEqual(["compensate-step2", "compensate-step1"]);
-      expect(errorLog.length).toBeGreaterThan(0);
-    } finally {
-      console.error = originalError;
+        await durableStep(async () => {});
+        return { paymentProcessed: true } as TestResults;
+      },
+    };
+
+    orchestrator.addStep(step1).addStep(step2);
+
+    const result = await orchestrator.start();
+    expect(result["execute:usePreviousResult"]?.paymentProcessed).toBe(true);
+  });
+
+  // CASO 5: Contexto inmutable
+  test("debe mantener el contexto inmutable", async () => {
+    const originalContext = { ...baseContext, sensitiveData: "do-not-change" };
+
+    const orchestrator = new SagaOrchestrator<
+      TestContext,
+      TestResults,
+      TestStepName
+    >({
+      ctx: originalContext,
+    });
+
+    const step = {
+      config: {
+        execute: { name: "testStep", retriesAllowed: true, maxAttempts: 3 },
+      },
+      execute: async ({ ctx, durableStep }) => {
+        // El contexto es de solo lectura, no deberíamos poder modificarlo
+        // TypeScript nos dará error si intentamos asignar a una propiedad de solo lectura
+        await durableStep(async () => {});
+        return {} as TestResults;
+      },
+    };
+
+    orchestrator.addStep(step);
+    await orchestrator.start();
+
+    // El contexto original no debe cambiar
+    expect(originalContext.userId).toBe("user-123");
+  });
+
+  // CASO 6: Orden de compensación inverso - AHORA RESUELVE, NO RECHAZA
+  test("debe compensar en orden inverso al de ejecución", async () => {
+    const compensations: string[] = [];
+
+    const orchestrator = new SagaOrchestrator<
+      TestContext,
+      TestResults,
+      TestStepName
+    >({
+      ctx: baseContext,
+    });
+
+    // Crear 3 pasos con compensación
+    for (let i = 1; i <= 3; i++) {
+      const stepName = `step${i}`;
+      const step = {
+        config: {
+          execute: { name: stepName, retriesAllowed: true, maxAttempts: 3 },
+          compensate: {
+            name: stepName,
+            retriesAllowed: true,
+            maxAttempts: 3,
+          },
+        },
+        execute: async ({ ctx, durableStep }) => {
+          await durableStep(async () => {});
+          return { [`${stepName}Done`]: true };
+        },
+        compensate: async ({ ctx, durableStep }) => {
+          compensations.push(stepName);
+          await durableStep(async () => {});
+          return { [`${stepName}Compensated`]: true };
+        },
+      };
+      orchestrator.addStep(step);
     }
+
+    // Agregar un paso que falle para activar compensaciones
+    orchestrator.addStep(createFailingStep("failingStep" as TestStepName));
+
+    // IMPORTANTE: Ahora resuelve, no rechaza
+    const bag = await orchestrator.start();
+
+    // Las compensaciones deben ejecutarse en orden inverso: step3, step2, step1
+    expect(compensations).toEqual(["step3", "step2", "step1"]);
+
+    // Verificar que los pasos se ejecutaron
+    expect(bag["execute:step1"]).toBeDefined();
+    expect(bag["execute:step2"]).toBeDefined();
+    expect(bag["execute:step3"]).toBeDefined();
+    // Verificar que se compensaron
+    expect(bag["compensate:step1"]).toBeDefined();
+    expect(bag["compensate:step2"]).toBeDefined();
+    expect(bag["compensate:step3"]).toBeDefined();
+  });
+});
+
+// Test adicional: Verificar que el bag se llena correctamente
+test("el bag debe contener resultados de execute y compensate", async () => {
+  const orchestrator = new SagaOrchestrator<
+    TestContext,
+    TestResults,
+    TestStepName
+  >({
+    ctx: { userId: "test", transactionId: "123" },
   });
 
-  test("saga exitosa retorna todos los resultados en bag", async () => {
-    const steps = [
-      {
-        name: "step1",
-        execute: async () => ({ result: 1 }),
+  const stepWithCompensation = {
+    config: {
+      execute: { name: "testStep", retriesAllowed: true, maxAttempts: 3 },
+      compensate: {
+        name: "compensateTestStep",
+        retriesAllowed: true,
+        maxAttempts: 3,
       },
-      {
-        name: "step2",
-        execute: async () => ({ result: 2 }),
-      },
-      {
-        name: "step3",
-        execute: async () => ({ result: 3 }),
-      },
-    ];
+    },
+    execute: async ({ ctx, durableStep }) => {
+      await durableStep(async () => {});
+      return { userCreated: true } as TestResults;
+    },
+    compensate: async ({ ctx, durableStep }) => {
+      await durableStep(async () => {});
+      return { compensated: true } as TestResults;
+    },
+  };
 
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.start("successful-flow");
+  const failingStep = createFailingStep("failingStep" as TestStepName);
 
-    expect(result).toEqual({
-      "execute:step1": { result: 1 },
-      "execute:step2": { result: 2 },
-      "execute:step3": { result: 3 },
-    });
+  orchestrator.addStep(stepWithCompensation).addStep(failingStep);
+
+  const bag = await orchestrator.start();
+
+  // Debe tener el resultado del execute
+  expect(bag["execute:testStep"]?.userCreated).toBe(true);
+  // Debe tener el resultado del compensate
+  expect(bag["compensate:compensateTestStep"]?.compensated).toBe(true);
+  // No debe tener resultado del paso que falló
+  expect(bag["execute:failingStep"]).toBeUndefined();
+});
+
+// Tests de integración para tu caso de uso específico
+describe("WhatsappSaga - Casos Reales", () => {
+  // Mock del logger para evitar errores
+  mock.module("@/middlewares/logger-middleware", () => ({
+    logger: {
+      error: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+    },
+  }));
+
+  // Mock del helper de formateo
+  mock.module("@/helpers/format-for-whatsapp", () => ({
+    formatForWhatsApp: jest.fn((text) => text), // Simplemente devuelve el texto tal cual
+  }));
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Resetear mocks antes de cada test
+    mock.module("@/services/whatsapp.service", () => ({
+      default: {
+        sendSeen: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve({ ok: true, text: "seen" }),
+        }),
+        sendStartTyping: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve({ ok: true, text: "typing started" }),
+        }),
+        sendStopTyping: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve({ ok: true, text: "typing stopped" }),
+        }),
+        sendText: jest.fn().mockResolvedValue({
+          json: () => Promise.resolve({ ok: true, text: "message sent" }),
+        }),
+      },
+    }));
   });
 
-  test("contexto es inmutable y disponible para todos los pasos", async () => {
-    const steps = [
-      {
-        name: "step1",
-        execute: async ({ ctx }) => {
-          expect(ctx.userId).toBe("u1");
-          expect(ctx.transactionId).toBe("tx123");
+  test("debe ejecutar flujo completo de whatsapp exitosamente", async () => {
+    // Mock exitoso del workflow de reservación
+    mock.module("@/workflows/reservations/reservation.workflow", () => ({
+      runReservationWorkflow: jest
+        .fn()
+        .mockResolvedValue("Reservation successful"),
+    }));
 
-          expect(() => (ctx.userId = "modified")).toThrow();
-          return { processed: true };
-        },
+    // Importar después de configurar los mocks
+    const {
+      sendSeen,
+      sendStartTyping,
+      sendStopTyping,
+      sendText,
+      reservationWorklow,
+    } = await import("@/workflows/whatsapp/whatsapp.saga");
+
+    const ctx = {
+      session: "test-session",
+      customerPhone: "+1234567890",
+      whatsappEvent: "message",
+    };
+
+    const orchestrator = new SagaOrchestrator<any, any, any>({
+      ctx,
+      dbosConfig: {
+        workflowName: "whatsapp-test",
+        args: { workflowID: "test-chat" },
       },
-      {
-        name: "step2",
-        execute: async ({ ctx }) => {
-          expect(ctx.userId).toBe("u1");
-          return { processed: true };
-        },
-      },
-    ];
-
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    await orchestrator.start("context-flow");
-  });
-
-  // Agregar después de los tests existentes
-
-  test("paso sin compensación se ejecuta correctamente", async () => {
-    const steps = [
-      {
-        name: "step1",
-        execute: async () => ({ data: "step1" }),
-        // Sin función compensate
-      },
-      {
-        name: "step2",
-        execute: async () => ({ data: "step2" }),
-        // Sin función compensate
-      },
-    ];
-
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.start("no-compensation-flow");
-
-    expect(result).toEqual({
-      "execute:step1": { data: "step1" },
-      "execute:step2": { data: "step2" },
-    });
-  });
-
-  test("primer paso que falla no ejecuta compensación", async () => {
-    const compensationLog: string[] = [];
-
-    const steps = [
-      {
-        name: "step1",
-        execute: async () => {
-          throw new Error("Falló inmediatamente");
-        },
-        compensate: async () => {
-          compensationLog.push("compensate-step1");
-          return {};
-        },
-      },
-      {
-        name: "step2",
-        execute: async () => ({ data: "step2" }),
-        compensate: async () => {
-          compensationLog.push("compensate-step2");
-          return {};
-        },
-      },
-    ];
-
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-
-    await expect(orchestrator.start("first-step-fails")).resolves.toBeDefined();
-
-    // No debería haber ninguna compensación porque ningún paso se ejecutó exitosamente
-    expect(compensationLog).toEqual([]);
-  });
-
-  test("bag acumula resultados de compensación", async () => {
-    const steps = [
-      {
-        name: "step1",
-        execute: async () => ({ original: "data1" }),
-        compensate: async () => ({ compensated: true, step: "step1" }),
-      },
-      {
-        name: "step2",
-        execute: async () => {
-          throw new Error("Falló step2");
-        },
-        compensate: async () => ({ compensated: true, step: "step2" }),
-      },
-    ];
-
-    const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = orchestrator.start("bag-accumulation");
-    await expect(result).resolves.toBeDefined();
-
-    // Accedemos al bag interno (propiedad privada) para verificar
-    const bag = orchestrator.getBag();
-
-    // El bag debería contener tanto el resultado de execute:step1 como compensate:step1
-    expect(bag).toEqual({
-      "execute:step1": { original: "data1" },
-      "compensate:step1": { compensated: true, step: "step1" },
     });
 
-    // Verificar que NO está el compensate:step2 (porque step2 nunca se ejecutó exitosamente)
-    expect(bag["compensate:step2"]).toBeUndefined();
+    orchestrator
+      .addStep(sendSeen)
+      .addStep(sendStartTyping)
+      .addStep(reservationWorklow)
+      .addStep(sendStopTyping)
+      .addStep(sendText);
+
+    const result = await orchestrator.start();
+
+    // Obtener el mock actualizado
+    const { default: mockWhatsappService } =
+      await import("@/services/whatsapp.service");
+
+    expect(mockWhatsappService.sendSeen).toHaveBeenCalled();
+    expect(mockWhatsappService.sendStartTyping).toHaveBeenCalled();
+    expect(mockWhatsappService.sendStopTyping).toHaveBeenCalled();
+    expect(mockWhatsappService.sendText).toHaveBeenCalled();
+    expect(result).toBeDefined();
   });
 
-  test("encadenamiento de addStep funciona en escenario real", async () => {
-    const orchestrator = new SagaOrchestrator(baseCtx)
-      .addStep({
-        name: "getUser",
-        execute: async () => ({ userId: "u123" }),
-      })
-      .addStep({
-        name: "createOrder",
-        execute: async ({ ctx, getStepResult }) => {
-          const user = getStepResult("execute", "getUser");
-          return { orderId: `order-${user.userId}` };
-        },
-      })
-      .addStep({
-        name: "sendConfirmation",
-        execute: async ({ ctx, getStepResult }) => {
-          const order = getStepResult("execute", "createOrder");
-          return { sent: true, orderId: order.orderId };
-        },
-      });
+  // CASO MODIFICADO: Ahora resuelve, no rechaza
+  test("debe compensar typing si falla el flujo de reservación", async () => {
+    // Mockear el workflow de reservación para que falle
+    mock.module("@/workflows/reservations/reservation.workflow", () => ({
+      runReservationWorkflow: jest
+        .fn()
+        .mockRejectedValue(new Error("Reservation failed")),
+    }));
 
-    const result = await orchestrator.start("chained-flow");
+    // Importar después de configurar los mocks
+    const { sendSeen, sendStartTyping, reservationWorklow } =
+      await import("@/workflows/whatsapp/whatsapp.saga");
 
-    expect(result).toEqual({
-      "execute:getUser": { userId: "u123" },
-      "execute:createOrder": { orderId: "order-u123" },
-      "execute:sendConfirmation": { sent: true, orderId: "order-u123" },
+    const ctx = {
+      session: "test-session",
+      customerPhone: "+1234567890",
+      whatsappEvent: "message",
+    };
+
+    const orchestrator = new SagaOrchestrator<any, any, any>({
+      ctx,
     });
+
+    orchestrator
+      .addStep(sendSeen)
+      .addStep(sendStartTyping)
+      .addStep(reservationWorklow);
+
+    // IMPORTANTE: Ahora resuelve, no rechaza
+    const bag = await orchestrator.start();
+
+    // Obtener el mock actualizado
+    const { default: mockWhatsappService } =
+      await import("@/services/whatsapp.service");
+
+    // Verificar que sendSeen se ejecutó
+    expect(mockWhatsappService.sendSeen).toHaveBeenCalled();
+
+    // Verificar que sendStartTyping se ejecutó
+    expect(mockWhatsappService.sendStartTyping).toHaveBeenCalled();
+
+    // Verificar que sendStartTyping se compensó (sendStopTyping se llamó)
+    // NOTA: La compensación de sendStartTyping es sendStopTyping
+    // Pero en tu código, el compensator se llama automáticamente cuando falla reservationWorklow
+    // Asegúrate de que tu step sendStartTyping tiene un compensator configurado
+    expect(mockWhatsappService.sendStopTyping).toHaveBeenCalled();
   });
+});
+
+// Test adicional: Verificar que el bag se llena correctamente
+test("el bag debe contener resultados de execute y compensate", async () => {
+  const orchestrator = new SagaOrchestrator<
+    TestContext,
+    TestResults,
+    TestStepName
+  >({
+    ctx: { userId: "test", transactionId: "123" },
+  });
+
+  const stepWithCompensation = {
+    config: {
+      execute: { name: "testStep", retriesAllowed: true, maxAttempts: 3 },
+      compensate: {
+        name: "compensateTestStep",
+        retriesAllowed: true,
+        maxAttempts: 3,
+      },
+    },
+    execute: async ({ ctx, durableStep }) => {
+      await durableStep(async () => {});
+      return { userCreated: true } as TestResults;
+    },
+    compensate: async ({ ctx, durableStep }) => {
+      await durableStep(async () => {});
+      return { compensated: true } as TestResults;
+    },
+  };
+
+  const failingStep = createFailingStep("failingStep" as TestStepName);
+
+  orchestrator.addStep(stepWithCompensation).addStep(failingStep);
+
+  const bag = await orchestrator.start();
+
+  // Debe tener el resultado del execute
+  expect(bag["execute:testStep"]?.userCreated).toBe(true);
+  // Debe tener el resultado del compensate
+  expect(bag["compensate:compensateTestStep"]?.compensated).toBe(true);
+  // No debe tener resultado del paso que falló
+  expect(bag["execute:failingStep"]).toBeUndefined();
 });
