@@ -1,6 +1,14 @@
 import { CTX, AppContext } from "@/types/hono.types";
-import { runWhatsappWorkflow } from "@/workflows/whatsapp/whatsapp.workflow";
 import { Handler } from "hono/types";
+import { SagaOrchestrator } from "@/saga/saga-orchestrator-dbos";
+import {
+  reservationWorklow,
+  sendSeen,
+  sendStartTyping,
+  sendStopTyping,
+  sendText,
+  WhatsappSagaResults,
+} from "@/workflows/whatsapp/whatsapp.saga";
 
 export const aiWhatsappHandler: Handler<CTX> = async (c) => {
   const ctx = {
@@ -20,9 +28,28 @@ export const aiWhatsappHandler: Handler<CTX> = async (c) => {
     return c.json({ message: "Invalid event" });
   }
 
-  // 1. Run workflow
-  const result = await runWhatsappWorkflow(ctx);
+  // 1. Initialize the WhatsApp Saga
+  const whatsappSaga = new SagaOrchestrator<AppContext, WhatsappSagaResults>({
+    ctx,
+    dbosConfig: {
+      workflowName: "whatsapp-saga",
+      args: { workflowID: ctx.chatKey },
+    },
+  });
 
-  // 2. Return response
-  return c.json({ received: true, message: result.text });
+  whatsappSaga
+    .addStep(sendSeen)
+    .addStep(sendStartTyping)
+    .addStep(reservationWorklow)
+    .addStep(sendStopTyping)
+    .addStep(sendText);
+
+  // 2. Start the WhatsApp Saga
+  const result = await whatsappSaga.start();
+
+  // 3. Return response
+  return c.json({
+    received: true,
+    message: result?.["execute:reservationWorklow"].text ?? "",
+  });
 };
