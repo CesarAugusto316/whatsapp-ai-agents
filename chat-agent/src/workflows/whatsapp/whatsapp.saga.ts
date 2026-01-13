@@ -16,11 +16,34 @@ const stepConfig = {
   backoffRate: 2,
 } satisfies Omit<StepConfig, "name">;
 
-export interface WhatsappSagaResults extends SagaBag {
+type WhatappStepName =
+  | "sendSeen"
+  | "sendStartTyping"
+  | "reservationFlow"
+  | "sendStopTyping"
+  | "sendText";
+
+interface WhatsappSagaResults extends SagaBag {
   text: string;
 }
 
-export const sendSeen: ISagaStep<AppContext, WhatsappSagaResults> = {
+export type WhatsappSagaTypes<
+  C = AppContext,
+  R = WhatsappSagaResults,
+  K = WhatappStepName,
+> = {
+  Ctx: C;
+  Result: R;
+  Key: K;
+};
+
+type WhatsappSteps = ISagaStep<
+  WhatsappSagaTypes["Ctx"],
+  WhatsappSagaTypes["Result"],
+  WhatsappSagaTypes["Key"]
+>;
+
+export const sendSeen: WhatsappSteps = {
   config: {
     execute: { name: "sendSeen", ...stepConfig },
   },
@@ -39,8 +62,9 @@ export const sendSeen: ISagaStep<AppContext, WhatsappSagaResults> = {
 };
 
 const sendStopTypingCompensate: FuncSagaStep<
-  AppContext,
-  WhatsappSagaResults
+  WhatsappSagaTypes["Ctx"],
+  WhatsappSagaTypes["Result"],
+  WhatsappSagaTypes["Key"]
 > = async ({ ctx, durableStep }) => {
   const args = {
     session: ctx.session,
@@ -54,7 +78,7 @@ const sendStopTypingCompensate: FuncSagaStep<
   );
 };
 
-export const sendStartTyping: ISagaStep<AppContext, WhatsappSagaResults> = {
+export const sendStartTyping: WhatsappSteps = {
   config: {
     execute: { name: "sendStartTyping", ...stepConfig },
     compensate: { name: "sendStopTyping", ...stepConfig },
@@ -74,9 +98,9 @@ export const sendStartTyping: ISagaStep<AppContext, WhatsappSagaResults> = {
   compensate: sendStopTypingCompensate,
 };
 
-export const reservationWorklow: ISagaStep<AppContext, WhatsappSagaResults> = {
+export const reservationWorklow: WhatsappSteps = {
   config: {
-    execute: { name: "reservationWorklow", ...stepConfig },
+    execute: { name: "reservationFlow", ...stepConfig },
   },
   execute: async ({ ctx }) => {
     const res = await runReservationWorkflow(ctx);
@@ -84,22 +108,19 @@ export const reservationWorklow: ISagaStep<AppContext, WhatsappSagaResults> = {
   },
 };
 
-export const sendStopTyping: ISagaStep<AppContext, WhatsappSagaResults> = {
+export const sendStopTyping: WhatsappSteps = {
   config: {
     execute: { name: "sendStopTyping", ...stepConfig },
   },
   execute: sendStopTypingCompensate,
 };
 
-export const sendText: ISagaStep<AppContext, WhatsappSagaResults> = {
+export const sendText: WhatsappSteps = {
   config: {
     execute: { name: "sendText", ...stepConfig },
   },
   execute: async ({ ctx, durableStep, getStepResult }) => {
-    const text = getStepResult(
-      "execute",
-      "reservationWorklow",
-    ) as unknown as string;
+    const text = getStepResult("execute", "reservationFlow")?.text ?? "";
 
     const args = {
       text: formatForWhatsApp(text),

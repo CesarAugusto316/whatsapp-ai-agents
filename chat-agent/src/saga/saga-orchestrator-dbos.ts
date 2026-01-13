@@ -2,23 +2,19 @@ import { logger } from "@/middlewares/logger-middleware";
 import { DBOS, StepConfig } from "@dbos-inc/dbos-sdk";
 import { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 
+export type SagaMode = "execute" | "compensate";
+
 export type SagaBag = Record<string, unknown>;
-export type Retry = Pick<
-  StepConfig,
-  "retriesAllowed" | "maxAttempts" | "intervalSeconds" | "backoffRate"
->;
 
-type SagaMode = "execute" | "compensate";
-
-interface SagaStepResult<T> {
-  (mode: SagaMode, stepKey: string): T | undefined;
+interface SagaStepResult<T, K> {
+  (mode: SagaMode, stepKey: K): T | undefined;
 }
 
-interface DurableStep<T> {
-  (func: () => Promise<T>): Promise<T>;
+interface DurableStep {
+  <R>(func: () => Promise<R>): Promise<R>;
 }
 
-export interface FuncSagaStep<C, B> {
+export interface FuncSagaStep<C, B, K> {
   (
     {
       ctx,
@@ -26,8 +22,8 @@ export interface FuncSagaStep<C, B> {
       durableStep,
     }: {
       ctx: C;
-      getStepResult: SagaStepResult<B>;
-      durableStep: DurableStep<B>;
+      getStepResult: SagaStepResult<B, K>;
+      durableStep: DurableStep;
     }, //
   ): Promise<B>;
 }
@@ -36,20 +32,24 @@ export interface FuncSagaStep<C, B> {
  *
  * @description SagaStep
  */
-export interface ISagaStep<C, B> {
-  execute: FuncSagaStep<C, B>;
-  compensate?: FuncSagaStep<C, B>;
-  config: Partial<Record<SagaMode, StepConfig & { name: string }>>;
+export interface ISagaStep<C, B, Key> {
+  execute: FuncSagaStep<C, B, Key>;
+  compensate?: FuncSagaStep<C, B, Key>;
+  config: Partial<Record<SagaMode, StepConfig & { name: Key }>>;
 }
 
 /**
  *
  * @description SagaOrchestrator
  */
-export class SagaOrchestrator<Context, T extends SagaBag> {
+export class SagaOrchestrator<
+  Context,
+  T extends SagaBag,
+  Key extends string | number | bigint,
+> {
   private readonly ctx: Readonly<Context>;
-  private steps: ISagaStep<Context, T>[] = [];
-  private bag = {} as Record<string, T>;
+  private steps: ISagaStep<Context, T, Key>[] = [];
+  private bag = {} as Record<`${SagaMode}:${Key}`, T>;
   private executedSteps: string[] = [];
   private readonly dbosConfig?: {
     workflowName?: string;
@@ -61,7 +61,7 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
     dbosConfig,
   }: {
     ctx: Context;
-    steps?: ISagaStep<Context, T>[];
+    steps?: ISagaStep<Context, T, Key>[];
     dbosConfig?: {
       workflowName?: string;
       args?: StartWorkflowParams;
@@ -71,13 +71,13 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
     this.dbosConfig = Object.freeze(structuredClone(dbosConfig));
   }
 
-  private getStepResult = (mode: SagaMode = "execute", stepKey: string) => {
+  private getStepResult = (mode: SagaMode = "execute", stepKey: Key) => {
     return this.bag[`${mode}:${stepKey}`];
   };
 
   private async runStepMode(
-    runStepMode: FuncSagaStep<Context, T>,
-    config: StepConfig & { name: string },
+    runStepMode: FuncSagaStep<Context, T, Key>,
+    config: StepConfig & { name: Key },
   ): Promise<void> {
     //
     const result = await runStepMode({
@@ -91,7 +91,7 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
       ...this.bag,
       [`${runStepMode.name}:${config.name}`]: result,
       //
-    } satisfies Record<string, T>;
+    };
   }
 
   /**
@@ -147,7 +147,7 @@ export class SagaOrchestrator<Context, T extends SagaBag> {
     return this.bag;
   }
 
-  addStep(step: ISagaStep<Context, T>) {
+  addStep(step: ISagaStep<Context, T, Key>) {
     this.steps.push(step);
     return this;
   }

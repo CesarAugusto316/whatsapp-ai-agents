@@ -7,7 +7,7 @@ import {
   sendStartTyping,
   sendStopTyping,
   sendText,
-  WhatsappSagaResults,
+  WhatsappSagaTypes,
 } from "@/workflows/whatsapp/whatsapp.saga";
 
 export const aiWhatsappHandler: Handler<CTX> = async (c) => {
@@ -29,7 +29,11 @@ export const aiWhatsappHandler: Handler<CTX> = async (c) => {
   }
 
   // 1. Initialize the WhatsApp Saga
-  const whatsappSaga = new SagaOrchestrator<AppContext, WhatsappSagaResults>({
+  const whatsappSaga = new SagaOrchestrator<
+    WhatsappSagaTypes["Ctx"],
+    WhatsappSagaTypes["Result"],
+    WhatsappSagaTypes["Key"]
+  >({
     ctx,
     dbosConfig: {
       workflowName: "whatsapp-saga",
@@ -50,6 +54,6 @@ export const aiWhatsappHandler: Handler<CTX> = async (c) => {
   // 3. Return response
   return c.json({
     received: true,
-    message: result?.["execute:reservationWorklow"].text ?? "",
+    message: result?.["compensate:reservationFlow"].text ?? "",
   });
 };
