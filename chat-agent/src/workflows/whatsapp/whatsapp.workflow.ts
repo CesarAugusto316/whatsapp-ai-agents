@@ -10,7 +10,7 @@ const stepConfig = {
   maxAttempts: 5,
   intervalSeconds: 2,
   backoffRate: 2,
-} satisfies StepConfig;
+} satisfies Omit<StepConfig, "name">;
 
 /**
  *

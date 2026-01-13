@@ -16,7 +16,7 @@ describe("SagaOrchestrator basic mock sanity", () => {
   test("ejecuta un solo paso y propaga runStep", async () => {
     const step: ISagaStep<typeof ctx, {}> = {
       name: "ping",
-      execute: async (_ctx, _get, durableStep) => {
+      execute: async ({ durableStep }) => {
         const res = await durableStep(async () => "pong");
         return { ok: res };
       },
@@ -52,8 +52,7 @@ describe("SagaOrchestrator basic mock sanity", () => {
 
     orchestrator.addStep({
       name: "third",
-      execute: async (_ctx, _get, durableStep) =>
-        durableStep(async () => ({ a: 1 })),
+      execute: async ({ durableStep }) => durableStep(async () => ({ a: 1 })),
     });
 
     await orchestrator.start("wf3");

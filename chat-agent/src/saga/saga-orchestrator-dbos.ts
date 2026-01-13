@@ -1,8 +1,9 @@
 import { logger } from "@/middlewares/logger-middleware";
 import { DBOS, StepConfig } from "@dbos-inc/dbos-sdk";
+import { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 
 type SagaBag = Record<string, unknown>;
-type Retry = Pick<
+export type Retry = Pick<
   StepConfig,
   "retriesAllowed" | "maxAttempts" | "intervalSeconds" | "backoffRate"
 >;
@@ -18,58 +19,28 @@ interface DurableStep<T> {
 }
 
 interface FuncSagaStep<C, B> {
-  ({
-    ctx,
-    getStepResult,
-    durableStep,
-  }: {
-    ctx: C;
-    getStepResult: SagaStepResult<B>;
-    durableStep: DurableStep<B>;
-  }): Promise<Partial<B>>;
+  (
+    {
+      ctx,
+      getStepResult,
+      durableStep,
+    }: {
+      ctx: C;
+      getStepResult: SagaStepResult<B>;
+      durableStep: DurableStep<B>;
+    }, //
+  ): Promise<Partial<B>>;
 }
-
-// interface FuncSagaModes<F, M> extends Partial<
-//   Record<SagaMode, FuncSagaStep<F, M>>
-// > {
-//   execute: FuncSagaStep<F, M>;
-//   compensate?: FuncSagaStep<F, M>;
-// }
 
 /**
  *
  * @description SagaStep
  */
 export interface ISagaStep<C, B> {
-  execute: (
-    ctx: C,
-    getStepResult: SagaStepResult<B>,
-    durableStep: DurableStep<B>,
-  ) => Promise<Partial<B>>;
-  compensate?: (
-    ctx: C,
-    getStepResult: SagaStepResult<B>,
-    durableStep: DurableStep<B>,
-  ) => Promise<Partial<B>>;
+  execute: FuncSagaStep<C, B>;
+  compensate?: FuncSagaStep<C, B>;
   name: string;
   config?: Partial<Record<SagaMode, Retry>>;
-}
-
-export class SagaStep<C, B> implements ISagaStep<C, B> {
-  constructor(
-    public name: string,
-    public execute: (
-      ctx: C,
-      getStepResult: SagaStepResult<B>,
-      durableStep: DurableStep<B>,
-    ) => Promise<Partial<B>>,
-    public compensate?: (
-      ctx: C,
-      getStepResult: SagaStepResult<B>,
-      durableStep: DurableStep<B>,
-    ) => Promise<Partial<B>>,
-    public config?: Partial<Record<SagaMode, Retry>>,
-  ) {}
 }
 
 /**
@@ -87,21 +58,26 @@ export class SagaOrchestrator<Context> {
     this.steps = steps;
   }
 
+  /**
+   *
+   * @param stepName - Name of the step (Must be unique for execute and compensate)
+   * @param config - Retry configuration
+   * @returns
+   */
   private createStepConfig(
     stepName: string,
-    mode: SagaMode,
-    config?: Partial<Record<SagaMode, Retry>>, // this can be opcional, is ok
+    config?: Partial<Retry>, // this can be opcional, is ok
   ): StepConfig {
     //
     if (!config) {
       return {
-        name: `${mode}:${stepName}`,
+        name: `${stepName}`,
       }; // Indica que no se usará DBOS.runStep
     }
 
     return {
-      name: `${mode}:${stepName}`,
-      ...config[mode],
+      name: `${stepName}`,
+      ...config,
     };
   }
 
@@ -118,10 +94,12 @@ export class SagaOrchestrator<Context> {
     if (!runStepMode) return;
 
     const stepName = step.name;
-    const stepConfig = this.createStepConfig(stepName, mode, step?.config);
-    const result = await runStepMode(this.ctx, this.getStepResult, (func) =>
-      DBOS.runStep(func, stepConfig),
-    );
+    const stepConfig = this.createStepConfig(stepName, step?.config?.[mode]);
+    const result = await runStepMode({
+      ctx: this.ctx,
+      getStepResult: this.getStepResult,
+      durableStep: (func) => DBOS.runStep(func, stepConfig),
+    });
 
     // Actualizar el bag con el resultado
     this.bag = {
@@ -162,7 +140,12 @@ export class SagaOrchestrator<Context> {
         this.executedSteps.push(step.name); // Registrar paso ejecutado exitosamente
       } catch (error) {
         await this.iterateCompensateSteps();
-        throw error;
+        /**
+         *
+         * @todo DELETED not caught exceptions does not recover the workflow
+         * @link https://docs.dbos.dev/typescript/tutorials/workflow-tutorial#workflow-guarantees
+         */
+        // throw error;
       }
     }
     return this.bag as T;
@@ -176,17 +159,24 @@ export class SagaOrchestrator<Context> {
     return this;
   }
 
-  start<T extends SagaBag>(name?: string): Promise<T> {
+  async start<T extends SagaBag>(
+    name?: string,
+    args?: StartWorkflowParams,
+  ): Promise<T> {
     if (!name) {
       return this.iterateSagaSteps<T>();
     }
     const registeredSagaSteps = DBOS.registerWorkflow(
-      this.iterateSagaSteps.bind(this),
+      () => this.iterateSagaSteps<T>(),
       {
         name,
       },
     );
-    return registeredSagaSteps<T>();
+    const handle = await DBOS.startWorkflow(registeredSagaSteps, {
+      ...args,
+    })();
+
+    return handle?.getResult();
   }
 
   getBag(): SagaBag {
