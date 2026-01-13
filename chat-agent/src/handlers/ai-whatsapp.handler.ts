@@ -1,5 +1,4 @@
 import { CTX, AppContext } from "@/types/hono.types";
-import { runReservationWorkflow } from "@/workflows/reservations/reservation.workflow";
 import { runWhatsappWorkflow } from "@/workflows/whatsapp/whatsapp.workflow";
 import { Handler } from "hono/types";
 
@@ -22,7 +21,7 @@ export const aiWhatsappHandler: Handler<CTX> = async (c) => {
   }
 
   // 1. Run workflow
-  const result = await runWhatsappWorkflow(ctx, runReservationWorkflow);
+  const result = await runWhatsappWorkflow(ctx);
 
   // 2. Return response
   return c.json({ received: true, message: result.text });

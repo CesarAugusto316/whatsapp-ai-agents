@@ -9,42 +9,80 @@ type Retry = Pick<
 
 type SagaMode = "execute" | "compensate";
 
-type SagaStepResult = <T = unknown>(
-  mode: SagaMode,
-  stepKey: string,
-) => T | undefined;
-
-type DurableStep = <T>(func: () => Promise<T>) => Promise<T>;
-
-type FuncSagaStep<C, B> = (
-  ctx: C,
-  getStepResult: SagaStepResult,
-  durableStep: DurableStep,
-) => Promise<Partial<B>>;
-
-interface FuncSagaModes<F, M> extends Partial<
-  Record<SagaMode, FuncSagaStep<F, M>>
-> {
-  execute: FuncSagaStep<F, M>;
-  compensate?: FuncSagaStep<F, M>;
+interface SagaStepResult<T> {
+  (mode: SagaMode, stepKey: string): T | undefined;
 }
 
-export interface SagaStep<C, B> extends FuncSagaModes<C, B> {
+interface DurableStep<T> {
+  (func: () => Promise<T>): Promise<T>;
+}
+
+interface FuncSagaStep<C, B> {
+  ({
+    ctx,
+    getStepResult,
+    durableStep,
+  }: {
+    ctx: C;
+    getStepResult: SagaStepResult<B>;
+    durableStep: DurableStep<B>;
+  }): Promise<Partial<B>>;
+}
+
+// interface FuncSagaModes<F, M> extends Partial<
+//   Record<SagaMode, FuncSagaStep<F, M>>
+// > {
+//   execute: FuncSagaStep<F, M>;
+//   compensate?: FuncSagaStep<F, M>;
+// }
+
+/**
+ *
+ * @description SagaStep
+ */
+export interface ISagaStep<C, B> {
+  execute: (
+    ctx: C,
+    getStepResult: SagaStepResult<B>,
+    durableStep: DurableStep<B>,
+  ) => Promise<Partial<B>>;
+  compensate?: (
+    ctx: C,
+    getStepResult: SagaStepResult<B>,
+    durableStep: DurableStep<B>,
+  ) => Promise<Partial<B>>;
   name: string;
   config?: Partial<Record<SagaMode, Retry>>;
 }
 
+export class SagaStep<C, B> implements ISagaStep<C, B> {
+  constructor(
+    public name: string,
+    public execute: (
+      ctx: C,
+      getStepResult: SagaStepResult<B>,
+      durableStep: DurableStep<B>,
+    ) => Promise<Partial<B>>,
+    public compensate?: (
+      ctx: C,
+      getStepResult: SagaStepResult<B>,
+      durableStep: DurableStep<B>,
+    ) => Promise<Partial<B>>,
+    public config?: Partial<Record<SagaMode, Retry>>,
+  ) {}
+}
+
 /**
  *
- * @description
+ * @description SagaOrchestrator
  */
 export class SagaOrchestrator<Context> {
   private readonly ctx: Readonly<Context>;
-  private steps: SagaStep<Context, SagaBag>[];
+  private steps: ISagaStep<Context, SagaBag>[];
   private bag = {} as SagaBag;
   private executedSteps: string[] = [];
 
-  constructor(ctx: Context, steps: SagaStep<Context, SagaBag>[] = []) {
+  constructor(ctx: Context, steps: ISagaStep<Context, SagaBag>[] = []) {
     this.ctx = Object.freeze(structuredClone(ctx)) satisfies Readonly<Context>;
     this.steps = steps;
   }
@@ -67,16 +105,13 @@ export class SagaOrchestrator<Context> {
     };
   }
 
-  private getStepResult: SagaStepResult = <T>(
-    mode: SagaMode = "execute",
-    stepKey: string,
-  ) => {
+  private getStepResult = <T>(mode: SagaMode = "execute", stepKey: string) => {
     return this.bag[`${mode}:${stepKey}`] as T;
   };
 
   private async runStepMode(
     mode: SagaMode,
-    step: SagaStep<Context, SagaBag>,
+    step: ISagaStep<Context, SagaBag>,
   ): Promise<void> {
     //
     const runStepMode = step[mode]; // "execute" | "compensate"
@@ -96,6 +131,7 @@ export class SagaOrchestrator<Context> {
   }
 
   /**
+   *
    * Compensa solo los pasos que se ejecutaron exitosamente
    */
   private async iterateCompensateSteps() {
@@ -132,7 +168,7 @@ export class SagaOrchestrator<Context> {
     return this.bag as T;
   }
 
-  addStep(step: SagaStep<Context, SagaBag>) {
+  addStep(step: ISagaStep<Context, SagaBag>) {
     if (this.steps.some((s) => s.name === step.name)) {
       throw new Error(`Step with name '${step.name}' already exists`);
     }
@@ -144,13 +180,13 @@ export class SagaOrchestrator<Context> {
     if (!name) {
       return this.iterateSagaSteps<T>();
     }
-    const registeredWorkflow = DBOS.registerWorkflow(
+    const registeredSagaSteps = DBOS.registerWorkflow(
       this.iterateSagaSteps.bind(this),
       {
         name,
       },
     );
-    return registeredWorkflow<T>();
+    return registeredSagaSteps<T>();
   }
 
   getBag(): SagaBag {

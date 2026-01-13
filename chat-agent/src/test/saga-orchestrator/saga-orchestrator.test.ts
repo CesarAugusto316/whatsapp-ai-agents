@@ -1,6 +1,6 @@
 import { mockDBOS } from "../__mocks__/dobs-mock";
 import { describe, expect, test, beforeEach, mock, jest } from "bun:test";
-import { SagaOrchestrator, SagaStep } from "@/saga/saga-orchestrator-dbos";
+import { SagaOrchestrator, ISagaStep } from "@/saga/saga-orchestrator-dbos";
 import * as dbosSdk from "@dbos-inc/dbos-sdk";
 
 // ---- Mock DBOS -------------------------------------------------------------
@@ -14,7 +14,7 @@ describe("SagaOrchestrator basic mock sanity", () => {
   });
 
   test("ejecuta un solo paso y propaga runStep", async () => {
-    const step: SagaStep<typeof ctx, {}> = {
+    const step: ISagaStep<typeof ctx, {}> = {
       name: "ping",
       execute: async (_ctx, _get, durableStep) => {
         const res = await durableStep(async () => "pong");
