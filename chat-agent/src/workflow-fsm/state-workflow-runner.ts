@@ -28,7 +28,6 @@ export class StateWorkflowRunner<Ctx, S extends string> {
 
     const workflows = this.handlers[status] ?? [];
     for (const w of workflows) {
-      // const workFlow = DBOS.registerWorkflow(w, { name: `${key}:${status}` });
       const res = await w(this.ctx, status);
 
       if (res && res !== InputIntent.CUSTOMER_QUESTION) {

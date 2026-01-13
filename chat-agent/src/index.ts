@@ -81,7 +81,7 @@ DBOS.setConfig({
  * @description launch dbos and connects to dbos console
  * @link https://console.dbos.dev/conductor/applications/chat-agent/workflows
  */
-await DBOS.launch();
+await DBOS.launch({ conductorKey: env.DBOS_CONDUCTOR_KEY });
 
 export default {
   port: env?.PORT ?? 3000,

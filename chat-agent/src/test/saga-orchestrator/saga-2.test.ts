@@ -47,7 +47,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
 
-    await expect(orchestrator.execute("order-flow")).rejects.toThrow(
+    await expect(orchestrator.start("order-flow")).rejects.toThrow(
       "Sin stock disponible",
     );
 
@@ -83,7 +83,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
     ];
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.execute("order-flow");
+    const result = await orchestrator.start("order-flow");
 
     expect(result["execute:createOrder"]).toEqual({ orderId: "order-u1" });
   });
@@ -104,7 +104,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
     ];
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.execute("durable-flow");
+    const result = await orchestrator.start("durable-flow");
 
     expect(result["execute:durableOperation"]).toEqual({
       data: "operation-result",
@@ -188,7 +188,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
       ];
 
       const orchestrator = new SagaOrchestrator(baseCtx, steps);
-      await expect(orchestrator.execute("compensation-flow")).rejects.toThrow(
+      await expect(orchestrator.start("compensation-flow")).rejects.toThrow(
         "Execution failed",
       );
 
@@ -217,7 +217,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
     ];
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.execute("successful-flow");
+    const result = await orchestrator.start("successful-flow");
 
     expect(result).toEqual({
       "execute:step1": { result: 1 },
@@ -248,7 +248,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
     ];
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    await orchestrator.execute("context-flow");
+    await orchestrator.start("context-flow");
   });
 
   // Agregar después de los tests existentes
@@ -268,7 +268,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
     ];
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = await orchestrator.execute("no-compensation-flow");
+    const result = await orchestrator.start("no-compensation-flow");
 
     expect(result).toEqual({
       "execute:step1": { data: "step1" },
@@ -302,7 +302,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
 
-    await expect(orchestrator.execute("first-step-fails")).rejects.toThrow(
+    await expect(orchestrator.start("first-step-fails")).rejects.toThrow(
       "Falló inmediatamente",
     );
 
@@ -327,7 +327,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
     ];
 
     const orchestrator = new SagaOrchestrator(baseCtx, steps);
-    const result = orchestrator.execute("bag-accumulation");
+    const result = orchestrator.start("bag-accumulation");
     await expect(result).rejects.toThrow("Falló step2");
 
     // Accedemos al bag interno (propiedad privada) para verificar
@@ -364,7 +364,7 @@ describe("SagaOrchestrator real-world scenarios", () => {
         },
       });
 
-    const result = await orchestrator.execute("chained-flow");
+    const result = await orchestrator.start("chained-flow");
 
     expect(result).toEqual({
       "execute:getUser": { userId: "u123" },

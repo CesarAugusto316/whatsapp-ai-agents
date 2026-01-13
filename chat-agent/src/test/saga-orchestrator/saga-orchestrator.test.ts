@@ -24,7 +24,7 @@ describe("SagaOrchestrator basic mock sanity", () => {
 
     const orchestrator = new SagaOrchestrator(ctx, [step]);
 
-    const result = await orchestrator.execute("test-wf");
+    const result = await orchestrator.start("test-wf");
 
     expect(result["execute:ping"]).toEqual({ ok: "pong" });
     expect(dbosSdk.DBOS.registerWorkflow).toHaveBeenCalledTimes(1);
@@ -44,7 +44,7 @@ describe("SagaOrchestrator basic mock sanity", () => {
       execute: async () => ({ b: 2 }),
     });
 
-    const result = await orchestrator.execute("wf2");
+    const result = await orchestrator.start("wf2");
 
     expect(result["execute:first"]).toEqual({ a: 1 });
     expect(result["execute:second"]).toEqual({ b: 2 });
@@ -56,7 +56,7 @@ describe("SagaOrchestrator basic mock sanity", () => {
         durableStep(async () => ({ a: 1 })),
     });
 
-    await orchestrator.execute("wf3");
+    await orchestrator.start("wf3");
     expect(dbosSdk.DBOS.runStep).toHaveBeenCalledTimes(1);
   });
 

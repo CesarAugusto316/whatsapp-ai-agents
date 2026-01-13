@@ -6,7 +6,6 @@ import { cancellWorkflow } from "./sub-workflows/cancel.workflow";
 import { StateWorkflowRunner } from "@/workflow-fsm/state-workflow-runner";
 import { fallbackWorkflow } from "./sub-workflows/conversational-fallback";
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { logger } from "@/middlewares/logger-middleware";
 
 /**
  *
@@ -17,20 +16,20 @@ import { logger } from "@/middlewares/logger-middleware";
 async function reservationWorkflow(ctx: AppContext): Promise<string> {
   const status = ctx.RESERVATION_CACHE?.status;
   const business = ctx.business;
-  const optionsWorkflow = new StateWorkflowRunner(ctx, status);
+  const subWorkflow = new StateWorkflowRunner(ctx, status);
 
   if (!business.general.isActive) {
     return "El negocio está fuera de servicio, por favor inténtalo más tarde.";
   }
 
-  optionsWorkflow
+  subWorkflow
     .on("MAKE_STARTED", makeWorkflow.started)
     .on("MAKE_VALIDATED", makeWorkflow.validated)
     .on("UPDATE_STARTED", updateWorkflow.started)
     .on("UPDATE_VALIDATED", updateWorkflow.validated)
     .on("CANCEL_STARTED", cancellWorkflow.started);
 
-  const w1Result = await optionsWorkflow.run();
+  const w1Result = await subWorkflow.run();
 
   if (w1Result?.success) {
     await chatHistoryService.save(
@@ -38,7 +37,6 @@ async function reservationWorkflow(ctx: AppContext): Promise<string> {
       ctx.customerMessage,
       w1Result.message,
     );
-    logger.info("✅ Reservation workflow completed");
     return w1Result.message;
   }
 
@@ -53,7 +51,6 @@ async function reservationWorkflow(ctx: AppContext): Promise<string> {
    */
   const w2Result: string = await fallbackWorkflow(ctx);
   await chatHistoryService.save(ctx.chatKey, ctx.customerMessage, w2Result);
-  logger.info("✅ Reservation fallback workflow completed");
   return w2Result;
 }
 
