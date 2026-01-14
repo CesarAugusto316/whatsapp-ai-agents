@@ -3,7 +3,7 @@ import { logger } from "@/middlewares/logger-middleware";
 import whatsAppService from "@/services/whatsapp.service";
 import { AppContext } from "@/types/hono.types";
 import { DBOS, StepConfig } from "@dbos-inc/dbos-sdk";
-import { runReservationWorkflow } from "../reservations/reservation.workflow";
+import { reservationWorkflow } from "../reservations/reservation.workflow";
 
 const stepConfig = {
   retriesAllowed: true,
@@ -50,7 +50,7 @@ async function whatsappWorkflow(ctx: AppContext) {
      *  This works according to the documentation
      *  @link https://docs.dbos.dev/faq#can-i-call-a-workflow-from-a-workflow (YES)
      */
-    const wResult: string = await runReservationWorkflow(ctx);
+    const wResult: string = await reservationWorkflow(ctx);
 
     // must be the output from childWorkflow
     // if (reservationMade === true) {

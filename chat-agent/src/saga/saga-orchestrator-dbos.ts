@@ -2,6 +2,43 @@ import { logger } from "@/middlewares/logger-middleware";
 import { DBOS, StepConfig } from "@dbos-inc/dbos-sdk";
 import { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 
+const retryConfig = {
+  maxAttempts: 3,
+  intervalSeconds: 1.5,
+  backoffRate: 1.5,
+} satisfies Omit<StepConfig, "name">;
+
+/**
+ * RetryStep: ejecuta func() con reintentos.
+ * No usa DBOS ni hace escrituras. Ideal para IO liviano (fetch, Redis, etc.)
+ */
+export async function retryStep<R>(
+  func: () => Promise<R>,
+  {
+    maxAttempts = 3,
+    intervalSeconds = 1.5,
+    backoffRate = 1.5,
+    shouldRetry = (_err: unknown) => true, // Predicado opcional: por defecto reintenta siempre
+  },
+): Promise<R> {
+  let attempt = 1; // Empieza en 1 para hacerlo más intuitivo
+
+  while (true) {
+    try {
+      return await func();
+    } catch (err) {
+      // Verificar si debemos reintentar basado en el error
+      if (!shouldRetry(err) || attempt >= maxAttempts) {
+        throw err;
+      }
+
+      const delay = intervalSeconds * 1000 * Math.pow(backoffRate, attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      attempt++;
+    }
+  }
+}
+
 /**
  * Defines the two modes a saga step can operate in:
  * - execute: The forward execution of a step
@@ -32,6 +69,10 @@ interface DurableStep {
   <R>(func: () => Promise<R>): Promise<R>;
 }
 
+interface RetryStep {
+  <R>(func: () => Promise<R>, config?: Omit<StepConfig, "name">): Promise<R>;
+}
+
 /**
  * Interface for a saga step function that will be executed or compensated.
  * @template C The context type passed to the saga
@@ -48,6 +89,7 @@ export interface FuncSagaStep<C, B, K> {
       ctx: C; // The immutable context for this saga
       getStepResult: SagaStepResult<B, K>; // Function to retrieve results of previous steps
       durableStep: DurableStep; // Function to wrap operations for durability
+      retryStep: RetryStep;
     }, //
   ): Promise<B>; // Returns the result of this step (will be stored in the saga bag)
 }
@@ -102,7 +144,6 @@ export class SagaOrchestrator<
     dbosConfig,
   }: {
     ctx: Context;
-    steps?: ISagaStep<Context, T, Key>[];
     dbosConfig?: {
       workflowName?: string;
       args?: StartWorkflowParams;
@@ -138,6 +179,7 @@ export class SagaOrchestrator<
       ctx: this.ctx,
       getStepResult: this.getStepResult.bind(this),
       durableStep: (func) => DBOS.runStep(func, config), // Wrap with DBOS for durability
+      retryStep: (func, config = retryConfig) => retryStep(func, config),
     });
 
     // Store the result in the saga bag using the function name and step name as key

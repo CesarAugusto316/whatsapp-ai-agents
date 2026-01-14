@@ -6,8 +6,8 @@ import {
 } from "@/saga/saga-orchestrator-dbos";
 import whatsappService from "@/services/whatsapp.service";
 import { AppContext } from "@/types/hono.types";
-import { runReservationWorkflow } from "@/workflows/reservations/reservation.workflow";
 import { StepConfig } from "@dbos-inc/dbos-sdk";
+import { reservationWorkflow } from "../reservations/reservation.workflow";
 
 /**
  * Configuration for all saga steps in the WhatsApp workflow.
@@ -83,12 +83,12 @@ export const sendSeen: WhatsappSagaStep = {
   config: {
     execute: { name: "sendSeen", ...stepConfig },
   },
-  execute: async ({ ctx, durableStep }) => {
+  execute: async ({ ctx, retryStep }) => {
     const args = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return durableStep(
+    return retryStep(
       async () =>
         (await whatsappService
           .sendSeen(args)
@@ -110,12 +110,12 @@ const sendStopTypingCompensate: FuncSagaStep<
   WhatsappSagaTypes["Ctx"],
   WhatsappSagaTypes["Result"],
   WhatsappSagaTypes["Key"]
-> = async ({ ctx, durableStep }) => {
+> = async ({ ctx, retryStep }) => {
   const args = {
     session: ctx.session,
     chatId: ctx.customerPhone,
   };
-  return durableStep(
+  return retryStep(
     async () =>
       (await whatsappService
         .sendStopTyping(args)
@@ -141,12 +141,12 @@ export const sendStartTyping: WhatsappSagaStep = {
     execute: { name: "sendStartTyping", ...stepConfig },
     compensate: { name: "sendStopTyping", ...stepConfig },
   },
-  execute: async ({ ctx, durableStep }) => {
+  execute: async ({ ctx, retryStep }) => {
     const args = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return durableStep(
+    return retryStep(
       async () =>
         (await whatsappService
           .sendStartTyping(args)
@@ -173,7 +173,7 @@ export const reservationWorklow: WhatsappSagaStep = {
     execute: { name: "reservationFlow", ...stepConfig },
   },
   execute: async ({ ctx }) => {
-    const res = await runReservationWorkflow(ctx);
+    const res = await reservationWorkflow(ctx);
     return { text: res };
   },
 };
@@ -215,7 +215,7 @@ export const sendText: WhatsappSagaStep = {
   config: {
     execute: { name: "sendText", ...stepConfig },
   },
-  execute: async ({ ctx, durableStep, getStepResult }) => {
+  execute: async ({ ctx, retryStep, getStepResult }) => {
     // Retrieve the text result from the reservationFlow step
     const text = getStepResult("execute", "reservationFlow")?.text ?? "";
 
@@ -225,7 +225,7 @@ export const sendText: WhatsappSagaStep = {
       chatId: ctx.customerPhone,
     };
 
-    return durableStep(
+    return retryStep(
       async () =>
         (await whatsappService
           .sendText(args)

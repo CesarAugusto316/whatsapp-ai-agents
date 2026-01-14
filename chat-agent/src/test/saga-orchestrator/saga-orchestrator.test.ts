@@ -22,6 +22,18 @@ mock.module("@dbos-inc/dbos-sdk", () => ({
         throw error;
       }
     }),
+    retryStep: jest.fn(
+      async (
+        fn,
+        { retriesAllowed = true, maxAttempts = 3, intervalSeconds = 1 },
+      ) => {
+        try {
+          return await fn();
+        } catch (error) {
+          throw error;
+        }
+      },
+    ),
   },
   StepConfig: {},
 }));
@@ -412,6 +424,9 @@ describe("WhatsappSaga - Casos Reales", () => {
   test("debe ejecutar flujo completo de whatsapp exitosamente", async () => {
     // Mock exitoso del workflow de reservación
     mock.module("@/workflows/reservations/reservation.workflow", () => ({
+      reservationWorkflow: jest
+        .fn()
+        .mockResolvedValue("Reservation successful"),
       runReservationWorkflow: jest
         .fn()
         .mockResolvedValue("Reservation successful"),
@@ -464,6 +479,9 @@ describe("WhatsappSaga - Casos Reales", () => {
   test("debe compensar typing si falla el flujo de reservación", async () => {
     // Mockear el workflow de reservación para que falle
     mock.module("@/workflows/reservations/reservation.workflow", () => ({
+      reservationWorkflow: jest
+        .fn()
+        .mockRejectedValue(new Error("Reservation failed")),
       runReservationWorkflow: jest
         .fn()
         .mockRejectedValue(new Error("Reservation failed")),

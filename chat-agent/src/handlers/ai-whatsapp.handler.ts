@@ -35,11 +35,6 @@ export const aiWhatsappHandler: Handler<CTX> = async (c) => {
     WhatsappSagaTypes["Key"]
   >({
     ctx,
-    /** @todo consider to remove skip duranle excutation if too many DB  overhead */
-    dbosConfig: {
-      workflowName: "whatsapp-saga",
-      args: { workflowID: ctx.chatKey }, // idempotencyKey: ctx.chatKey
-    },
   });
 
   // 2. Start the WhatsApp Saga

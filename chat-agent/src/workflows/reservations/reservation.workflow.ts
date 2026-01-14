@@ -5,7 +5,7 @@ import { updateWorkflow } from "./sub-workflows/update.workflow";
 import { cancellWorkflow } from "./sub-workflows/cancel.workflow";
 import { StateWorkflowRunner } from "@/workflow-fsm/state-workflow-runner";
 import { fallbackWorkflow } from "./sub-workflows/conversational-fallback";
-import { DBOS } from "@dbos-inc/dbos-sdk";
+// import { DBOS } from "@dbos-inc/dbos-sdk";
 
 /**
  *
@@ -13,7 +13,7 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
  * @param ctx
  * @returns Promise<string>
  */
-async function reservationWorkflow(ctx: AppContext): Promise<string> {
+export async function reservationWorkflow(ctx: AppContext): Promise<string> {
   const status = ctx.RESERVATION_CACHE?.status;
   const business = ctx.business;
   const subWorkflow = new StateWorkflowRunner(ctx, status);
@@ -60,7 +60,7 @@ async function reservationWorkflow(ctx: AppContext): Promise<string> {
  * @param ctx
  * @returns Promise<string>
  */
-export const runReservationWorkflow = DBOS.registerWorkflow(
-  reservationWorkflow,
-  { name: "reservation" },
-);
+// export const runReservationWorkflow = DBOS.registerWorkflow(
+//   reservationWorkflow,
+//   { name: "reservation" },
+// );
