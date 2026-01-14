@@ -1,6 +1,6 @@
 import { DBOS, StepConfig } from "@dbos-inc/dbos-sdk";
 import { reservationWorkflow } from "../reservations/reservation.workflow";
-import { ReservationCtx } from "@/domain/restaurant/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import whatsappClient from "@/infraestructure/http/whatsapp/whatsapp.client";
 import { logger } from "@/infraestructure/logging/logger";
 
@@ -17,7 +17,7 @@ const stepConfig = {
  * @param childWorkflow
  * @returns
  */
-async function whatsappWorkflow(ctx: ReservationCtx) {
+async function whatsappWorkflow(ctx: RestaurantCtx) {
   const args = {
     session: ctx.session,
     chatId: ctx.customerPhone,

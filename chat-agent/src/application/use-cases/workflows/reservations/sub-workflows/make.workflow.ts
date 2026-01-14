@@ -1,23 +1,20 @@
 import { StateWorkflowHandler } from "@/application/patterns/FSM-workflow/state-workflow.types";
 import { collecDataSteps } from "../steps/collect-data.steps";
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { ReservationCtx } from "@/domain/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import {
   CustomerActions,
   FMStatus,
   ReservationState,
   ReservationStatuses,
-} from "@/domain/reservation/reservation.types";
-import { localDateTimeToUTC } from "@/application/helpers/datetime-converters";
-import cmsService from "@/infraestructure/services/cms/cms.service";
-import {
-  Appointment,
-  Customer,
-} from "@/infraestructure/services/cms/cms-types";
-import { systemMessages } from "@/domain/llm/prompts/system-messages";
-import reservationCacheService from "@/infraestructure/services/reservationCache.service";
-import { logger } from "@/application/helpers/logger";
-import { humanizerAgent } from "@/infraestructure/services/llm/llm.service";
+} from "@/domain/restaurant/reservations/reservation.types";
+import { Appointment, Customer } from "@/infraestructure/http/cms/cms-types";
+import cmsClient from "@/infraestructure/http/cms/cms.client";
+import { localDateTimeToUTC } from "@/domain/utilities/datetime-formatting/datetime-converters";
+import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-messages";
+import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
+import { logger } from "@/infraestructure/logging/logger";
+import { humanizerAgent } from "@/application/agents/agent";
 
 /**
  *
@@ -25,22 +22,22 @@ import { humanizerAgent } from "@/infraestructure/services/llm/llm.service";
  * @param fmStatus
  * @returns
  */
-const started: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
+const started: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
   ctx,
   fmStatus,
 ) => {
   const {
-    RESERVATION_CACHE,
+    RESERVATION_STATE,
     business,
     customerMessage,
     reservationKey,
     customer,
   } = ctx;
 
-  if (!RESERVATION_CACHE) return;
+  if (!RESERVATION_STATE) return;
 
   return collecDataSteps({
-    reservation: RESERVATION_CACHE,
+    reservation: RESERVATION_STATE,
     customer,
     business,
     reservationKey,
@@ -55,11 +52,11 @@ const started: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
  * @param ctx
  * @returns
  */
-const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
+const validated: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
   ctx,
 ) => {
   const {
-    RESERVATION_CACHE,
+    RESERVATION_STATE,
     business,
     customerMessage,
     customerPhone,
@@ -67,7 +64,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
     reservationKey,
   } = ctx;
 
-  if (!RESERVATION_CACHE) return;
+  if (!RESERVATION_STATE) return;
   let reservation: { doc: Appointment } | undefined;
   let newCustomer: Customer | undefined;
 
@@ -77,7 +74,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
       customerName = "",
       datetime,
       numberOfPeople = 1,
-    } = RESERVATION_CACHE as ReservationState;
+    } = RESERVATION_STATE as ReservationState;
 
     newCustomer = customer;
     if (!customer && customerName) {
@@ -85,14 +82,14 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
         async () =>
           (
             (await (
-              await cmsService.createCostumer({
+              await cmsClient.createCostumer({
                 business: business?.id || "",
                 phoneNumber: customerPhone || "",
                 name: customerName,
               })
             ).json()) as { doc: Customer }
           )?.doc,
-        { name: "cmsService.createCostumer" },
+        { name: "cmsClient.createCostumer" },
       );
     }
 
@@ -104,7 +101,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
         reservation = await DBOS.runStep(
           async () => {
             return (await (
-              await cmsService.createAppointment({
+              await cmsClient.createAppointment({
                 business: business.id,
                 customer: newCustomer?.id!,
                 startDateTime,
@@ -115,7 +112,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
               })
             ).json()) as { doc: Appointment };
           },
-          { name: "cmsService.createAppointment" },
+          { name: "cmsClient.createAppointment" },
         );
 
         const assistantMsg = systemMessages.getSuccessMsg(
@@ -128,7 +125,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
           timezone,
           "create",
         );
-        await reservationCacheService.delete(reservationKey ?? "");
+        await cacheAdapter.delete(reservationKey ?? "");
         logger.info("Customer selected an option", {
           customerAction: CustomerActions.CONFIRM,
           customerMessage,
@@ -140,8 +137,8 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
     } catch (error) {
       if (reservation && reservation?.doc?.id) {
         await DBOS.runStep(
-          async () => await cmsService.deleteAppointment(reservation?.doc?.id!),
-          { name: "cmsService.deleteAppointment" },
+          async () => await cmsClient.deleteAppointment(reservation?.doc?.id!),
+          { name: "cmsClient.deleteAppointment" },
         );
 
         logger.error("Error deleting appointment", error as Error); // DBOS reintentará el flujo desde el último checkpoint
@@ -152,7 +149,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
 
   // FINAL OPTION: 2. SALIR
   if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-    await reservationCacheService.delete(reservationKey ?? "");
+    await cacheAdapter.delete(reservationKey ?? "");
     const assistantMsg = systemMessages.getExitMsg();
     logger.info("Customer selected an option", {
       customerAction: CustomerActions.EXIT,
@@ -167,10 +164,10 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
     const assistantResponse = systemMessages.getCreateMsg({
       userName: customer?.name,
     });
-    await reservationCacheService.save(reservationKey ?? "", {
+    await cacheAdapter.save(reservationKey ?? "", {
       businessId: business?.id,
       customerId: customer?.id,
-      ...RESERVATION_CACHE,
+      ...RESERVATION_STATE,
       status: ReservationStatuses.MAKE_STARTED,
     });
     logger.info("Customer selected an option", {
@@ -181,7 +178,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
   }
 
   // // FALLBACK
-  // if (customerMessage && RESERVATION_CACHE) {
+  // if (customerMessage && RESERVATION_STATE) {
   //   const assistanceMsg = `
   //     Tienes una reserva disponible. Escribe:
   //     - ${CustomerActions.CONFIRM} para confirmar reserva ó

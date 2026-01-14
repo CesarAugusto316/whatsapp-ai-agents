@@ -1,27 +1,27 @@
 import { StateWorkflowHandler } from "@/application/patterns/FSM-workflow/state-workflow.types";
 import { collecDataSteps } from "../steps/collect-data.steps";
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { ReservationCtx } from "@/domain/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import {
   CustomerActions,
   FMStatus,
   ReservationState,
   ReservationStatuses,
-} from "@/domain/reservation/reservation.types";
-import { localDateTimeToUTC } from "@/application/helpers/datetime-converters";
-import cmsService from "@/infraestructure/services/cms/cms.service";
-import { Appointment } from "@/infraestructure/services/cms/cms-types";
-import { systemMessages } from "@/domain/llm/prompts/system-messages";
-import reservationCacheService from "@/infraestructure/services/reservationCache.service";
-import { logger } from "@/application/helpers/logger";
-import { humanizerAgent } from "@/infraestructure/services/llm/llm.service";
+} from "@/domain/restaurant/reservations/reservation.types";
+import { localDateTimeToUTC } from "@/domain/utilities/datetime-formatting/datetime-converters";
+import cmsClient from "@/infraestructure/http/cms/cms.client";
+import { Appointment } from "@/infraestructure/http/cms/cms-types";
+import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-messages";
+import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
+import { logger } from "@/infraestructure/logging/logger";
+import { humanizerAgent } from "@/application/agents/agent";
 
-const started: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
+const started: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
   ctx,
   fmStatus,
 ) => {
   const {
-    RESERVATION_CACHE,
+    RESERVATION_STATE,
     customerMessage,
     reservationKey,
     customer,
@@ -32,11 +32,11 @@ const started: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
     return "Aún no te has registrado, por favor has tu primera reserva para registrarte";
   }
 
-  if (!RESERVATION_CACHE) return;
-  if (!RESERVATION_CACHE.id) return;
+  if (!RESERVATION_STATE) return;
+  if (!RESERVATION_STATE.id) return;
 
   return collecDataSteps({
-    reservation: RESERVATION_CACHE,
+    reservation: RESERVATION_STATE,
     customer,
     business,
     reservationKey,
@@ -46,18 +46,18 @@ const started: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
   });
 };
 
-const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
+const validated: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
   ctx,
 ) => {
   const {
-    RESERVATION_CACHE,
+    RESERVATION_STATE,
     customerMessage,
     reservationKey,
     customer,
     business,
   } = ctx;
 
-  if (!RESERVATION_CACHE) return;
+  if (!RESERVATION_STATE) return;
   if (!customer) {
     return "Aún no te has registrado, por favor has tu primera reserva para registrarte";
   }
@@ -68,12 +68,12 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
       customerName,
       datetime,
       numberOfPeople = 1,
-    } = RESERVATION_CACHE as ReservationState;
+    } = RESERVATION_STATE as ReservationState;
     let updated = false;
 
     try {
       // finally, we create the reservation
-      if (customer?.id && business?.id && RESERVATION_CACHE?.id) {
+      if (customer?.id && business?.id && RESERVATION_STATE?.id) {
         const timezone = business.general.timezone;
         const { start, end } = datetime;
         const startDateTime = localDateTimeToUTC(start, timezone);
@@ -82,7 +82,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
         const reservation = await DBOS.runStep(
           async () =>
             (await (
-              await cmsService.updateAppointment(RESERVATION_CACHE?.id!, {
+              await cmsClient.updateAppointment(RESERVATION_STATE?.id!, {
                 business: business?.id,
                 customer: customer?.id,
                 startDateTime,
@@ -92,7 +92,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
                 status: "confirmed",
               })
             ).json()) as { doc: Appointment },
-          { name: "cmsService.updateAppointment" },
+          { name: "cmsClient.updateAppointment" },
         );
 
         updated = true;
@@ -107,7 +107,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
           timezone,
           "update",
         );
-        await reservationCacheService.delete(reservationKey ?? "");
+        await cacheAdapter.delete(reservationKey ?? "");
         logger.info("Customer selected an option", {
           customerAction: CustomerActions.CONFIRM,
           customerMessage,
@@ -115,7 +115,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
 
         return humanizerAgent(responseMsg);
       } else {
-        await reservationCacheService.delete(reservationKey ?? "");
+        await cacheAdapter.delete(reservationKey ?? "");
         return "No se pudo actualizar la reserva, Vuelve a intentarlo más tarde.";
       }
     } catch (error) {
@@ -131,7 +131,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
 
       // Aún así, intentamos limpiar la caché para evitar estados inconsistentes
       try {
-        await reservationCacheService.delete(reservationKey ?? "");
+        await cacheAdapter.delete(reservationKey ?? "");
       } catch (cacheError) {
         logger.error(
           "Failed to clean cache after update error",
@@ -152,7 +152,7 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
 
   // FINAL OPTION: 2. SALIR
   if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-    await reservationCacheService.delete(reservationKey ?? "");
+    await cacheAdapter.delete(reservationKey ?? "");
     const assistantMsg = systemMessages.getExitMsg();
     logger.info("Customer selected an option", {
       customerAction: CustomerActions.EXIT,
@@ -167,10 +167,10 @@ const validated: StateWorkflowHandler<ReservationCtx, FMStatus> = async (
     const assistantResponse = systemMessages.getCreateMsg({
       userName: customer?.name,
     });
-    await reservationCacheService.save(reservationKey ?? "", {
+    await cacheAdapter.save(reservationKey ?? "", {
       businessId: business?.id,
       customerId: customer?.id,
-      ...RESERVATION_CACHE,
+      ...RESERVATION_STATE,
       status: ReservationStatuses.UPDATE_STARTED,
     });
     logger.info("Customer selected an option", {

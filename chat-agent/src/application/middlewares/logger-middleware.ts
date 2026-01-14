@@ -2,7 +2,7 @@ import { MiddlewareHandler } from "hono";
 import { env } from "bun";
 import { DomainCtx } from "@/domain/context.types";
 import { ReservationState } from "@/domain/restaurant/reservations/reservation.types";
-import { ReservationCtx } from "@/domain/restaurant/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 
 // Tipos para diferentes niveles de log
 type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
@@ -29,7 +29,7 @@ type LogData = {
 };
 
 export const loggerMiddleware = (): MiddlewareHandler<
-  DomainCtx<ReservationCtx>
+  DomainCtx<RestaurantCtx>
 > => {
   return async (c, next) => {
     const start = performance.now(); // Más preciso que Date.now()
@@ -80,7 +80,7 @@ export const loggerMiddleware = (): MiddlewareHandler<
             ? userAgent.substring(0, 50) + (userAgent.length > 50 ? "..." : "")
             : undefined,
         traceId,
-        state: c.get("RESERVATION_CACHE"),
+        state: c.get("RESERVATION_STATE"),
         response: await c.res.clone().json(),
       };
 

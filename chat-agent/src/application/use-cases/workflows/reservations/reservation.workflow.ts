@@ -3,7 +3,7 @@ import { updateWorkflow } from "./sub-workflows/update.workflow";
 import { cancellWorkflow } from "./sub-workflows/cancel.workflow";
 import { fallbackWorkflow } from "./sub-workflows/conversational-fallback";
 import { StateWorkflowRunner } from "@/application/patterns/FSM-workflow/state-workflow-runner";
-import { ReservationCtx } from "@/domain/restaurant/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
 
 /**
@@ -12,10 +12,8 @@ import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
  * @param ctx
  * @returns Promise<string>
  */
-export async function reservationWorkflow(
-  ctx: ReservationCtx,
-): Promise<string> {
-  const status = ctx.RESERVATION_CACHE?.status;
+export async function reservationWorkflow(ctx: RestaurantCtx): Promise<string> {
+  const status = ctx.RESERVATION_STATE?.status;
   const business = ctx.business;
   const subWorkflow = new StateWorkflowRunner(ctx, status);
 

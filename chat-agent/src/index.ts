@@ -4,15 +4,15 @@ import { env } from "bun";
 import { rateLimiter } from "hono-rate-limiter";
 import * as Sentry from "@sentry/bun";
 import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
-import { durableExecution } from "@/infraestructure/durable-executation";
 import { DomainCtx } from "./domain/context.types";
 import { loggerMiddleware } from "@/application/middlewares/logger-middleware";
 import { contextMiddleware } from "@/application/middlewares/context.middleware";
 import { aiWhatsappHandler } from "@/application/handlers/ai-whatsapp.handler";
 import { aiTestHandler } from "@/application/handlers/ai-test.handler";
-import { ReservationCtx } from "./domain/reservation/context";
+import { RestaurantCtx } from "./domain/restaurant/context.types";
+import { durableExecution } from "./infraestructure/durable-execution/config";
 
-const app = new Hono<DomainCtx<ReservationCtx>>();
+const app = new Hono<DomainCtx<RestaurantCtx>>();
 
 Sentry.init({
   dsn: env?.SENTRY_DSN,

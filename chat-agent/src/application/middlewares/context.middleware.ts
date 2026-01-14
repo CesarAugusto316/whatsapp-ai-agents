@@ -1,6 +1,6 @@
 import { MiddlewareHandler } from "hono/types";
 import { DomainCtx } from "@/domain/context.types";
-import { ReservationCtx } from "@/domain/restaurant/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { WahaRecievedEvent } from "@/infraestructure/http/whatsapp/whatsapp-types/received-event";
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import cmsClient from "@/infraestructure/http/cms/cms.client";
@@ -12,7 +12,7 @@ import cmsClient from "@/infraestructure/http/cms/cms.client";
  * @returns
  */
 export const contextMiddleware = (): MiddlewareHandler<
-  DomainCtx<ReservationCtx>
+  DomainCtx<RestaurantCtx>
 > => {
   return async (ctx, next) => {
     const custumerRecievedEvent = await ctx.req.json<WahaRecievedEvent>();
@@ -24,12 +24,12 @@ export const contextMiddleware = (): MiddlewareHandler<
     const chatKey = `chat:${businessId}:${customerPhone}`;
     const reservationKey = `reservation:${businessId}:${customerPhone}`;
     const currentReservation =
-      await cacheAdapter.get<ReservationCtx>(reservationKey);
+      await cacheAdapter.get<RestaurantCtx>(reservationKey);
     ctx.set("session", session);
     ctx.set("chatKey", chatKey);
     ctx.set("whatsappEvent", event);
     ctx.set("reservationKey", reservationKey);
-    ctx.set("RESERVATION_CACHE", currentReservation);
+    ctx.set("RESERVATION_STATE", currentReservation);
 
     if (!businessId) {
       return ctx.json({ error: "Business ID not received" }, 400);

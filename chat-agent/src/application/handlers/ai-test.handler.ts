@@ -1,6 +1,6 @@
 import { Handler } from "hono/types";
 import { reservationWorkflow } from "../use-cases/workflows/reservations/reservation.workflow";
-import { ReservationCtx } from "@/domain/restaurant/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { DomainCtx } from "@/domain/context.types";
 
 /**
@@ -9,16 +9,16 @@ import { DomainCtx } from "@/domain/context.types";
  * @param next
  * @returns
  */
-export const aiTestHandler: Handler<DomainCtx<ReservationCtx>> = async (c) => {
+export const aiTestHandler: Handler<DomainCtx<RestaurantCtx>> = async (c) => {
   const context = {
-    RESERVATION_CACHE: c.get("RESERVATION_CACHE"),
+    RESERVATION_STATE: c.get("RESERVATION_STATE"),
     business: c.get("business"),
     customerMessage: c.get("customerMessage"),
     customerPhone: c.get("customerPhone"),
     customer: c.get("customer"),
     chatKey: c.get("chatKey"),
     reservationKey: c.get("reservationKey"),
-  } as ReservationCtx;
+  } as RestaurantCtx;
 
   return c.json({
     received: true,

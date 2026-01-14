@@ -5,7 +5,7 @@ import {
   ISagaStep,
   SagaBag,
 } from "@/application/patterns/saga-orchestrator/saga-orchestrator-dbos";
-import { ReservationCtx } from "@/domain/restaurant/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import whatsappClient from "@/infraestructure/http/whatsapp/whatsapp.client";
 
 /**
@@ -50,7 +50,7 @@ interface WhatsappSagaResults extends SagaBag {
  * @template K - Step key type (defaults to WhatappStepName)
  */
 export type WhatsappSagaTypes<
-  C = ReservationCtx,
+  C = RestaurantCtx,
   R = WhatsappSagaResults,
   K = WhatappStepName,
 > = {

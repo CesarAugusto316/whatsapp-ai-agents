@@ -1,24 +1,24 @@
-import { ReservationCtx } from "@/domain/context.types";
 import {
-  CUSTOMER_INTENT,
-  FlowOptions,
-} from "@/domain/reservation/reservation.types";
-import { systemMessages } from "@/domain/llm/prompts/system-messages";
-import reservationCacheService from "@/infraestructure/services/reservationCache.service";
-import { logger } from "@/application/helpers/logger";
-import {
-  aiClient,
   customerIntentClassifier,
   humanizerAgent,
-} from "@/infraestructure/services/llm/llm.service";
-import { initReservationChangeSteps } from "../steps/init-reservation-update.steps";
-import chatHistoryService from "@/infraestructure/services/chatHistory.service";
-import { ModelMessage } from "@/infraestructure/services/llm/llm.types";
+} from "@/application/agents/agent";
+import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import {
   buildInfoReservationsSystemPrompt,
   howSystemWorksPrompt,
-} from "@/domain/llm/prompts/conversational-prompts";
-import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
+} from "@/domain/restaurant/reservations/prompts/conversational-prompts";
+import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-messages";
+import {
+  CUSTOMER_INTENT,
+  FlowOptions,
+} from "@/domain/restaurant/reservations/reservation.types";
+import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
+import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
+import { aiClient } from "@/infraestructure/http/ai/ai.client";
+import { ModelMessage } from "@/infraestructure/http/ai/llm.types";
+import { logger } from "@/infraestructure/logging/logger";
+import { initReservationChangeSteps } from "../steps/init-reservation-update.steps";
 
 /**
  *
@@ -26,9 +26,9 @@ import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-ne
  * Handles unstructured or out-of-FSM interactions using AI agents.
  * No authoritative business logic lives here.
  */
-export async function fallbackWorkflow(ctx: ReservationCtx): Promise<string> {
+export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
   const {
-    RESERVATION_CACHE,
+    RESERVATION_STATE,
     customerMessage = "",
     reservationKey = "",
     customer,
@@ -37,9 +37,9 @@ export async function fallbackWorkflow(ctx: ReservationCtx): Promise<string> {
   } = Object.freeze(structuredClone(ctx));
 
   // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
-  if (!RESERVATION_CACHE) {
+  if (!RESERVATION_STATE) {
     //
-    const chatHistoryCache = await chatHistoryService.get(chatKey);
+    const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
     const isFirstMessage = chatHistoryCache.length === 0;
     if (isFirstMessage) {
       const messages: ModelMessage[] = [
@@ -51,7 +51,7 @@ export async function fallbackWorkflow(ctx: ReservationCtx): Promise<string> {
           ),
         },
       ];
-      const assistantResponse = aiClient(
+      const assistantResponse = aiClient.userMsg(
         messages,
         howSystemWorksPrompt(business),
       );
@@ -65,7 +65,7 @@ export async function fallbackWorkflow(ctx: ReservationCtx): Promise<string> {
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
       // choice 2
       const transition = resolveNextState(FlowOptions.MAKE_RESERVATION);
-      await reservationCacheService.save(reservationKey, {
+      await cacheAdapter.save(reservationKey, {
         businessId: business?.id,
         customerId: customer?.id,
         customerName: customer?.name || "",
@@ -109,7 +109,7 @@ export async function fallbackWorkflow(ctx: ReservationCtx): Promise<string> {
     }
   }
 
-  const chatHistoryCache = await chatHistoryService.get(chatKey);
+  const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
   const messages: ModelMessage[] = [
     ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
     {
@@ -128,17 +128,17 @@ export async function fallbackWorkflow(ctx: ReservationCtx): Promise<string> {
   // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS
   if (customerIntent === CUSTOMER_INTENT.HOW) {
     // choice 4 again
-    const assistantResponse = aiClient(
+    const assistantResponse = aiClient.userMsg(
       messages,
-      howSystemWorksPrompt(business, RESERVATION_CACHE?.status),
+      howSystemWorksPrompt(business, RESERVATION_STATE?.status),
     );
     return assistantResponse;
   }
 
   // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
-  const assistantResponse = aiClient(
+  const assistantResponse = aiClient.userMsg(
     messages,
-    buildInfoReservationsSystemPrompt(business, RESERVATION_CACHE?.status),
+    buildInfoReservationsSystemPrompt(business, RESERVATION_STATE?.status),
   );
   return assistantResponse;
 }

@@ -1,6 +1,6 @@
 import { Handler } from "hono/types";
 import { DomainCtx } from "@/domain/context.types";
-import { ReservationCtx } from "@/domain/restaurant/context.types";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { SagaOrchestrator } from "../patterns/saga-orchestrator/saga-orchestrator-dbos";
 import {
   reservationWorklow,
@@ -11,13 +11,13 @@ import {
   WhatsappSagaTypes,
 } from "../use-cases/workflows/whatsapp/whatsapp.saga";
 
-export const aiWhatsappHandler: Handler<DomainCtx<ReservationCtx>> = async (
+export const aiWhatsappHandler: Handler<DomainCtx<RestaurantCtx>> = async (
   c,
 ) => {
   const ctx = {
     session: c.get("session"),
     whatsappEvent: c.get("whatsappEvent"),
-    RESERVATION_CACHE: c.get("RESERVATION_CACHE"),
+    RESERVATION_STATE: c.get("RESERVATION_STATE"),
     customerMessage: c.get("customerMessage"),
     customerPhone: c.get("customerPhone"),
     business: c.get("business"),
@@ -25,7 +25,7 @@ export const aiWhatsappHandler: Handler<DomainCtx<ReservationCtx>> = async (
     businessId: c.get("businessId"),
     chatKey: c.get("chatKey"),
     reservationKey: c.get("reservationKey"),
-  } satisfies ReservationCtx;
+  } satisfies RestaurantCtx;
 
   if (ctx.whatsappEvent !== "message") {
     return c.json({ message: "Invalid event" });
