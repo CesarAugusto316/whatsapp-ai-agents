@@ -1,7 +1,3 @@
-import {
-  customerIntentClassifier,
-  humanizerAgent,
-} from "@/application/agents/agent";
 import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import {
@@ -19,6 +15,8 @@ import { aiClient } from "@/infraestructure/http/ai/ai.client";
 import { ModelMessage } from "@/infraestructure/http/ai/llm.types";
 import { logger } from "@/infraestructure/logging/logger";
 import { initReservationChangeSteps } from "../steps/init-reservation-update.steps";
+import { intentClassifierAgent } from "@/application/agents/reservation/intent-classifier-agent";
+import { humanizerAgent } from "@/application/agents/reservation/humanizer-agent";
 
 /**
  *
@@ -119,7 +117,8 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
   ];
 
   // 2. INTENT HANDLING WHEN CUSTOMER ASKS THE HOW OF SOMETHING
-  const customerIntent = await customerIntentClassifier(customerMessage);
+  const customerIntent =
+    await intentClassifierAgent.customerIntentClassifier(customerMessage);
   logger.info("AI Fallback executed", {
     customerIntent,
     customerMessage,

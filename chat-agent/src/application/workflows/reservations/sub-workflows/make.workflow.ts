@@ -14,7 +14,7 @@ import { localDateTimeToUTC } from "@/domain/utilities/datetime-formatting/datet
 import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-messages";
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
-import { humanizerAgent } from "@/application/agents/agent";
+import { humanizerAgent } from "@/application/agents/reservation/humanizer-agent";
 
 /**
  *

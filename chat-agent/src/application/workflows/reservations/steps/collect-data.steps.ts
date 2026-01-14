@@ -14,11 +14,7 @@ import { DBOS } from "@dbos-inc/dbos-sdk";
 import { mergeReservationData } from "../helpers/merge-state";
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
-import {
-  humanizerAgent,
-  inputIntentClassifier,
-  validatorAgent,
-} from "@/application/agents/agent";
+import { humanizerAgent } from "@/application/agents/reservation/humanizer-agent";
 import { isWithinBusinessHours } from "@/domain/restaurant/reservations/is-within-business-hours";
 import {
   formatSchedule,
@@ -28,6 +24,8 @@ import { isWithinHolydayRange } from "@/domain/restaurant/reservations/check-nex
 import cmsClient from "@/infraestructure/http/cms/cms.client";
 import { renderMsgNotAvailable } from "@/domain/restaurant/reservations/render-msg-not-available";
 import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
+import { intentClassifierAgent } from "@/application/agents/reservation/intent-classifier-agent";
+import { validatorAgent } from "@/application/agents/reservation/validator-agent";
 
 type Args = {
   reservation: Partial<ReservationState>;
@@ -111,7 +109,8 @@ export async function collecDataSteps({
     const parsingResult = await DBOS.runStep(
       async () => {
         // OPTION: 3. CLASSIFY INPUT
-        const inputIntent = await inputIntentClassifier(customerMessage);
+        const inputIntent =
+          await intentClassifierAgent.inputIntentClassifier(customerMessage);
 
         if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
           logger.info("Customer asked a question", {
