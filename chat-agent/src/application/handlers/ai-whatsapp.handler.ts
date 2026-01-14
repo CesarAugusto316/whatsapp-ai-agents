@@ -9,7 +9,7 @@ import {
   sendStopTyping,
   sendText,
   WhatsappSagaTypes,
-} from "../use-cases/workflows/whatsapp/whatsapp.saga";
+} from "../workflows/whatsapp/whatsapp.saga";
 
 export const aiWhatsappHandler: Handler<DomainCtx<RestaurantCtx>> = async (
   c,

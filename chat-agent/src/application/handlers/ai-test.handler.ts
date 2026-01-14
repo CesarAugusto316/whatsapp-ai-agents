@@ -1,5 +1,5 @@
 import { Handler } from "hono/types";
-import { reservationWorkflow } from "../use-cases/workflows/reservations/reservation.workflow";
+import { reservationWorkflow } from "../workflows/reservations/reservation.workflow";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { DomainCtx } from "@/domain/context.types";
 
