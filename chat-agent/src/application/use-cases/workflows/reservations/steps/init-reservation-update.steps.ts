@@ -1,4 +1,4 @@
-import { humanizerAgent } from "@/application/agents/reservation/humanizer-agent";
+import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
 import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
 import {
   FlowOption,

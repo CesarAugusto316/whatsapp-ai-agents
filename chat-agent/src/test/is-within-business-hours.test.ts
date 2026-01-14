@@ -1,5 +1,5 @@
-import { isWithinBusinessHours } from "@/helpers/is-within-business-hours";
-import { WeekDay } from "@/types/reservation/reservation.types";
+import { isWithinBusinessHours } from "@/domain/restaurant/reservations/is-within-business-hours";
+import { WeekDay } from "@/infraestructure/http/cms/cms-types";
 import { describe, expect, test } from "bun:test";
 
 describe("isWithinBusinessHours", () => {

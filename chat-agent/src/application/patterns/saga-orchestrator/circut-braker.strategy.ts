@@ -1,5 +1,5 @@
 import { retryStep } from "./retry-step.strategy";
-import { CircuitBreaker } from "../circut-braker/circut-braker";
+import { CircuitBreaker } from "./circut-braker/circut-braker";
 
 // En saga-orchestrator-dbos.ts
 export interface CircuitBreakerStep {

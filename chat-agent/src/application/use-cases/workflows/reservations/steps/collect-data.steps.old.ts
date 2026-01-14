@@ -23,9 +23,9 @@ import { isWithinHolydayRange } from "@/domain/restaurant/reservations/check-nex
 import cmsClient from "@/infraestructure/http/cms/cms.client";
 import { renderMsgNotAvailable } from "@/domain/restaurant/reservations/render-msg-not-available";
 import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
-import { intentClassifierAgent } from "@/application/agents/reservation/intent-classifier-agent";
-import { humanizerAgent } from "@/application/agents/reservation/humanizer-agent";
-import { validatorAgent } from "@/application/agents/reservation/validator-agent";
+import { intentClassifierAgent } from "@/application/agents/restaurant/reservation/intent-classifier-agent";
+import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
+import { validatorAgent } from "@/application/agents/restaurant/reservation/validator-agent";
 
 type Args = {
   reservation: Partial<ReservationState>;

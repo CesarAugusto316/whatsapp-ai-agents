@@ -9,7 +9,7 @@ import { aiClient } from "@/infraestructure/http/ai/ai.client";
 import { ModelMessage } from "@/infraestructure/http/ai/llm.types";
 import { Business } from "@/infraestructure/http/cms/cms-types";
 import { logger } from "@/infraestructure/logging/logger";
-import { mergeReservationData } from "@/application/workflows/reservations/helpers/merge-state";
+import { mergeReservationData } from "@/application/use-cases/workflows/reservations/helpers/merge-state";
 
 export const validatorAgent = {
   /**

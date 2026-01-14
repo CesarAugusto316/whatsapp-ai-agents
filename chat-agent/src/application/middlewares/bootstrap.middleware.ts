@@ -11,7 +11,7 @@ import cmsClient from "@/infraestructure/http/cms/cms.client";
  * @param next
  * @returns
  */
-export const contextMiddleware = (): MiddlewareHandler<
+export const bootstrapMiddleware = (): MiddlewareHandler<
   DomainCtx<RestaurantCtx>
 > => {
   return async (ctx, next) => {

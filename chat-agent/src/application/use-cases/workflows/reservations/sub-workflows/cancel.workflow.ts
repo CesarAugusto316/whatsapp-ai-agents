@@ -1,4 +1,4 @@
-import { humanizerAgent } from "@/application/agents/reservation/humanizer-agent";
+import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
 import { StateWorkflowHandler } from "@/application/patterns/FSM-workflow/state-workflow.types";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-messages";

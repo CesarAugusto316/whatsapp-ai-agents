@@ -1,6 +1,5 @@
-// schedule-formatter.test.ts
-import { formatSchedule } from "@/helpers/datetime-converters";
-import { WeekDay } from "@/types/reservation/reservation.types";
+import { formatSchedule } from "@/domain/utilities/datetime-formatting/datetime-converters";
+import { WeekDay } from "@/infraestructure/http/cms/cms-types";
 import { describe, test, expect } from "bun:test";
 
 describe("formatSchedule", () => {

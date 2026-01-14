@@ -1,7 +1,7 @@
 import {
   localDateTimeToUTC,
   utcToLocalDateTime,
-} from "@/helpers/datetime-converters";
+} from "@/domain/utilities/datetime-formatting/datetime-converters";
 import { describe, expect, test, mock } from "bun:test";
 
 describe("localDateTimeToUTC", () => {

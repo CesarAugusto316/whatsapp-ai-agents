@@ -1,12 +1,12 @@
 import { StepConfig } from "@dbos-inc/dbos-sdk";
-import { reservationWorkflow } from "../reservations/reservation.workflow";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
+import whatsappClient from "@/infraestructure/http/whatsapp/whatsapp.client";
 import {
   FuncSagaStep,
   ISagaStep,
   SagaBag,
-} from "@/application/patterns/saga-orchestrator/saga-orchestrator-dbos";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
-import whatsappClient from "@/infraestructure/http/whatsapp/whatsapp.client";
+} from "@/application/patterns/saga-orchestrator/saga-orchestrator";
+import { reservationWorkflow } from "../workflows/reservations/reservation.workflow";
 
 /**
  * Configuration for all saga steps in the WhatsApp workflow.

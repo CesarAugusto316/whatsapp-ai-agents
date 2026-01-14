@@ -1,8 +1,8 @@
+import { renderMsgNotAvailable } from "@/domain/restaurant/reservations/render-msg-not-available";
 import {
   formatLocalDateTime,
   utcToLocalDateTime,
-} from "@/helpers/datetime-converters";
-import { renderMsgNotAvailable } from "@/workflows/reservations/helpers/render-msg-not-available";
+} from "@/domain/utilities/datetime-formatting/datetime-converters";
 import { describe, expect, test } from "bun:test";
 
 const TIMEZONE = "America/Lima";

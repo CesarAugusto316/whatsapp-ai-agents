@@ -1,7 +1,6 @@
 import { Handler } from "hono/types";
 import { DomainCtx } from "@/domain/context.types";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
-import { SagaOrchestrator } from "../patterns/saga-orchestrator/saga-orchestrator-dbos";
 import {
   reservationWorklow,
   sendSeen,
@@ -9,11 +8,12 @@ import {
   sendStopTyping,
   sendText,
   WhatsappSagaTypes,
-} from "../workflows/whatsapp/whatsapp.saga";
+} from "@/application/use-cases/sagas/whatsapp.saga";
+import { SagaOrchestrator } from "@/application/patterns/saga-orchestrator/saga-orchestrator";
 
-export const aiWhatsappHandler: Handler<DomainCtx<RestaurantCtx>> = async (
-  c,
-) => {
+export const whatsappReservationHandler: Handler<
+  DomainCtx<RestaurantCtx>
+> = async (c) => {
   const ctx = {
     session: c.get("session"),
     whatsappEvent: c.get("whatsappEvent"),

@@ -14,7 +14,7 @@ import { Appointment } from "@/infraestructure/http/cms/cms-types";
 import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-messages";
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
-import { humanizerAgent } from "@/application/agents/reservation/humanizer-agent";
+import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
 
 const started: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
   ctx,

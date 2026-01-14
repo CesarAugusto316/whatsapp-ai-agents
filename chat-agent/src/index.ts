@@ -6,11 +6,11 @@ import * as Sentry from "@sentry/bun";
 import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
 import { DomainCtx } from "./domain/context.types";
 import { loggerMiddleware } from "@/application/middlewares/logger-middleware";
-import { contextMiddleware } from "@/application/middlewares/context.middleware";
-import { aiWhatsappHandler } from "@/application/handlers/ai-whatsapp.handler";
-import { aiTestHandler } from "@/application/handlers/ai-test.handler";
 import { RestaurantCtx } from "./domain/restaurant/context.types";
 import { durableExecution } from "./infraestructure/durable-execution/config";
+import { bootstrapMiddleware } from "./application/middlewares/bootstrap.middleware";
+import { whatsappReservationHandler } from "./application/handlers/restaurant/reservation/whatsapp-reservation.handler";
+import { testReservationHandler } from "./application/handlers/restaurant/reservation/test-reservation.handler";
 
 const app = new Hono<DomainCtx<RestaurantCtx>>();
 
@@ -46,11 +46,11 @@ app.use(
 
 app.post(
   "/received-messages/:businessId",
-  contextMiddleware(),
-  aiWhatsappHandler,
+  bootstrapMiddleware(),
+  whatsappReservationHandler,
 );
 
-app.post("/test-ai/:businessId", contextMiddleware(), aiTestHandler);
+app.post("/test-ai/:businessId", bootstrapMiddleware(), testReservationHandler);
 
 app.get("/test-sentry-async-error", async (c) => {
   await Promise.reject(new Error("Second error"));

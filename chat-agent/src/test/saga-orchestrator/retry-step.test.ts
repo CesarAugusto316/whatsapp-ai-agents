@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { retryStep } from "@/saga/saga-orchestrator-dbos";
+import { retryStep } from "@/application/patterns/saga-orchestrator/retry-step.strategy";
 import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 
 describe("retryStep", () => {
