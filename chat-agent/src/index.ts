@@ -1,17 +1,18 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { aiWhatsappHandler } from "@/handlers/ai-whatsapp.handler";
-import { aiTestHandler } from "@/handlers/ai-test.handler";
-import { CTX } from "@/types/hono.types";
 import { env } from "bun";
-import { contextMiddleware } from "@/middlewares/context.middleware";
 import { rateLimiter } from "hono-rate-limiter";
 import * as Sentry from "@sentry/bun";
-import { loggerMiddleware } from "./middlewares/logger-middleware";
 import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
-import { DBOS } from "@dbos-inc/dbos-sdk";
+import { durableExecution } from "@/infraestructure/durable-executation";
+import { DomainCtx } from "./domain/context.types";
+import { loggerMiddleware } from "@/application/middlewares/logger-middleware";
+import { contextMiddleware } from "@/application/middlewares/context.middleware";
+import { aiWhatsappHandler } from "@/application/handlers/ai-whatsapp.handler";
+import { aiTestHandler } from "@/application/handlers/ai-test.handler";
+import { ReservationCtx } from "./domain/reservation/context";
 
-const app = new Hono<CTX>();
+const app = new Hono<DomainCtx<ReservationCtx>>();
 
 Sentry.init({
   dsn: env?.SENTRY_DSN,
@@ -69,19 +70,7 @@ app.onError((error, c) => {
   );
 });
 
-DBOS.setConfig({
-  name: "chat-agent",
-  adminPort: Number(env?.DBOS_PORT) || 3002,
-  systemDatabaseUrl: env?.DBOS_SYSTEM_DATABASE_URL,
-  applicationVersion: "0.0.1",
-});
-
-/**
- *
- * @description launch dbos and connects to dbos console
- * @link https://console.dbos.dev/conductor/applications/chat-agent/workflows
- */
-await DBOS.launch({ conductorKey: env.DBOS_CONDUCTOR_KEY });
+await durableExecution();
 
 export default {
   port: env?.PORT ?? 3000,
