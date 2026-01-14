@@ -66,7 +66,6 @@ export async function collecDataSteps({
           await reservationCacheService.delete(reservationKey);
           logger.info("Customer asked a question", {
             customerAction: CustomerActions.EXIT,
-            customerMessage,
           });
           return { type: "exit" as const };
         }

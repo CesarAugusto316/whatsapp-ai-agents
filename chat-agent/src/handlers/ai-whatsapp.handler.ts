@@ -35,25 +35,25 @@ export const aiWhatsappHandler: Handler<CTX> = async (c) => {
     WhatsappSagaTypes["Key"]
   >({
     ctx,
+    /** @todo consider to remove skip duranle excutation if too many DB  overhead */
     dbosConfig: {
       workflowName: "whatsapp-saga",
-      args: { workflowID: ctx.chatKey },
+      args: { workflowID: ctx.chatKey }, // idempotencyKey: ctx.chatKey
     },
   });
 
-  whatsappSaga
+  // 2. Start the WhatsApp Saga
+  const result = await whatsappSaga
     .addStep(sendSeen)
     .addStep(sendStartTyping)
     .addStep(reservationWorklow)
     .addStep(sendStopTyping)
-    .addStep(sendText);
-
-  // 2. Start the WhatsApp Saga
-  const result = await whatsappSaga.start();
+    .addStep(sendText)
+    .start();
 
   // 3. Return response
   return c.json({
     received: true,
-    message: result?.["compensate:reservationFlow"].text ?? "",
+    message: result?.["execute:reservationFlow"].text ?? "",
   });
 };

@@ -139,7 +139,7 @@ const validated: StateWorkflowHandler<AppContext, FMStatus> = async (ctx) => {
           { name: "cmsService.deleteAppointment" },
         );
 
-        throw error; // DBOS reintentará el flujo desde el último checkpoint
+        logger.error("Error deleting appointment", error as Error); // DBOS reintentará el flujo desde el último checkpoint
       }
       return "Hubo un problema procesando tu reserva. Inténtalo más tarde.";
     }
