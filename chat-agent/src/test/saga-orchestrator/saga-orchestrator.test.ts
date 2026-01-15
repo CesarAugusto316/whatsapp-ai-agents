@@ -146,7 +146,7 @@ describe("SagaOrchestrator - Casos Críticos", () => {
     });
 
     orchestrator.addStep(step1).addStep(step2).addStep(step3);
-    const result = await orchestrator.start();
+    const result = (await orchestrator.start()).bag;
 
     expect(result).toBeDefined();
     expect(result["execute:createUser"]?.userCreated).toBe(true);
@@ -176,7 +176,7 @@ describe("SagaOrchestrator - Casos Críticos", () => {
     orchestrator.addStep(step1).addStep(step2).addStep(step3);
 
     // IMPORTANTE: Ahora resuelve, no rechaza
-    const bag = await orchestrator.start();
+    const { bag } = await orchestrator.start();
 
     // Verificar que se ejecutó el primer paso
     expect(bag["execute:createUser"]).toBeDefined();
@@ -249,7 +249,7 @@ describe("SagaOrchestrator - Casos Críticos", () => {
         },
       },
       execute: async ({ ctx, getStepResult, durableStep }) => {
-        const previousResult = getStepResult("execute", "createUser");
+        const previousResult = getStepResult("execute:createUser");
         expect(previousResult?.userCreated).toBe(true);
 
         await durableStep(async () => {});
@@ -259,7 +259,7 @@ describe("SagaOrchestrator - Casos Críticos", () => {
 
     orchestrator.addStep(step1).addStep(step2);
 
-    const result = await orchestrator.start();
+    const result = (await orchestrator.start())?.bag;
     expect(result["execute:usePreviousResult"]?.paymentProcessed).toBe(true);
   });
 
@@ -335,7 +335,7 @@ describe("SagaOrchestrator - Casos Críticos", () => {
     orchestrator.addStep(createFailingStep("failingStep" as TestStepName));
 
     // IMPORTANTE: Ahora resuelve, no rechaza
-    const bag = await orchestrator.start();
+    const { bag } = await orchestrator.start();
 
     // Las compensaciones deben ejecutarse en orden inverso: step3, step2, step1
     expect(compensations).toEqual(["step3", "step2", "step1"]);
@@ -384,7 +384,7 @@ test("el bag debe contener resultados de execute y compensate", async () => {
 
   orchestrator.addStep(stepWithCompensation).addStep(failingStep);
 
-  const bag = await orchestrator.start();
+  const { bag } = await orchestrator.start();
 
   // Debe tener el resultado del execute
   expect(bag["execute:testStep"]?.userCreated).toBe(true);
@@ -575,7 +575,7 @@ test("el bag debe contener resultados de execute y compensate", async () => {
 
   orchestrator.addStep(stepWithCompensation).addStep(failingStep);
 
-  const bag = await orchestrator.start();
+  const { bag } = await orchestrator.start();
 
   // Debe tener el resultado del execute
   expect(bag["execute:testStep"]?.userCreated).toBe(true);
