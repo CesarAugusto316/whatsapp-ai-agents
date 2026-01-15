@@ -1,8 +1,5 @@
-import { StepConfig } from "@dbos-inc/dbos-sdk";
-import {
-  DBOS,
-  StartWorkflowParams,
-} from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
+import { StepConfig, DBOS } from "@dbos-inc/dbos-sdk";
+import { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 import { retryConfig, FuncRetryStep, retryStep } from "./retry-step.strategy";
 import { logger } from "@/infraestructure/logging/logger";
 
@@ -205,7 +202,7 @@ export class SagaOrchestrator<
       } catch (error) {
         // Step failed - compensate all previously executed steps
         await this.iterateCompensateSteps();
-
+        logger.error(`Step Error`, error as Error);
         /**
          * Note: We return the bag instead of throwing the error.
          * This is because uncaught exceptions in DBOS workflows don't allow recovery.

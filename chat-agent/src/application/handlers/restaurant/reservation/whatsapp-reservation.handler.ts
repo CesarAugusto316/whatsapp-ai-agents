@@ -2,7 +2,7 @@ import { Handler } from "hono/types";
 import { DomainCtx } from "@/domain/context.types";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import {
-  reservationWorklow,
+  reservationSagaStep,
   sendSeen,
   sendStartTyping,
   sendStopTyping,
@@ -44,7 +44,7 @@ export const whatsappReservationHandler: Handler<
   const result = await whatsappSaga
     .addStep(sendSeen)
     .addStep(sendStartTyping)
-    .addStep(reservationWorklow)
+    .addStep(reservationSagaStep)
     .addStep(sendStopTyping)
     .addStep(sendText)
     .start();

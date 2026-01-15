@@ -3,7 +3,6 @@ import {
   ISagaStep,
   SagaOrchestrator,
 } from "@/application/patterns/saga-orchestrator/saga-orchestrator";
-import { WhatsappSagaTypes } from "@/application/use-cases/sagas/whatsapp.saga";
 import { describe, test, expect, beforeEach, jest, mock } from "bun:test";
 
 // Mock global de DBOS
@@ -23,6 +22,13 @@ mock.module("@dbos-inc/dbos-sdk", () => ({
         throw error;
       }
     }),
+    durableStep: jest.fn(async (fn) => {
+      try {
+        return await fn();
+      } catch (error) {
+        throw error;
+      }
+    }),
     retryStep: jest.fn(
       async (
         fn,
@@ -35,6 +41,8 @@ mock.module("@dbos-inc/dbos-sdk", () => ({
         }
       },
     ),
+
+    launch: jest.fn(),
   },
   StepConfig: {},
 }));
@@ -63,7 +71,7 @@ const createSuccessStep = (
   config: {
     execute: { name, retriesAllowed: true, maxAttempts: 3, intervalSeconds: 1 },
   },
-  execute: async ({ ctx, durableStep }) => {
+  execute: async ({ durableStep }) => {
     await durableStep(async () => {});
     return result as TestResults;
   },
@@ -119,11 +127,14 @@ describe("SagaOrchestrator - Casos Críticos", () => {
   // CASO 1: Flujo exitoso sin DBOS (el más común)
   test("debe ejecutar todos los pasos exitosamente sin DBOS", async () => {
     const orchestrator = new SagaOrchestrator<
-      WhatsappSagaTypes["Ctx"],
-      WhatsappSagaTypes["Result"],
-      WhatsappSagaTypes["Key"]
+      TestContext,
+      TestResults,
+      TestStepName
     >({
       ctx: baseContext,
+      dbosConfig: {
+        workflowName: "chat-agent",
+      },
     });
 
     const step1 = createSuccessStep("createUser", { userCreated: true });
@@ -135,7 +146,6 @@ describe("SagaOrchestrator - Casos Críticos", () => {
     });
 
     orchestrator.addStep(step1).addStep(step2).addStep(step3);
-
     const result = await orchestrator.start();
 
     expect(result).toBeDefined();
@@ -147,9 +157,9 @@ describe("SagaOrchestrator - Casos Críticos", () => {
   // CASO 2: Error en un paso con compensación - AHORA RESUELVE, NO RECHAZA
   test("debe compensar pasos ejecutados cuando un paso falla", async () => {
     const orchestrator = new SagaOrchestrator<
-      WhatsappSagaTypes["Ctx"],
-      WhatsappSagaTypes["Result"],
-      WhatsappSagaTypes["Key"]
+      TestContext,
+      TestResults,
+      TestStepName
     >({
       ctx: baseContext,
     });
@@ -187,9 +197,9 @@ describe("SagaOrchestrator - Casos Críticos", () => {
     const { DBOS } = await import("@dbos-inc/dbos-sdk");
 
     const orchestrator = new SagaOrchestrator<
-      WhatsappSagaTypes["Ctx"],
-      WhatsappSagaTypes["Result"],
-      WhatsappSagaTypes["Key"]
+      TestContext,
+      TestResults,
+      TestStepName
     >({
       ctx: baseContext,
       dbosConfig: {
@@ -213,9 +223,9 @@ describe("SagaOrchestrator - Casos Críticos", () => {
   // CASO 4: getStepResult funciona correctamente
   test("debe permitir obtener resultados de pasos anteriores", async () => {
     const orchestrator = new SagaOrchestrator<
-      WhatsappSagaTypes["Ctx"],
-      WhatsappSagaTypes["Result"],
-      WhatsappSagaTypes["Key"]
+      TestContext,
+      TestResults,
+      TestStepName
     >({
       ctx: baseContext,
     });
@@ -258,9 +268,9 @@ describe("SagaOrchestrator - Casos Críticos", () => {
     const originalContext = { ...baseContext, sensitiveData: "do-not-change" };
 
     const orchestrator = new SagaOrchestrator<
-      WhatsappSagaTypes["Ctx"],
-      WhatsappSagaTypes["Result"],
-      WhatsappSagaTypes["Key"]
+      TestContext,
+      TestResults,
+      TestStepName
     >({
       ctx: originalContext,
     });
@@ -289,9 +299,9 @@ describe("SagaOrchestrator - Casos Críticos", () => {
     const compensations: string[] = [];
 
     const orchestrator = new SagaOrchestrator<
-      WhatsappSagaTypes["Ctx"],
-      WhatsappSagaTypes["Result"],
-      WhatsappSagaTypes["Key"]
+      TestContext,
+      TestResults,
+      TestStepName
     >({
       ctx: baseContext,
     });
@@ -387,7 +397,7 @@ test("el bag debe contener resultados de execute y compensate", async () => {
 // Tests de integración para tu caso de uso específico
 describe("WhatsappSaga - Casos Reales", () => {
   // Mock del logger para evitar errores
-  mock.module("@/middlewares/logger-middleware", () => ({
+  mock.module("@/application/middlewares/logger-middleware", () => ({
     logger: {
       error: jest.fn(),
       info: jest.fn(),
@@ -395,16 +405,11 @@ describe("WhatsappSaga - Casos Reales", () => {
     },
   }));
 
-  // Mock del helper de formateo
-  mock.module("@/helpers/format-for-whatsapp", () => ({
-    formatForWhatsApp: jest.fn((text) => text), // Simplemente devuelve el texto tal cual
-  }));
-
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Resetear mocks antes de cada test
-    mock.module("@/services/whatsapp.service", () => ({
+    mock.module("@/infraestructure/http/whatsapp/whatsapp.client", () => ({
       default: {
         sendSeen: jest.fn().mockResolvedValue({
           json: () => Promise.resolve({ ok: true, text: "seen" }),
@@ -424,14 +429,17 @@ describe("WhatsappSaga - Casos Reales", () => {
 
   test("debe ejecutar flujo completo de whatsapp exitosamente", async () => {
     // Mock exitoso del workflow de reservación
-    mock.module("@/workflows/reservations/reservation.workflow", () => ({
-      reservationWorkflow: jest
-        .fn()
-        .mockResolvedValue("Reservation successful"),
-      runReservationWorkflow: jest
-        .fn()
-        .mockResolvedValue("Reservation successful"),
-    }));
+    mock.module(
+      "@/application/use-cases/workflows/reservations/reservation.workflow",
+      () => ({
+        reservationWorkflow: jest
+          .fn()
+          .mockResolvedValue("Reservation successful"),
+        runReservationWorkflow: jest
+          .fn()
+          .mockResolvedValue("Reservation successful"),
+      }),
+    );
 
     // Importar después de configurar los mocks
     const {
@@ -439,7 +447,7 @@ describe("WhatsappSaga - Casos Reales", () => {
       sendStartTyping,
       sendStopTyping,
       sendText,
-      reservationWorklow,
+      reservationSagaStep,
     } = await import("@/application/use-cases/sagas/whatsapp.saga");
 
     const ctx = {
@@ -459,7 +467,7 @@ describe("WhatsappSaga - Casos Reales", () => {
     orchestrator
       .addStep(sendSeen)
       .addStep(sendStartTyping)
-      .addStep(reservationWorklow)
+      .addStep(reservationSagaStep)
       .addStep(sendStopTyping)
       .addStep(sendText);
 
@@ -479,18 +487,24 @@ describe("WhatsappSaga - Casos Reales", () => {
   // CASO MODIFICADO: Ahora resuelve, no rechaza
   test("debe compensar typing si falla el flujo de reservación", async () => {
     // Mockear el workflow de reservación para que falle
-    mock.module("@/", () => ({
-      reservationWorkflow: jest
-        .fn()
-        .mockRejectedValue(new Error("Reservation failed")),
-      runReservationWorkflow: jest
-        .fn()
-        .mockRejectedValue(new Error("Reservation failed")),
-    }));
+    mock.module(
+      "@/application/use-cases/workflows/reservations/reservation.workflow",
+      () => ({
+        reservationWorkflow: jest
+          .fn()
+          .mockRejectedValue(new Error("Reservation failed")),
+        runReservationWorkflow: jest
+          .fn()
+          .mockRejectedValue(new Error("Reservation failed")),
+      }),
+    );
 
     // Importar después de configurar los mocks
-    const { sendSeen, sendStartTyping, reservationWorklow } =
-      await import("@/application/use-cases/sagas/whatsapp.saga");
+    const {
+      sendSeen,
+      sendStartTyping,
+      reservationSagaStep: reservationWorklow,
+    } = await import("@/application/use-cases/sagas/whatsapp.saga");
 
     const ctx = {
       session: "test-session",

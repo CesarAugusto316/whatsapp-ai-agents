@@ -167,7 +167,7 @@ export const sendStartTyping: WhatsappSagaStep = {
  * Note: This step doesn't have direct WhatsApp API calls but produces
  * the text result that will be sent in the final step.
  */
-export const reservationWorklow: WhatsappSagaStep = {
+export const reservationSagaStep: WhatsappSagaStep = {
   config: {
     execute: { name: "reservationFlow", ...stepConfig },
   },
