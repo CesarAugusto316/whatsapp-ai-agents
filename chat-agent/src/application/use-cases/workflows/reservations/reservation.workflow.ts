@@ -52,14 +52,3 @@ export async function reservationWorkflow(ctx: RestaurantCtx): Promise<string> {
   await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, w2Result);
   return w2Result;
 }
-
-/**
- *
- * @description run the reservation workflow
- * @param ctx
- * @returns Promise<string>
- */
-// export const runReservationWorkflow = DBOS.registerWorkflow(
-//   reservationWorkflow,
-//   { name: "reservation" },
-// );

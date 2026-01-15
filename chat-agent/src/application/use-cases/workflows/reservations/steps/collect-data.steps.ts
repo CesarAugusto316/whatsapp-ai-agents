@@ -110,7 +110,7 @@ export async function collecDataSteps({
       async () => {
         // OPTION: 3. CLASSIFY INPUT
         const inputIntent =
-          await intentClassifierAgent.inputIntentClassifier(customerMessage);
+          await intentClassifierAgent.inputIntent(customerMessage);
 
         if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
           logger.info("Customer asked a question", {

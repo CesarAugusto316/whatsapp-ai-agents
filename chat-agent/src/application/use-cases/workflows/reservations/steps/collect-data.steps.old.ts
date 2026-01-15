@@ -10,7 +10,6 @@ import {
   ReservationState,
 } from "@/domain/restaurant/reservations/reservation.types";
 import { Business, Customer } from "@/infraestructure/http/cms/cms-types";
-import { DBOS } from "@dbos-inc/dbos-sdk";
 import { mergeReservationData } from "../helpers/merge-state";
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
@@ -23,7 +22,7 @@ import { isWithinHolydayRange } from "@/domain/restaurant/reservations/check-nex
 import cmsClient from "@/infraestructure/http/cms/cms.client";
 import { renderMsgNotAvailable } from "@/domain/restaurant/reservations/render-msg-not-available";
 import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
-import { intentClassifierAgent } from "@/application/agents/restaurant/reservation/intent-classifier-agent";
+import { intentClassifierAgent as classifierAgent } from "@/application/agents/restaurant/reservation/intent-classifier-agent";
 import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
 import { validatorAgent } from "@/application/agents/restaurant/reservation/validator-agent";
 
@@ -61,50 +60,34 @@ export async function collecDataSteps({
   try {
     // OPTION: 1. SALIR
     if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-      await DBOS.runStep(() => cacheAdapter.delete(reservationKey), {
-        name: "cacheAdapter.delete",
-      });
+      await cacheAdapter.delete(reservationKey);
       const responseMsg = systemMessages.getExitMsg();
       logger.info("Customer asked a question", {
         customerAction: CustomerActions.EXIT,
         customerMessage,
       });
-
-      return DBOS.runStep(() => humanizerAgent(responseMsg), {
-        name: "humanizerAgent",
-      });
+      return humanizerAgent(responseMsg);
     }
 
     // OPTION: 2. REINICIAR FOR MAXIMUM ATTEMPTS REACHED
     if ((reservation?.attempts ?? 0) >= ATTEMPTS) {
-      await DBOS.runStep(() => cacheAdapter.delete(reservationKey), {
-        name: "cacheAdapter.delete",
-      });
+      await cacheAdapter.delete(reservationKey);
       const action =
         mode === "create"
           ? FlowOptions.MAKE_RESERVATION
           : FlowOptions.UPDATE_RESERVATION;
       const verb = mode === "create" ? "iniciar" : "actualizar";
 
-      return DBOS.runStep(
-        () =>
-          humanizerAgent(`
-            Has llegado al límite de *intentos fallidos* al checkear disponibilidad.
+      return humanizerAgent(`
+        Has llegado al límite de *intentos fallidos* al checkear disponibilidad.
 
-            Empecemos de nuevo desde cero.
-            Escribe *${action}* para ${verb} otro proceso de reserva.
-      `),
-        {
-          name: "humanizerAgent",
-        },
-      );
+        Empecemos de nuevo desde cero.
+        Escribe *${action}* para ${verb} otro proceso de reserva.
+      `);
     }
 
     // OPTION: 3. CLASSIFY INPUT
-    const inputIntent = await DBOS.runStep(
-      () => intentClassifierAgent.inputIntentClassifier(customerMessage),
-      { name: "inputIntentClassifier" },
-    );
+    const inputIntent = await classifierAgent.inputIntent(customerMessage);
 
     if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
       logger.info("Customer asked a question", {
@@ -116,9 +99,10 @@ export async function collecDataSteps({
     }
 
     // OPTION: 4. PARSE USER INPUT
-    const result = await DBOS.runStep(
-      () => validatorAgent.parse(business, customerMessage, previousState),
-      { name: "validatorAgent.parse" },
+    const result = await validatorAgent.parse(
+      business,
+      customerMessage,
+      previousState,
     );
 
     // DATA VALIDATION
@@ -128,12 +112,8 @@ export async function collecDataSteps({
         previousState,
       });
 
-      return DBOS.runStep(
-        () =>
-          humanizerAgent(
-            "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
-          ),
-        { name: "humanizerAgent" },
+      return humanizerAgent(
+        "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
       );
     }
     const { parsedData, mergedData } = result;
@@ -146,19 +126,12 @@ export async function collecDataSteps({
         previousState,
         parsedData,
       });
-      await DBOS.runStep(
-        () =>
-          cacheAdapter.save(reservationKey, {
-            ...reservation,
-            ...mergedData,
-          } satisfies Partial<ReservationState>),
-        { name: "cacheAdapter.save" },
-      );
+      await cacheAdapter.save(reservationKey, {
+        ...reservation,
+        ...mergedData,
+      } satisfies Partial<ReservationState>);
 
-      return DBOS.runStep(
-        () => validatorAgent.humanizeErrors(business, errors),
-        { name: "validatorAgent.humanizeErrors" },
-      );
+      return validatorAgent.humanizeErrors(business, errors);
     }
 
     const timezone = business.general.timezone;
@@ -173,30 +146,22 @@ export async function collecDataSteps({
         customerMessage,
         isWithinSchedule,
       });
-      await DBOS.runStep(
-        () =>
-          cacheAdapter.save(reservationKey, {
-            ...reservation,
-            ...data,
-          } satisfies Partial<ReservationState>),
-        { name: "cacheAdapter.save" },
-      );
+      await cacheAdapter.save(reservationKey, {
+        ...reservation,
+        ...data,
+      } satisfies Partial<ReservationState>);
 
       const schedule = business.schedule;
       const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);
-      return DBOS.runStep(
-        () =>
-          humanizerAgent(`
-            😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
-            de atención del negocio. Por favor, selecciona otro día y hora.
+      return humanizerAgent(`
+        😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
+        de atención del negocio. Por favor, selecciona otro día y hora.
 
-            ==============================
-            HORARIO DE ATENCION
-            ==============================
-            ${SCHEDULE_BLOCK}
-      `),
-        { name: "humanizerAgent" },
-      );
+        ==============================
+        HORARIO DE ATENCION
+        ==============================
+        ${SCHEDULE_BLOCK}
+      `);
     }
     const startDateTime = localDateTimeToUTC(start, timezone);
     const endDateTime = localDateTimeToUTC(end, timezone);
@@ -210,27 +175,19 @@ export async function collecDataSteps({
         isWithinRange,
         customerMessage,
       });
-      await DBOS.runStep(
-        () =>
-          cacheAdapter.save(reservationKey, {
-            ...reservation,
-            ...data,
-          } satisfies Partial<ReservationState>),
-        { name: "cacheAdapter.save" },
-      );
+      await cacheAdapter.save(reservationKey, {
+        ...reservation,
+        ...data,
+      } satisfies Partial<ReservationState>);
 
       return holidayMsg;
     }
-    const availability = await DBOS.runStep(
-      () =>
-        cmsClient.checkAvailability({
-          "where[business][equals]": reservation.businessId,
-          "where[startDateTime][equals]": startDateTime,
-          "where[endDateTime][equals]": endDateTime,
-          "where[numberOfPeople][equals]": data.numberOfPeople,
-        }),
-      { name: "cmsService.checkAvailability" },
-    );
+    const availability = await cmsClient.checkAvailability({
+      "where[business][equals]": reservation.businessId,
+      "where[startDateTime][equals]": startDateTime,
+      "where[endDateTime][equals]": endDateTime,
+      "where[numberOfPeople][equals]": data.numberOfPeople,
+    });
 
     if (availability && !availability?.isFullyAvailable) {
       logger.info("Reservation not available", {
@@ -238,37 +195,27 @@ export async function collecDataSteps({
         customerMessage,
       });
       const retries = (reservation?.attempts || 0) + 1;
-      await DBOS.runStep(
-        () =>
-          cacheAdapter.save(reservationKey, {
-            ...reservation,
-            ...data,
-            attempts: retries,
-          } satisfies Partial<ReservationState>),
-        { name: "cacheAdapter.save" },
-      );
+      await cacheAdapter.save(reservationKey, {
+        ...reservation,
+        ...data,
+        attempts: retries,
+      } satisfies Partial<ReservationState>);
 
       const msg = renderMsgNotAvailable({
         availability,
         business,
         data,
       });
-      return DBOS.runStep(() => humanizerAgent(msg), {
-        name: "humanizerAgent",
-      });
+      return humanizerAgent(msg);
     }
 
     // FINAL: ✅ INPUT DATA VALIDATED
     const transition = resolveNextState(fmStatus);
-    await DBOS.runStep(
-      () =>
-        cacheAdapter.save(reservationKey, {
-          ...reservation,
-          ...data,
-          status: transition.nextState, // UPDATE_VALIDATED,
-        } satisfies Partial<ReservationState>),
-      { name: "cacheAdapter.save" },
-    );
+    await cacheAdapter.save(reservationKey, {
+      ...reservation,
+      ...data,
+      status: transition.nextState, // UPDATE_VALIDATED,
+    } satisfies Partial<ReservationState>);
 
     logger.info("✅ Reservation data validated", {
       reservation: {
@@ -282,9 +229,7 @@ export async function collecDataSteps({
     const responseMsg = systemMessages.getConfirmationMsg(data, timezone, mode);
 
     // ✨ SEND SUCCESS MESSAGE
-    return DBOS.runStep(() => humanizerAgent(responseMsg), {
-      name: "humanizerAgent",
-    });
+    return humanizerAgent(responseMsg);
   } catch (error) {
     //
     logger.error(

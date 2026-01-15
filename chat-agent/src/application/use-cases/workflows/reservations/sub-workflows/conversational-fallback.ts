@@ -117,8 +117,7 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
   ];
 
   // 2. INTENT HANDLING WHEN CUSTOMER ASKS THE HOW OF SOMETHING
-  const customerIntent =
-    await intentClassifierAgent.customerIntentClassifier(customerMessage);
+  const customerIntent = await intentClassifierAgent.howOrWhat(customerMessage);
   logger.info("AI Fallback executed", {
     customerIntent,
     customerMessage,

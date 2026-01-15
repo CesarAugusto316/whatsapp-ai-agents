@@ -17,7 +17,7 @@ export const intentClassifierAgent = {
    * @param messages
    * @returns
    */
-  async customerIntentClassifier(message: string): Promise<CUSTOMER_INTENT> {
+  async howOrWhat(message: string): Promise<CUSTOMER_INTENT> {
     try {
       const temperature = 0.1;
       const raw = await aiClient.userMsg(
@@ -41,7 +41,7 @@ export const intentClassifierAgent = {
    * @param messages
    * @returns
    */
-  async inputIntentClassifier(message: string): Promise<InputIntent> {
+  async inputIntent(message: string): Promise<InputIntent> {
     try {
       const temperature = 0.1;
       const raw = await aiClient.userMsg(

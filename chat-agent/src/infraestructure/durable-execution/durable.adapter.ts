@@ -27,9 +27,7 @@ export class DurableExecutionAdapter {
     func: DurableFuncStart<T>,
     params?: StartWorkflowParams,
   ) {
-    return DBOS.startWorkflow(() => func(), params) as Promise<
-      () => WorkflowHandle<T>
-    >;
+    return DBOS.startWorkflow(func, params) as Promise<() => WorkflowHandle<T>>;
   }
 }
 
