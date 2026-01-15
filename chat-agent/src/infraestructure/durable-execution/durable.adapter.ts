@@ -1,29 +1,36 @@
-import { DBOS, StepConfig, WorkflowConfig } from "@dbos-inc/dbos-sdk";
-// import { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
+import {
+  DBOS,
+  StepConfig,
+  WorkflowConfig,
+  WorkflowHandle,
+} from "@dbos-inc/dbos-sdk";
+import { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 
-export interface DurableStep {
-  <T>(): Promise<T>;
+export interface DurableFunc<T> {
+  (): Promise<T>;
 }
 
-export interface DurableStart {
-  <T>(): T;
+export interface DurableFuncStart<T> {
+  (): T;
 }
 
 export class DurableExecutionAdapter {
-  async runStep<T>(func: DurableStep, config?: StepConfig) {
-    return DBOS.runStep(() => func<T>(), config);
+  async runStep<T>(func: DurableFunc<T>, config?: StepConfig) {
+    return DBOS.runStep(() => func(), config);
   }
 
-  async registerWorkflow<T>(func: DurableStep, config?: WorkflowConfig) {
-    return DBOS.registerWorkflow(() => func<T>(), config);
+  async registerWorkflow<T>(func: DurableFunc<T>, config?: WorkflowConfig) {
+    return DBOS.registerWorkflow(() => func(), config);
   }
 
-  // startWorkflow(func: DurableStart, params?: WorkflowConfig) {
-  //   return DBOS.startWorkflow(
-  //     () => func(),
-  //     params,
-  //   ) as () => WorkflowHandle<any>;
-  // }
+  async startWorkflow<T>(
+    func: DurableFuncStart<T>,
+    params?: StartWorkflowParams,
+  ) {
+    return DBOS.startWorkflow(() => func(), params) as Promise<
+      () => WorkflowHandle<T>
+    >;
+  }
 }
 
 export default new DurableExecutionAdapter();

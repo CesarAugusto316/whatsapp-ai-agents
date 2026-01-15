@@ -1,7 +1,8 @@
-import { StepConfig, DBOS } from "@dbos-inc/dbos-sdk";
+import { StepConfig } from "@dbos-inc/dbos-sdk";
 import { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 import { retryConfig, FuncRetryStep, retryStep } from "./retry-step.strategy";
 import { logger } from "@/infraestructure/logging/logger";
+import durableExecAdapter from "@/infraestructure/durable-execution/durable.adapter";
 
 /**
  * Defines the two modes a saga step can operate in:
@@ -138,7 +139,7 @@ export class SagaOrchestrator<
     const result = await runStepMode({
       ctx: this.ctx,
       getStepResult: this.getStepResult.bind(this),
-      durableStep: (func) => DBOS.runStep(func, config), // Wrap with DBOS for durability
+      durableStep: (func) => durableExecAdapter.runStep(func, config), // Wrap with DBOS for durability
       retryStep: (func, config = retryConfig) => retryStep(func, config),
     });
 
@@ -243,17 +244,21 @@ export class SagaOrchestrator<
 
     // Register and start as DBOS workflow if workflow name is provided
     if (this.dbosConfig.workflowName) {
-      const registeredSagaSteps = DBOS.registerWorkflow(
+      const registeredSagaSteps = await durableExecAdapter.registerWorkflow(
         () => this.iterateSagaSteps(),
         {
           name: this.dbosConfig?.workflowName,
         },
       );
-      const handle = await DBOS.startWorkflow(registeredSagaSteps, {
-        ...this.dbosConfig?.args,
-      })();
 
-      return handle?.getResult();
+      const handle = await durableExecAdapter.startWorkflow(
+        registeredSagaSteps,
+        {
+          ...this.dbosConfig?.args,
+        },
+      );
+
+      return handle()?.getResult();
     }
 
     throw new Error("Workflow name is required for Workflow definition");
