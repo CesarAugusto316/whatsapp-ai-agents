@@ -121,7 +121,7 @@ export async function collecDataSteps({
         }
 
         // OPTION: 4. PARSE USER INPUT
-        const result = await validatorAgent.parse(
+        const result = await validatorAgent.parseData(
           business,
           customerMessage,
           previousState,
@@ -173,7 +173,7 @@ export async function collecDataSteps({
     }
 
     if (parsingResult.type === "validation_failed") {
-      return validatorAgent.humanizeErrors(business, parsingResult.errors);
+      return validatorAgent.collectMissingData(business, parsingResult.errors);
     }
 
     // ============================================

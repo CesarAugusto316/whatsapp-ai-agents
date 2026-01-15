@@ -41,7 +41,7 @@ export const whatsappReservationHandler: Handler<
   });
 
   // 2. Start the WhatsApp Saga
-  const result = await whatsappSaga
+  const { bag } = await whatsappSaga
     .addStep(sendSeen)
     .addStep(sendStartTyping)
     .addStep(reservationSagaStep)
@@ -52,6 +52,6 @@ export const whatsappReservationHandler: Handler<
   // 3. Return response
   return c.json({
     received: true,
-    message: result?.["execute:reservationFlow"].text ?? "",
+    message: bag?.["execute:reservationFlow"].text ?? "",
   });
 };

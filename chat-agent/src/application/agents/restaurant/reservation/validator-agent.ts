@@ -16,7 +16,7 @@ export const validatorAgent = {
    *
    * @description Validates the customer's input and returns a parsed object
    */
-  async parse(
+  async parseData(
     business: Business,
     customerMessage: string,
     previousState: ReservationSchema,
@@ -59,7 +59,7 @@ export const validatorAgent = {
    * @param errors
    * @returns
    */
-  async humanizeErrors(
+  async collectMissingData(
     business: Business,
     errors: Partial<z.core.$ZodIssue>[],
     temp = 0.7,

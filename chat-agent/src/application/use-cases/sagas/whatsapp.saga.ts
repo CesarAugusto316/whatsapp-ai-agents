@@ -173,7 +173,7 @@ export const reservationSagaStep: WhatsappSagaStep = {
   },
   execute: async ({ ctx }) => {
     const res = await reservationWorkflow(ctx);
-    return { text: res };
+    return { text: res, continue: true };
   },
 };
 
@@ -216,7 +216,7 @@ export const sendText: WhatsappSagaStep = {
   },
   execute: async ({ ctx, retryStep, getStepResult }) => {
     // Retrieve the text result from the reservationFlow step
-    const text = getStepResult("execute", "reservationFlow")?.text ?? "";
+    const text = getStepResult("execute:reservationFlow")?.text ?? "";
 
     const args = {
       text,

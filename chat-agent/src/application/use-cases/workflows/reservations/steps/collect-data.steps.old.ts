@@ -99,7 +99,7 @@ export async function collecDataSteps({
     }
 
     // OPTION: 4. PARSE USER INPUT
-    const result = await validatorAgent.parse(
+    const result = await validatorAgent.parseData(
       business,
       customerMessage,
       previousState,
@@ -131,7 +131,7 @@ export async function collecDataSteps({
         ...mergedData,
       } satisfies Partial<ReservationState>);
 
-      return validatorAgent.humanizeErrors(business, errors);
+      return validatorAgent.collectMissingData(business, errors);
     }
 
     const timezone = business.general.timezone;

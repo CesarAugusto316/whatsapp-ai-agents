@@ -15,15 +15,15 @@ export type SagaMode = "execute" | "compensate";
  * Generic type representing the saga bag - a record storing results of saga steps.
  * Keys are strings, values can be any type.
  */
-export type SagaBag = Record<string, unknown>;
+export type SagaBag = Record<string, unknown> & { continue?: boolean };
 
 /**
  * Interface for a function that retrieves the result of a specific saga step.
  * @template T The type of the result stored in the bag
  * @template K The type of the step key (string, number, or bigint)
  */
-interface SagaStepResult<T, K> {
-  (mode: SagaMode, stepKey: K): T | undefined;
+interface SagaStepResult<T, K extends string | number | bigint> {
+  (key: `${SagaMode}:${K}`): T | undefined;
 }
 
 /**
@@ -40,7 +40,7 @@ interface FuncDurableStep {
  * @template B The result type for this step (part of the saga bag)
  * @template K The key type for this step
  */
-export interface FuncSagaStep<C, B, K> {
+export interface FuncSagaStep<C, B, K extends string | number | bigint> {
   (
     {
       ctx,
@@ -61,7 +61,7 @@ export interface FuncSagaStep<C, B, K> {
  * @template B The result type for this step
  * @template Key The key type for this step
  */
-export interface ISagaStep<C, B, Key> {
+export interface ISagaStep<C, B, Key extends string | number | bigint> {
   execute: FuncSagaStep<C, B, Key>; // Function to execute the step
   compensate?: FuncSagaStep<C, B, Key>; // Optional function to compensate/rollback the step
   config: Partial<Record<SagaMode, StepConfig & { name: Key }>>; // Configuration for execute/compensate modes
@@ -85,6 +85,8 @@ export class SagaOrchestrator<
   private steps: ISagaStep<Context, T, Key>[] = [];
   // Storage for step results, keyed by mode and step name
   private bag = {} as Record<`${SagaMode}:${Key}`, T>;
+  // Storage for last step executed
+  private lastStepResult? = {} as Partial<Record<SagaMode, T>>;
   // Tracks successfully executed steps for compensation purposes
   private executedSteps: string[] = [];
   // Optional DBOS workflow configuration
@@ -121,8 +123,8 @@ export class SagaOrchestrator<
    * @param stepKey The key of the step to retrieve
    * @returns The stored result or undefined if not found
    */
-  private getStepResult = (mode: SagaMode = "execute", stepKey: Key) => {
-    return this.bag[`${mode}:${stepKey}`];
+  private getStepResult = (key: `${SagaMode}:${Key}`) => {
+    return this.bag[key];
   };
 
   /**
@@ -134,7 +136,7 @@ export class SagaOrchestrator<
   private async runStepMode(
     runStepMode: FuncSagaStep<Context, T, Key>,
     config: StepConfig & { name: Key },
-  ): Promise<void> {
+  ) {
     // Execute the step function with context, result retrieval, and durable step wrapper
     const result = await runStepMode({
       ctx: this.ctx,
@@ -143,11 +145,15 @@ export class SagaOrchestrator<
       retryStep: (func, config = retryConfig) => retryStep(func, config),
     });
 
+    const stepKey = runStepMode.name as SagaMode;
     // Store the result in the saga bag using the function name and step name as key
     this.bag = {
       ...this.bag,
-      [`${runStepMode.name}:${config.name}`]: result,
+      [`${stepKey}:${config.name}`]: result,
     };
+
+    this.lastStepResult = { ...this.lastStepResult, [stepKey]: result };
+    return this.lastStepResult;
   }
 
   /**
@@ -166,7 +172,10 @@ export class SagaOrchestrator<
 
           // Only compensate if both function and configuration exist
           if (runStepMode && config?.name) {
-            await this.runStepMode(runStepMode, config);
+            const result = await this.runStepMode(runStepMode, config);
+            if (result.compensate?.continue === false) {
+              return { bag: this.bag, lastStepResult: result };
+            }
           }
         } catch (error) {
           // Log compensation failure but continue compensating other steps
@@ -181,6 +190,7 @@ export class SagaOrchestrator<
         }
       }
     }
+    return { bag: this.bag, lastStepResult: this.lastStepResult };
   }
 
   /**
@@ -196,14 +206,17 @@ export class SagaOrchestrator<
 
         // Only execute if both function and configuration exist
         if (runStepMode && config?.name) {
-          await this.runStepMode(runStepMode, config);
+          const result = await this.runStepMode(runStepMode, config);
           // Record successfully executed step for potential compensation
           this.executedSteps.push(config.name);
+          if (result.execute?.continue === false) {
+            return { bag: this.bag, lastStepResult: result };
+          }
         }
       } catch (error) {
         // Step failed - compensate all previously executed steps
-        await this.iterateCompensateSteps();
-        logger.error(`Step Error`, error as Error);
+        logger.error(`Step Error: init composate steps`, error as Error);
+        return await this.iterateCompensateSteps();
         /**
          * Note: We return the bag instead of throwing the error.
          * This is because uncaught exceptions in DBOS workflows don't allow recovery.
@@ -212,11 +225,11 @@ export class SagaOrchestrator<
          * The workflow stops execution on error, but all compensation steps
          * are invoked successfully before returning the current state.
          */
-        return this.bag;
+        // return { bag: this.bag, lastStepResult: this.lastStepResult };
       }
     }
     // All steps executed successfully
-    return this.bag;
+    return { bag: this.bag, lastStepResult: this.lastStepResult };
   }
 
   /**
@@ -239,7 +252,8 @@ export class SagaOrchestrator<
   async start() {
     // Run without DBOS workflow if no DBOS configuration provided
     if (!this.dbosConfig) {
-      return this.iterateSagaSteps();
+      const result = await this.iterateSagaSteps();
+      return Object.freeze(structuredClone(result));
     }
 
     // Register and start as DBOS workflow if workflow name is provided
@@ -257,8 +271,8 @@ export class SagaOrchestrator<
           ...this.dbosConfig?.args,
         },
       );
-
-      return handle()?.getResult();
+      const result = await handle()?.getResult();
+      return Object.freeze(structuredClone(result));
     }
 
     throw new Error("Workflow name is required for Workflow definition");
@@ -269,6 +283,8 @@ export class SagaOrchestrator<
    * @returns The saga bag
    */
   getBag() {
-    return this.bag;
+    return Object.freeze(
+      structuredClone({ bag: this.bag, lastStepResult: this.lastStepResult }),
+    );
   }
 }
