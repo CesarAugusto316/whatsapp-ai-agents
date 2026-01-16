@@ -11,7 +11,7 @@ import {
 } from "@/domain/restaurant/reservations/reservation.types";
 import { Business, Customer } from "@/infraestructure/http/cms/cms-types";
 import { DBOS } from "@dbos-inc/dbos-sdk";
-import { mergeReservationData } from "../helpers/merge-state";
+import { mergeReservationData } from "../../../sagas/reservations/helpers/merge-state";
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
 import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";

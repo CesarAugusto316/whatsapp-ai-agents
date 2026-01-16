@@ -30,7 +30,7 @@ import {
 } from "@/application/patterns/saga-orchestrator/saga-orchestrator";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
-import { mergeReservationData } from "../../workflows/reservations/helpers/merge-state";
+import { mergeReservationData } from "./helpers/merge-state";
 
 export const ATTEMPTS = 4;
 
@@ -54,9 +54,7 @@ type StaertedFuncSagaStep = ISagaStep<
   StartedSteps
 >;
 
-export const earlyConditions = (
-  mode: ReservationMode,
-): StaertedFuncSagaStep => ({
+const earlyConditions = (mode: ReservationMode): StaertedFuncSagaStep => ({
   config: { execute: { name: "early_conditions", ...stepConfig } },
   execute: ({ ctx, durableStep }) => {
     const { customerMessage, RESERVATION_STATE, reservationKey } = ctx;
@@ -107,7 +105,7 @@ export const earlyConditions = (
   },
 });
 
-export const collectAndValidate = (): StaertedFuncSagaStep => ({
+const collectAndValidate = (): StaertedFuncSagaStep => ({
   config: { execute: { name: "collect_and_validate", ...stepConfig } },
   execute: async ({ ctx, durableStep }) => {
     const {
@@ -167,9 +165,7 @@ export const collectAndValidate = (): StaertedFuncSagaStep => ({
   },
 });
 
-export const checkAvailability = (
-  mode: ReservationMode,
-): StaertedFuncSagaStep => ({
+const checkAvailability = (mode: ReservationMode): StaertedFuncSagaStep => ({
   config: { execute: { name: "check_availability", ...stepConfig } },
   execute: async ({ ctx, getStepResult, durableStep }) => {
     //
@@ -290,3 +286,9 @@ export const checkAvailability = (
     });
   },
 });
+
+export const started = {
+  earlyConditions,
+  collectAndValidate,
+  checkAvailability,
+};

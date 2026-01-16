@@ -6,10 +6,10 @@ import {
   reservationSchemas,
 } from "@/domain/restaurant/reservations/schemas";
 import { aiClient } from "@/infraestructure/http/ai/ai.client";
-import { ModelMessage } from "@/infraestructure/http/ai/llm.types";
 import { Business } from "@/infraestructure/http/cms/cms-types";
 import { logger } from "@/infraestructure/logging/logger";
-import { mergeReservationData } from "@/application/use-cases/workflows/reservations/helpers/merge-state";
+import { mergeReservationData } from "@/application/use-cases/sagas/reservations/helpers/merge-state";
+import { ChatMessage } from "@/infraestructure/http/ai/open-ai-compatible.types";
 
 export const validatorAgent = {
   /**
@@ -23,7 +23,7 @@ export const validatorAgent = {
     temp = 0.1,
   ) {
     const PARSER_PROMPT = validationPrompts.dataParser(business);
-    const messages: ModelMessage[] = [
+    const messages: ChatMessage[] = [
       { role: "user", content: customerMessage },
     ];
     const aiValidator: string = await aiClient.userMsg(

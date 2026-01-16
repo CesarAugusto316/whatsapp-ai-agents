@@ -1,6 +1,6 @@
-import { ModelMessage } from "@/infraestructure/http/ai/llm.types";
 import { ReservationSchema } from "./schemas";
 import { Business } from "@/infraestructure/http/cms/cms-types";
+import { ChatMessage } from "@/infraestructure/http/ai/open-ai-compatible.types";
 
 export const BOOL = {
   YES: true,
@@ -22,7 +22,7 @@ export enum InputIntent {
 }
 
 export type AgentArgs = {
-  messages: ModelMessage[];
+  messages: ChatMessage[];
   business: Business;
   customerPhone: string;
 };

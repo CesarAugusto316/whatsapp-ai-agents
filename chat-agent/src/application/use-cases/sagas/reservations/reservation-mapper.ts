@@ -2,19 +2,13 @@ import { SagaOrchestrator } from "@/application/patterns/saga-orchestrator/saga-
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { FMStatus } from "@/domain/restaurant/reservations/reservation.types";
 import {
-  checkAvailability,
-  collectAndValidate,
+  started,
   StartedSagaResult,
   StartedSteps,
-  earlyConditions,
   StartedFuncSagaResult,
 } from "./reservation-started";
 import {
-  exit,
-  makeConfirmation,
-  restart,
-  sendConfirmationMsg,
-  updateConfirmation,
+  validated,
   ValidateFuncSagaResult,
   ValidateSagaResult,
   ValidateSagaSteps,
@@ -31,9 +25,9 @@ const makeStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
     ctx,
     dbosConfig: { workflowName: status },
   })
-    .addStep(earlyConditions("create"))
-    .addStep(collectAndValidate())
-    .addStep(checkAvailability("create"))
+    .addStep(started.earlyConditions("create"))
+    .addStep(started.collectAndValidate())
+    .addStep(started.checkAvailability("create"))
     .start();
 };
 
@@ -52,10 +46,10 @@ const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     ctx,
     dbosConfig: { workflowName: status },
   })
-    .addStep(makeConfirmation())
-    .addStep(sendConfirmationMsg("create"))
-    .addStep(exit())
-    .addStep(restart())
+    .addStep(validated.makeConfirmation())
+    .addStep(validated.sendConfirmationMsg("create"))
+    .addStep(validated.exit())
+    .addStep(validated.restart())
     .start();
 };
 
@@ -70,9 +64,9 @@ const updateStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
     ctx,
     dbosConfig: { workflowName: status },
   })
-    .addStep(earlyConditions("update"))
-    .addStep(collectAndValidate())
-    .addStep(checkAvailability("update"))
+    .addStep(started.earlyConditions("update"))
+    .addStep(started.collectAndValidate())
+    .addStep(started.checkAvailability("update"))
     .start();
 };
 
@@ -91,10 +85,10 @@ const updateValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     ctx,
     dbosConfig: { workflowName: status },
   })
-    .addStep(updateConfirmation())
-    .addStep(sendConfirmationMsg("update"))
-    .addStep(exit())
-    .addStep(restart())
+    .addStep(validated.updateConfirmation())
+    .addStep(validated.sendConfirmationMsg("update"))
+    .addStep(validated.exit())
+    .addStep(validated.restart())
     .start();
 };
 

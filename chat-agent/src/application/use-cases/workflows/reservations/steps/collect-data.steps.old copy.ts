@@ -9,7 +9,7 @@ import {
   InputIntent,
   ReservationState,
 } from "@/domain/restaurant/reservations/reservation.types";
-import { mergeReservationData } from "../helpers/merge-state";
+import { mergeReservationData } from "../../../sagas/reservations/helpers/merge-state";
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
 import { isWithinBusinessHours } from "@/domain/restaurant/reservations/is-within-business-hours";

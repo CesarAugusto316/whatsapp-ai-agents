@@ -1,5 +1,5 @@
 import { redisClient } from "../cache/redis.client";
-import { ModelMessage } from "../http/ai/llm.types";
+import { ChatMessage } from "../http/ai/open-ai-compatible.types";
 
 // COMMANDS REDDIS
 // KEYS chat:*
@@ -31,7 +31,7 @@ class ChatHistory {
         role: msg.role,
         content: msg.content,
       };
-    }) satisfies ModelMessage[];
+    }) satisfies ChatMessage[];
     // .filter((msg) => msg.role === "user");
   }
 

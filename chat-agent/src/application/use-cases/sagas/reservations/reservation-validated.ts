@@ -46,7 +46,7 @@ type ValidateFuncSagaStep = ISagaStep<
   ValidateSagaSteps
 >;
 
-export const makeConfirmation = (): ValidateFuncSagaStep => ({
+const makeConfirmation = (): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM", ...stepConfig },
     compensate: { name: "CONFIRM:FAILED", ...stepConfig },
@@ -130,7 +130,7 @@ export const makeConfirmation = (): ValidateFuncSagaStep => ({
   },
 });
 
-export const updateConfirmation = (): ValidateFuncSagaStep => ({
+const updateConfirmation = (): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM", ...stepConfig },
     compensate: { name: "CONFIRM:FAILED", ...stepConfig },
@@ -150,36 +150,38 @@ export const updateConfirmation = (): ValidateFuncSagaStep => ({
       numberOfPeople = 1,
     } = RESERVATION_STATE as ReservationState;
 
+    if (!RESERVATION_STATE)
+      return {
+        continue: false,
+        result: "Ocurrió un error, vuelve a intearlo mas tarde",
+      };
+    if (!customer) {
+      return {
+        result:
+          "Aún no te has registrado, por favor has tu primera reserva para registrarte",
+        continue: false,
+      };
+    }
     if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
     return durableStep(async () => {
-      let newCustomer = customer;
-      if (!customer && customerName) {
-        newCustomer = (
-          (await (
-            await cmsClient.createCostumer({
-              business: business?.id || "",
-              phoneNumber: customerPhone || "",
-              name: customerName,
-            })
-          ).json()) as { doc: Customer }
-        )?.doc;
-      }
-
-      if (newCustomer?.id && business?.id) {
+      //
+      if (customer?.id && business?.id && RESERVATION_STATE?.id) {
         const timezone = business.general.timezone;
-        const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
-        const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
+        const { start, end } = datetime;
+        const startDateTime = localDateTimeToUTC(start, timezone);
+        const endDateTime = localDateTimeToUTC(end, timezone);
+
         const reservation = (
           (await (
-            await cmsClient.createAppointment({
-              business: business.id,
-              customer: newCustomer?.id!,
+            await cmsClient.updateAppointment(RESERVATION_STATE?.id!, {
+              business: business?.id,
+              customer: customer?.id,
               startDateTime,
               endDateTime,
-              customerName: newCustomer?.name!,
               numberOfPeople,
+              customerName: customerName || customer?.name || "",
               status: "confirmed",
             })
           ).json()) as { doc: Appointment }
@@ -193,18 +195,17 @@ export const updateConfirmation = (): ValidateFuncSagaStep => ({
       };
     });
   },
-  compensate: async ({ ctx, durableStep, getStepResult }) => {
-    const { customerMessage } = ctx;
-    const reservation = getStepResult("execute:CONFIRM")?.reservation;
-
-    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
-      return { continue: true };
-    }
-    return durableStep(async () => {
-      // FINAL OPTION: 1. CONFIRMAR
-      if (reservation && reservation?.id) {
-        await cmsClient.deleteAppointment(reservation?.id!);
-        logger.error("Error deleting appointment"); // DBOS reintentará el flujo desde el último checkpoint
+  compensate: async ({ ctx, retryStep }) => {
+    const { customerMessage, reservationKey } = ctx;
+    return retryStep(async () => {
+      // Aún así, intentamos limpiar la caché para evitar estados inconsistentes
+      try {
+        await cacheAdapter.delete(reservationKey ?? "");
+      } catch (cacheError) {
+        logger.error(
+          "Failed to clean cache after update error",
+          cacheError as Error,
+        );
       }
       return {
         continue: false,
@@ -214,9 +215,7 @@ export const updateConfirmation = (): ValidateFuncSagaStep => ({
   },
 });
 
-export const sendConfirmationMsg = (
-  mode: ReservationMode,
-): ValidateFuncSagaStep => ({
+const sendConfirmationMsg = (mode: ReservationMode): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
   },
@@ -228,9 +227,6 @@ export const sendConfirmationMsg = (
       customer,
       business,
     } = ctx;
-    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
-      return { continue: true };
-    }
     const timezone = business.general.timezone;
     const {
       customerName = "",
@@ -239,6 +235,9 @@ export const sendConfirmationMsg = (
     } = RESERVATION_STATE as ReservationState;
     const reservation = getStepResult("execute:CONFIRM")?.reservation;
 
+    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
+    }
     if (!reservation?.id) {
       logger.info("Reservation not found", reservation);
       return {
@@ -271,7 +270,7 @@ export const sendConfirmationMsg = (
   },
 });
 
-export const exit = (): ValidateFuncSagaStep => ({
+const exit = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "EXIT", ...stepConfig } },
   execute: async ({ ctx, retryStep }) => {
     const { customerMessage, reservationKey } = ctx;
@@ -291,7 +290,7 @@ export const exit = (): ValidateFuncSagaStep => ({
   },
 });
 
-export const restart = (): ValidateFuncSagaStep => ({
+const restart = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "RESTART", ...stepConfig } },
   execute: async ({ ctx, retryStep }) => {
     //
@@ -331,3 +330,11 @@ export const restart = (): ValidateFuncSagaStep => ({
     });
   },
 });
+
+export const validated = {
+  updateConfirmation,
+  makeConfirmation,
+  sendConfirmationMsg,
+  exit,
+  restart,
+};

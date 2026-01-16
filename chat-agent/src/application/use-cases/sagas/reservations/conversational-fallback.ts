@@ -12,11 +12,11 @@ import {
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
 import { aiClient } from "@/infraestructure/http/ai/ai.client";
-import { ModelMessage } from "@/infraestructure/http/ai/llm.types";
 import { logger } from "@/infraestructure/logging/logger";
 import { initReservationChangeSteps } from "./init-reservation-update.steps";
 import { intentClassifierAgent } from "@/application/agents/restaurant/reservation/intent-classifier-agent";
 import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
+import { ChatMessage } from "@/infraestructure/http/ai/open-ai-compatible.types";
 
 /**
  *
@@ -40,7 +40,7 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
     const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
     const isFirstMessage = chatHistoryCache.length === 0;
     if (isFirstMessage) {
-      const messages: ModelMessage[] = [
+      const messages: ChatMessage[] = [
         {
           role: "user",
           content: systemMessages.initialGreeting(
@@ -108,7 +108,7 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
   }
 
   const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
-  const messages: ModelMessage[] = [
+  const messages: ChatMessage[] = [
     ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
     {
       role: "user",
