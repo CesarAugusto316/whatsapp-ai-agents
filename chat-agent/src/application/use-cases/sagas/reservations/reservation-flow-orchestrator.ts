@@ -1,7 +1,7 @@
 import { fallbackWorkflow } from "./conversational-fallback";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
-import { reservationSagaMapper } from "./reservation-mapper";
+import { routeSagaOrchestrator } from "./reservation-mapper";
 import {
   FlowOptions,
   InputIntent,
@@ -14,7 +14,7 @@ import {
  * @param ctx
  * @returns Promise<string>
  */
-export async function reservationFlowOrchestrator(
+export async function reservationSagaOrchestrator(
   ctx: RestaurantCtx,
 ): Promise<string> {
   const status = ctx.RESERVATION_STATE?.status;
@@ -25,21 +25,20 @@ export async function reservationFlowOrchestrator(
   }
 
   if (status) {
-    const { result } = await reservationSagaMapper(ctx, status);
+    const { result } = await routeSagaOrchestrator(ctx, status);
     if (result && result !== InputIntent.CUSTOMER_QUESTION) {
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return result;
     }
   } else {
+    /** @todo refactor to use SagaOrchestrator and Saga mapper */
     FlowOptions;
     // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
   }
 
   /**
    *
-   * @todo mange case when user asks a question and is currently inside a FLOW/EVENT
-   * IF result == InputIntent.CUSTOMER_QUESTION, then the AGENT SHOULD
-   * invite the user to continue the FLOW: MAKE_STARTED, UPDATE_STARTED
+   * @todo refactor to use SagaOrchestrator
    * @see makeStarted
    * @see updateStarted
    * @see {InputIntent}

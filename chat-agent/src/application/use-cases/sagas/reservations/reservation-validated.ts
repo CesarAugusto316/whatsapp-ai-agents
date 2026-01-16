@@ -35,8 +35,7 @@ export interface ValidateSagaResult extends SagaBag {
 export type ValidateSagaSteps =
   | CustomerActionKey
   | "CONFIRM:FAILED"
-  | "CONFIRM:SEND_MESSAGE"
-  | "CANCEL";
+  | "CONFIRM:SEND_MESSAGE";
 
 export type ValidateFuncSagaResult = (
   ctx: RestaurantCtx,
@@ -112,7 +111,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
     });
   },
   compensate: async ({ ctx, durableStep, getStepResult }) => {
-    const { customerMessage } = ctx;
+    const { customerMessage, reservationKey } = ctx;
     const reservation = getStepResult("execute:CONFIRM")?.reservation;
 
     if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
@@ -122,6 +121,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       // FINAL OPTION: 1. CONFIRMAR
       if (reservation && reservation?.id) {
         await cmsClient.deleteAppointment(reservation?.id!);
+        await cacheAdapter.delete(reservationKey);
         logger.error("Error deleting appointment"); // DBOS reintentará el flujo desde el último checkpoint
       }
       return {
@@ -191,7 +191,7 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
     });
   },
   compensate: async ({ ctx, retryStep }) => {
-    const { customerMessage, reservationKey } = ctx;
+    const { reservationKey } = ctx;
     return retryStep(async () => {
       // Aún así, intentamos limpiar la caché para evitar estados inconsistentes
       try {
@@ -326,8 +326,8 @@ const restart = (): ValidateFuncSagaStep => ({
 });
 
 export const cancelConfirmed = (): ValidateFuncSagaStep => ({
-  config: { execute: { name: "CANCEL", ...stepConfig } },
-  execute: async ({ ctx, getStepResult, durableStep }) => {
+  config: { execute: { name: "CONFIRM", ...stepConfig } },
+  execute: async ({ ctx, durableStep }) => {
     //
     const { RESERVATION_STATE, customerMessage, reservationKey, customer } =
       ctx;

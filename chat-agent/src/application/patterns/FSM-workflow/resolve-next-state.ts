@@ -93,11 +93,11 @@ export function resolveNextState(
     // CANCEL
     case FlowOptions.CANCEL_RESERVATION:
       return {
-        nextState: ReservationStatuses.CANCEL_STARTED,
+        nextState: ReservationStatuses.CANCEL_VALIDATED,
         suggestedActions: [],
         messageHint: "",
       };
-    case ReservationStatuses.CANCEL_STARTED:
+    case ReservationStatuses.CANCEL_VALIDATED:
       return {
         nextState: ReservationStatuses.CANCEL_CONFIRMED,
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],

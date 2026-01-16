@@ -21,6 +21,8 @@ import {
  */
 const makeStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
   const status = ctx.RESERVATION_STATE?.status;
+  if (!status) throw new Error("Status is undefined");
+
   return new SagaOrchestrator<RestaurantCtx, StartedSagaResult, StartedSteps>({
     ctx,
     dbosConfig: { workflowName: status },
@@ -38,6 +40,8 @@ const makeStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
  */
 const updateStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
   const status = ctx.RESERVATION_STATE?.status;
+  if (!status) throw new Error("Status is undefined");
+
   return new SagaOrchestrator<RestaurantCtx, StartedSagaResult, StartedSteps>({
     ctx,
     dbosConfig: { workflowName: status },
@@ -55,6 +59,8 @@ const updateStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
  */
 const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
   const status = ctx.RESERVATION_STATE?.status;
+  if (!status) throw new Error("Status is undefined");
+
   return new SagaOrchestrator<
     RestaurantCtx,
     ValidateSagaResult,
@@ -77,6 +83,8 @@ const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
  */
 const updateValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
   const status = ctx.RESERVATION_STATE?.status;
+  if (!status) throw new Error("Status is undefined");
+
   return new SagaOrchestrator<
     RestaurantCtx,
     ValidateSagaResult,
@@ -97,8 +105,10 @@ const updateValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
  * @param ctx
  * @returns
  */
-const cancelStarted: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
+const cancelValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
   const status = ctx.RESERVATION_STATE?.status;
+  if (!status) throw new Error("Status is undefined");
+
   return new SagaOrchestrator<
     RestaurantCtx,
     ValidateSagaResult,
@@ -117,20 +127,23 @@ const reservationSagas: Partial<
 > = {
   MAKE_STARTED: makeStarted,
   UPDATE_STARTED: updateStarted,
-  CANCEL_STARTED: cancelStarted,
 
   MAKE_VALIDATED: makeValidated,
   UPDATE_VALIDATED: updateValidated,
+  CANCEL_VALIDATED: cancelValidated,
 };
 
-export const reservationSagaMapper = async (
+export const routeSagaOrchestrator = async (
   ctx: RestaurantCtx,
   status: FMStatus,
 ) => {
   //
-  const r = await reservationSagas?.[status]?.(ctx);
-  if (r?.lastStepResult?.execute?.result) {
-    return { result: r?.lastStepResult?.execute.result };
+  const orchestrator = reservationSagas[status];
+  if (!orchestrator) throw new Error(`No saga found for status ${status}`);
+
+  const { lastStepResult } = await orchestrator(ctx);
+  if (lastStepResult?.execute?.result) {
+    return { result: lastStepResult?.execute.result };
   }
   return { result: "" };
 };

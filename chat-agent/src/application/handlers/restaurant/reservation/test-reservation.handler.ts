@@ -1,7 +1,7 @@
 import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { DomainCtx } from "@/domain/context.types";
-import { reservationFlowOrchestrator } from "@/application/use-cases/sagas/reservations/reservation-flow-orchestrator";
+import { reservationSagaOrchestrator } from "@/application/use-cases/sagas/reservations/reservation-flow-orchestrator";
 
 /**
  *
@@ -24,6 +24,6 @@ export const testReservationHandler: Handler<DomainCtx<RestaurantCtx>> = async (
 
   return c.json({
     received: true,
-    text: await reservationFlowOrchestrator(context),
+    text: await reservationSagaOrchestrator(context),
   });
 };
