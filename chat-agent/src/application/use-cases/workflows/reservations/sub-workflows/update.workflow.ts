@@ -179,12 +179,6 @@ const validated: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
     });
     return assistantResponse;
   }
-
-  // FALLBACK
-  // if (customerMessage) {
-  //   const assistanceMsg = `Tienes una reserva disponible. Escribe: ${CustomerActions.CONFIRM} para confirmar reserva, ${CustomerActions.RESTART} para cambiar algun dato, ó ${CustomerActions.EXIT} para salir`;
-  //   return humanizerAgent(assistanceMsg);
-  // }
 };
 
 export const updateWorkflow = { started, validated };

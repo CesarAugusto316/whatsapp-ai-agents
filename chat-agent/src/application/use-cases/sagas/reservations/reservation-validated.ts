@@ -1,0 +1,333 @@
+import {
+  ReservationMode,
+  systemMessages,
+} from "@/domain/restaurant/reservations/prompts/system-messages";
+import {
+  CustomerActionKey,
+  CustomerActions,
+  ReservationState,
+} from "@/domain/restaurant/reservations/reservation.types";
+import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
+import { logger } from "@/infraestructure/logging/logger";
+import { localDateTimeToUTC } from "@/domain/utilities/datetime-formatting/datetime-converters";
+import cmsClient from "@/infraestructure/http/cms/cms.client";
+import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
+import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
+import {
+  ISagaStep,
+  SagaBag,
+  SagaResult,
+  stepConfig,
+} from "@/application/patterns/saga-orchestrator/saga-orchestrator";
+import { RestaurantCtx } from "@/domain/restaurant/context.types";
+import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
+import { Appointment, Customer } from "@/infraestructure/http/cms/cms-types";
+
+export const ATTEMPTS = 4;
+
+export interface ValidateSagaResult extends SagaBag {
+  result?: string; // The formatted text content to be sent via WhatsApp
+  data?: ReservationSchema;
+  reservation?: Appointment;
+}
+
+export type ValidateSagaSteps =
+  | CustomerActionKey
+  | "CONFIRM:FAILED"
+  | "CONFIRM:SEND_MESSAGE";
+
+export type ValidateFuncSagaResult = (
+  ctx: RestaurantCtx,
+) => Promise<SagaResult<ValidateSagaResult, ValidateSagaSteps>>;
+
+type ValidateFuncSagaStep = ISagaStep<
+  RestaurantCtx,
+  ValidateSagaResult,
+  ValidateSagaSteps
+>;
+
+export const makeConfirmation = (): ValidateFuncSagaStep => ({
+  config: {
+    execute: { name: "CONFIRM", ...stepConfig },
+    compensate: { name: "CONFIRM:FAILED", ...stepConfig },
+  },
+  execute: async ({ ctx, durableStep }) => {
+    const {
+      customerMessage,
+      RESERVATION_STATE,
+      customer,
+      business,
+      customerPhone,
+    } = ctx;
+
+    const {
+      customerName = "",
+      datetime,
+      numberOfPeople = 1,
+    } = RESERVATION_STATE as ReservationState;
+
+    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
+    }
+    return durableStep(async () => {
+      let newCustomer = customer;
+      if (!customer && customerName) {
+        newCustomer = (
+          (await (
+            await cmsClient.createCostumer({
+              business: business?.id || "",
+              phoneNumber: customerPhone || "",
+              name: customerName,
+            })
+          ).json()) as { doc: Customer }
+        )?.doc;
+      }
+
+      if (newCustomer?.id && business?.id) {
+        const timezone = business.general.timezone;
+        const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
+        const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
+        const reservation = (
+          (await (
+            await cmsClient.createAppointment({
+              business: business.id,
+              customer: newCustomer?.id!,
+              startDateTime,
+              endDateTime,
+              customerName: newCustomer?.name!,
+              numberOfPeople,
+              status: "confirmed",
+            })
+          ).json()) as { doc: Appointment }
+        ).doc;
+
+        return { reservation, continue: true };
+      }
+      return {
+        continue: false,
+        result: "No pudimos crear tu reserva intenlo mas tarde",
+      };
+    });
+  },
+  compensate: async ({ ctx, durableStep, getStepResult }) => {
+    const { customerMessage } = ctx;
+    const reservation = getStepResult("execute:CONFIRM")?.reservation;
+
+    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
+    }
+    return durableStep(async () => {
+      // FINAL OPTION: 1. CONFIRMAR
+      if (reservation && reservation?.id) {
+        await cmsClient.deleteAppointment(reservation?.id!);
+        logger.error("Error deleting appointment"); // DBOS reintentará el flujo desde el último checkpoint
+      }
+      return {
+        continue: false,
+        result: "Hubo un problema procesando tu reserva. Inténtalo más tarde.",
+      };
+    });
+  },
+});
+
+export const updateConfirmation = (): ValidateFuncSagaStep => ({
+  config: {
+    execute: { name: "CONFIRM", ...stepConfig },
+    compensate: { name: "CONFIRM:FAILED", ...stepConfig },
+  },
+  execute: async ({ ctx, durableStep }) => {
+    const {
+      customerMessage,
+      RESERVATION_STATE,
+      customer,
+      business,
+      customerPhone,
+    } = ctx;
+
+    const {
+      customerName = "",
+      datetime,
+      numberOfPeople = 1,
+    } = RESERVATION_STATE as ReservationState;
+
+    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
+    }
+    return durableStep(async () => {
+      let newCustomer = customer;
+      if (!customer && customerName) {
+        newCustomer = (
+          (await (
+            await cmsClient.createCostumer({
+              business: business?.id || "",
+              phoneNumber: customerPhone || "",
+              name: customerName,
+            })
+          ).json()) as { doc: Customer }
+        )?.doc;
+      }
+
+      if (newCustomer?.id && business?.id) {
+        const timezone = business.general.timezone;
+        const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
+        const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
+        const reservation = (
+          (await (
+            await cmsClient.createAppointment({
+              business: business.id,
+              customer: newCustomer?.id!,
+              startDateTime,
+              endDateTime,
+              customerName: newCustomer?.name!,
+              numberOfPeople,
+              status: "confirmed",
+            })
+          ).json()) as { doc: Appointment }
+        ).doc;
+
+        return { reservation, continue: true };
+      }
+      return {
+        continue: false,
+        result: "No pudimos crear tu reserva intenlo mas tarde",
+      };
+    });
+  },
+  compensate: async ({ ctx, durableStep, getStepResult }) => {
+    const { customerMessage } = ctx;
+    const reservation = getStepResult("execute:CONFIRM")?.reservation;
+
+    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
+    }
+    return durableStep(async () => {
+      // FINAL OPTION: 1. CONFIRMAR
+      if (reservation && reservation?.id) {
+        await cmsClient.deleteAppointment(reservation?.id!);
+        logger.error("Error deleting appointment"); // DBOS reintentará el flujo desde el último checkpoint
+      }
+      return {
+        continue: false,
+        result: "Hubo un problema procesando tu reserva. Inténtalo más tarde.",
+      };
+    });
+  },
+});
+
+export const sendConfirmationMsg = (
+  mode: ReservationMode,
+): ValidateFuncSagaStep => ({
+  config: {
+    execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
+  },
+  execute: async ({ ctx, retryStep, getStepResult }) => {
+    const {
+      customerMessage,
+      RESERVATION_STATE,
+      reservationKey,
+      customer,
+      business,
+    } = ctx;
+    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
+    }
+    const timezone = business.general.timezone;
+    const {
+      customerName = "",
+      datetime,
+      numberOfPeople = 1,
+    } = RESERVATION_STATE as ReservationState;
+    const reservation = getStepResult("execute:CONFIRM")?.reservation;
+
+    if (!reservation?.id) {
+      logger.info("Reservation not found", reservation);
+      return {
+        result: "Hubo un problema procesando tu reserva. Inténtalo más tarde.",
+        continue: false,
+      };
+    }
+    return retryStep(async () => {
+      const assistantMsg = systemMessages.getSuccessMsg(
+        {
+          id: reservation?.id,
+          datetime,
+          customerName: customerName || customer?.name || "",
+          numberOfPeople,
+        },
+        timezone,
+        mode,
+      );
+      await cacheAdapter.delete(reservationKey);
+      logger.info("Customer selected an option", {
+        customerAction: CustomerActions.CONFIRM,
+        customerMessage,
+      });
+      const result = await humanizerAgent(assistantMsg);
+      return {
+        result,
+        continue: false,
+      };
+    });
+  },
+});
+
+export const exit = (): ValidateFuncSagaStep => ({
+  config: { execute: { name: "EXIT", ...stepConfig } },
+  execute: async ({ ctx, retryStep }) => {
+    const { customerMessage, reservationKey } = ctx;
+
+    if (customerMessage?.toUpperCase() !== CustomerActions.EXIT) {
+      return { continue: true };
+    }
+    return retryStep(async () => {
+      // OPTION: 4. PARSE USER INPUT
+      await cacheAdapter.delete(reservationKey);
+      const assistantMsg = systemMessages.getExitMsg();
+      logger.info("Customer selected an option", {
+        customerAction: CustomerActions.EXIT,
+      });
+      return { result: assistantMsg, continue: false };
+    });
+  },
+});
+
+export const restart = (): ValidateFuncSagaStep => ({
+  config: { execute: { name: "RESTART", ...stepConfig } },
+  execute: async ({ ctx, retryStep }) => {
+    //
+    const {
+      customerMessage,
+      reservationKey,
+      business,
+      RESERVATION_STATE,
+      customer,
+    } = ctx;
+    const reservation = RESERVATION_STATE as ReservationState;
+
+    if (customerMessage?.toUpperCase() !== CustomerActions.RESTART) {
+      return { continue: true };
+    }
+    return retryStep(async () => {
+      const assistantResponse = systemMessages.getCreateMsg({
+        userName: customer?.name,
+      });
+
+      const transition = resolveNextState(
+        reservation.status,
+        CustomerActions.RESTART,
+      );
+      await cacheAdapter.save(reservationKey ?? "", {
+        ...reservation,
+        businessId: business?.id,
+        customerId: customer?.id,
+        status: transition.nextState,
+      });
+      logger.info("Customer selected an option", {
+        customerAction: CustomerActions.RESTART,
+      });
+
+      const result = await humanizerAgent(assistantResponse);
+      return { result, continue: false };
+    });
+  },
+});

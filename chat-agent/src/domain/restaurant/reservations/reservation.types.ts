@@ -67,3 +67,10 @@ export const CustomerActions = {
   RESTART: "REINGRESAR",
   EXIT: "SALIR",
 } as const;
+
+export type CustomerActionKey = keyof typeof CustomerActions;
+
+export type CustomerActionValue =
+  | typeof CustomerActions.CONFIRM
+  | typeof CustomerActions.RESTART
+  | typeof CustomerActions.EXIT;

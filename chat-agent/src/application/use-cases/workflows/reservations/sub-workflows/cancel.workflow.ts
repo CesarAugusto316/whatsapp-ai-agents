@@ -65,10 +65,6 @@ const started: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (ctx) => {
       await cacheAdapter.delete(reservationKey);
       return assistantResponse;
     }
-    // if (customerMessage) {
-    //   const assistantResponse = `Escribe "${CustomerActions.YES}" para cancelar tu reserva o "${CustomerActions.NO}" para salir de este proceso`;
-    //   return humanizerAgent(assistantResponse);
-    // }
   }
 };
 

@@ -34,27 +34,29 @@ import { mergeReservationData } from "../../workflows/reservations/helpers/merge
 
 export const ATTEMPTS = 4;
 
-export type CollectDataSteps =
+export type StartedSteps =
   | "early_conditions" // Mark message as seen in WhatsApp
   | "collect_and_validate" // Show typing indicator to user
   | "check_availability"; // Execute reservation business logic
 
-export interface CollectDataSagaResult extends SagaBag {
+export interface StartedSagaResult extends SagaBag {
   result?: string; // The formatted text content to be sent via WhatsApp
   data?: ReservationSchema;
 }
 
-export type FuncSagaResult = (
+export type StartedFuncSagaResult = (
   ctx: RestaurantCtx,
-) => Promise<SagaResult<CollectDataSagaResult, CollectDataSteps>>;
+) => Promise<SagaResult<StartedSagaResult, StartedSteps>>;
 
-type FuncSagaStep = ISagaStep<
+type StaertedFuncSagaStep = ISagaStep<
   RestaurantCtx,
-  CollectDataSagaResult,
-  CollectDataSteps
+  StartedSagaResult,
+  StartedSteps
 >;
 
-export const earlyConditions = (mode: ReservationMode): FuncSagaStep => ({
+export const earlyConditions = (
+  mode: ReservationMode,
+): StaertedFuncSagaStep => ({
   config: { execute: { name: "early_conditions", ...stepConfig } },
   execute: ({ ctx, durableStep }) => {
     const { customerMessage, RESERVATION_STATE, reservationKey } = ctx;
@@ -105,7 +107,7 @@ export const earlyConditions = (mode: ReservationMode): FuncSagaStep => ({
   },
 });
 
-export const collectAndValidate = (): FuncSagaStep => ({
+export const collectAndValidate = (): StaertedFuncSagaStep => ({
   config: { execute: { name: "collect_and_validate", ...stepConfig } },
   execute: async ({ ctx, durableStep }) => {
     const {
@@ -165,7 +167,9 @@ export const collectAndValidate = (): FuncSagaStep => ({
   },
 });
 
-export const checkAvailability = (mode: ReservationMode): FuncSagaStep => ({
+export const checkAvailability = (
+  mode: ReservationMode,
+): StaertedFuncSagaStep => ({
   config: { execute: { name: "check_availability", ...stepConfig } },
   execute: async ({ ctx, getStepResult, durableStep }) => {
     //

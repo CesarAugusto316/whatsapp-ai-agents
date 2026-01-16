@@ -1,4 +1,5 @@
 import {
+  CustomerActionValue,
   CustomerActions,
   FlowOptions,
   FMStatus,
@@ -17,8 +18,14 @@ export interface StateTransition {
  * @param status
  * @returns
  */
-export function resolveNextState(status: FMStatus): StateTransition {
-  switch (status) {
+export function resolveNextState(
+  status: FMStatus,
+  action?: CustomerActionValue,
+): StateTransition {
+  //
+  const condition = status + (action ?? ""); // "hi" + (undefined ?? "") = "hi"
+
+  switch (condition) {
     // CREATE
     case FlowOptions.MAKE_RESERVATION:
       return {
@@ -43,6 +50,12 @@ export function resolveNextState(status: FMStatus): StateTransition {
         ],
         messageHint:
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
+      };
+    case ReservationStatuses.MAKE_VALIDATED + CustomerActions.RESTART:
+      return {
+        nextState: ReservationStatuses.MAKE_STARTED,
+        suggestedActions: [],
+        messageHint: "",
       };
 
     // UPDATE
@@ -69,6 +82,12 @@ export function resolveNextState(status: FMStatus): StateTransition {
         ],
         messageHint:
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
+      };
+    case ReservationStatuses.UPDATE_VALIDATED + CustomerActions.RESTART:
+      return {
+        nextState: ReservationStatuses.UPDATE_STARTED,
+        suggestedActions: [],
+        messageHint: "",
       };
 
     // CANCEL
