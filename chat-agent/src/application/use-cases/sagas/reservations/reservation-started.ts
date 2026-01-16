@@ -37,7 +37,7 @@ export const ATTEMPTS = 4;
 export type StartedSteps =
   | "early_conditions" // Mark message as seen in WhatsApp
   | "collect_and_validate" // Show typing indicator to user
-  | "check_availability"; // Execute reservation business logic
+  | "check_availability";
 
 export interface StartedSagaResult extends SagaBag {
   result?: string; // The formatted text content to be sent via WhatsApp
@@ -48,13 +48,13 @@ export type StartedFuncSagaResult = (
   ctx: RestaurantCtx,
 ) => Promise<SagaResult<StartedSagaResult, StartedSteps>>;
 
-type StaertedFuncSagaStep = ISagaStep<
+type StartedFuncSagaStep = ISagaStep<
   RestaurantCtx,
   StartedSagaResult,
   StartedSteps
 >;
 
-const earlyConditions = (mode: ReservationMode): StaertedFuncSagaStep => ({
+const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
   config: { execute: { name: "early_conditions", ...stepConfig } },
   execute: ({ ctx, durableStep }) => {
     const { customerMessage, RESERVATION_STATE, reservationKey } = ctx;
@@ -105,7 +105,7 @@ const earlyConditions = (mode: ReservationMode): StaertedFuncSagaStep => ({
   },
 });
 
-const collectAndValidate = (): StaertedFuncSagaStep => ({
+const collectAndValidate = (): StartedFuncSagaStep => ({
   config: { execute: { name: "collect_and_validate", ...stepConfig } },
   execute: async ({ ctx, durableStep }) => {
     const {
@@ -165,7 +165,7 @@ const collectAndValidate = (): StaertedFuncSagaStep => ({
   },
 });
 
-const checkAvailability = (mode: ReservationMode): StaertedFuncSagaStep => ({
+const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
   config: { execute: { name: "check_availability", ...stepConfig } },
   execute: async ({ ctx, getStepResult, durableStep }) => {
     //
@@ -292,3 +292,32 @@ export const started = {
   collectAndValidate,
   checkAvailability,
 };
+
+// -----------------------------------------------------------
+// DECORATOR PATTERN FOR FSM TRANSISIONS
+// -----------------------------------------------------------
+const step = (): StartedFuncSagaStep => ({
+  config: { execute: { name: "check_availability", ...stepConfig } },
+  execute: async ({ ctx, getStepResult, durableStep }) => {
+    //
+    return { continue: true };
+  },
+});
+
+const withTransitionStep = (
+  step: StartedFuncSagaStep,
+): StartedFuncSagaStep => ({
+  config: step.config,
+  execute: async (args) => {
+    //
+    const retult = await step.execute(args);
+    // await resolveNextState(result?.status)
+    return { continue: false };
+  },
+  compensate: async (args) => {
+    if (step.compensate) {
+      return await step?.compensate(args);
+    }
+    return { continue: true };
+  },
+});

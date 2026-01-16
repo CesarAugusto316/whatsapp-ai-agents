@@ -36,6 +36,23 @@ const makeStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
  * @param ctx
  * @returns
  */
+const updateStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
+  const status = ctx.RESERVATION_STATE?.status;
+  return new SagaOrchestrator<RestaurantCtx, StartedSagaResult, StartedSteps>({
+    ctx,
+    dbosConfig: { workflowName: status },
+  })
+    .addStep(started.earlyConditions("update"))
+    .addStep(started.collectAndValidate())
+    .addStep(started.checkAvailability("update"))
+    .start();
+};
+
+/**
+ *
+ * @param ctx
+ * @returns
+ */
 const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
   const status = ctx.RESERVATION_STATE?.status;
   return new SagaOrchestrator<
@@ -46,27 +63,10 @@ const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     ctx,
     dbosConfig: { workflowName: status },
   })
-    .addStep(validated.makeConfirmation())
+    .addStep(validated.makeConfirmed())
     .addStep(validated.sendConfirmationMsg("create"))
     .addStep(validated.exit())
     .addStep(validated.restart())
-    .start();
-};
-
-/**
- *
- * @param ctx
- * @returns
- */
-const updateStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
-  const status = ctx.RESERVATION_STATE?.status;
-  return new SagaOrchestrator<RestaurantCtx, StartedSagaResult, StartedSteps>({
-    ctx,
-    dbosConfig: { workflowName: status },
-  })
-    .addStep(started.earlyConditions("update"))
-    .addStep(started.collectAndValidate())
-    .addStep(started.checkAvailability("update"))
     .start();
 };
 
@@ -85,19 +85,41 @@ const updateValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     ctx,
     dbosConfig: { workflowName: status },
   })
-    .addStep(validated.updateConfirmation())
+    .addStep(validated.updateConfirmed())
     .addStep(validated.sendConfirmationMsg("update"))
     .addStep(validated.exit())
     .addStep(validated.restart())
     .start();
 };
 
+/**
+ *
+ * @param ctx
+ * @returns
+ */
+const cancelStarted: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
+  const status = ctx.RESERVATION_STATE?.status;
+  return new SagaOrchestrator<
+    RestaurantCtx,
+    ValidateSagaResult,
+    ValidateSagaSteps
+  >({
+    ctx,
+    dbosConfig: { workflowName: status },
+  })
+    .addStep(validated.cancelConfirmed())
+    .addStep(validated.exit())
+    .start();
+};
+
 const reservationSagas: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
 > = {
-  MAKE_RESTARTED: makeStarted,
-  MAKE_VALIDATED: makeValidated,
+  MAKE_STARTED: makeStarted,
   UPDATE_STARTED: updateStarted,
+  CANCEL_STARTED: cancelStarted,
+
+  MAKE_VALIDATED: makeValidated,
   UPDATE_VALIDATED: updateValidated,
 };
 

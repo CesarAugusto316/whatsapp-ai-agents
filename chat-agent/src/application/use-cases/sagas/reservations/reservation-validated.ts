@@ -6,6 +6,7 @@ import {
   CustomerActionKey,
   CustomerActions,
   ReservationState,
+  ReservationStatuses,
 } from "@/domain/restaurant/reservations/reservation.types";
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
@@ -34,7 +35,8 @@ export interface ValidateSagaResult extends SagaBag {
 export type ValidateSagaSteps =
   | CustomerActionKey
   | "CONFIRM:FAILED"
-  | "CONFIRM:SEND_MESSAGE";
+  | "CONFIRM:SEND_MESSAGE"
+  | "CANCEL";
 
 export type ValidateFuncSagaResult = (
   ctx: RestaurantCtx,
@@ -46,7 +48,7 @@ type ValidateFuncSagaStep = ISagaStep<
   ValidateSagaSteps
 >;
 
-const makeConfirmation = (): ValidateFuncSagaStep => ({
+const makeConfirmed = (): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM", ...stepConfig },
     compensate: { name: "CONFIRM:FAILED", ...stepConfig },
@@ -130,20 +132,13 @@ const makeConfirmation = (): ValidateFuncSagaStep => ({
   },
 });
 
-const updateConfirmation = (): ValidateFuncSagaStep => ({
+const updateConfirmed = (): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM", ...stepConfig },
     compensate: { name: "CONFIRM:FAILED", ...stepConfig },
   },
   execute: async ({ ctx, durableStep }) => {
-    const {
-      customerMessage,
-      RESERVATION_STATE,
-      customer,
-      business,
-      customerPhone,
-    } = ctx;
-
+    const { customerMessage, RESERVATION_STATE, customer, business } = ctx;
     const {
       customerName = "",
       datetime,
@@ -235,15 +230,14 @@ const sendConfirmationMsg = (mode: ReservationMode): ValidateFuncSagaStep => ({
     } = RESERVATION_STATE as ReservationState;
     const reservation = getStepResult("execute:CONFIRM")?.reservation;
 
-    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
-      return { continue: true };
-    }
     if (!reservation?.id) {
       logger.info("Reservation not found", reservation);
       return {
-        result: "Hubo un problema procesando tu reserva. Inténtalo más tarde.",
-        continue: false,
+        continue: true,
       };
+    }
+    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
     }
     return retryStep(async () => {
       const assistantMsg = systemMessages.getSuccessMsg(
@@ -331,9 +325,63 @@ const restart = (): ValidateFuncSagaStep => ({
   },
 });
 
+export const cancelConfirmed = (): ValidateFuncSagaStep => ({
+  config: { execute: { name: "CANCEL", ...stepConfig } },
+  execute: async ({ ctx, getStepResult, durableStep }) => {
+    //
+    const { RESERVATION_STATE, customerMessage, reservationKey, customer } =
+      ctx;
+
+    if (!RESERVATION_STATE?.id) {
+      return {
+        continue: true,
+      };
+    }
+    if (RESERVATION_STATE.status !== ReservationStatuses.CANCEL_STARTED) {
+      return {
+        continue: true,
+      };
+    }
+    if (customerMessage.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
+    }
+    if (!customer) {
+      return {
+        continue: false,
+        result:
+          "Aún no te has registrado, por favor has tu primera reserva para registrarte",
+      };
+    }
+    return durableStep(async () => {
+      const res = await cmsClient.updateAppointment(RESERVATION_STATE.id!, {
+        status: "cancelled",
+      });
+      if (res.status !== 200) {
+        throw new Error("Error al cancelar la reserva");
+      }
+      const assistantResponse = `Hemos cancelado tu reserva  ${RESERVATION_STATE.id} exitosamente ✅. Gracias por preferirnos`;
+      await cacheAdapter.delete(reservationKey);
+      logger.info(`Reservation ${RESERVATION_STATE.id} cancelled successfully`);
+      const result = await humanizerAgent(assistantResponse);
+      return { continue: false, result };
+    });
+  },
+  compensate: async ({ ctx }) => {
+    const reservationKey = ctx.reservationKey;
+    const reservation = ctx.RESERVATION_STATE;
+    if (reservation?.id) {
+      const result = `No pudimos cancelar tu reserva ${reservation.id} debido a un error interno. Por favor, inténtalo de nuevo más tarde.`;
+      await cacheAdapter.delete(reservationKey);
+      return { result, continue: true };
+    }
+    return { continue: false };
+  },
+});
+
 export const validated = {
-  updateConfirmation,
-  makeConfirmation,
+  updateConfirmed,
+  makeConfirmed,
+  cancelConfirmed,
   sendConfirmationMsg,
   exit,
   restart,

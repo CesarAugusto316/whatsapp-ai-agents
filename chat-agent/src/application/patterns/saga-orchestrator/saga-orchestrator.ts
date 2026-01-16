@@ -63,6 +63,7 @@ export interface FuncSagaStep<C, B, K extends SagaKey> {
       ctx: C; // The immutable context for this saga
       getStepResult: SagaStepResult<B, K>; // Function to retrieve results of previous steps
       durableStep: FuncDurableStep; // Function to wrap operations for durability
+      previusStep?: Partial<Record<SagaMode, B>>;
       retryStep: FuncRetryStep;
     }, //
   ): Promise<B>; // Returns the result of this step (will be stored in the saga bag)
@@ -150,6 +151,7 @@ export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
     const result = await runStepMode({
       ctx: this.ctx,
       getStepResult: this.getStepResult.bind(this),
+      previusStep: Object.freeze(structuredClone(this.lastStepResult)),
       durableStep: (func) => durableExecAdapter.runStep(func, config), // Wrap with DBOS for durability
       retryStep: (func, config = retryConfig) => retryStep(func, config),
     });

@@ -99,7 +99,7 @@ export function resolveNextState(
       };
     case ReservationStatuses.CANCEL_STARTED:
       return {
-        nextState: ReservationStatuses.CANCEL_VALIDATED,
+        nextState: ReservationStatuses.CANCEL_CONFIRMED,
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation cancellation is in progress and they can confirm or exit.",
