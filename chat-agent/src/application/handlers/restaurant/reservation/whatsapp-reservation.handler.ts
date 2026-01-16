@@ -1,15 +1,7 @@
 import { Handler } from "hono/types";
 import { DomainCtx } from "@/domain/context.types";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
-import {
-  reservationSagaStep,
-  sendSeen,
-  sendStartTyping,
-  sendStopTyping,
-  sendText,
-  WhatsappSagaTypes,
-} from "@/application/use-cases/sagas/whatsapp.saga";
-import { SagaOrchestrator } from "@/application/patterns/saga-orchestrator/saga-orchestrator";
+import { whatsappSagaOrchestrator } from "@/application/use-cases/sagas/whatsapp.saga";
 
 export const whatsappReservationHandler: Handler<
   DomainCtx<RestaurantCtx>
@@ -31,25 +23,8 @@ export const whatsappReservationHandler: Handler<
     return c.json({ message: "Invalid event" });
   }
 
-  // 1. Initialize the WhatsApp Saga
-  const whatsappSaga = new SagaOrchestrator<
-    WhatsappSagaTypes["Ctx"],
-    WhatsappSagaTypes["Result"],
-    WhatsappSagaTypes["Key"]
-  >({
-    ctx,
-  });
+  const { bag } = await whatsappSagaOrchestrator(ctx);
 
-  // 2. Start the WhatsApp Saga
-  const { bag } = await whatsappSaga
-    .addStep(sendSeen)
-    .addStep(sendStartTyping)
-    .addStep(reservationSagaStep)
-    .addStep(sendStopTyping)
-    .addStep(sendText)
-    .start();
-
-  // 3. Return response
   return c.json({
     received: true,
     message: bag?.["execute:reservationFlow"].text ?? "",

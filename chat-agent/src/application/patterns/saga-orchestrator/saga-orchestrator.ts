@@ -4,12 +4,20 @@ import { retryConfig, FuncRetryStep, retryStep } from "./retry-step.strategy";
 import { logger } from "@/infraestructure/logging/logger";
 import durableExecAdapter from "@/infraestructure/durable-execution/durable.adapter";
 
+export const stepConfig = {
+  retriesAllowed: true, // Enable automatic retries on failure
+  maxAttempts: 5, // Maximum number of retry attempts
+  intervalSeconds: 2, // Initial delay between retries (seconds)
+  backoffRate: 2, // Exponential backoff multiplier for subsequent retries
+} satisfies Omit<StepConfig, "name">;
+
 /**
  * Defines the two modes a saga step can operate in:
  * - execute: The forward execution of a step
  * - compensate: The compensation/rollback of a step
  */
 export type SagaMode = "execute" | "compensate";
+type SagaKey = string | number | bigint;
 
 /**
  * Generic type representing the saga bag - a record storing results of saga steps.
@@ -22,8 +30,13 @@ export type SagaBag = Record<string, unknown> & { continue?: boolean };
  * @template T The type of the result stored in the bag
  * @template K The type of the step key (string, number, or bigint)
  */
-interface SagaStepResult<T, K extends string | number | bigint> {
+interface SagaStepResult<T, K extends SagaKey> {
   (key: `${SagaMode}:${K}`): T | undefined;
+}
+
+export interface SagaResult<T, K extends SagaKey> {
+  bag: Record<`${SagaMode}:${K}`, T>;
+  lastStepResult: Partial<Record<SagaMode, T>> | undefined;
 }
 
 /**
@@ -40,7 +53,7 @@ interface FuncDurableStep {
  * @template B The result type for this step (part of the saga bag)
  * @template K The key type for this step
  */
-export interface FuncSagaStep<C, B, K extends string | number | bigint> {
+export interface FuncSagaStep<C, B, K extends SagaKey> {
   (
     {
       ctx,
@@ -59,12 +72,12 @@ export interface FuncSagaStep<C, B, K extends string | number | bigint> {
  * Interface representing a complete saga step with execution, compensation, and configuration.
  * @template C The context type
  * @template B The result type for this step
- * @template Key The key type for this step
+ * @template K The key type for this step
  */
-export interface ISagaStep<C, B, Key extends string | number | bigint> {
-  execute: FuncSagaStep<C, B, Key>; // Function to execute the step
-  compensate?: FuncSagaStep<C, B, Key>; // Optional function to compensate/rollback the step
-  config: Partial<Record<SagaMode, StepConfig & { name: Key }>>; // Configuration for execute/compensate modes
+export interface ISagaStep<C, B, K extends SagaKey> {
+  execute: FuncSagaStep<C, B, K>; // Function to execute the step
+  compensate?: FuncSagaStep<C, B, K>; // Optional function to compensate/rollback the step
+  config: Partial<Record<SagaMode, StepConfig & { name: K }>>; // Configuration for execute/compensate modes
 }
 
 /**
@@ -72,19 +85,15 @@ export interface ISagaStep<C, B, Key extends string | number | bigint> {
  * Implements the Saga pattern where each step has a corresponding compensation action.
  * @template Context The type of context object passed to saga steps
  * @template T The type of the saga bag (extends SagaBag)
- * @template Key The type of step keys (string | number | bigint)
+ * @template K The type of step keys (string | number | bigint)
  */
-export class SagaOrchestrator<
-  Context,
-  T extends SagaBag,
-  Key extends string | number | bigint,
-> {
+export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
   // Immutable context for all saga steps
   private readonly ctx: Readonly<Context>;
   // Collection of saga steps in execution order
-  private steps: ISagaStep<Context, T, Key>[] = [];
+  private steps: ISagaStep<Context, T, K>[] = [];
   // Storage for step results, keyed by mode and step name
-  private bag = {} as Record<`${SagaMode}:${Key}`, T>;
+  private bag = {} as Record<`${SagaMode}:${K}`, T>;
   // Storage for last step executed
   private lastStepResult? = {} as Partial<Record<SagaMode, T>>;
   // Tracks successfully executed steps for compensation purposes
@@ -123,7 +132,7 @@ export class SagaOrchestrator<
    * @param stepKey The key of the step to retrieve
    * @returns The stored result or undefined if not found
    */
-  private getStepResult = (key: `${SagaMode}:${Key}`) => {
+  private getStepResult = (key: `${SagaMode}:${K}`) => {
     return this.bag[key];
   };
 
@@ -134,8 +143,8 @@ export class SagaOrchestrator<
    * @returns Promise that resolves when the step completes
    */
   private async runStepMode(
-    runStepMode: FuncSagaStep<Context, T, Key>,
-    config: StepConfig & { name: Key },
+    runStepMode: FuncSagaStep<Context, T, K>,
+    config: StepConfig & { name: K },
   ) {
     // Execute the step function with context, result retrieval, and durable step wrapper
     const result = await runStepMode({
@@ -214,9 +223,6 @@ export class SagaOrchestrator<
           }
         }
       } catch (error) {
-        // Step failed - compensate all previously executed steps
-        logger.error(`Step Error: init composate steps`, error as Error);
-        return await this.iterateCompensateSteps();
         /**
          * Note: We return the bag instead of throwing the error.
          * This is because uncaught exceptions in DBOS workflows don't allow recovery.
@@ -225,7 +231,8 @@ export class SagaOrchestrator<
          * The workflow stops execution on error, but all compensation steps
          * are invoked successfully before returning the current state.
          */
-        // return { bag: this.bag, lastStepResult: this.lastStepResult };
+        logger.error(`Step Error: init composate steps`, error as Error);
+        return await this.iterateCompensateSteps();
       }
     }
     // All steps executed successfully
@@ -238,7 +245,7 @@ export class SagaOrchestrator<
    * @param step The saga step to add
    * @returns The orchestrator instance for chaining
    */
-  addStep(step: ISagaStep<Context, T, Key>) {
+  addStep(step: ISagaStep<Context, T, K>) {
     this.steps.push(step);
     return this;
   }
@@ -249,7 +256,7 @@ export class SagaOrchestrator<
    * Otherwise, runs the saga steps directly.
    * @returns Promise resolving to the saga bag with all results
    */
-  async start() {
+  async start(): Promise<SagaResult<T, K>> {
     // Run without DBOS workflow if no DBOS configuration provided
     if (!this.dbosConfig) {
       const result = await this.iterateSagaSteps();
@@ -282,7 +289,7 @@ export class SagaOrchestrator<
    * Gets the current saga bag containing all step results.
    * @returns The saga bag
    */
-  getBag() {
+  getBag(): SagaResult<T, K> {
     return Object.freeze(
       structuredClone({ bag: this.bag, lastStepResult: this.lastStepResult }),
     );

@@ -447,7 +447,7 @@ describe("WhatsappSaga - Casos Reales", () => {
       sendStartTyping,
       sendStopTyping,
       sendText,
-      reservationSagaStep,
+      reservationSagaWorkflow: reservationSagaStep,
     } = await import("@/application/use-cases/sagas/whatsapp.saga");
 
     const ctx = {
@@ -503,7 +503,7 @@ describe("WhatsappSaga - Casos Reales", () => {
     const {
       sendSeen,
       sendStartTyping,
-      reservationSagaStep: reservationWorklow,
+      reservationSagaWorkflow: reservationWorklow,
     } = await import("@/application/use-cases/sagas/whatsapp.saga");
 
     const ctx = {

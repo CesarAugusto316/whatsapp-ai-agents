@@ -1,5 +1,4 @@
 import { StateWorkflowHandler } from "@/application/patterns/FSM-workflow/state-workflow.types";
-import { collecDataSteps } from "../steps/collect-data.steps";
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import {
@@ -15,37 +14,6 @@ import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
 import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
-
-/**
- *
- * @param ctx
- * @param fmStatus
- * @returns
- */
-const started: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
-  ctx,
-  fmStatus,
-) => {
-  const {
-    RESERVATION_STATE,
-    business,
-    customerMessage,
-    reservationKey,
-    customer,
-  } = ctx;
-
-  if (!RESERVATION_STATE) return;
-
-  return collecDataSteps({
-    reservation: RESERVATION_STATE,
-    customer,
-    business,
-    reservationKey,
-    fmStatus,
-    customerMessage,
-    mode: "create",
-  });
-};
 
 /**
  *
@@ -189,4 +157,4 @@ const validated: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
   // }
 };
 
-export const makeWorkflow = { started, validated };
+export const makeWorkflow = { validated };

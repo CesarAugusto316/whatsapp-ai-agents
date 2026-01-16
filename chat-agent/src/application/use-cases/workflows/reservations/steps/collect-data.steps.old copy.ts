@@ -31,16 +31,6 @@ import {
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
 
-// type Args = {
-//   reservation: Partial<ReservationState>;
-//   customer?: Customer;
-//   business: Business;
-//   reservationKey: string;
-//   fmStatus: FMStatus;
-//   customerMessage: string;
-//   mode: ReservationMode;
-// };
-
 export const ATTEMPTS = 4;
 
 /**

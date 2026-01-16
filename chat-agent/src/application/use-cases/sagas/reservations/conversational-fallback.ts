@@ -14,7 +14,7 @@ import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
 import { aiClient } from "@/infraestructure/http/ai/ai.client";
 import { ModelMessage } from "@/infraestructure/http/ai/llm.types";
 import { logger } from "@/infraestructure/logging/logger";
-import { initReservationChangeSteps } from "../steps/init-reservation-update.steps";
+import { initReservationChangeSteps } from "./init-reservation-update.steps";
 import { intentClassifierAgent } from "@/application/agents/restaurant/reservation/intent-classifier-agent";
 import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
 
