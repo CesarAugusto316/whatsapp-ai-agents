@@ -13,7 +13,7 @@ import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
 import { aiClient } from "@/infraestructure/http/ai/ai.client";
 import { logger } from "@/infraestructure/logging/logger";
-import { initReservationChangeSteps } from "./init-reservation-update.steps";
+import { initReservationChangeSteps } from "./initial-steps";
 import { intentClassifierAgent } from "@/application/agents/restaurant/reservation/intent-classifier-agent";
 import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
 import { ChatMessage } from "@/infraestructure/http/ai/open-ai-compatible.types";

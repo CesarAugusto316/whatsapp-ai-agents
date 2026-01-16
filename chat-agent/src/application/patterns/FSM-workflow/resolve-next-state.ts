@@ -13,7 +13,7 @@ export interface StateTransition {
 }
 
 /**
- *
+ * @todo generalize this function and the FSM
  * @description Derives guidance for the conversation based on the current reservation status.
  * @param status
  * @returns

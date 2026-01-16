@@ -30,7 +30,7 @@ import {
 } from "@/application/patterns/saga-orchestrator/saga-orchestrator";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
-import { mergeReservationData } from "./helpers/merge-state";
+import { mergeReservationData } from "../helpers/merge-state";
 
 export const ATTEMPTS = 4;
 
@@ -287,7 +287,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
   },
 });
 
-export const started = {
+export const startedSteps = {
   earlyConditions,
   collectAndValidate,
   checkAvailability,

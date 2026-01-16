@@ -378,7 +378,7 @@ export const cancelConfirmed = (): ValidateFuncSagaStep => ({
   },
 });
 
-export const validated = {
+export const validatedSteps = {
   updateConfirmed,
   makeConfirmed,
   cancelConfirmed,
