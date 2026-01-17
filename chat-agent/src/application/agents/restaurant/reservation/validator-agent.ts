@@ -1,15 +1,15 @@
 import z from "zod";
-import { validationPrompts } from "@/domain/restaurant/reservations/prompts/validation-prompts";
+import { validationPrompts } from "@/domain/restaurant/reservations/prompts";
 import {
   mapZodErrorsToCollector,
   ReservationSchema,
   reservationSchemas,
 } from "@/domain/restaurant/reservations/schemas";
-import { aiClient } from "@/infraestructure/http/ai/ai.client";
-import { Business } from "@/infraestructure/http/cms/cms-types";
+import { aiClient } from "@/infraestructure/http/ai";
+import { Business } from "@/infraestructure/http/cms";
 import { logger } from "@/infraestructure/logging/logger";
 import { mergeReservationData } from "@/application/use-cases/sagas/reservations/helpers/merge-state";
-import { ChatMessage } from "@/infraestructure/http/ai/open-ai-compatible.types";
+import { ChatMessage } from "@/infraestructure/http/ai";
 
 export const validatorAgent = {
   /**

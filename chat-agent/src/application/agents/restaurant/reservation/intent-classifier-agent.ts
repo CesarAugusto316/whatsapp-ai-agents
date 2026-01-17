@@ -1,14 +1,13 @@
-import { CLASSIFIER_PROMPT } from "@/domain/restaurant/reservations/prompts/classifier-prompts";
-import { validationPrompts } from "@/domain/restaurant/reservations/prompts/validation-prompts";
 import {
-  CUSTOMER_INTENT,
-  InputIntent,
-} from "@/domain/restaurant/reservations/reservation.types";
+  CLASSIFIER_PROMPT,
+  validationPrompts,
+} from "@/domain/restaurant/reservations/prompts";
+import { CUSTOMER_INTENT, InputIntent } from "@/domain/restaurant/reservations";
 import {
   customerIntentSchema,
   inputIntentSchema,
 } from "@/domain/restaurant/reservations/schemas";
-import { aiClient } from "@/infraestructure/http/ai/ai.client";
+import { aiClient } from "@/infraestructure/http/ai";
 
 export const intentClassifierAgent = {
   /**

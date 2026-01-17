@@ -1,22 +1,19 @@
-import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
+import {
+  humanizerAgent,
+  intentClassifierAgent,
+} from "@/application/agents/restaurant";
+import { resolveNextState } from "@/application/patterns";
+import { RestaurantCtx } from "@/domain/restaurant";
+import { CUSTOMER_INTENT, FlowOptions } from "@/domain/restaurant/reservations";
 import {
   buildInfoReservationsSystemPrompt,
   howSystemWorksPrompt,
-} from "@/domain/restaurant/reservations/prompts/conversational-prompts";
-import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-messages";
-import {
-  CUSTOMER_INTENT,
-  FlowOptions,
-} from "@/domain/restaurant/reservations/reservation.types";
-import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
-import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
-import { aiClient } from "@/infraestructure/http/ai/ai.client";
+  systemMessages,
+} from "@/domain/restaurant/reservations/prompts";
+import { cacheAdapter, chatHistoryAdapter } from "@/infraestructure/adapters";
+import { aiClient, ChatMessage } from "@/infraestructure/http/ai";
 import { logger } from "@/infraestructure/logging/logger";
 import { initReservationChangeSteps } from "./initial-steps";
-import { intentClassifierAgent } from "@/application/agents/restaurant/reservation/intent-classifier-agent";
-import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
-import { ChatMessage } from "@/infraestructure/http/ai/open-ai-compatible.types";
 
 /**
  *

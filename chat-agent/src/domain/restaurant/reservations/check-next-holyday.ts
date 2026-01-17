@@ -1,6 +1,5 @@
-import { checkUtcDateInRange } from "@/domain/utilities/datetime-formatting/check-date-in-range";
-import { utcToLocalDateTime } from "@/domain/utilities/datetime-formatting/datetime-converters";
-import { Business } from "@/infraestructure/http/cms/cms-types";
+import { checkUtcDateInRange, utcToLocalDateTime } from "@/domain/utilities";
+import { Business } from "@/infraestructure/http/cms";
 
 // Formatear para mostrar
 const formatDate = (dateString: string) => {

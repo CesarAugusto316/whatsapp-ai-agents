@@ -1,5 +1,7 @@
-export * as default from "./cms.client";
+export { cmsClient } from "./cms.client";
+
 export { WEEK_DAYS } from "./cms-types";
+
 export type {
   Appointment,
   Business,
@@ -10,4 +12,5 @@ export type {
   User,
   WeekDay,
 } from "./cms-types";
+
 export type { AvailabilityResponse } from "./chek-availability.types";

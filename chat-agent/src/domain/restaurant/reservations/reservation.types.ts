@@ -1,6 +1,6 @@
 import { ReservationSchema } from "./schemas";
-import { Business } from "@/infraestructure/http/cms/cms-types";
-import { ChatMessage } from "@/infraestructure/http/ai/open-ai-compatible.types";
+import { Business } from "@/infraestructure/http/cms";
+import { ChatMessage } from "@/infraestructure/http/ai";
 
 export const BOOL = {
   YES: true,

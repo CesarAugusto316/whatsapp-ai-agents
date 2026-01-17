@@ -1,28 +1,28 @@
 import {
   ReservationMode,
   systemMessages,
-} from "@/domain/restaurant/reservations/prompts/system-messages";
+} from "@/domain/restaurant/reservations/prompts";
 import {
   CustomerActionKey,
   CustomerActions,
   ReservationState,
   ReservationStatuses,
-} from "@/domain/restaurant/reservations/reservation.types";
-import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
+} from "@/domain/restaurant/reservations";
+import { cacheAdapter } from "@/infraestructure/adapters";
 import { logger } from "@/infraestructure/logging/logger";
-import { localDateTimeToUTC } from "@/domain/utilities/datetime-formatting/datetime-converters";
-import cmsClient from "@/infraestructure/http/cms/cms.client";
-import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
-import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
+import { localDateTimeToUTC } from "@/domain/utilities";
+import { cmsClient } from "@/infraestructure/http/cms";
+import { resolveNextState } from "@/application/patterns";
+import { humanizerAgent } from "@/application/agents/restaurant";
 import {
   ISagaStep,
   SagaBag,
   SagaResult,
   stepConfig,
-} from "@/application/patterns/saga-orchestrator/saga-orchestrator";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
+} from "@/application/patterns";
+import { RestaurantCtx } from "@/domain/restaurant";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
-import { Appointment, Customer } from "@/infraestructure/http/cms/cms-types";
+import type { Appointment, Customer } from "@/infraestructure/http/cms";
 
 export const ATTEMPTS = 4;
 

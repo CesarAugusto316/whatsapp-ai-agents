@@ -129,4 +129,4 @@ class WhatsAppClient {
   }
 }
 
-export default new WhatsAppClient();
+export const whatsappClient = new WhatsAppClient();

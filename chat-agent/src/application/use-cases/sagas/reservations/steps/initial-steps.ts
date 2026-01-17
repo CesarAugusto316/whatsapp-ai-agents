@@ -1,19 +1,19 @@
-import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
-import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
 import {
   FlowOption,
   FlowOptions,
   ReservationState,
-} from "@/domain/restaurant/reservations/reservation.types";
-import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
-import { utcToLocalDateTime } from "@/domain/utilities/datetime-formatting/datetime-converters";
-import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
+} from "@/domain/restaurant/reservations";
+import { cacheAdapter } from "@/infraestructure/adapters";
 import {
   Appointment,
   Business,
+  cmsClient,
   Customer,
-} from "@/infraestructure/http/cms/cms-types";
-import cmsClient from "@/infraestructure/http/cms/cms.client";
+} from "@/infraestructure/http/cms";
+import { resolveNextState } from "@/application/patterns";
+import { humanizerAgent } from "@/application/agents/restaurant";
+import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
+import { utcToLocalDateTime } from "@/domain/utilities";
 
 type Args = {
   customer?: Customer;

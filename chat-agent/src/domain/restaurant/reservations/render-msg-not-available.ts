@@ -1,10 +1,7 @@
-import { AvailabilityResponse } from "@/infraestructure/http/cms/chek-availability.types";
-import { Business } from "@/infraestructure/http/cms/cms-types";
+import type { AvailabilityResponse } from "@/infraestructure/http/cms";
+import type { Business } from "@/infraestructure/http/cms";
 import { ReservationSchema } from "./schemas";
-import {
-  formatLocalDateTime,
-  utcToLocalDateTime,
-} from "@/domain/utilities/datetime-formatting/datetime-converters";
+import { formatLocalDateTime, utcToLocalDateTime } from "@/domain/utilities";
 
 type Args = {
   availability: AvailabilityResponse;

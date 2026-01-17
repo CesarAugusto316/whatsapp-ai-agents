@@ -1,2 +1,7 @@
 export { durableExecution } from "./config";
-export * from "./durable.adapter";
+export {
+  durableExecutionAdapter,
+  DurableExecutionAdapter,
+  DurableFunc,
+  DurableFuncStart,
+} from "./durable.adapter";

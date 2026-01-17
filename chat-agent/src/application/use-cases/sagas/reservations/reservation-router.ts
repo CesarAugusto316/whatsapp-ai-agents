@@ -1,11 +1,8 @@
-import {
-  FlowOptions,
-  FMStatus,
-} from "@/domain/restaurant/reservations/reservation.types";
+import { FlowOptions, FMStatus } from "@/domain/restaurant/reservations";
 import { reservationSaga } from "./reservation-saga";
 import { StartedFuncSagaResult } from "./steps/started-steps";
 import { ValidateFuncSagaResult } from "./steps/validated-steps";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
+import { RestaurantCtx } from "@/domain/restaurant";
 
 const statusSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>

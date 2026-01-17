@@ -1,7 +1,7 @@
 import { Business } from "@/infraestructure/http/cms/cms-types";
 import { FlowOptions, FMStatus } from "../reservation.types";
-import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
-import { formatSchedule } from "@/domain/utilities/datetime-formatting/datetime-converters";
+import { resolveNextState } from "@/application/patterns";
+import { formatSchedule } from "@/domain/utilities";
 
 const AGENT_NAME = "Lua";
 

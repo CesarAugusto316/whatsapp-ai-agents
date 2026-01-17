@@ -1,7 +1,7 @@
 import { fallbackWorkflow } from "./steps/fallback-steps";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
-import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
-import { InputIntent } from "@/domain/restaurant/reservations/reservation.types";
+import { RestaurantCtx } from "@/domain/restaurant";
+import { chatHistoryAdapter } from "@/infraestructure/adapters";
+import { InputIntent } from "@/domain/restaurant/reservations";
 import { reservationStateOrchestrator } from "./reservation-router";
 
 /**

@@ -4,7 +4,7 @@ import {
   FlowOptions,
   FMStatus,
   ReservationStatuses,
-} from "@/domain/restaurant/reservations/reservation.types";
+} from "@/domain/restaurant/reservations";
 
 export interface StateTransition {
   nextState: FMStatus;

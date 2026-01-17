@@ -1,9 +1,9 @@
 import { MiddlewareHandler } from "hono/types";
-import { DomainCtx } from "@/domain/context.types";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
-import { WahaRecievedEvent } from "@/infraestructure/http/whatsapp/whatsapp-types/received-event";
-import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
-import cmsClient from "@/infraestructure/http/cms/cms.client";
+import { DomainCtx } from "@/domain";
+import { RestaurantCtx } from "@/domain/restaurant";
+import { WahaRecievedEvent } from "@/infraestructure/http/whatsapp";
+import { cacheAdapter } from "@/infraestructure/adapters";
+import { cmsClient } from "@/infraestructure/http/cms";
 
 /**
  *

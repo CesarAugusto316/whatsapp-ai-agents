@@ -1,4 +1,4 @@
-import { WeekDay } from "@/infraestructure/http/cms/cms-types";
+import { WeekDay } from "@/infraestructure/http/cms";
 
 /**
  * Verifica si una fecha/hora específica cae dentro del horario de atención del restaurante

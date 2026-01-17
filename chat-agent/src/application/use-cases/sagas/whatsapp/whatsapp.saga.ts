@@ -1,5 +1,5 @@
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
-import whatsappClient from "@/infraestructure/http/whatsapp/whatsapp.client";
+import { RestaurantCtx } from "@/domain/restaurant";
+import { whatsappClient } from "@/infraestructure/http/whatsapp";
 import {
   FuncSagaStep,
   ISagaStep,
@@ -7,7 +7,7 @@ import {
   SagaOrchestrator,
   stepConfig,
 } from "@/application/patterns";
-import { reservationSagaOrchestrator } from "../reservations/reservation-old-code";
+import { reservationSagaOrchestrator } from "../";
 
 /**
  * Defines all possible step names in the WhatsApp saga workflow.

@@ -1,4 +1,4 @@
-import { formatLocalDateTime } from "@/domain/utilities/datetime-formatting/datetime-converters";
+import { formatLocalDateTime } from "@/domain/utilities";
 import { CustomerActions, ReservationState } from "../reservation.types";
 
 export type ReservationMode = "create" | "update";

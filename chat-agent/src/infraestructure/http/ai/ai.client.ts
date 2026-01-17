@@ -1,8 +1,5 @@
 import { env } from "bun";
-import {
-  ChatCompletionResponse,
-  ChatMessage,
-} from "./open-ai-compatible.types";
+import { ChatCompletionResponse, ChatMessage } from "./";
 
 class AiClient {
   private config =

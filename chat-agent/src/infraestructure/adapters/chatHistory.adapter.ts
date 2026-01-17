@@ -1,5 +1,5 @@
 import { redisClient } from "../cache/redis.client";
-import { ChatMessage } from "../http/ai/open-ai-compatible.types";
+import { ChatMessage } from "../http/ai";
 
 // COMMANDS REDDIS
 // KEYS chat:*
@@ -64,4 +64,4 @@ class ChatHistory {
   }
 }
 
-export default new ChatHistory();
+export const chatHistoryAdapter = new ChatHistory();

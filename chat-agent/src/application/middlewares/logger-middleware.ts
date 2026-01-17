@@ -1,8 +1,8 @@
 import { MiddlewareHandler } from "hono";
 import { env } from "bun";
-import { DomainCtx } from "@/domain/context.types";
-import { ReservationState } from "@/domain/restaurant/reservations/reservation.types";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
+import { DomainCtx } from "@/domain";
+import { ReservationState } from "@/domain/restaurant/reservations";
+import { RestaurantCtx } from "@/domain/restaurant";
 
 // Tipos para diferentes niveles de log
 type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";

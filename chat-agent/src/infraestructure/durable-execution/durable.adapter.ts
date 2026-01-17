@@ -31,4 +31,4 @@ export class DurableExecutionAdapter {
   }
 }
 
-export default new DurableExecutionAdapter();
+export const durableExecutionAdapter = new DurableExecutionAdapter();

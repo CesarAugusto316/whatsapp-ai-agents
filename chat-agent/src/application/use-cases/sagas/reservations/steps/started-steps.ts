@@ -1,34 +1,33 @@
 import {
   ReservationMode,
   systemMessages,
-} from "@/domain/restaurant/reservations/prompts/system-messages";
+} from "@/domain/restaurant/reservations/prompts";
 import {
   CustomerActions,
   FlowOptions,
   InputIntent,
+  isWithinBusinessHours,
+  isWithinHolydayRange,
+  renderMsgNotAvailable,
   ReservationState,
-} from "@/domain/restaurant/reservations/reservation.types";
-import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
+} from "@/domain/restaurant/reservations";
+import { cacheAdapter } from "@/infraestructure/adapters";
 import { logger } from "@/infraestructure/logging/logger";
-import { isWithinBusinessHours } from "@/domain/restaurant/reservations/is-within-business-hours";
+import { formatSchedule, localDateTimeToUTC } from "@/domain/utilities";
+import { cmsClient } from "@/infraestructure/http/cms";
+import { resolveNextState } from "@/application/patterns";
 import {
-  formatSchedule,
-  localDateTimeToUTC,
-} from "@/domain/utilities/datetime-formatting/datetime-converters";
-import { isWithinHolydayRange } from "@/domain/restaurant/reservations/check-next-holyday";
-import cmsClient from "@/infraestructure/http/cms/cms.client";
-import { renderMsgNotAvailable } from "@/domain/restaurant/reservations/render-msg-not-available";
-import { resolveNextState } from "@/application/patterns/FSM-workflow/resolve-next-state";
-import { intentClassifierAgent as classifierAgent } from "@/application/agents/restaurant/reservation/intent-classifier-agent";
-import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
-import { validatorAgent } from "@/application/agents/restaurant/reservation/validator-agent";
+  humanizerAgent,
+  intentClassifierAgent,
+  validatorAgent,
+} from "@/application/agents/restaurant";
 import {
   ISagaStep,
   SagaBag,
   SagaResult,
   stepConfig,
-} from "@/application/patterns/saga-orchestrator/saga-orchestrator";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
+} from "@/application/patterns";
+import { RestaurantCtx } from "@/domain/restaurant";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
 import { mergeReservationData } from "../helpers/merge-state";
 
@@ -89,7 +88,8 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
         return { result: res.trim(), continue: false };
       }
       // OPTION: 3. CLASSIFY INPUT
-      const inputIntent = await classifierAgent.inputIntent(customerMessage);
+      const inputIntent =
+        await intentClassifierAgent.inputIntent(customerMessage);
 
       if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
         logger.info("Customer asked a question", {
