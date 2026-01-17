@@ -4,12 +4,16 @@ import { env } from "bun";
 import { rateLimiter } from "hono-rate-limiter";
 import * as Sentry from "@sentry/bun";
 import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
-import { DomainCtx } from "./domain/context.types";
-import { loggerMiddleware } from "@/application/middlewares/logger-middleware";
-import { RestaurantCtx } from "./domain/restaurant/context.types";
-import { bootstrapMiddleware } from "./application/middlewares/bootstrap.middleware";
-import { whatsappReservationHandler } from "./application/handlers/restaurant/reservation/whatsapp-reservation.handler";
-import { testReservationHandler } from "./application/handlers/restaurant/reservation/test-reservation.handler";
+import { DomainCtx } from "./domain";
+import { RestaurantCtx } from "./domain/restaurant";
+import {
+  loggerMiddleware,
+  bootstrapMiddleware,
+} from "@/application/middlewares";
+import {
+  whatsappReservationHandler,
+  testReservationHandler,
+} from "./application/handlers/restaurant";
 
 const app = new Hono<DomainCtx<RestaurantCtx>>();
 
