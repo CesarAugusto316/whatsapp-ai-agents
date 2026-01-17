@@ -146,6 +146,7 @@ export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
   private async runStepMode(
     runStepMode: FuncSagaStep<Context, T, K>,
     config: StepConfig & { name: K },
+    mode: SagaMode,
   ) {
     // Execute the step function with context, result retrieval, and durable step wrapper
     const result = await runStepMode({
@@ -156,14 +157,13 @@ export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
       retryStep: (func, config = retryConfig) => retryStep(func, config),
     });
 
-    const stepKey = runStepMode.name as SagaMode;
     // Store the result in the saga bag using the function name and step name as key
     this.bag = {
       ...this.bag,
-      [`${stepKey}:${config.name}`]: result,
+      [`${mode}:${config.name}`]: result,
     };
 
-    this.lastStepResult = { ...this.lastStepResult, [stepKey]: result };
+    this.lastStepResult = { ...this.lastStepResult, [mode]: result };
     return this.lastStepResult;
   }
 
@@ -183,7 +183,11 @@ export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
 
           // Only compensate if both function and configuration exist
           if (runStepMode && config?.name) {
-            const result = await this.runStepMode(runStepMode, config);
+            const result = await this.runStepMode(
+              runStepMode,
+              config,
+              "compensate",
+            );
             if (result.compensate?.continue === false) {
               return { bag: this.bag, lastStepResult: result };
             }
@@ -217,7 +221,7 @@ export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
 
         // Only execute if both function and configuration exist
         if (runStepMode && config?.name) {
-          const result = await this.runStepMode(runStepMode, config);
+          const result = await this.runStepMode(runStepMode, config, "execute");
           // Record successfully executed step for potential compensation
           this.executedSteps.push(config.name);
           if (result.execute?.continue === false) {

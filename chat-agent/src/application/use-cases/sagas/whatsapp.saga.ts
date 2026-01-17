@@ -221,3 +221,12 @@ export const whatsappSagaOrchestrator = (ctx: RestaurantCtx) => {
     .addStep(sendText)
     .start();
 };
+
+// export for testing
+export {
+  sendSeen,
+  sendStartTyping,
+  sendStopTyping,
+  sendText,
+  reservationSagaStep,
+};

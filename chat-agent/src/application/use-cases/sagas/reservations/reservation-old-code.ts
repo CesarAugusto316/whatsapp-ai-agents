@@ -30,11 +30,12 @@ export async function reservationSagaOrchestrator(
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return result;
     }
-  } else {
-    /** @todo refactor to use SagaOrchestrator and Saga mapper */
-    FlowOptions;
-    // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
   }
+  // else {
+  //   /** @todo refactor to use SagaOrchestrator and Saga mapper */
+  //   FlowOptions;
+  //   // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
+  // }
 
   /**
    *

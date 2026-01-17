@@ -430,12 +430,12 @@ describe("WhatsappSaga - Casos Reales", () => {
   test("debe ejecutar flujo completo de whatsapp exitosamente", async () => {
     // Mock exitoso del workflow de reservación
     mock.module(
-      "@/application/use-cases/workflows/reservations/reservation.workflow",
+      "@/application/use-cases/sagas/reservations/reservation-old-code",
       () => ({
-        reservationWorkflow: jest
+        reservationSagaOrchestrator: jest
           .fn()
           .mockResolvedValue("Reservation successful"),
-        runReservationWorkflow: jest
+        reservationSagaStep: jest
           .fn()
           .mockResolvedValue("Reservation successful"),
       }),
@@ -447,7 +447,7 @@ describe("WhatsappSaga - Casos Reales", () => {
       sendStartTyping,
       sendStopTyping,
       sendText,
-      reservationSagaWorkflow: reservationSagaStep,
+      reservationSagaStep,
     } = await import("@/application/use-cases/sagas/whatsapp.saga");
 
     const ctx = {
@@ -464,6 +464,10 @@ describe("WhatsappSaga - Casos Reales", () => {
       },
     });
 
+    // Obtener el mock actualizado
+    const { default: mockWhatsappService } =
+      await import("@/infraestructure/http/whatsapp/whatsapp.client");
+
     orchestrator
       .addStep(sendSeen)
       .addStep(sendStartTyping)
@@ -472,10 +476,6 @@ describe("WhatsappSaga - Casos Reales", () => {
       .addStep(sendText);
 
     const result = await orchestrator.start();
-
-    // Obtener el mock actualizado
-    const { default: mockWhatsappService } =
-      await import("@/infraestructure/http/whatsapp/whatsapp.client");
 
     expect(mockWhatsappService.sendSeen).toHaveBeenCalled();
     expect(mockWhatsappService.sendStartTyping).toHaveBeenCalled();
@@ -488,23 +488,17 @@ describe("WhatsappSaga - Casos Reales", () => {
   test("debe compensar typing si falla el flujo de reservación", async () => {
     // Mockear el workflow de reservación para que falle
     mock.module(
-      "@/application/use-cases/workflows/reservations/reservation.workflow",
+      "@/application/use-cases/sagas/reservations/reservation-old-code",
       () => ({
-        reservationWorkflow: jest
+        reservationSagaOrchestrator: jest
           .fn()
-          .mockRejectedValue(new Error("Reservation failed")),
-        runReservationWorkflow: jest
-          .fn()
-          .mockRejectedValue(new Error("Reservation failed")),
+          .mockResolvedValue("Reservation successful"),
       }),
     );
 
     // Importar después de configurar los mocks
-    const {
-      sendSeen,
-      sendStartTyping,
-      reservationSagaWorkflow: reservationWorklow,
-    } = await import("@/application/use-cases/sagas/whatsapp.saga");
+    const { sendSeen, sendStartTyping, reservationSagaStep, sendStopTyping } =
+      await import("@/application/use-cases/sagas/whatsapp.saga");
 
     const ctx = {
       session: "test-session",
@@ -519,7 +513,8 @@ describe("WhatsappSaga - Casos Reales", () => {
     orchestrator
       .addStep(sendSeen)
       .addStep(sendStartTyping)
-      .addStep(reservationWorklow);
+      .addStep(reservationSagaStep)
+      .addStep(sendStopTyping);
 
     // IMPORTANTE: Ahora resuelve, no rechaza
     const bag = await orchestrator.start();
