@@ -115,35 +115,35 @@ const validated: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
     }
   }
 
-  // FINAL OPTION: 2. SALIR
-  if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-    await cacheAdapter.delete(reservationKey ?? "");
-    const assistantMsg = systemMessages.getExitMsg();
-    logger.info("Customer selected an option", {
-      customerAction: CustomerActions.EXIT,
-      customerMessage,
-    });
-    return assistantMsg;
-  }
+  // // FINAL OPTION: 2. SALIR
+  // if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
+  //   await cacheAdapter.delete(reservationKey ?? "");
+  //   const assistantMsg = systemMessages.getExitMsg();
+  //   logger.info("Customer selected an option", {
+  //     customerAction: CustomerActions.EXIT,
+  //     customerMessage,
+  //   });
+  //   return assistantMsg;
+  // }
 
-  // FINAL OPTION: 3. REINGRESAR DATOS
-  if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
-    // RESTART
-    const assistantResponse = systemMessages.getCreateMsg({
-      userName: customer?.name,
-    });
-    await cacheAdapter.save(reservationKey ?? "", {
-      businessId: business?.id,
-      customerId: customer?.id,
-      ...RESERVATION_STATE,
-      status: ReservationStatuses.MAKE_STARTED,
-    });
-    logger.info("Customer selected an option", {
-      customerAction: CustomerActions.RESTART,
-      customerMessage,
-    });
-    return humanizerAgent(assistantResponse);
-  }
+  // // FINAL OPTION: 3. REINGRESAR DATOS
+  // if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
+  //   // RESTART
+  //   const assistantResponse = systemMessages.getCreateMsg({
+  //     userName: customer?.name,
+  //   });
+  //   await cacheAdapter.save(reservationKey ?? "", {
+  //     businessId: business?.id,
+  //     customerId: customer?.id,
+  //     ...RESERVATION_STATE,
+  //     status: ReservationStatuses.MAKE_STARTED,
+  //   });
+  //   logger.info("Customer selected an option", {
+  //     customerAction: CustomerActions.RESTART,
+  //     customerMessage,
+  //   });
+  //   return humanizerAgent(assistantResponse);
+  // }
 };
 
 export const makeWorkflow = { validated };

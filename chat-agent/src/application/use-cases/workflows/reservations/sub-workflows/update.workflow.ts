@@ -1,12 +1,9 @@
 import { StateWorkflowHandler } from "@/application/patterns/FSM-workflow/state-workflow.types";
-import { collecDataSteps } from "../steps/collect-data.steps";
-import { DBOS } from "@dbos-inc/dbos-sdk";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import {
   CustomerActions,
   FMStatus,
   ReservationState,
-  ReservationStatuses,
 } from "@/domain/restaurant/reservations/reservation.types";
 import { localDateTimeToUTC } from "@/domain/utilities/datetime-formatting/datetime-converters";
 import cmsClient from "@/infraestructure/http/cms/cms.client";
@@ -15,6 +12,7 @@ import { systemMessages } from "@/domain/restaurant/reservations/prompts/system-
 import cacheAdapter from "@/infraestructure/adapters/cache.adapter";
 import { logger } from "@/infraestructure/logging/logger";
 import { humanizerAgent } from "@/application/agents/restaurant/reservation/humanizer-agent";
+import { collecDataSteps } from "../steps/collect-data.steps.old";
 
 const started: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
   ctx,
@@ -79,21 +77,17 @@ const validated: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
         const startDateTime = localDateTimeToUTC(start, timezone);
         const endDateTime = localDateTimeToUTC(end, timezone);
 
-        const reservation = await DBOS.runStep(
-          async () =>
-            (await (
-              await cmsClient.updateAppointment(RESERVATION_STATE?.id!, {
-                business: business?.id,
-                customer: customer?.id,
-                startDateTime,
-                endDateTime,
-                numberOfPeople,
-                customerName: customerName || customer.name || "",
-                status: "confirmed",
-              })
-            ).json()) as { doc: Appointment },
-          { name: "cmsClient.updateAppointment" },
-        );
+        const reservation = (await (
+          await cmsClient.updateAppointment(RESERVATION_STATE?.id!, {
+            business: business?.id,
+            customer: customer?.id,
+            startDateTime,
+            endDateTime,
+            numberOfPeople,
+            customerName: customerName || customer.name || "",
+            status: "confirmed",
+          })
+        ).json()) as { doc: Appointment };
 
         updated = true;
 
@@ -150,35 +144,35 @@ const validated: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (
     }
   }
 
-  // FINAL OPTION: 2. SALIR
-  if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-    await cacheAdapter.delete(reservationKey ?? "");
-    const assistantMsg = systemMessages.getExitMsg();
-    logger.info("Customer selected an option", {
-      customerAction: CustomerActions.EXIT,
-      customerMessage,
-    });
-    return assistantMsg;
-  }
+  // // FINAL OPTION: 2. SALIR
+  // if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
+  //   await cacheAdapter.delete(reservationKey ?? "");
+  //   const assistantMsg = systemMessages.getExitMsg();
+  //   logger.info("Customer selected an option", {
+  //     customerAction: CustomerActions.EXIT,
+  //     customerMessage,
+  //   });
+  //   return assistantMsg;
+  // }
 
-  // FINAL OPTION: 3. REINGRESAR DATOS
-  if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
-    // RESTART
-    const assistantResponse = systemMessages.getCreateMsg({
-      userName: customer?.name,
-    });
-    await cacheAdapter.save(reservationKey ?? "", {
-      businessId: business?.id,
-      customerId: customer?.id,
-      ...RESERVATION_STATE,
-      status: ReservationStatuses.UPDATE_STARTED,
-    });
-    logger.info("Customer selected an option", {
-      customerAction: CustomerActions.RESTART,
-      customerMessage,
-    });
-    return assistantResponse;
-  }
+  // // FINAL OPTION: 3. REINGRESAR DATOS
+  // if (customerMessage?.toUpperCase() === CustomerActions.RESTART) {
+  //   // RESTART
+  //   const assistantResponse = systemMessages.getCreateMsg({
+  //     userName: customer?.name,
+  //   });
+  //   await cacheAdapter.save(reservationKey ?? "", {
+  //     businessId: business?.id,
+  //     customerId: customer?.id,
+  //     ...RESERVATION_STATE,
+  //     status: ReservationStatuses.UPDATE_STARTED,
+  //   });
+  //   logger.info("Customer selected an option", {
+  //     customerAction: CustomerActions.RESTART,
+  //     customerMessage,
+  //   });
+  //   return assistantResponse;
+  // }
 };
 
 export const updateWorkflow = { started, validated };

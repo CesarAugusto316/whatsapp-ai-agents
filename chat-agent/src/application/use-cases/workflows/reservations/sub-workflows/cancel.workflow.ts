@@ -60,11 +60,12 @@ const started: StateWorkflowHandler<RestaurantCtx, FMStatus> = async (ctx) => {
         }
       }
     }
-    if (customerMessage.toUpperCase() === CustomerActions.EXIT) {
-      const assistantResponse = systemMessages.getExitMsg();
-      await cacheAdapter.delete(reservationKey);
-      return assistantResponse;
-    }
+
+    // if (customerMessage.toUpperCase() === CustomerActions.EXIT) {
+    //   const assistantResponse = systemMessages.getExitMsg();
+    //   await cacheAdapter.delete(reservationKey);
+    //   return assistantResponse;
+    // }
   }
 };
 
