@@ -448,7 +448,7 @@ describe("WhatsappSaga - Casos Reales", () => {
       sendStopTyping,
       sendText,
       reservationSagaStep,
-    } = await import("@/application/use-cases/sagas/whatsapp.saga");
+    } = await import("@/application/use-cases/sagas");
 
     const ctx = {
       session: "test-session",
@@ -498,7 +498,7 @@ describe("WhatsappSaga - Casos Reales", () => {
 
     // Importar después de configurar los mocks
     const { sendSeen, sendStartTyping, reservationSagaStep, sendStopTyping } =
-      await import("@/application/use-cases/sagas/whatsapp.saga");
+      await import("@/application/use-cases/sagas");
 
     const ctx = {
       session: "test-session",

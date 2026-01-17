@@ -1,7 +1,7 @@
 import { Handler } from "hono/types";
 import { DomainCtx } from "@/domain/context.types";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
-import { whatsappSagaOrchestrator } from "@/application/use-cases/sagas/whatsapp.saga";
+import { RestaurantCtx } from "@/domain/restaurant";
+import { whatsappSagaOrchestrator } from "@/application/use-cases/sagas";
 
 export const whatsappReservationHandler: Handler<
   DomainCtx<RestaurantCtx>

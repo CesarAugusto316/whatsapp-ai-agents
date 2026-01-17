@@ -6,8 +6,8 @@ import {
   SagaBag,
   SagaOrchestrator,
   stepConfig,
-} from "@/application/patterns/saga-orchestrator/saga-orchestrator";
-import { reservationSagaOrchestrator } from "./reservations/reservation-old-code";
+} from "@/application/patterns";
+import { reservationSagaOrchestrator } from "../reservations/reservation-old-code";
 
 /**
  * Defines all possible step names in the WhatsApp saga workflow.

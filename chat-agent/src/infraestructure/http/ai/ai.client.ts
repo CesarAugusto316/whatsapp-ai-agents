@@ -4,9 +4,25 @@ import {
   ChatMessage,
 } from "./open-ai-compatible.types";
 
-const model = "@cf/ibm-granite/granite-4.0-h-micro"; // "@cf/meta/llama-4-scout-17b-16e-instruct";
-
 class AiClient {
+  private config =
+    env.NODE_ENV === "test"
+      ? {
+          /**
+           *
+           * @link https://docs.ollama.com/api/openai-compatibility
+           */
+          url: "http://localhost:11434/v1/chat/completions",
+          model: "granite4:micro-h", // local ollama model
+        }
+      : {
+          url: `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`,
+          model: "@cf/ibm-granite/granite-4.0-h-micro", //"@cf/meta/llama-4-scout-17b-16e-instruct";
+          headers: {
+            Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
+          },
+        };
+
   async userMsg(
     messages: ChatMessage[],
     prompt: string,
@@ -20,16 +36,13 @@ class AiClient {
     tools?: Record<string, any>[],
   ): Promise<string> {
     //
-    const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
-    const headers = {
-      Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
-    };
+
     const response = (await (
-      await fetch(url, {
+      await fetch(this.config.url, {
         method: "POST",
-        headers,
+        headers: this.config.headers,
         body: JSON.stringify({
-          model,
+          model: this.config.model,
           temperature,
           messages: [{ role: "system", content: prompt }, ...messages],
         }),
@@ -44,16 +57,12 @@ class AiClient {
   }
 
   async systemMsg(message: string, temperature = 0) {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1/chat/completions`;
-    const headers = {
-      Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
-    };
     const response = (await (
-      await fetch(url, {
+      await fetch(this.config.url, {
         method: "POST",
-        headers,
+        headers: this.config.headers,
         body: JSON.stringify({
-          model,
+          model: this.config.model,
           temperature,
           messages: [{ role: "system", content: message }],
         }),

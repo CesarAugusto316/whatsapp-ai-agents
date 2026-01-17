@@ -1,5 +1,5 @@
-import { SagaOrchestrator } from "@/application/patterns/saga-orchestrator/saga-orchestrator";
-import { RestaurantCtx } from "@/domain/restaurant/context.types";
+import { SagaOrchestrator } from "@/application/patterns";
+import { RestaurantCtx } from "@/domain/restaurant";
 import {
   startedSteps,
   StartedSagaResult,
