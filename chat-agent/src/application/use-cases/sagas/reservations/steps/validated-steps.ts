@@ -67,6 +67,8 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       numberOfPeople = 1,
     } = RESERVATION_STATE as ReservationState;
 
+    if (!RESERVATION_STATE) return { continue: true };
+
     if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
@@ -160,9 +162,8 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
     if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
-    return durableStep(async () => {
-      //
-      if (customer?.id && business?.id && RESERVATION_STATE?.id) {
+    if (customer?.id && RESERVATION_STATE?.id) {
+      return durableStep(async () => {
         const timezone = business.general.timezone;
         const { start, end } = datetime;
         const startDateTime = localDateTimeToUTC(start, timezone);
@@ -183,12 +184,9 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
         ).doc;
 
         return { reservation, continue: true };
-      }
-      return {
-        continue: false,
-        result: "No pudimos crear tu reserva intenlo mas tarde",
-      };
-    });
+      });
+    }
+    return { continue: true };
   },
   compensate: async ({ ctx, retryStep }) => {
     const { reservationKey } = ctx;
@@ -342,15 +340,15 @@ export const cancelConfirmed = (): ValidateFuncSagaStep => ({
         continue: true,
       };
     }
-    if (customerMessage.toUpperCase() !== CustomerActions.CONFIRM) {
-      return { continue: true };
-    }
     if (!customer) {
       return {
         continue: false,
         result:
           "Aún no te has registrado, por favor has tu primera reserva para registrarte",
       };
+    }
+    if (customerMessage.toUpperCase() !== CustomerActions.CONFIRM) {
+      return { continue: true };
     }
     return durableStep(async () => {
       const res = await cmsClient.updateAppointment(RESERVATION_STATE.id!, {
@@ -366,13 +364,15 @@ export const cancelConfirmed = (): ValidateFuncSagaStep => ({
       return { continue: false, result };
     });
   },
-  compensate: async ({ ctx }) => {
+  compensate: async ({ ctx, retryStep }) => {
     const reservationKey = ctx.reservationKey;
     const reservation = ctx.RESERVATION_STATE;
     if (reservation?.id) {
-      const result = `No pudimos cancelar tu reserva ${reservation.id} debido a un error interno. Por favor, inténtalo de nuevo más tarde.`;
-      await cacheAdapter.delete(reservationKey);
-      return { result, continue: true };
+      return retryStep(async () => {
+        const result = `No pudimos cancelar tu reserva ${reservation.id} debido a un error interno. Por favor, inténtalo de nuevo más tarde.`;
+        await cacheAdapter.delete(reservationKey);
+        return { result, continue: true };
+      });
     }
     return { continue: false };
   },

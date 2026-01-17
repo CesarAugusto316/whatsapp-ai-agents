@@ -56,18 +56,17 @@ type StartedFuncSagaStep = ISagaStep<
 
 const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
   config: { execute: { name: "early_conditions", ...stepConfig } },
-  execute: ({ ctx, durableStep }) => {
+  execute: ({ ctx, retryStep }) => {
     const { customerMessage, RESERVATION_STATE, reservationKey } = ctx;
     const reservation = RESERVATION_STATE as ReservationState;
 
-    return durableStep(async () => {
+    return retryStep(async () => {
       // OPTION: 1. SALIR
       if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
         await cacheAdapter.delete(reservationKey);
         const responseMsg = systemMessages.getExitMsg();
         logger.info("Customer asked a question", {
           customerAction: CustomerActions.EXIT,
-          customerMessage,
         });
         const res = await humanizerAgent(responseMsg);
         return { result: res.trim(), continue: false };
@@ -160,7 +159,7 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
         );
         return { result, continue: false };
       }
-      return { data, continue: true };
+      return { data, continue: true }; // SUCCESS ✅
     });
   },
 });
@@ -174,10 +173,10 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
       ctx;
     const reservation = RESERVATION_STATE as ReservationState;
 
-    return durableStep(async () => {
-      if (previous?.continue && previous?.data) {
-        const data = previous.data;
+    if (previous?.continue && previous?.data) {
+      return durableStep(async () => {
         const timezone = business.general.timezone;
+        const data = previous.data!;
         const { start, end } = data?.datetime;
 
         const isWithinSchedule = {
@@ -280,10 +279,10 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         // ✨ SEND SUCCESS MESSAGE
         const result = await humanizerAgent(responseMsg);
         return { result, continue: false };
-      }
+      });
+    }
 
-      return { result: "", continue: true };
-    });
+    return { continue: true };
   },
 });
 
