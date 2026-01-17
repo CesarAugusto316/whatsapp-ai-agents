@@ -7,7 +7,7 @@ import { StartedFuncSagaResult } from "./steps/started-steps";
 import { ValidateFuncSagaResult } from "./steps/validated-steps";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 
-const statusSagas: Partial<
+const statusSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
 > = {
   MAKE_STARTED: reservationSaga.makeStarted,
@@ -19,7 +19,7 @@ const statusSagas: Partial<
 };
 
 // EXAMPLE
-const noStatusSagas: Partial<
+const initialStatusSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
 > = {
   [FlowOptions.MAKE_RESERVATION]: reservationSaga.makeStarted, // EXAMPLE
@@ -27,17 +27,19 @@ const noStatusSagas: Partial<
   [FlowOptions.CANCEL_RESERVATION]: reservationSaga.makeStarted, // EXAMPLE
 };
 
-export const reservationSagaRouter = async (
+export const reservationStateOrchestrator = async (
   ctx: RestaurantCtx,
   status: FMStatus,
 ) => {
   //
-  const sagaOrchestrator = statusSagas[status];
+  const sagaOrchestrator = statusSagaMap[status];
   if (!sagaOrchestrator) throw new Error(`No saga found for status ${status}`);
 
   const { lastStepResult } = await sagaOrchestrator(ctx);
+
   if (lastStepResult?.execute?.result) {
-    return { result: lastStepResult?.execute.result };
+    const { result } = lastStepResult.execute;
+    return { result };
   }
   return { result: "" };
 };

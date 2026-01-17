@@ -106,7 +106,7 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
 
 const collectAndValidate = (): StartedFuncSagaStep => ({
   config: { execute: { name: "collect_and_validate", ...stepConfig } },
-  execute: async ({ ctx, durableStep }) => {
+  execute: async ({ ctx, retryStep }) => {
     const {
       customerMessage,
       RESERVATION_STATE,
@@ -119,7 +119,7 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
       customerName: customer?.name || "",
     });
 
-    return durableStep(async () => {
+    return retryStep(async () => {
       // OPTION: 4. PARSE USER INPUT
       const agentResult = await validatorAgent.parseData(
         business,
@@ -166,7 +166,7 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
 
 const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
   config: { execute: { name: "check_availability", ...stepConfig } },
-  execute: async ({ ctx, getStepResult, durableStep }) => {
+  execute: async ({ ctx, getStepResult, retryStep }) => {
     //
     const previous = getStepResult("execute:collect_and_validate");
     const { customerMessage, RESERVATION_STATE, reservationKey, business } =
@@ -174,7 +174,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
     const reservation = RESERVATION_STATE as ReservationState;
 
     if (previous?.continue && previous?.data) {
-      return durableStep(async () => {
+      return retryStep(async () => {
         const timezone = business.general.timezone;
         const data = previous.data!;
         const { start, end } = data?.datetime;
@@ -266,9 +266,6 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
             ...reservation,
             ...data,
           },
-          currentStatus: reservation.status,
-          nextStatus: transition.nextState,
-          customerMessage,
         });
         const responseMsg = systemMessages.getConfirmationMsg(
           data,
@@ -278,7 +275,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
 
         // ✨ SEND SUCCESS MESSAGE
         const result = await humanizerAgent(responseMsg);
-        return { result, continue: false };
+        return { result, data, shouldTransition: true, continue: false };
       });
     }
 
@@ -297,7 +294,7 @@ export const startedSteps = {
 // -----------------------------------------------------------
 const step = (): StartedFuncSagaStep => ({
   config: { execute: { name: "check_availability", ...stepConfig } },
-  execute: async ({ ctx, getStepResult, durableStep }) => {
+  execute: async ({ ctx, getStepResult, retryStep }) => {
     //
     return { continue: true };
   },

@@ -78,12 +78,12 @@ const sendStopTypingCompensate: FuncSagaStep<
   RestaurantCtx,
   WhatsappSagaResults,
   WhatappStepName
-> = async ({ ctx, durableStep }) => {
+> = async ({ ctx, retryStep }) => {
   const args = {
     session: ctx.session,
     chatId: ctx.customerPhone,
   };
-  return durableStep(
+  return retryStep(
     async () =>
       (await whatsappClient
         .sendStopTyping(args)
@@ -183,7 +183,7 @@ const sendText: WhatsappSagaStep = {
   config: {
     execute: { name: "sendText", ...stepConfig },
   },
-  execute: async ({ ctx, getStepResult, durableStep }) => {
+  execute: async ({ ctx, getStepResult, retryStep }) => {
     // Retrieve the text result from the reservationFlow step
     const text = getStepResult("execute:reservationFlow")?.text ?? "";
 
@@ -193,7 +193,7 @@ const sendText: WhatsappSagaStep = {
       chatId: ctx.customerPhone,
     };
 
-    return durableStep(
+    return retryStep(
       async () =>
         (await whatsappClient
           .sendText(args)
@@ -210,9 +210,6 @@ export const whatsappSagaOrchestrator = (ctx: RestaurantCtx) => {
     WhatappStepName
   >({
     ctx,
-    dbosConfig: {
-      workflowName: `whatsapp:reservation:${ctx.businessId}:${ctx.customerPhone}`,
-    },
   })
     .addStep(sendSeen)
     .addStep(sendStartTyping)

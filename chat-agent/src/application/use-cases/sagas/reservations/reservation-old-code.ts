@@ -1,11 +1,8 @@
 import { fallbackWorkflow } from "./steps/fallback-steps";
 import { RestaurantCtx } from "@/domain/restaurant/context.types";
 import chatHistoryAdapter from "@/infraestructure/adapters/chatHistory.adapter";
-import {
-  FlowOptions,
-  InputIntent,
-} from "@/domain/restaurant/reservations/reservation.types";
-import { reservationSagaRouter } from "./reservation-router";
+import { InputIntent } from "@/domain/restaurant/reservations/reservation.types";
+import { reservationStateOrchestrator } from "./reservation-router";
 
 /**
  *
@@ -25,7 +22,7 @@ export async function reservationSagaOrchestrator(
   }
 
   if (status) {
-    const { result } = await reservationSagaRouter(ctx, status);
+    const { result } = await reservationStateOrchestrator(ctx, status);
     if (result && result !== InputIntent.CUSTOMER_QUESTION) {
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return result;

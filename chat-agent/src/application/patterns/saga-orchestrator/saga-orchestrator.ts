@@ -23,7 +23,10 @@ type SagaKey = string | number | bigint;
  * Generic type representing the saga bag - a record storing results of saga steps.
  * Keys are strings, values can be any type.
  */
-export type SagaBag = Record<string, unknown> & { continue?: boolean };
+export type SagaBag = Record<string, unknown> & {
+  continue?: boolean;
+  shouldTransition?: boolean;
+};
 
 /**
  * Interface for a function that retrieves the result of a specific saga step.

@@ -52,7 +52,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
     execute: { name: "CONFIRM", ...stepConfig },
     compensate: { name: "CONFIRM:FAILED", ...stepConfig },
   },
-  execute: async ({ ctx, durableStep }) => {
+  execute: async ({ ctx, retryStep }) => {
     const {
       customerMessage,
       RESERVATION_STATE,
@@ -72,7 +72,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
     if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
-    return durableStep(async () => {
+    return retryStep(async () => {
       let newCustomer = customer;
       if (!customer && customerName) {
         newCustomer = (
@@ -112,14 +112,14 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       };
     });
   },
-  compensate: async ({ ctx, durableStep, getStepResult }) => {
+  compensate: async ({ ctx, retryStep, getStepResult }) => {
     const { customerMessage, reservationKey } = ctx;
     const reservation = getStepResult("execute:CONFIRM")?.reservation;
 
     if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
-    return durableStep(async () => {
+    return retryStep(async () => {
       // FINAL OPTION: 1. CONFIRMAR
       if (reservation && reservation?.id) {
         await cmsClient.deleteAppointment(reservation?.id!);
@@ -139,7 +139,7 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
     execute: { name: "CONFIRM", ...stepConfig },
     compensate: { name: "CONFIRM:FAILED", ...stepConfig },
   },
-  execute: async ({ ctx, durableStep }) => {
+  execute: async ({ ctx, retryStep }) => {
     const { customerMessage, RESERVATION_STATE, customer, business } = ctx;
     const {
       customerName = "",
@@ -163,7 +163,7 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
       return { continue: true };
     }
     if (customer?.id && RESERVATION_STATE?.id) {
-      return durableStep(async () => {
+      return retryStep(async () => {
         const timezone = business.general.timezone;
         const { start, end } = datetime;
         const startDateTime = localDateTimeToUTC(start, timezone);
@@ -325,7 +325,7 @@ const restart = (): ValidateFuncSagaStep => ({
 
 export const cancelConfirmed = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "CONFIRM", ...stepConfig } },
-  execute: async ({ ctx, durableStep }) => {
+  execute: async ({ ctx, retryStep }) => {
     //
     const { RESERVATION_STATE, customerMessage, reservationKey, customer } =
       ctx;
@@ -350,7 +350,7 @@ export const cancelConfirmed = (): ValidateFuncSagaStep => ({
     if (customerMessage.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
-    return durableStep(async () => {
+    return retryStep(async () => {
       const res = await cmsClient.updateAppointment(RESERVATION_STATE.id!, {
         status: "cancelled",
       });

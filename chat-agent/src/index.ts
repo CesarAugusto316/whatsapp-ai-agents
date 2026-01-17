@@ -7,7 +7,6 @@ import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
 import { DomainCtx } from "./domain/context.types";
 import { loggerMiddleware } from "@/application/middlewares/logger-middleware";
 import { RestaurantCtx } from "./domain/restaurant/context.types";
-import { durableExecution } from "./infraestructure/durable-execution/config";
 import { bootstrapMiddleware } from "./application/middlewares/bootstrap.middleware";
 import { whatsappReservationHandler } from "./application/handlers/restaurant/reservation/whatsapp-reservation.handler";
 import { testReservationHandler } from "./application/handlers/restaurant/reservation/test-reservation.handler";
@@ -69,8 +68,6 @@ app.onError((error, c) => {
     status,
   );
 });
-
-await durableExecution();
 
 export default {
   port: env?.PORT ?? 3000,
