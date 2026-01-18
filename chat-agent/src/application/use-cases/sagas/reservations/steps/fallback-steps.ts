@@ -12,7 +12,7 @@ import {
 } from "@/domain/restaurant/reservations/prompts";
 import { cacheAdapter, chatHistoryAdapter } from "@/infraestructure/adapters";
 import { aiClient, ChatMessage } from "@/infraestructure/http/ai";
-import { logger } from "@/infraestructure/logging/logger";
+import { logger } from "@/infraestructure/logging";
 import { initReservationChangeSteps } from "./initial-steps";
 
 /**

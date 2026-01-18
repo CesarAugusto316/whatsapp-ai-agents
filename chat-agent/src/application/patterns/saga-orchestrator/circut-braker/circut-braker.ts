@@ -1,3 +1,5 @@
+import { logger } from "@/infraestructure/logging";
+
 // circuit-breaker.ts
 export type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
@@ -11,7 +13,7 @@ export class CircuitBreaker {
   private state: CircuitState = "CLOSED";
   private failureCount = 0;
   private lastFailureTime: number | null = null;
-  private halfOpenSuccessCount = 0;
+  private halfOpenSuccessCount = 0; // 1768708068122
 
   constructor(
     private options: CircuitBreakerOptions,
@@ -53,7 +55,7 @@ export class CircuitBreaker {
         (this.options.halfOpenSuccessThreshold || 1)
       ) {
         this.state = "CLOSED";
-        console.log(`✅ CircuitBreaker "${this.name}" CLOSED (recovered)`);
+        logger.info(`✅ CircuitBreaker "${this.name}" CLOSED (recovered)`);
       }
     }
   }
@@ -66,7 +68,7 @@ export class CircuitBreaker {
       this.state = "OPEN"; // Vuelve a abrir si falla en half-open
     } else if (this.failureCount >= this.options.failureThreshold) {
       this.state = "OPEN";
-      console.log(`🔴 CircuitBreaker "${this.name}" OPEN (too many failures)`);
+      logger.error(`🔴 CircuitBreaker "${this.name}" OPEN (too many failures)`);
     }
   }
 

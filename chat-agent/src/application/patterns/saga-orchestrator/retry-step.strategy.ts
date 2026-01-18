@@ -1,6 +1,7 @@
 import { StepConfig } from "@dbos-inc/dbos-sdk";
 
 export const retryConfig = {
+  name: "retry",
   maxAttempts: 3,
   intervalSeconds: 1.5,
   backoffRate: 1.5,
@@ -8,7 +9,13 @@ export const retryConfig = {
 };
 
 export interface FuncRetryStep {
-  <R>(func: () => Promise<R>, config?: Omit<StepConfig, "name">): Promise<R>;
+  <R>(
+    func: () => Promise<R>,
+    config?: StepConfig & {
+      name: string;
+      shouldRetry?: (err: unknown) => boolean;
+    },
+  ): Promise<R>;
 }
 
 /**

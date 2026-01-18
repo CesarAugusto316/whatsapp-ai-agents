@@ -9,7 +9,7 @@ import {
   ReservationStatuses,
 } from "@/domain/restaurant/reservations";
 import { cacheAdapter } from "@/infraestructure/adapters";
-import { logger } from "@/infraestructure/logging/logger";
+import { logger } from "@/infraestructure/logging";
 import { localDateTimeToUTC } from "@/domain/utilities";
 import { cmsClient } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";

@@ -1,6 +1,6 @@
 import { DBOS } from "@dbos-inc/dbos-sdk";
 import { env } from "bun";
-import { logger } from "../logging/logger";
+import { logger } from "../logging";
 
 export async function durableExecution() {
   DBOS.setConfig({

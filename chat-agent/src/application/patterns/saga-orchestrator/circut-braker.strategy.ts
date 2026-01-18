@@ -16,7 +16,7 @@ function getCircuitBreaker(name: string): CircuitBreaker {
       new CircuitBreaker(
         {
           failureThreshold: 5, // 5 fallos abren el circuito
-          resetTimeout: 30000, // 30 segundos antes de half-open
+          resetTimeout: 30_000, // 30 segundos antes de half-open
           halfOpenSuccessThreshold: 2, // 2 éxitos para cerrar
         },
         name,
@@ -30,13 +30,13 @@ function getCircuitBreaker(name: string): CircuitBreaker {
 export async function resilientStep<R>(
   func: () => Promise<R>,
   options: {
-    breakerName: string;
+    name: string;
     maxAttempts?: number;
     intervalSeconds?: number;
     shouldRetry?: (err: unknown) => boolean;
   },
 ): Promise<R> {
-  const breaker = getCircuitBreaker(options.breakerName);
+  const breaker = getCircuitBreaker(options?.name); // breakerName
 
   return breaker.execute(() =>
     retryStep(func, {
@@ -51,3 +51,9 @@ export async function resilientStep<R>(
     }),
   );
 }
+export const retryConfig = {
+  maxAttempts: 3,
+  intervalSeconds: 1.5,
+  backoffRate: 1.5,
+  shouldRetry: (_err: unknown) => true,
+};

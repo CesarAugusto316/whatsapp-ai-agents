@@ -6,8 +6,8 @@ import {
   reservationSchemas,
 } from "@/domain/restaurant/reservations/schemas";
 import { aiClient } from "@/infraestructure/http/ai";
-import { Business } from "@/infraestructure/http/cms";
-import { logger } from "@/infraestructure/logging/logger";
+import type { Business } from "@/infraestructure/http/cms";
+import { logger } from "@/infraestructure/logging";
 import { mergeReservationData } from "@/application/use-cases/sagas/reservations/helpers/merge-state";
 import { ChatMessage } from "@/infraestructure/http/ai";
 

@@ -1,8 +1,9 @@
 import { StepConfig } from "@dbos-inc/dbos-sdk";
-import { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
+import type { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 import { retryConfig, FuncRetryStep, retryStep } from "./retry-step.strategy";
-import { logger } from "@/infraestructure/logging/logger";
+import { logger } from "@/infraestructure/logging";
 import { durableExecutionAdapter } from "@/infraestructure/durable-execution";
+import { resilientStep } from "./circut-braker.strategy";
 
 export const stepConfig = {
   retriesAllowed: true, // Enable automatic retries on failure
@@ -157,7 +158,7 @@ export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
       getStepResult: this.getStepResult.bind(this),
       previusStep: Object.freeze(structuredClone(this.lastStepResult)),
       durableStep: (func) => durableExecutionAdapter.runStep(func, config), // Wrap with DBOS for durability
-      retryStep: (func, config = retryConfig) => retryStep(func, config),
+      retryStep: (func, config = retryConfig) => resilientStep(func, config),
     });
 
     // Store the result in the saga bag using the function name and step name as key
