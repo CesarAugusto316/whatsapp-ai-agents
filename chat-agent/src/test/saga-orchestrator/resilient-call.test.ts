@@ -253,21 +253,88 @@ describe("resilientCall - Tests Pragmáticos", () => {
   // ========================================================
 
   describe("Circuit Breaker transitions", () => {
+    // test("debería abrir circuito tras múltiples fallos consecutivos", async () => {
+    //   const circuitBreaker = createTestCircuitBreaker(2); // Se abre tras 2 fallos
+    //   const operation = createFailingOperation("Service down");
+
+    //   // Primer fallo
+    //   await expect(
+    //     resilientCall(operation, { circuitBraker: circuitBreaker }),
+    //   ).rejects.toThrow("Service down");
+    //   expect(circuitBreaker.getState()).toBe("CLOSED");
+
+    //   // Segundo fallo - abre circuito
+    //   await expect(
+    //     resilientCall(operation, { circuitBraker: circuitBreaker }),
+    //   ).rejects.toThrow("Service down");
+    //   expect(circuitBreaker.getState()).toBe("OPEN");
+    // });
+
     test("debería abrir circuito tras múltiples fallos consecutivos", async () => {
-      const circuitBreaker = createTestCircuitBreaker(2); // Se abre tras 2 fallos
+      const circuitBreaker = createTestCircuitBreaker(2);
       const operation = createFailingOperation("Service down");
 
-      // Primer fallo
-      await expect(
-        resilientCall(operation, { circuitBraker: circuitBreaker }),
-      ).rejects.toThrow("Service down");
+      // Sin reintentos para que el test sea rápido
+      const options = {
+        circuitBraker: circuitBreaker,
+        retryConfig: { maxAttempts: 1 },
+      };
+
+      await expect(resilientCall(operation, options)).rejects.toThrow(
+        "Service down",
+      );
       expect(circuitBreaker.getState()).toBe("CLOSED");
 
-      // Segundo fallo - abre circuito
-      await expect(
-        resilientCall(operation, { circuitBraker: circuitBreaker }),
-      ).rejects.toThrow("Service down");
+      await expect(resilientCall(operation, options)).rejects.toThrow(
+        "Service down",
+      );
       expect(circuitBreaker.getState()).toBe("OPEN");
+    });
+
+    test("debería rechazar inmediatamente con circuito abierto", async () => {
+      const circuitBreaker = createTestCircuitBreaker(1);
+
+      // Primera llamada (abre circuito)
+      await expect(
+        resilientCall(createFailingOperation(), {
+          circuitBraker: circuitBreaker,
+          retryConfig: { maxAttempts: 1 }, // 👈
+        }),
+      ).rejects.toThrow("Permanent failure");
+      expect(circuitBreaker.getState()).toBe("OPEN");
+
+      // Segunda llamada (rechazada inmediatamente)
+      const shouldNotRun = createSuccessfulOperation();
+      await expect(
+        resilientCall(shouldNotRun, { circuitBraker: circuitBreaker }),
+      ).rejects.toThrow('CircuitBreaker "test-service" is OPEN');
+      expect(shouldNotRun).toHaveBeenCalledTimes(0);
+    });
+
+    test("debería usar circuito half-open después de timeout", async () => {
+      const circuitBreaker = createTestCircuitBreaker(1, 100);
+
+      // Abrir circuito
+      await expect(
+        resilientCall(createFailingOperation("Initial fail"), {
+          circuitBraker: circuitBreaker,
+          retryConfig: { maxAttempts: 1 }, // 👈
+        }),
+      ).rejects.toThrow("Initial fail");
+      expect(circuitBreaker.getState()).toBe("OPEN");
+
+      // Esperar resetTimeout
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      // Circuito en half-open debería permitir operación
+      const successOp = createSuccessfulOperation("recovered");
+      const result = await resilientCall(successOp, {
+        circuitBraker: circuitBreaker,
+        retryConfig: { maxAttempts: 1 }, // 👈
+      });
+
+      expect(result).toBe("recovered");
+      expect(successOp).toHaveBeenCalledTimes(1);
     });
 
     test("debería rechazar inmediatamente con circuito abierto", async () => {
