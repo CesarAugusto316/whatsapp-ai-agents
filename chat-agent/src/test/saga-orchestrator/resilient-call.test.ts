@@ -1,6 +1,5 @@
 // @ts-nocheck
-import { resilientQuery } from "@/application/patterns/saga-orchestrator/resilient-query.strategy";
-import { CircuitBreaker } from "@/application/patterns/saga-orchestrator/circut-braker/circut-braker";
+import { CircuitBreaker, resilientQuery } from "@/application/patterns";
 import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 
 // ========================================================
@@ -94,7 +93,7 @@ function createTestCircuitBreaker(
 // TESTS PRINCIPALES - ENFOQUE PRAGMÁTICO
 // ========================================================
 
-describe("resilientCall - Tests Pragmáticos", () => {
+describe("resilientQuery - Tests Pragmáticos", () => {
   beforeEach(() => {
     mock.restore();
     console.log = mock(() => {});

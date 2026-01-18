@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { retryQuery } from "@/application/patterns/saga-orchestrator/retry-query.strategy";
+import { retryQuery } from "@/application/patterns";
 import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 
-describe("retryStep", () => {
+describe("retryQuery", () => {
   beforeEach(() => {
     // Limpiar todos los mocks antes de cada test
     mock.restore();
