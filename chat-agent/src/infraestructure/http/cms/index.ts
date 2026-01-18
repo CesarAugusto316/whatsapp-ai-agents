@@ -1,7 +1,5 @@
 export { cmsClient } from "./cms.client";
-
 export { WEEK_DAYS } from "./cms-types";
-
 export type {
   Appointment,
   Business,

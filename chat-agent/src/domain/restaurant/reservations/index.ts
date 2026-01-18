@@ -6,15 +6,15 @@ export {
   CustomerActions,
   FlowOptions,
   ReservationStatuses,
-} from "./reservation.types";
-export {
-  AgentArgs,
+  InputIntent,
   CUSTOMER_INTENT,
+} from "./reservation.types";
+export type {
+  AgentArgs,
   CustomerActionKey,
   FlowOption,
   ReservationStatus,
   ReservationState,
-  InputIntent,
   FMStatus,
   CustomerActionValue,
 } from "./reservation.types";
