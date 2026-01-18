@@ -1,6 +1,6 @@
 import { env } from "bun";
 import { ChatCompletionResponse, ChatMessage } from "./";
-import { resilientCall } from "@/application/patterns";
+import { resilientQuery } from "@/application/patterns";
 
 class AiClient {
   private config =
@@ -34,7 +34,7 @@ class AiClient {
     tools?: Record<string, any>[],
   ): Promise<string> {
     //
-    return resilientCall(
+    return resilientQuery(
       async () => {
         const response = await fetch(this.config.url, {
           method: "POST",
@@ -60,7 +60,7 @@ class AiClient {
   }
 
   async systemMsg(message: string, temperature = 0) {
-    return resilientCall(
+    return resilientQuery(
       async () => {
         const response = await fetch(this.config.url, {
           method: "POST",

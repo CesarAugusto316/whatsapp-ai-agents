@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { resilientQuery } from "@/application/patterns/saga-orchestrator/resilient-call.strategy";
+import { resilientQuery } from "@/application/patterns/saga-orchestrator/resilient-query.strategy";
 import { CircuitBreaker } from "@/application/patterns/saga-orchestrator/circut-braker/circut-braker";
 import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 

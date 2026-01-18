@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { CircuitBreaker } from "@/application/patterns";
-import { resilientCall } from "@/application/patterns";
+import { resilientQuery } from "@/application/patterns";
 import { logger } from "@/infraestructure/logging";
 import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 
@@ -436,7 +436,7 @@ describe("CircuitBreaker Production Tests", () => {
         });
 
         const startTime = Date.now();
-        const result = await resilientCall(
+        const result = await resilientQuery(
           async () => {
             await simulateChain(); // WhatsApp
             const llmResponse = await simulateChain(); // LLM
@@ -465,7 +465,7 @@ describe("CircuitBreaker Production Tests", () => {
         });
 
         const startTime = Date.now();
-        const resultPromise = resilientCall(tooSlowProcess, {
+        const resultPromise = resilientQuery(tooSlowProcess, {
           builtIn: "api",
         });
 
@@ -492,7 +492,7 @@ describe("CircuitBreaker Production Tests", () => {
         });
 
         // Usar resilientCall que combina circuit breaker + retry
-        const promise = resilientCall(rateLimitedService, {
+        const promise = resilientQuery(rateLimitedService, {
           builtIn: "api",
           retryConfig: {
             maxAttempts: 3,
@@ -519,7 +519,7 @@ describe("CircuitBreaker Production Tests", () => {
           return { status: "ok" };
         });
 
-        const result = await resilientCall(transientFailure, {
+        const result = await resilientQuery(transientFailure, {
           builtIn: "api",
           retryConfig: {
             maxAttempts: 5,
@@ -538,7 +538,7 @@ describe("CircuitBreaker Production Tests", () => {
         });
 
         await expect(
-          resilientCall(permanentFailure, {
+          resilientQuery(permanentFailure, {
             builtIn: "llm",
             retryConfig: {
               maxAttempts: 3,
@@ -578,7 +578,7 @@ describe("CircuitBreaker Production Tests", () => {
       );
 
       // Usar resilientCall que ya combina ambos patrones
-      const result = await resilientCall(unreliableService, {
+      const result = await resilientQuery(unreliableService, {
         builtIn: "api",
         retryConfig: {
           maxAttempts: 5,
@@ -621,7 +621,7 @@ describe("CircuitBreaker Production Tests", () => {
         throw new Error("Unexpected step");
       });
 
-      const result = await resilientCall(
+      const result = await resilientQuery(
         async () => {
           await simulateChain(); // WhatsApp
           const llmResult = await simulateChain(); // LLM
@@ -672,7 +672,7 @@ describe("CircuitBreaker Production Tests", () => {
       });
 
       const startTime = Date.now();
-      const result = await resilientCall(
+      const result = await resilientQuery(
         async () => {
           await chainWithTimeouts(); // WhatsApp
           await chainWithTimeouts(); // LLM
@@ -763,7 +763,7 @@ describe("CircuitBreaker Production Tests", () => {
         return "Success on 4th attempt";
       });
 
-      const result = await resilientCall(failingOperation, {
+      const result = await resilientQuery(failingOperation, {
         builtIn: "api",
         retryConfig: {
           maxAttempts: 5,

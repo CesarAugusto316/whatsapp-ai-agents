@@ -1,4 +1,4 @@
-import { resilientCall, ResilientCallOptions } from "@/application/patterns";
+import { resilientQuery, ResilientQueryOptions } from "@/application/patterns";
 import { fetch } from "bun";
 
 // fetch resiliente con la misma firma + opciones extras
@@ -13,7 +13,7 @@ export async function resilientFetch(
       intervalSeconds: 1,
       backoffRate: 2,
     },
-  } satisfies ResilientCallOptions,
+  } satisfies ResilientQueryOptions,
 ): Promise<Response> {
-  return resilientCall(() => fetch(input, init), options);
+  return resilientQuery(() => fetch(input, init), options);
 }
