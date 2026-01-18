@@ -19,7 +19,5 @@ export type {
   CircuitState,
 } from "./saga-orchestrator/circut-braker/circut-braker";
 export { CircuitBreaker } from "./saga-orchestrator/circut-braker/circut-braker";
-export type { CircuitBreakerStep } from "./saga-orchestrator/circut-braker.strategy";
-export { resilientStep } from "./saga-orchestrator/circut-braker.strategy";
 export { resolveNextState } from "./FSM-workflow/resolve-next-state";
 export type { StateTransition } from "./FSM-workflow/resolve-next-state";

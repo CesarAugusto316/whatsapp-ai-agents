@@ -51,17 +51,14 @@ const sendSeen: WhatsappSagaStep = {
   config: {
     execute: { name: "sendSeen", ...stepConfig },
   },
-  execute: async ({ ctx, retryStep }) => {
+  execute: async ({ ctx }) => {
     const args = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return retryStep(
-      async () =>
-        (await whatsappClient
-          .sendSeen(args)
-          .then((r) => r.json())) as WhatsappSagaResults,
-    );
+    return (await whatsappClient
+      .sendSeen(args)
+      .then((r) => r.json())) as WhatsappSagaResults;
   },
 };
 
@@ -78,17 +75,14 @@ const sendStopTypingCompensate: FuncSagaStep<
   RestaurantCtx,
   WhatsappSagaResults,
   WhatappStepName
-> = async ({ ctx, retryStep }) => {
+> = async ({ ctx }) => {
   const args = {
     session: ctx.session,
     chatId: ctx.customerPhone,
   };
-  return retryStep(
-    async () =>
-      (await whatsappClient
-        .sendStopTyping(args)
-        .then((r) => r.json())) as WhatsappSagaResults,
-  );
+  return (await whatsappClient
+    .sendStopTyping(args)
+    .then((r) => r.json())) as WhatsappSagaResults;
 };
 
 /**
@@ -109,17 +103,14 @@ const sendStartTyping: WhatsappSagaStep = {
     execute: { name: "sendStartTyping", ...stepConfig },
     compensate: { name: "sendStopTyping", ...stepConfig },
   },
-  execute: async ({ ctx, retryStep }) => {
+  execute: async ({ ctx }) => {
     const args = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return retryStep(
-      async () =>
-        (await whatsappClient
-          .sendStartTyping(args)
-          .then((r) => r.json())) as WhatsappSagaResults,
-    );
+    return (await whatsappClient
+      .sendStartTyping(args)
+      .then((r) => r.json())) as WhatsappSagaResults;
   },
   compensate: sendStopTypingCompensate,
 };
@@ -183,7 +174,7 @@ const sendText: WhatsappSagaStep = {
   config: {
     execute: { name: "sendText", ...stepConfig },
   },
-  execute: async ({ ctx, getStepResult, retryStep }) => {
+  execute: async ({ ctx, getStepResult }) => {
     // Retrieve the text result from the reservationFlow step
     const text = getStepResult("execute:reservationFlow")?.text ?? "";
 
@@ -193,12 +184,9 @@ const sendText: WhatsappSagaStep = {
       chatId: ctx.customerPhone,
     };
 
-    return retryStep(
-      async () =>
-        (await whatsappClient
-          .sendText(args)
-          .then((r) => r.json())) as WhatsappSagaResults,
-    );
+    return (await whatsappClient
+      .sendText(args)
+      .then((r) => r.json())) as WhatsappSagaResults;
   },
 };
 
