@@ -1,4 +1,4 @@
-import { formatLocalDateTime } from "@/domain/utilities/datetime-formatting/datetime-converters";
+import { formatLocalDateTime } from "@/domain/utilities";
 import { describe, expect, test } from "bun:test";
 
 // format-local-datetime.test.ts

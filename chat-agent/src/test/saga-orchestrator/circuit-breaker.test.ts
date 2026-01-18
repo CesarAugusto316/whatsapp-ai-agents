@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { CircuitBreaker } from "@/application/patterns/saga-orchestrator/circut-braker/circut-braker";
-import { resilientCall } from "@/application/patterns/saga-orchestrator/circut-braker.strategy";
+import { CircuitBreaker } from "@/application/patterns";
+import { resilientCall } from "@/application/patterns";
 import { logger } from "@/infraestructure/logging";
 import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 

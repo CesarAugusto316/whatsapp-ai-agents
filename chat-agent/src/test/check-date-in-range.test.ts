@@ -1,5 +1,5 @@
 // Tests unitarios con bun:test
-import { checkUtcDateInRange } from "@/domain/utilities/datetime-formatting/check-date-in-range";
+import { checkUtcDateInRange } from "@/domain/utilities";
 import { describe, expect, test } from "bun:test";
 
 describe("isDateInRange", () => {

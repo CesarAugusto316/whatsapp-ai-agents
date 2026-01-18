@@ -1,5 +1,5 @@
-import { formatSchedule } from "@/domain/utilities/datetime-formatting/datetime-converters";
-import { WeekDay } from "@/infraestructure/http/cms/cms-types";
+import { formatSchedule } from "@/domain/utilities";
+import { WeekDay } from "@/infraestructure/http/cms";
 import { describe, test, expect } from "bun:test";
 
 describe("formatSchedule", () => {
