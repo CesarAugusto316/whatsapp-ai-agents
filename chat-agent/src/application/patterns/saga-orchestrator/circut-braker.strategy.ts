@@ -21,29 +21,40 @@ const apiCircuitBreaker = new CircuitBreaker(
   "external-api",
 );
 
+export interface ResilientCallOptions {
+  builtIn?: "llm" | "api" | "database";
+  circuitBraker?: CircuitBreaker;
+  timeoutMs?: number; // 👈 NUEVO: timeout global
+  retryConfig?: {
+    maxAttempts?: number;
+    intervalSeconds?: number;
+    backoffRate?: number;
+  };
+}
+
 // Función unificada que combina ambos patrones
 export async function resilientCall<T>(
   operation: () => Promise<T>,
-  options: {
-    service: "llm" | "api" | "database";
-    retryConfig?: {
-      maxAttempts?: number;
-      intervalSeconds?: number;
-      backoffRate?: number;
-    };
-  },
+  options: ResilientCallOptions,
 ): Promise<T> {
-  const circuitBreaker =
-    options.service === "llm" ? llmCircuitBreaker : apiCircuitBreaker;
+  //
+  const timeoutMs =
+    options.timeoutMs ?? (options.builtIn === "llm" ? 30000 : 45000); // WhatsApp: 30s LLM, 45s API
+
+  const circuitBreaker = options.circuitBraker
+    ? options.circuitBraker
+    : options.builtIn === "llm"
+      ? llmCircuitBreaker
+      : apiCircuitBreaker;
 
   const retryConfig = {
     maxAttempts:
-      options.retryConfig?.maxAttempts ?? (options.service === "llm" ? 2 : 3),
+      options.retryConfig?.maxAttempts ?? (options.builtIn === "llm" ? 2 : 3),
     intervalSeconds:
       options.retryConfig?.intervalSeconds ??
-      (options.service === "llm" ? 1 : 1.5),
+      (options.builtIn === "llm" ? 1 : 1.5),
     backoffRate:
-      options.retryConfig?.backoffRate ?? (options.service === "llm" ? 1.5 : 2),
+      options.retryConfig?.backoffRate ?? (options.builtIn === "llm" ? 1.5 : 2),
     shouldRetry: (err: unknown) => {
       // No reintentar para errores del cliente (4xx excepto 429)
       if (err instanceof Error) {
@@ -67,6 +78,18 @@ export async function resilientCall<T>(
 
   // EJECUCIÓN JERÁRQUICA: CircuitBreaker → Retry → Operación
   return circuitBreaker.execute(async () => {
-    return retryStep(operation, retryConfig);
+    return retryStep(
+      () =>
+        Promise.race([
+          operation(),
+          new Promise<T>((_, reject) =>
+            setTimeout(
+              () => reject(new Error(`Timeout after ${timeoutMs}ms`)),
+              timeoutMs,
+            ),
+          ),
+        ]),
+      retryConfig,
+    );
   });
 }

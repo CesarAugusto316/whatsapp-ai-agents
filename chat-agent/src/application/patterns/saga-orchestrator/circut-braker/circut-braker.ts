@@ -14,6 +14,7 @@ export class CircuitBreaker {
   private failureCount = 0;
   private lastFailureTime: number | null = null;
   private halfOpenSuccessCount = 0; // 1768708068122
+  private mutex = Promise.resolve(); // 👈 Simple mutex para Node.js
 
   constructor(
     private options: CircuitBreakerOptions,
@@ -21,17 +22,25 @@ export class CircuitBreaker {
   ) {}
 
   async execute<T>(operation: () => Promise<T>): Promise<T> {
-    // 1. Verificar estado del circuito
-    if (this.state === "OPEN") {
-      const timeSinceFailure = Date.now() - (this.lastFailureTime || 0);
-      if (timeSinceFailure >= this.options.resetTimeout) {
-        this.state = "HALF_OPEN";
-        this.halfOpenSuccessCount = 0;
-      } else {
-        throw new Error(
-          `CircuitBreaker "${this.name}" is OPEN. Service unavailable.`,
-        );
+    // Usar mutex para sección crítica
+    // const release = await this.acquireMutex();
+    try {
+      // 1. Verificar estado del circuito
+      if (this.state === "OPEN") {
+        const timeSinceFailure = Date.now() - (this.lastFailureTime || 0);
+        if (timeSinceFailure >= this.options.resetTimeout) {
+          this.state = "HALF_OPEN";
+          this.halfOpenSuccessCount = 0;
+        } else {
+          throw new Error(
+            `CircuitBreaker "${this.name}" is OPEN. Service unavailable.`,
+          );
+        }
       }
+      // release();
+    } catch (error) {
+      // release();
+      throw error;
     }
 
     // 2. Ejecutar operación
@@ -76,11 +85,13 @@ export class CircuitBreaker {
     return this.state;
   }
 
-  isAvailable(): boolean {
-    if (this.state === "OPEN") {
-      const timeSinceFailure = Date.now() - (this.lastFailureTime || 0);
-      return timeSinceFailure >= this.options.resetTimeout;
-    }
-    return true;
+  private async acquireMutex(): Promise<() => void> {
+    const previous = this.mutex;
+    let release: () => void;
+    this.mutex = new Promise((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    return release!;
   }
 }

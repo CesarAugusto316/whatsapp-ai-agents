@@ -443,7 +443,7 @@ describe("CircuitBreaker Production Tests", () => {
             await simulateChain(); // DB
             return await simulateChain(); // Response
           },
-          { service: "llm" },
+          { builtIn: "llm" },
         );
 
         const elapsed = Date.now() - startTime;
@@ -466,7 +466,7 @@ describe("CircuitBreaker Production Tests", () => {
 
         const startTime = Date.now();
         const resultPromise = resilientCall(tooSlowProcess, {
-          service: "api",
+          builtIn: "api",
         });
 
         // La promesa debería resolverse después de 50 segundos simulados
@@ -493,7 +493,7 @@ describe("CircuitBreaker Production Tests", () => {
 
         // Usar resilientCall que combina circuit breaker + retry
         const promise = resilientCall(rateLimitedService, {
-          service: "api",
+          builtIn: "api",
           retryConfig: {
             maxAttempts: 3,
             intervalSeconds: 0,
@@ -520,7 +520,7 @@ describe("CircuitBreaker Production Tests", () => {
         });
 
         const result = await resilientCall(transientFailure, {
-          service: "api",
+          builtIn: "api",
           retryConfig: {
             maxAttempts: 5,
             intervalSeconds: 0,
@@ -539,7 +539,7 @@ describe("CircuitBreaker Production Tests", () => {
 
         await expect(
           resilientCall(permanentFailure, {
-            service: "llm",
+            builtIn: "llm",
             retryConfig: {
               maxAttempts: 3,
               intervalSeconds: 0.1,
@@ -579,7 +579,7 @@ describe("CircuitBreaker Production Tests", () => {
 
       // Usar resilientCall que ya combina ambos patrones
       const result = await resilientCall(unreliableService, {
-        service: "api",
+        builtIn: "api",
         retryConfig: {
           maxAttempts: 5,
           intervalSeconds: 0,
@@ -629,7 +629,7 @@ describe("CircuitBreaker Production Tests", () => {
           return await simulateChain(); // Resultado
         },
         {
-          service: "llm",
+          builtIn: "llm",
           retryConfig: {
             maxAttempts: 2,
             intervalSeconds: 0,
@@ -680,7 +680,8 @@ describe("CircuitBreaker Production Tests", () => {
           return await chainWithTimeouts(); // Respuesta
         },
         {
-          service: "llm",
+          builtIn: "api",
+          // timeoutMs: 60_000,
         },
       );
 
@@ -763,7 +764,7 @@ describe("CircuitBreaker Production Tests", () => {
       });
 
       const result = await resilientCall(failingOperation, {
-        service: "api",
+        builtIn: "api",
         retryConfig: {
           maxAttempts: 5,
           intervalSeconds: 0,
