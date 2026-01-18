@@ -29,4 +29,4 @@ class Cache {
   }
 }
 
-export const cacheAdapter = new Cache();
+export default new Cache();

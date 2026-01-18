@@ -64,4 +64,4 @@ class ChatHistory {
   }
 }
 
-export const chatHistoryAdapter = new ChatHistory();
+export default new ChatHistory();

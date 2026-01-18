@@ -1,4 +1,5 @@
-export { aiClient } from "./ai.client";
+import aiClient from "./ai.client";
+export { aiClient };
 export type {
   ChatCompletionChoice,
   ChatCompletionChunk,

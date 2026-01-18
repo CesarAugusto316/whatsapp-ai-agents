@@ -74,4 +74,4 @@ class AiClient {
   }
 }
 
-export const aiClient = new AiClient();
+export default new AiClient();

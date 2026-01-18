@@ -223,4 +223,4 @@ class CMSClient {
   }
 }
 
-export const cmsClient = new CMSClient();
+export default new CMSClient();

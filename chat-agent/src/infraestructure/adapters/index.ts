@@ -1,2 +1,4 @@
-export { cacheAdapter } from "./cache.adapter";
-export { chatHistoryAdapter } from "./chatHistory.adapter";
+import cacheAdapter from "./cache.adapter";
+import chatHistoryAdapter from "./chatHistory.adapter";
+
+export { cacheAdapter, chatHistoryAdapter };
