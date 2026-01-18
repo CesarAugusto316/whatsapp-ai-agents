@@ -1,4 +1,4 @@
-import { retryStep } from "./retry-step.strategy";
+import { RetryConfig, retryStep } from "./retry-step.strategy";
 import { CircuitBreaker } from "./circut-braker/circut-braker";
 
 // Configuración específica para LLMs
@@ -70,11 +70,7 @@ export interface ResilientCallOptions {
   builtIn?: "llm" | "api" | "database";
   circuitBraker?: CircuitBreaker;
   timeoutMs?: number;
-  retryConfig?: {
-    maxAttempts?: number;
-    intervalSeconds?: number;
-    backoffRate?: number;
-  };
+  retryConfig?: RetryConfig;
 }
 
 /**

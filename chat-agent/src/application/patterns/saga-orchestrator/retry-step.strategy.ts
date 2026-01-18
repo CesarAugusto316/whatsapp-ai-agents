@@ -1,21 +1,18 @@
 import { StepConfig } from "@dbos-inc/dbos-sdk";
 
+export interface RetryConfig extends Omit<StepConfig, "name"> {
+  shouldRetry?: (err: unknown) => boolean;
+}
+
 export const retryConfig = {
-  name: "retry",
   maxAttempts: 3,
   intervalSeconds: 1.5,
   backoffRate: 1.5,
   shouldRetry: (_err: unknown) => true,
-};
+} satisfies RetryConfig;
 
 export interface FuncRetryStep {
-  <R>(
-    func: () => Promise<R>,
-    config?: StepConfig & {
-      name: string;
-      shouldRetry?: (err: unknown) => boolean;
-    },
-  ): Promise<R>;
+  <R>(func: () => Promise<R>, config?: RetryConfig): Promise<R>;
 }
 
 /**
@@ -41,7 +38,6 @@ export async function retryStep<R>(
       if (!shouldRetry(err) || attempt >= maxAttempts) {
         throw err;
       }
-
       const delay = intervalSeconds * 1000 * Math.pow(backoffRate, attempt - 1);
       await new Promise((resolve) => setTimeout(resolve, delay));
       attempt++;
