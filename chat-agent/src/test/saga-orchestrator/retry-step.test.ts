@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { retryStep } from "@/application/patterns/saga-orchestrator/retry-step.strategy";
+import { retryQuery } from "@/application/patterns/saga-orchestrator/retry-step.strategy";
 import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 
 describe("retryStep", () => {
@@ -19,7 +19,7 @@ describe("retryStep", () => {
   test("debería ejecutar la función una vez si tiene éxito inmediato", async () => {
     const mockFunc = mock(() => Promise.resolve("éxito"));
 
-    const result = await retryStep(mockFunc, {
+    const result = await retryQuery(mockFunc, {
       maxAttempts: 3,
       intervalSeconds: 0.1,
       backoffRate: 1.5,
@@ -39,7 +39,7 @@ describe("retryStep", () => {
       return Promise.resolve("éxito después de reintento");
     });
 
-    const result = await retryStep(mockFunc, {
+    const result = await retryQuery(mockFunc, {
       maxAttempts: 3,
       intervalSeconds: 0.1, // Usamos intervalos cortos para tests
       backoffRate: 1.5,
@@ -54,7 +54,7 @@ describe("retryStep", () => {
     const mockFunc = mock(() => Promise.reject(error));
 
     await expect(
-      retryStep(mockFunc, {
+      retryQuery(mockFunc, {
         maxAttempts: 3,
         intervalSeconds: 0.1,
         backoffRate: 1.5,
@@ -79,7 +79,7 @@ describe("retryStep", () => {
     });
 
     try {
-      await retryStep(mockFunc, {
+      await retryQuery(mockFunc, {
         maxAttempts: 3,
         intervalSeconds: 1, // 1000ms
         backoffRate: 2, // Dobla cada vez
@@ -114,7 +114,7 @@ describe("retryStep", () => {
         return Promise.resolve("éxito");
       });
 
-      const result = await retryStep(mockFunc, config);
+      const result = await retryQuery(mockFunc, config);
       expect(result).toBe("éxito");
       expect(mockFunc).toHaveBeenCalledTimes(config.maxAttempts);
     }
@@ -129,7 +129,7 @@ describe("retryStep", () => {
     const mockFunc = mock(() => Promise.reject(originalError));
 
     try {
-      await retryStep(mockFunc, {
+      await retryQuery(mockFunc, {
         maxAttempts: 2,
         intervalSeconds: 0.1,
         backoffRate: 1,
@@ -147,7 +147,7 @@ describe("retryStep", () => {
     test("debería manejar funciones que devuelven valores no-promesa", async () => {
       const mockFunc = mock(() => "valor directo" as any);
 
-      const result = await retryStep(mockFunc, {
+      const result = await retryQuery(mockFunc, {
         maxAttempts: 3,
         intervalSeconds: 0.1,
         backoffRate: 1.5,
@@ -162,7 +162,7 @@ describe("retryStep", () => {
       });
 
       await expect(
-        retryStep(mockFunc, {
+        retryQuery(mockFunc, {
           maxAttempts: 0,
           intervalSeconds: 0.1,
           backoffRate: 1.5,
@@ -184,7 +184,7 @@ describe("retryStep", () => {
         return "éxito";
       });
 
-      const result = await retryStep(mockFunc, {
+      const result = await retryQuery(mockFunc, {
         maxAttempts: 3,
         intervalSeconds: 0,
         backoffRate: 1.5,
@@ -209,7 +209,7 @@ describe("retryStep", () => {
       });
 
       try {
-        await retryStep(mockFunc, {
+        await retryQuery(mockFunc, {
           maxAttempts: 4,
           intervalSeconds: 0.5,
           backoffRate: 1,
@@ -244,7 +244,7 @@ describe("retryStep", () => {
         return response.json();
       };
 
-      const result = await retryStep(apiCall, {
+      const result = await retryQuery(apiCall, {
         maxAttempts: 5,
         intervalSeconds: 0.1,
         backoffRate: 2,
@@ -283,7 +283,7 @@ describe("retryStep", () => {
       };
 
       await expect(
-        retryStep(apiCall, {
+        retryQuery(apiCall, {
           maxAttempts: 3,
           intervalSeconds: 0.1,
           backoffRate: 1.5,
@@ -339,7 +339,7 @@ describe("retryStep", () => {
         return response?.json();
       };
 
-      const result = await retryStep(apiCall, {
+      const result = await retryQuery(apiCall, {
         maxAttempts: 5,
         intervalSeconds: 0.2,
         backoffRate: 2,
@@ -355,7 +355,7 @@ describe("retryStep", () => {
       const simpleFunc = () => Promise.resolve(42);
 
       const startTime = performance.now();
-      const result = await retryStep(simpleFunc, {
+      const result = await retryQuery(simpleFunc, {
         maxAttempts: 3,
         intervalSeconds: 1,
         backoffRate: 1.5,
@@ -375,7 +375,7 @@ describe("retryStep", () => {
 
       const startTime = Date.now();
       try {
-        await retryStep(mockFunc, {
+        await retryQuery(mockFunc, {
           maxAttempts: 4,
           intervalSeconds: 0.05, // 50ms
           backoffRate: 1,

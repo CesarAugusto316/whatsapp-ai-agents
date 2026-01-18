@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { resilientCall } from "@/application/patterns/saga-orchestrator/resilient-call.strategy";
+import { resilientQuery } from "@/application/patterns/saga-orchestrator/resilient-call.strategy";
 import { CircuitBreaker } from "@/application/patterns/saga-orchestrator/circut-braker/circut-braker";
 import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 
@@ -115,7 +115,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const operation = createSuccessfulOperation("result");
       const circuitBreaker = createTestCircuitBreaker();
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         circuitBraker: circuitBreaker,
       });
 
@@ -126,7 +126,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
     test("debería usar builtIn 'api' por defecto", async () => {
       const operation = createSuccessfulOperation("api result");
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         builtIn: "api",
       });
 
@@ -136,7 +136,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
     test("debería usar builtIn 'llm' con configuración específica", async () => {
       const operation = createSuccessfulOperation("llm result");
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         builtIn: "llm",
       });
 
@@ -153,7 +153,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const operation = createFlakyOperation(2, "recovered");
       const circuitBreaker = createTestCircuitBreaker();
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         circuitBraker: circuitBreaker,
         retryConfig: {
           maxAttempts: 5,
@@ -170,7 +170,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const circuitBreaker = createTestCircuitBreaker();
 
       await expect(
-        resilientCall(operation, {
+        resilientQuery(operation, {
           circuitBraker: circuitBreaker,
           retryConfig: {
             maxAttempts: 2,
@@ -189,7 +189,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const circuitBreaker = createTestCircuitBreaker();
 
       await expect(
-        resilientCall(operation, {
+        resilientQuery(operation, {
           circuitBraker: circuitBreaker,
           retryConfig: {
             maxAttempts: 3,
@@ -212,7 +212,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       });
       const circuitBreaker = createTestCircuitBreaker();
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         circuitBraker: circuitBreaker,
         retryConfig: {
           maxAttempts: 5,
@@ -235,7 +235,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       });
       const circuitBreaker = createTestCircuitBreaker();
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         circuitBraker: circuitBreaker,
         retryConfig: {
           maxAttempts: 3,
@@ -280,12 +280,12 @@ describe("resilientCall - Tests Pragmáticos", () => {
         retryConfig: { maxAttempts: 1 },
       };
 
-      await expect(resilientCall(operation, options)).rejects.toThrow(
+      await expect(resilientQuery(operation, options)).rejects.toThrow(
         "Service down",
       );
       expect(circuitBreaker.getState()).toBe("CLOSED");
 
-      await expect(resilientCall(operation, options)).rejects.toThrow(
+      await expect(resilientQuery(operation, options)).rejects.toThrow(
         "Service down",
       );
       expect(circuitBreaker.getState()).toBe("OPEN");
@@ -296,7 +296,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
 
       // Primera llamada (abre circuito)
       await expect(
-        resilientCall(createFailingOperation(), {
+        resilientQuery(createFailingOperation(), {
           circuitBraker: circuitBreaker,
           retryConfig: { maxAttempts: 1 }, // 👈
         }),
@@ -306,7 +306,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       // Segunda llamada (rechazada inmediatamente)
       const shouldNotRun = createSuccessfulOperation();
       await expect(
-        resilientCall(shouldNotRun, { circuitBraker: circuitBreaker }),
+        resilientQuery(shouldNotRun, { circuitBraker: circuitBreaker }),
       ).rejects.toThrow('CircuitBreaker "test-service" is OPEN');
       expect(shouldNotRun).toHaveBeenCalledTimes(0);
     });
@@ -316,7 +316,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
 
       // Abrir circuito
       await expect(
-        resilientCall(createFailingOperation("Initial fail"), {
+        resilientQuery(createFailingOperation("Initial fail"), {
           circuitBraker: circuitBreaker,
           retryConfig: { maxAttempts: 1 }, // 👈
         }),
@@ -328,7 +328,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
 
       // Circuito en half-open debería permitir operación
       const successOp = createSuccessfulOperation("recovered");
-      const result = await resilientCall(successOp, {
+      const result = await resilientQuery(successOp, {
         circuitBraker: circuitBreaker,
         retryConfig: { maxAttempts: 1 }, // 👈
       });
@@ -342,7 +342,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
 
       // Abrir circuito
       await expect(
-        resilientCall(createFailingOperation(), {
+        resilientQuery(createFailingOperation(), {
           circuitBraker: circuitBreaker,
         }),
       ).rejects.toThrow("Permanent failure");
@@ -351,7 +351,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       // Intentar operación - debería rechazar inmediatamente
       const shouldNotRun = createSuccessfulOperation();
       await expect(
-        resilientCall(shouldNotRun, { circuitBraker: circuitBreaker }),
+        resilientQuery(shouldNotRun, { circuitBraker: circuitBreaker }),
       ).rejects.toThrow('CircuitBreaker "test-service" is OPEN');
 
       expect(shouldNotRun).toHaveBeenCalledTimes(0);
@@ -364,7 +364,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
 
       // Abrir circuito
       await expect(
-        resilientCall(operation, { circuitBraker: circuitBreaker }),
+        resilientQuery(operation, { circuitBraker: circuitBreaker }),
       ).rejects.toThrow("Initial fail");
       expect(circuitBreaker.getState()).toBe("OPEN");
 
@@ -375,7 +375,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       // Nota: El state checking en CircuitBreaker es síncrono, pero el cambio
       // a half-open ocurre cuando se llama a execute() después del timeout
       const successOp = createSuccessfulOperation("recovered");
-      const result = await resilientCall(successOp, {
+      const result = await resilientQuery(successOp, {
         circuitBraker: circuitBreaker,
       });
 
@@ -395,7 +395,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
 
       // Configurar timeout más corto que la operación
       await expect(
-        resilientCall(operation, {
+        resilientQuery(operation, {
           circuitBraker: circuitBreaker,
           timeoutMs: 50,
         }),
@@ -406,7 +406,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const operation = createSlowOperation(30); // Operación de 30ms
       const circuitBreaker = createTestCircuitBreaker();
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         circuitBraker: circuitBreaker,
         timeoutMs: 100, // Timeout mayor que la operación
       });
@@ -429,7 +429,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
 
       const circuitBreaker = createTestCircuitBreaker();
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         circuitBraker: circuitBreaker,
         timeoutMs: 50,
         retryConfig: {
@@ -456,7 +456,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       );
 
       const promises = operations.map((op, i) =>
-        resilientCall(op, {
+        resilientQuery(op, {
           circuitBraker: circuitBreaker,
         }),
       );
@@ -480,7 +480,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       ];
 
       const promises = operations.map((op) =>
-        resilientCall(op, {
+        resilientQuery(op, {
           circuitBraker: circuitBreaker,
           retryConfig: { maxAttempts: 1, intervalSeconds: 0 },
         }),
@@ -505,7 +505,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       );
 
       const promises = operations.map((op) =>
-        resilientCall(op, {
+        resilientQuery(op, {
           circuitBraker: circuitBreaker,
           retryConfig: { maxAttempts: 1, intervalSeconds: 0 },
         }),
@@ -529,7 +529,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const customBreaker = createTestCircuitBreaker(1, 1000, 1, "custom");
       const operation = createSuccessfulOperation("result");
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         builtIn: "llm", // Este debería ignorarse
         circuitBraker: customBreaker,
       });
@@ -541,18 +541,18 @@ describe("resilientCall - Tests Pragmáticos", () => {
     test("debería manejar diferentes tipos de retorno", async () => {
       const circuitBreaker = createTestCircuitBreaker();
 
-      const stringResult = await resilientCall(
+      const stringResult = await resilientQuery(
         createSuccessfulOperation("string"),
         { circuitBraker: circuitBreaker },
       );
-      const numberResult = await resilientCall(createSuccessfulOperation(42), {
+      const numberResult = await resilientQuery(createSuccessfulOperation(42), {
         circuitBraker: circuitBreaker,
       });
-      const objectResult = await resilientCall(
+      const objectResult = await resilientQuery(
         createSuccessfulOperation({ key: "value" }),
         { circuitBraker: circuitBreaker },
       );
-      const arrayResult = await resilientCall(
+      const arrayResult = await resilientQuery(
         createSuccessfulOperation([1, 2, 3]),
         { circuitBraker: circuitBreaker },
       );
@@ -573,7 +573,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       });
 
       try {
-        await resilientCall(operation, {
+        await resilientQuery(operation, {
           circuitBraker: circuitBreaker,
           retryConfig: { maxAttempts: 1, intervalSeconds: 0 },
         });
@@ -589,7 +589,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const circuitBreaker = createTestCircuitBreaker();
       const operation = createFlakyOperation(2, "final success");
 
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         circuitBraker: circuitBreaker,
         retryConfig: {
           maxAttempts: 4,
@@ -613,7 +613,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const operation = createSuccessfulOperation("fast");
 
       const start = performance.now();
-      const result = await resilientCall(operation, {
+      const result = await resilientQuery(operation, {
         circuitBraker: circuitBreaker,
       });
       const end = performance.now();
@@ -629,7 +629,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       });
 
       await expect(
-        resilientCall(operation as any, {
+        resilientQuery(operation as any, {
           circuitBraker: circuitBreaker,
         }),
       ).rejects.toThrow("Sync error");
@@ -639,7 +639,7 @@ describe("resilientCall - Tests Pragmáticos", () => {
       const operation = createSuccessfulOperation("default");
 
       // Sin options, debería usar defaults
-      const result = await resilientCall(operation, {});
+      const result = await resilientQuery(operation, {});
 
       expect(result).toBe("default");
     });

@@ -11,7 +11,7 @@ export type {
 } from "./saga-orchestrator/saga-orchestrator";
 export {
   retryConfig,
-  retryStep,
+  retryQuery as retryStep,
 } from "./saga-orchestrator/retry-step.strategy";
 export type { FuncRetryStep } from "./saga-orchestrator/retry-step.strategy";
 export type {
@@ -21,5 +21,5 @@ export type {
 export { CircuitBreaker } from "./saga-orchestrator/circut-braker/circut-braker";
 export { resolveNextState } from "./FSM-workflow/resolve-next-state";
 export type { StateTransition } from "./FSM-workflow/resolve-next-state";
-export { resilientCall } from "./saga-orchestrator/resilient-call.strategy";
-export type { ResilientCallOptions } from "./saga-orchestrator/resilient-call.strategy";
+export { resilientQuery as resilientCall } from "./saga-orchestrator/resilient-call.strategy";
+export type { ResilientQueryOptions as ResilientCallOptions } from "./saga-orchestrator/resilient-call.strategy";

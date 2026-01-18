@@ -1,4 +1,4 @@
-import { RetryConfig, retryStep } from "./retry-step.strategy";
+import { RetryConfig, retryQuery } from "./retry-step.strategy";
 import { CircuitBreaker } from "./circut-braker/circut-braker";
 
 // Configuración específica para LLMs
@@ -66,7 +66,7 @@ const apiCircuitBreaker = new CircuitBreaker(
  * const myBreaker = new CircuitBreaker({failureThreshold: 3, resetTimeout: 10000}, 'mi-servicio')
  * const options = { circuitBraker: myBreaker }
  */
-export interface ResilientCallOptions {
+export interface ResilientQueryOptions {
   builtIn?: "llm" | "api" | "database";
   circuitBraker?: CircuitBreaker;
   timeoutMs?: number;
@@ -90,7 +90,7 @@ export interface ResilientCallOptions {
  *
  * @param {() => Promise<T>} operation - Función asíncrona a ejecutar.
  *   Debe devolver una Promise que resuelva al resultado deseado.
- * @param {ResilientCallOptions} [options={}] - Opciones de configuración.
+ * @param {ResilientQueryOptions} [options={}] - Opciones de configuración.
  *
  * @returns {Promise<T>} El resultado de la operación si tiene éxito.
  *
@@ -190,13 +190,13 @@ export interface ResilientCallOptions {
  *   // Manejo específico sin reintentos automáticos
  * }
  *
- * @see {@link ResilientCallOptions} para más detalles sobre las opciones
+ * @see {@link ResilientQueryOptions} para más detalles sobre las opciones
  * @see CircuitBreaker para entender el patrón cortacircuitos
- * @see retryStep para entender la lógica de reintentos
+ * @see retryQuery para entender la lógica de reintentos
  */
-export async function resilientCall<T>(
+export async function resilientQuery<T>(
   operation: () => Promise<T>,
-  options: ResilientCallOptions = {},
+  options: ResilientQueryOptions = {},
 ): Promise<T> {
   // Determinar timeout basado en configuración
   const timeoutMs =
@@ -241,7 +241,7 @@ export async function resilientCall<T>(
 
   // Ejecutar con la jerarquía: CircuitBreaker → Retry → Timeout → Operación
   return circuitBreaker.execute(async () => {
-    return retryStep(
+    return retryQuery(
       () =>
         Promise.race([
           operation(),

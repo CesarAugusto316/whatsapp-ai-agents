@@ -19,7 +19,7 @@ export interface FuncRetryStep {
  * RetryStep: ejecuta func() con reintentos.
  * No usa DBOS ni hace escrituras. Ideal para IO liviano (fetch, Redis, etc.)
  */
-export async function retryStep<R>(
+export async function retryQuery<R>(
   func: () => Promise<R>,
   {
     maxAttempts = 3,
