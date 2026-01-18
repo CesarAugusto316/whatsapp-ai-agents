@@ -56,9 +56,7 @@ const sendSeen: WhatsappSagaStep = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return (await whatsappClient
-      .sendSeen(args)
-      .then((r) => r.json())) as WhatsappSagaResults;
+    return whatsappClient.sendSeen(args);
   },
 };
 
@@ -80,9 +78,7 @@ const sendStopTypingCompensate: FuncSagaStep<
     session: ctx.session,
     chatId: ctx.customerPhone,
   };
-  return (await whatsappClient
-    .sendStopTyping(args)
-    .then((r) => r.json())) as WhatsappSagaResults;
+  return whatsappClient.sendStopTyping(args);
 };
 
 /**
@@ -108,9 +104,7 @@ const sendStartTyping: WhatsappSagaStep = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return (await whatsappClient
-      .sendStartTyping(args)
-      .then((r) => r.json())) as WhatsappSagaResults;
+    return whatsappClient.sendStartTyping(args);
   },
   compensate: sendStopTypingCompensate,
 };
@@ -177,16 +171,12 @@ const sendText: WhatsappSagaStep = {
   execute: async ({ ctx, getStepResult }) => {
     // Retrieve the text result from the reservationFlow step
     const text = getStepResult("execute:reservationFlow")?.text ?? "";
-
     const args = {
       text,
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-
-    return (await whatsappClient
-      .sendText(args)
-      .then((r) => r.json())) as WhatsappSagaResults;
+    return whatsappClient.sendText(args);
   },
 };
 

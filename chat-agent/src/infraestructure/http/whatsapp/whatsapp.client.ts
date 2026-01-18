@@ -8,9 +8,19 @@ import { SendContactPayload } from "./whatsapp-types/send-contact";
 import { SendLocationPayload } from "./whatsapp-types/send-location";
 import { SendEventPayload } from "./whatsapp-types/send-appointment";
 import { formatForWhatsApp } from "./format-for-whatsapp";
+import { resilientQuery, ResilientQueryOptions } from "@/application/patterns";
 
 const apiUrl = env.WAHA_API + "/api";
 const apiKey = env.WAHA_API_KEY; // waha API key
+
+const whatappConfi = {
+  builtIn: "api",
+  timeoutMs: 15_000, // WhatsApp es rápido
+  retryConfig: {
+    maxAttempts: 2, // Poco reintentos para no spammear
+    intervalSeconds: 1,
+  },
+} satisfies ResilientQueryOptions;
 
 /**
  *
@@ -52,30 +62,60 @@ class WhatsAppClient {
    * more info: https://waha.devlike.pro/docs/how-to/send-messages/
    * @description Send a seen message to the chat always before sending a message
    */
-  public async sendSeen(args: SendSeenPayload) {
+  public async sendSeen<T>(args: SendSeenPayload) {
     await this.timeOut();
-    return fetch(`${apiUrl}/sendSeen`, {
-      method: "POST",
-      headers: this.headers,
-      body: JSON.stringify(args),
-    });
+    return resilientQuery<T>(
+      async () => {
+        const res = await fetch(`${apiUrl}/sendSeen`, {
+          method: "POST",
+          headers: this.headers,
+          body: JSON.stringify(args),
+        });
+
+        if (!res.ok) throw new Error("Failed to send seen message");
+
+        return res.json() as T;
+      },
+      { ...whatappConfi },
+    );
   }
 
-  public async sendStartTyping(args: SendSeenPayload) {
+  public async sendStartTyping<T>(args: SendSeenPayload) {
     await this.timeOut();
-    return fetch(`${apiUrl}/startTyping`, {
-      method: "POST",
-      headers: this.headers,
-      body: JSON.stringify(args),
-    });
+    return resilientQuery<T>(
+      async () => {
+        const res = await fetch(`${apiUrl}/startTyping`, {
+          method: "POST",
+          headers: this.headers,
+          body: JSON.stringify(args),
+        });
+
+        if (!res.ok) throw new Error("Failed to send seen message");
+
+        return res.json() as T;
+      },
+      { ...whatappConfi },
+    );
   }
 
-  public async sendStopTyping(args: SendSeenPayload) {
-    return fetch(`${apiUrl}/stopTyping`, {
-      method: "POST",
-      headers: this.headers,
-      body: JSON.stringify(args),
-    });
+  public async sendStopTyping<T>(args: SendSeenPayload) {
+    return resilientQuery<T>(
+      async () => {
+        const res = await fetch(`${apiUrl}/stopTyping`, {
+          method: "POST",
+          headers: this.headers,
+          body: JSON.stringify(args),
+        });
+
+        if (!res.ok) throw new Error("Failed to send seen message");
+
+        return res.json() as T;
+      },
+      {
+        ...whatappConfi,
+        retryConfig: { ...whatappConfi.retryConfig, maxAttempts: 1 },
+      },
+    );
   }
 
   private randomTime() {
@@ -88,20 +128,32 @@ class WhatsAppClient {
     return new Promise((resolve) => setTimeout(resolve, this.randomTime()));
   }
 
-  public async sendText({ session, text, chatId }: SendMessagePayload) {
+  public async sendText<T>({ session, text, chatId }: SendMessagePayload) {
     await this.timeOut();
-    return fetch(`${apiUrl}/sendText`, {
-      method: "POST",
-      headers: this.headers,
-      body: JSON.stringify({
-        chatId,
-        session,
-        text: formatForWhatsApp(text ?? ""),
-        reply_to: null,
-        linkPreview: true,
-        linkPreviewHighQuality: false,
-      } as SendMessagePayload),
-    });
+    return resilientQuery<T>(
+      async () => {
+        const res = await fetch(`${apiUrl}/sendText`, {
+          method: "POST",
+          headers: this.headers,
+          body: JSON.stringify({
+            chatId,
+            session,
+            text: formatForWhatsApp(text ?? ""),
+            reply_to: null,
+            linkPreview: true,
+            linkPreviewHighQuality: false,
+          } as SendMessagePayload),
+        });
+
+        if (!res.ok) throw new Error("Failed to send seen message");
+
+        return res.json() as T;
+      },
+      {
+        ...whatappConfi,
+        retryConfig: { ...whatappConfi.retryConfig, maxAttempts: 1 },
+      },
+    );
   }
 
   public async sendContact(args: SendContactPayload) {
