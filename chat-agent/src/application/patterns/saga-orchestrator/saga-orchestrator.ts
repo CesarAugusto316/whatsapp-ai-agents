@@ -1,7 +1,7 @@
 import { StepConfig } from "@dbos-inc/dbos-sdk";
 import type { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 import { logger } from "@/infraestructure/logging";
-import { durableExecutionAdapter } from "@/infraestructure/durable-execution";
+import { durableExecution } from "@/infraestructure/durable-execution";
 
 export const stepConfig = {
   retriesAllowed: true, // Enable automatic retries on failure
@@ -66,7 +66,6 @@ export interface FuncSagaStep<C, B, K extends SagaKey> {
       getStepResult: SagaStepResult<B, K>; // Function to retrieve results of previous steps
       durableStep: FuncDurableStep; // Function to wrap operations for durability
       previusStep?: Partial<Record<SagaMode, B>>;
-      // retryStep: FuncRetryStep;
     }, //
   ): Promise<B>; // Returns the result of this step (will be stored in the saga bag)
 }
@@ -155,8 +154,7 @@ export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
       ctx: this.ctx,
       getStepResult: this.getStepResult.bind(this),
       previusStep: Object.freeze(structuredClone(this.lastStepResult)),
-      durableStep: (func) => durableExecutionAdapter.runStep(func, config), // Wrap with DBOS for durability
-      // retryStep: (func, config = retryConfig) => resilientCall(func, config),
+      durableStep: (func) => durableExecution.runStep(func, config), // Wrap with DBOS for durability
     });
 
     // Store the result in the saga bag using the function name and step name as key
@@ -273,16 +271,15 @@ export class SagaOrchestrator<Context, T extends SagaBag, K extends SagaKey> {
 
     // Register and start as DBOS workflow if workflow name is provided
     if (this.dbosConfig.workflowName) {
-      const registeredSagaSteps =
-        await durableExecutionAdapter.registerWorkflow(
-          () => this.iterateSagaSteps(),
-          {
-            name: this.dbosConfig?.workflowName,
-          },
-        );
+      const registeredSagaSteps = await durableExecution.registerWorkflow(
+        () => this.iterateSagaSteps(),
+        {
+          name: this.dbosConfig?.workflowName,
+        },
+      );
 
-      const handle = await durableExecutionAdapter.startWorkflow(
-        registeredSagaSteps,
+      const handle = await durableExecution.startWorkflow(
+        () => registeredSagaSteps(),
         {
           ...this.dbosConfig?.args,
         },
