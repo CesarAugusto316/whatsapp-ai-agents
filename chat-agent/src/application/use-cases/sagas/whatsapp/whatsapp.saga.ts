@@ -73,7 +73,11 @@ const sendStopTypingCompensate: FuncSagaStep<
   RestaurantCtx,
   WhatsappSagaResults,
   WhatappStepName
-> = async ({ ctx }) => {
+> = async ({ ctx, getStepResult }) => {
+  const res = getStepResult("execute:sendStopTyping");
+  if (res) {
+    return { ...res };
+  }
   const args = {
     session: ctx.session,
     chatId: ctx.customerPhone,
@@ -181,7 +185,7 @@ const sendText: WhatsappSagaStep = {
 };
 
 // 1. Initialize the WhatsApp Saga
-export const whatsappSagaOrchestrator = (ctx: RestaurantCtx) => {
+export const whatsappSagaOrchestrator = async (ctx: RestaurantCtx) => {
   return new SagaOrchestrator<
     RestaurantCtx,
     WhatsappSagaResults,

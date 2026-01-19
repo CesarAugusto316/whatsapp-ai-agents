@@ -411,18 +411,16 @@ describe("WhatsappSaga - Casos Reales", () => {
     // Resetear mocks antes de cada test
     mock.module("@/infraestructure/http/whatsapp/whatsapp.client", () => ({
       default: {
-        sendSeen: jest.fn().mockResolvedValue({
-          json: () => Promise.resolve({ ok: true, text: "seen" }),
-        }),
-        sendStartTyping: jest.fn().mockResolvedValue({
-          json: () => Promise.resolve({ ok: true, text: "typing started" }),
-        }),
-        sendStopTyping: jest.fn().mockResolvedValue({
-          json: () => Promise.resolve({ ok: true, text: "typing stopped" }),
-        }),
-        sendText: jest.fn().mockResolvedValue({
-          json: () => Promise.resolve({ ok: true, text: "message sent" }),
-        }),
+        sendSeen: jest.fn().mockResolvedValue({ ok: true, text: "seen" }),
+        sendStartTyping: jest
+          .fn()
+          .mockResolvedValue({ ok: true, text: "typing started" }),
+        sendStopTyping: jest
+          .fn()
+          .mockResolvedValue({ ok: true, text: "typing stopped" }),
+        sendText: jest
+          .fn()
+          .mockResolvedValue({ ok: true, text: "message sent" }),
       },
     }));
   });
@@ -578,4 +576,155 @@ test("el bag debe contener resultados de execute y compensate", async () => {
   expect(bag["compensate:compensateTestStep"]?.compensated).toBe(true);
   // No debe tener resultado del paso que falló
   expect(bag["execute:failingStep"]).toBeUndefined();
+});
+
+// ========================================================
+// TESTS PARA COMPENSACIÓN CONDICIONAL (CASO WHATSAPP)
+// ========================================================
+
+describe("Compensación Condicional - Casos Críticos", () => {
+  // Test 1: getStepResult retorna undefined para paso no ejecutado
+  test("getStepResult debe retornar undefined cuando un paso no se ejecutó en forward flow", async () => {
+    const context = { userId: "test-user-1", transactionId: "txn-1" };
+
+    const orchestrator = new SagaOrchestrator<
+      TestContext,
+      TestResults,
+      TestStepName
+    >({ ctx: context });
+
+    const failingStep = {
+      config: {
+        execute: {
+          name: "failingStep",
+          retriesAllowed: true,
+          maxAttempts: 3,
+        },
+      },
+      execute: async () => {
+        throw new Error("Fallo intencional");
+      },
+    };
+
+    const neverExecutedStep = {
+      config: {
+        execute: {
+          name: "neverExecutedStep",
+          retriesAllowed: true,
+          maxAttempts: 3,
+        },
+      },
+      execute: async () => {
+        return { userCreated: true } as TestResults;
+      },
+    };
+
+    orchestrator.addStep(failingStep).addStep(neverExecutedStep);
+
+    const { bag } = await orchestrator.start();
+
+    expect(bag["execute:failingStep"]).toBeUndefined();
+    expect(bag["execute:neverExecutedStep"]).toBeUndefined();
+  });
+
+  // Test 2: Compensación condicional (caso WhatsApp)
+  test("compensación debe ejecutarse solo si el paso forward no se ejecutó exitosamente", async () => {
+    const context = { userId: "test-user-2", transactionId: "txn-2" };
+
+    const orchestrator = new SagaOrchestrator<
+      TestContext,
+      TestResults,
+      TestStepName
+    >({ ctx: context });
+
+    let stopTypingExecutedInForward = false;
+    let compensationExecuted = false;
+
+    const startTypingStep = {
+      config: {
+        execute: {
+          name: "startTyping",
+          retriesAllowed: true,
+          maxAttempts: 3,
+        },
+        compensate: {
+          name: "stopTypingCompensate",
+          retriesAllowed: true,
+          maxAttempts: 3,
+        },
+      },
+      execute: async () => {
+        return { typingStarted: true } as TestResults;
+      },
+      compensate: async ({ getStepResult }) => {
+        const stopTypingResult = getStepResult("execute:stopTyping");
+
+        if (stopTypingResult && stopTypingResult.stopTypingSuccess) {
+          compensationExecuted = false;
+          return { compensationSkipped: true } as TestResults;
+        }
+
+        compensationExecuted = true;
+        return { typingStopped: true } as TestResults;
+      },
+    };
+
+    const businessLogicStep = {
+      config: {
+        execute: {
+          name: "businessLogic",
+          retriesAllowed: true,
+          maxAttempts: 3,
+        },
+      },
+      execute: async () => {
+        return { processed: true } as TestResults;
+      },
+    };
+
+    const stopTypingStep = {
+      config: {
+        execute: {
+          name: "stopTyping",
+          retriesAllowed: true,
+          maxAttempts: 3,
+        },
+      },
+      execute: async () => {
+        stopTypingExecutedInForward = true;
+        return { stopTypingSuccess: true } as TestResults;
+      },
+    };
+
+    const finalFailingStep = {
+      config: {
+        execute: {
+          name: "finalStep",
+          retriesAllowed: true,
+          maxAttempts: 3,
+        },
+      },
+      execute: async () => {
+        throw new Error("Final step failed");
+      },
+    };
+
+    orchestrator
+      .addStep(startTypingStep)
+      .addStep(businessLogicStep)
+      .addStep(stopTypingStep)
+      .addStep(finalFailingStep);
+
+    const { bag } = await orchestrator.start();
+
+    expect(stopTypingExecutedInForward).toBe(true);
+    expect(bag["execute:stopTyping"]?.stopTypingSuccess).toBe(true);
+    expect(compensationExecuted).toBe(false);
+    expect(bag["compensate:stopTypingCompensate"]?.compensationSkipped).toBe(
+      true,
+    );
+    expect(bag["execute:startTyping"]?.typingStarted).toBe(true);
+    expect(bag["execute:businessLogic"]?.processed).toBe(true);
+    expect(bag["execute:finalStep"]).toBeUndefined();
+  });
 });

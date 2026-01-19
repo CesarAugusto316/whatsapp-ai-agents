@@ -13,11 +13,11 @@ import { resilientQuery, ResilientQueryOptions } from "@/application/patterns";
 const apiUrl = env.WAHA_API + "/api";
 const apiKey = env.WAHA_API_KEY; // waha API key
 
-const whatappConfi = {
+const whatappConfig = {
   builtIn: "api",
   timeoutMs: 15_000, // WhatsApp es rápido
   retryConfig: {
-    maxAttempts: 2, // Poco reintentos para no spammear
+    maxAttempts: 3, // Poco reintentos para no spammear
     intervalSeconds: 1,
   },
 } satisfies ResilientQueryOptions;
@@ -72,11 +72,11 @@ class WhatsAppClient {
           body: JSON.stringify(args),
         });
 
-        if (!res.ok) throw new Error("Failed to send seen message");
+        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
         return res.json() as T;
       },
-      { ...whatappConfi },
+      { ...whatappConfig },
     );
   }
 
@@ -90,11 +90,11 @@ class WhatsAppClient {
           body: JSON.stringify(args),
         });
 
-        if (!res.ok) throw new Error("Failed to send seen message");
+        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
         return res.json() as T;
       },
-      { ...whatappConfi },
+      { ...whatappConfig },
     );
   }
 
@@ -107,13 +107,12 @@ class WhatsAppClient {
           body: JSON.stringify(args),
         });
 
-        if (!res.ok) throw new Error("Failed to send seen message");
+        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
         return res.json() as T;
       },
       {
-        ...whatappConfi,
-        retryConfig: { ...whatappConfi.retryConfig, maxAttempts: 1 },
+        ...whatappConfig,
       },
     );
   }
@@ -145,13 +144,12 @@ class WhatsAppClient {
           } as SendMessagePayload),
         });
 
-        if (!res.ok) throw new Error("Failed to send seen message");
+        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
         return res.json() as T;
       },
       {
-        ...whatappConfi,
-        retryConfig: { ...whatappConfi.retryConfig, maxAttempts: 1 },
+        ...whatappConfig,
       },
     );
   }
