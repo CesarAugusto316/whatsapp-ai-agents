@@ -240,19 +240,17 @@ export async function resilientQuery<T>(
   };
 
   // Ejecutar con la jerarquía: CircuitBreaker → Retry → Timeout → Operación
-  return circuitBreaker.execute(async () => {
-    return retryQuery(
-      () =>
-        Promise.race([
-          operation(),
-          new Promise<T>((_, reject) =>
-            setTimeout(
-              () => reject(new Error(`Timeout after ${timeoutMs}ms`)),
-              timeoutMs,
-            ),
+  return circuitBreaker.execute<T>(async () => {
+    return retryQuery(async () => {
+      return await Promise.race([
+        operation(),
+        new Promise<T>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Timeout after ${timeoutMs}ms`)),
+            timeoutMs,
           ),
-        ]),
-      retryConfig,
-    );
+        ),
+      ]);
+    }, retryConfig);
   });
 }

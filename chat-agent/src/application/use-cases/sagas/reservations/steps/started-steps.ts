@@ -39,7 +39,6 @@ export type StartedSteps =
   | "check_availability";
 
 export interface StartedSagaResult extends SagaBag {
-  result?: string; // The formatted text content to be sent via WhatsApp
   data?: ReservationSchema;
 }
 
@@ -66,7 +65,14 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
         customerAction: CustomerActions.EXIT,
       });
       const res = await humanizerAgent(responseMsg);
-      return { result: res.trim(), continue: false };
+      return {
+        result: res.trim(),
+        continue: false,
+        metadata: {
+          description: "CUSTOMER_EXITED_FLOW",
+          value: CustomerActions.EXIT,
+        },
+      };
     }
     // OPTION: 2. REINICIAR FOR MAXIMUM ATTEMPTS REACHED
     if ((reservation?.attempts ?? 0) >= ATTEMPTS) {
@@ -83,7 +89,14 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
         Escribe *${action}* para ${verb} otro proceso de reserva.
       `);
 
-      return { result: res.trim(), continue: false };
+      return {
+        result: res.trim(),
+        continue: false,
+        metadata: {
+          description: "MAX_ATTEMPTS_REACHED",
+          value: reservation.attempts,
+        },
+      };
     }
     // OPTION: 3. CLASSIFY INPUT
     const inputIntent =
@@ -94,10 +107,22 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
         inputIntent,
         customerMessage,
       });
-      return { result: InputIntent.CUSTOMER_QUESTION, continue: false };
+      return {
+        result: InputIntent.CUSTOMER_QUESTION,
+        continue: false,
+        metadata: {
+          description: "INPUT_CLASSIFICATION_RESULT",
+          value: InputIntent.CUSTOMER_QUESTION,
+        },
+      };
     }
-
-    return { continue: true };
+    return {
+      continue: true,
+      metadata: {
+        description: "NO_CONDITION_MATCH",
+        value: undefined,
+      },
+    };
   },
 });
 
@@ -131,7 +156,14 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
       const result = await humanizerAgent(
         "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
       );
-      return { result, continue: false };
+      return {
+        result,
+        continue: false,
+        metadata: {
+          description: "NO_PARSING_RESULT",
+          value: agentResult,
+        },
+      };
     }
     const { parsedData, mergedData } = agentResult;
     const { success, data, errors } = parsedData;
@@ -149,9 +181,22 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
       } satisfies Partial<ReservationState>);
 
       const result = await validatorAgent.collectMissingData(business, errors);
-      return { result, continue: false };
+      return {
+        result,
+        continue: false,
+        metadata: {
+          description: "COLLECTING_MISSING_DATA",
+          value: errors,
+        },
+      };
     }
-    return { data, continue: true }; // SUCCESS ✅
+    return {
+      data,
+      continue: true,
+      metadata: {
+        description: "COLLECTED_DATA",
+      },
+    }; // SUCCESS ✅
   },
 });
 
@@ -194,7 +239,14 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           ==============================
           ${SCHEDULE_BLOCK}
         `);
-        return { result, continue: false };
+        return {
+          result,
+          continue: false,
+          metadata: {
+            description: "IS_OUT_OF_BUSINESS_HOURS",
+            value: isWithinSchedule,
+          },
+        };
       }
       const startDateTime = localDateTimeToUTC(start, timezone);
       const endDateTime = localDateTimeToUTC(end, timezone);
@@ -213,7 +265,14 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           ...data,
         } satisfies Partial<ReservationState>);
 
-        return { result: message, continue: false };
+        return {
+          result: message,
+          continue: false,
+          metadata: {
+            description: "IS_OUT_OF_BUSINESS_HOURS",
+            value: isWithinSchedule,
+          },
+        };
       }
       const availability = await cmsClient.checkAvailability({
         "where[business][equals]": reservation.businessId,

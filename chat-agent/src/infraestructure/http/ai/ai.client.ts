@@ -55,7 +55,7 @@ class AiClient {
         }
         return content;
       },
-      { builtIn: "llm" },
+      { builtIn: "api" },
     );
   }
 
@@ -81,7 +81,7 @@ class AiClient {
         }
         return content;
       },
-      { builtIn: "llm" },
+      { builtIn: "api" },
     );
   }
 }

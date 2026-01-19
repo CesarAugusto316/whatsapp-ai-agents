@@ -1,4 +1,4 @@
-// chatbots/chat-agent/src/test/integration/test-ai-endpoint.test.ts
+//@ts-nocheck
 import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
 
 // Store original environment
@@ -52,7 +52,7 @@ describe("Integration: /test-ai endpoint", () => {
     }));
 
     // Mock AI client
-    mock.module("@/infraestructure/http/ai/ai.client", () => ({
+    mock.module("@/infraestructure/http/ai", () => ({
       aiClient: {
         userMsg: mock(
           async () =>
@@ -80,15 +80,26 @@ describe("Integration: /test-ai endpoint", () => {
     }));
 
     // Mock reservation saga orchestrator (default behavior)
-    mock.module(
-      "@/application/use-cases/sagas/reservations/reservation-old-code",
-      () => ({
-        reservationSagaOrchestrator: mock(
-          async () =>
-            "¡Hola! Soy el asistente virtual del restaurante. ¿En qué puedo ayudarte?",
-        ),
-      }),
-    );
+    mock.module("@/application/use-cases/sagas", () => ({
+      reservationStateOrchestrator: mock(async () => ({
+        bag: {},
+        lastStepResult: {
+          execute: {
+            result:
+              "¡Hola! Soy el asistente virtual del restaurante. ¿En qué puedo ayudarte?",
+          },
+        },
+      })),
+      whatsappSagaOrchestrator: mock(async () => ({
+        bag: {},
+        lastStepResult: {
+          execute: {
+            result:
+              "¡Hola! Soy el asistente virtual del restaurante. ¿En qué puedo ayudarte?",
+          },
+        },
+      })),
+    }));
 
     // Mock intent classifier agent
     mock.module(
@@ -168,24 +179,37 @@ describe("Integration: /test-ai endpoint", () => {
     expect(res.status).toBe(200);
 
     const responseBody = await res.json();
-    expect(responseBody).toHaveProperty("received", true);
-    expect(responseBody).toHaveProperty("text");
-    expect(typeof responseBody.text).toBe("string");
+    // expect(responseBody).toHaveProperty("received", true);
+    // expect(responseBody).toHaveProperty("text");
+    expect(typeof responseBody.lastStepResult.execute.result).toBe("string");
   });
 
   test("should handle reservation request", async () => {
     // Override reservation saga orchestrator mock for this test
-    mock.module(
-      "@/application/use-cases/sagas/reservations/reservation-old-code",
-      () => ({
-        reservationSagaOrchestrator: mock(async (ctx: any) => {
-          if (ctx.customerMessage?.toLowerCase().includes("reserva")) {
-            return "Para hacer una reserva, necesito algunos detalles. ¿Para cuántas personas será?";
-          }
-          return "Respuesta por defecto";
-        }),
+    mock.module("@/application/use-cases/sagas", () => ({
+      reservationStateOrchestrator: mock(async (ctx: any) => {
+        if (ctx.customerMessage?.toLowerCase().includes("reserva")) {
+          return {
+            bag: {},
+            lastStepResult: {
+              execute: {
+                result:
+                  "Para hacer una reserva, necesito algunos detalles. ¿Para cuántas personas será?",
+              },
+            },
+          };
+        }
+        return {
+          bag: {},
+          lastStepResult: {
+            execute: {
+              result: "Respuesta por defecto",
+            },
+          },
+        };
+        // return ;
       }),
-    );
+    }));
 
     // Dynamically import the app after mocking
     const { default: app } = await import("@/index.ts");
@@ -210,8 +234,8 @@ describe("Integration: /test-ai endpoint", () => {
     expect(res.status).toBe(200);
 
     const responseBody = await res.json();
-    expect(responseBody.received).toBe(true);
-    expect(responseBody.text).toContain("reserva");
+    // expect(responseBody.received).toBe(true);
+    expect(responseBody.lastStepResult.execute.result).toContain("reserva");
   });
 
   test("should handle inactive business", async () => {
@@ -247,17 +271,29 @@ describe("Integration: /test-ai endpoint", () => {
     }));
 
     // Override reservation saga orchestrator to handle inactive business
-    mock.module(
-      "@/application/use-cases/sagas/reservations/reservation-old-code",
-      () => ({
-        reservationSagaOrchestrator: mock(async (ctx: any) => {
-          if (!ctx.business?.general?.isActive) {
-            return "El negocio está fuera de servicio, por favor inténtalo más tarde.";
-          }
-          return "Respuesta normal";
-        }),
+    mock.module("@/application/use-cases/sagas", () => ({
+      reservationStateOrchestrator: mock(async (ctx: any) => {
+        if (!ctx.business?.general?.isActive) {
+          return {
+            bag: {},
+            lastStepResult: {
+              execute: {
+                result:
+                  "El negocio está fuera de servicio, por favor inténtalo más tarde.",
+              },
+            },
+          };
+        }
+        return {
+          bag: {},
+          lastStepResult: {
+            execute: {
+              result: "Respuesta normal",
+            },
+          },
+        };
       }),
-    );
+    }));
 
     // Dynamically import the app after mocking
     const { default: app } = await import("@/index.ts");
@@ -282,8 +318,10 @@ describe("Integration: /test-ai endpoint", () => {
     expect(res.status).toBe(200);
 
     const responseBody = await res.json();
-    expect(responseBody.received).toBe(true);
-    expect(responseBody.text).toContain("fuera de servicio");
+    // expect(responseBody.received).toBe(true);
+    expect(responseBody.lastStepResult.execute.result).toContain(
+      "fuera de servicio",
+    );
   });
   test("should handle malformed JSON request", async () => {
     // Dynamically import the app (common mocks already set up in beforeEach)
@@ -394,17 +432,29 @@ describe("Integration: /test-ai endpoint", () => {
     }));
 
     // Mock reservation saga orchestrator to handle started state
-    mock.module(
-      "@/application/use-cases/sagas/reservations/reservation-old-code",
-      () => ({
-        reservationSagaOrchestrator: mock(async (ctx: any) => {
-          if (ctx.RESERVATION_STATE?.status === "MAKE_STARTED") {
-            return "Ya estamos en proceso de reserva. ¿Para cuántas personas será?";
-          }
-          return "Respuesta por defecto";
-        }),
+    mock.module("@/application/use-cases/sagas", () => ({
+      reservationStateOrchestrator: mock(async (ctx: any) => {
+        if (ctx.RESERVATION_STATE?.status === "MAKE_STARTED") {
+          return {
+            bag: {},
+            lastStepResult: {
+              execute: {
+                result:
+                  "Ya estamos en proceso de reserva. ¿Para cuántas personas será?",
+              },
+            },
+          };
+        }
+        return {
+          bag: {},
+          lastStepResult: {
+            execute: {
+              result: "Respuesta por defecto",
+            },
+          },
+        };
       }),
-    );
+    }));
 
     // Dynamically import the app after mocking
     const { default: app } = await import("@/index.ts");
@@ -429,8 +479,10 @@ describe("Integration: /test-ai endpoint", () => {
     expect(res.status).toBe(200);
 
     const responseBody = await res.json();
-    expect(responseBody.received).toBe(true);
-    expect(responseBody.text).toContain("proceso de reserva");
+    // expect(responseBody.received).toBe(true);
+    expect(responseBody.lastStepResult.execute.result).toContain(
+      "proceso de reserva",
+    );
   });
 
   test("should handle broadcast status phone number", async () => {
@@ -532,17 +584,28 @@ describe("Integration: /test-ai endpoint", () => {
     }));
 
     // Mock reservation saga orchestrator to handle new customer
-    mock.module(
-      "@/application/use-cases/sagas/reservations/reservation-old-code",
-      () => ({
-        reservationSagaOrchestrator: mock(async (ctx: any) => {
-          if (!ctx.customer) {
-            return "¡Bienvenido nuevo cliente! ¿En qué puedo ayudarte?";
-          }
-          return "Respuesta para cliente existente";
-        }),
+    mock.module("@/application/use-cases/sagas", () => ({
+      reservationStateOrchestrator: mock(async (ctx: any) => {
+        if (!ctx.customer) {
+          return {
+            bag: {},
+            lastStepResult: {
+              execute: {
+                result: "¡Bienvenido nuevo cliente! ¿En qué puedo ayudarte?",
+              },
+            },
+          };
+        }
+        return {
+          bag: {},
+          lastStepResult: {
+            execute: {
+              result: "Respuesta para cliente existente",
+            },
+          },
+        };
       }),
-    );
+    }));
 
     // Dynamically import the app after mocking
     const { default: app } = await import("@/index.ts");
@@ -567,7 +630,7 @@ describe("Integration: /test-ai endpoint", () => {
     expect(res.status).toBe(200);
 
     const responseBody = await res.json();
-    expect(responseBody.received).toBe(true);
-    expect(typeof responseBody.text).toBe("string");
+    // expect(responseBody.received).toBe(true);
+    expect(typeof responseBody.lastStepResult.execute.result).toBe("string");
   });
 });

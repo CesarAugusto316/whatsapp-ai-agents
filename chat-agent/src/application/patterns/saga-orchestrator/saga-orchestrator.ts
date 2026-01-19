@@ -23,8 +23,18 @@ type SagaKey = string | number | bigint;
  * Keys are strings, values can be any type.
  */
 export type SagaBag = Record<string, unknown> & {
+  result?: string;
   continue?: boolean;
+  /**
+   * @todo Esto puede ser usada en el futuro para desacoplar resolveNextState
+   * fuera de los steps, es decir, se podría hacer las transiciones exactamente luego
+   * la instancia de SagaOrchestrator haya terminado de ejecutar el step
+   */
   shouldTransition?: boolean;
+  metadata?: {
+    description?: string;
+    value?: unknown;
+  };
 };
 
 /**

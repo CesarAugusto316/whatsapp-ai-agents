@@ -27,7 +27,6 @@ import type { Appointment, Customer } from "@/infraestructure/http/cms";
 export const ATTEMPTS = 4;
 
 export interface ValidateSagaResult extends SagaBag {
-  result?: string; // The formatted text content to be sent via WhatsApp
   data?: ReservationSchema;
   reservation?: Appointment;
 }

@@ -1,4 +1,4 @@
-import { SagaOrchestrator } from "@/application/patterns";
+import { SagaOrchestrator, SagaResult } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
 import {
   startedSteps,
@@ -111,3 +111,8 @@ export const reservationSaga = {
   updateValidated,
   cancelValidated,
 };
+
+export type ReservationResult = SagaResult<
+  ValidateSagaResult & StartedSagaResult,
+  StartedSteps & ValidateSagaSteps
+>;

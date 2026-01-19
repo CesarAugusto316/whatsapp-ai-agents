@@ -6,4 +6,4 @@ export {
   sendText,
   whatsappSagaOrchestrator,
 } from "./whatsapp/whatsapp.saga";
-export { reservationSagaOrchestrator } from "./reservations/reservation-old-code";
+export { reservationStateOrchestrator } from "./reservations/reservation-state-orchestrator";

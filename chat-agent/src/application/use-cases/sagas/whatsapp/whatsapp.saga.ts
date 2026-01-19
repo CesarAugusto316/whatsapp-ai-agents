@@ -7,7 +7,7 @@ import {
   SagaOrchestrator,
   stepConfig,
 } from "@/application/patterns";
-import { reservationSagaOrchestrator } from "../";
+import { reservationStateOrchestrator } from "../reservations/reservation-state-orchestrator";
 
 /**
  * Defines all possible step names in the WhatsApp saga workflow.
@@ -130,8 +130,8 @@ const reservationSagaStep: WhatsappSagaStep = {
     execute: { name: "reservationFlow", ...stepConfig },
   },
   execute: async ({ ctx }) => {
-    const res = await reservationSagaOrchestrator(ctx);
-    return { text: res, continue: true };
+    const { lastStepResult } = await reservationStateOrchestrator(ctx);
+    return { text: lastStepResult?.execute?.result ?? "", continue: true };
   },
 };
 
