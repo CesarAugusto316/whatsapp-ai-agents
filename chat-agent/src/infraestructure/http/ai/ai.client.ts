@@ -1,5 +1,5 @@
 import { env } from "bun";
-import { ChatCompletionResponse, ChatMessage } from "./index";
+import { ChatCompletionResponse, MessagesBasedRequest } from "./index";
 import {
   CircuitBreaker,
   resilientQuery,
@@ -46,16 +46,17 @@ class AiClient {
         };
 
   async userMsg(
-    messages: ChatMessage[],
+    {
+      messages,
+      /**
+       * must be set to 0 in some cases
+       * @link https://www.ibm.com/granite/docs/models/granite
+       */
+      temperature,
+      // response_format = { type: "json_schema" },
+      max_tokens = 1024,
+    }: MessagesBasedRequest,
     prompt: string,
-    /**
-     * must be set to 0 in some cases
-     * @link https://www.ibm.com/granite/docs/models/granite
-     */
-    temperature = 0,
-    max_completion_tokens?: number,
-    response_format = { type: "json_object" }, // "json_schema"
-    tools?: Record<string, any>[],
   ): Promise<string> {
     //
     return resilientQuery(async () => {
@@ -64,8 +65,9 @@ class AiClient {
         headers: this.config.headers,
         body: JSON.stringify({
           model: this.config.model,
-          temperature,
           messages: [{ role: "system", content: prompt }, ...messages],
+          temperature,
+          max_tokens,
         }),
       });
       if (!response.ok) {

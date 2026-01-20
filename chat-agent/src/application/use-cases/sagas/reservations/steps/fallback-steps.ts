@@ -47,7 +47,7 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
         },
       ];
       const assistantResponse = await aiClient.userMsg(
-        messages,
+        { messages },
         howSystemWorksPrompt(business),
       );
       logger.info("AI Fallback executed", {
@@ -124,7 +124,7 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
   if (customerIntent === CUSTOMER_INTENT.HOW) {
     // choice 4 again
     const assistantResponse = await aiClient.userMsg(
-      messages,
+      { messages },
       howSystemWorksPrompt(business, RESERVATION_STATE?.status),
     );
     return assistantResponse;
@@ -132,7 +132,7 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
 
   // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
   const assistantResponse = await aiClient.userMsg(
-    messages,
+    { messages },
     buildInfoReservationsSystemPrompt(business, RESERVATION_STATE?.status),
   );
   return assistantResponse;

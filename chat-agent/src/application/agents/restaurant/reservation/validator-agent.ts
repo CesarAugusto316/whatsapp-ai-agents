@@ -27,9 +27,8 @@ export const validatorAgent = {
       { role: "user", content: customerMessage },
     ];
     const aiValidator: string = await aiClient.userMsg(
-      messages,
+      { messages },
       PARSER_PROMPT,
-      temp,
     );
 
     // ✅ Required fields
@@ -75,14 +74,15 @@ export const validatorAgent = {
     }
 
     return aiClient.userMsg(
-      [
-        {
-          role: "user",
-          content: JSON.stringify(mappedErrors),
-        },
-      ],
+      {
+        messages: [
+          {
+            role: "user",
+            content: JSON.stringify(mappedErrors),
+          },
+        ],
+      },
       COLLECTOR_PROMPT,
-      temp,
     );
   },
 };

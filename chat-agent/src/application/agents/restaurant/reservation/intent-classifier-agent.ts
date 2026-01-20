@@ -8,6 +8,7 @@ import {
   inputIntentSchema,
 } from "@/domain/restaurant/reservations/schemas";
 import { aiClient } from "@/infraestructure/http/ai";
+import { logger } from "@/infraestructure/logging";
 
 export const intentClassifierAgent = {
   /**
@@ -18,18 +19,19 @@ export const intentClassifierAgent = {
    */
   async howOrWhat(message: string): Promise<CUSTOMER_INTENT> {
     try {
-      const temperature = 0;
       const raw = await aiClient.userMsg(
-        [{ role: "user", content: message }],
+        { messages: [{ role: "user", content: message }] },
         CLASSIFIER_PROMPT,
-        temperature,
       ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
 
       const { success, data } = customerIntentSchema.safeParse(raw);
       if (success) return data;
       return CUSTOMER_INTENT.WHAT; // fallback
     } catch (err) {
-      console.error("Error clasificando la intención del usuario:", err);
+      logger.error(
+        "Error clasificando la intención del usuario:",
+        err as Error,
+      );
       return CUSTOMER_INTENT.WHAT; // fallback en caso de error
     }
   },
@@ -42,18 +44,19 @@ export const intentClassifierAgent = {
    */
   async inputIntent(message: string): Promise<InputIntent> {
     try {
-      const temperature = 0;
       const raw = await aiClient.userMsg(
-        [{ role: "user", content: message }],
+        { messages: [{ role: "user", content: message }] },
         validationPrompts.intentClassifier(),
-        temperature,
       ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
 
       const { success, data } = inputIntentSchema.safeParse(raw);
       if (success) return data;
       return InputIntent.CUSTOMER_QUESTION; // fallback
     } catch (err) {
-      console.error("Error clasificando la intención del usuario:", err);
+      logger.error(
+        "Error clasificando la intención del usuario:",
+        err as Error,
+      );
       return InputIntent.CUSTOMER_QUESTION; // fallback en caso de error
     }
   },
