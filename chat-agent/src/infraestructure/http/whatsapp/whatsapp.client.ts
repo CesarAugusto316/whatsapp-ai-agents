@@ -131,7 +131,7 @@ class WhatsAppClient {
     return new Promise((resolve) => setTimeout(resolve, this.randomTime()));
   }
 
-  public async sendText<T>({ session, text, chatId }: SendMessagePayload) {
+  public async sendMsgText<T>({ session, text, chatId }: SendMessagePayload) {
     await this.timeOut();
     return resilientQuery<T>(async () => {
       const res = await fetch(`${apiUrl}/sendText`, {

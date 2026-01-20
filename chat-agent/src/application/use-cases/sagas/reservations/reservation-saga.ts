@@ -20,7 +20,6 @@ const makeStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
 
   return new SagaOrchestrator<RestaurantCtx, StartedSagaResult, StartedSteps>({
     ctx,
-    // dbosConfig: { workflowName: status },
   })
     .addStep(startedSteps.earlyConditions("create"))
     .addStep(startedSteps.collectAndValidate())
@@ -34,7 +33,6 @@ const updateStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
 
   return new SagaOrchestrator<RestaurantCtx, StartedSagaResult, StartedSteps>({
     ctx,
-    // dbosConfig: { workflowName: status },
   })
     .addStep(startedSteps.earlyConditions("update"))
     .addStep(startedSteps.collectAndValidate())
@@ -53,7 +51,6 @@ const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     ValidateSagaSteps
   >({
     ctx,
-    // dbosConfig: { workflowName: status },
   })
     .addStep(validatedSteps.makeConfirmed())
     .addStep(validatedSteps.sendConfirmationMsg("create"))
@@ -72,7 +69,6 @@ const updateValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     ValidateSagaSteps
   >({
     ctx,
-    // dbosConfig: { workflowName: status },
   })
     .addStep(validatedSteps.updateConfirmed())
     .addStep(validatedSteps.sendConfirmationMsg("update"))
@@ -91,7 +87,6 @@ const cancelValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     ValidateSagaSteps
   >({
     ctx,
-    // dbosConfig: { workflowName: status },
   })
     .addStep(validatedSteps.cancelConfirmed())
     .addStep(validatedSteps.exit())

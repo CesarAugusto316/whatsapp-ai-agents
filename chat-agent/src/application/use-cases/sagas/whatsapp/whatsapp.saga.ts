@@ -168,7 +168,7 @@ const sendStopTyping: WhatsappSagaStep = {
  * a key feature of the Saga pattern where steps can consume results
  * from previous steps.
  */
-const sendText: WhatsappSagaStep = {
+const sendMsgText: WhatsappSagaStep = {
   config: {
     execute: { name: "sendText", ...stepConfig },
   },
@@ -180,7 +180,7 @@ const sendText: WhatsappSagaStep = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return whatsappClient.sendText(args);
+    return whatsappClient.sendMsgText(args);
   },
 };
 
@@ -197,7 +197,7 @@ export const whatsappSagaOrchestrator = async (ctx: RestaurantCtx) => {
     .addStep(sendStartTyping)
     .addStep(reservationSagaStep)
     .addStep(sendStopTyping)
-    .addStep(sendText)
+    .addStep(sendMsgText)
     .start();
 };
 
@@ -206,6 +206,6 @@ export {
   sendSeen,
   sendStartTyping,
   sendStopTyping,
-  sendText,
+  sendMsgText,
   reservationSagaStep,
 };

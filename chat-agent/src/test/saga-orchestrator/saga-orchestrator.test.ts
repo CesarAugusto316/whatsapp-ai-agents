@@ -419,7 +419,7 @@ describe("WhatsappSaga - Casos Reales", () => {
         sendStopTyping: jest
           .fn()
           .mockResolvedValue({ ok: true, text: "typing stopped" }),
-        sendText: jest
+        sendMsgText: jest
           .fn()
           .mockResolvedValue({ ok: true, text: "message sent" }),
       },

@@ -3,7 +3,7 @@ export {
   sendSeen,
   sendStartTyping,
   sendStopTyping,
-  sendText,
+  sendMsgText,
   whatsappSagaOrchestrator,
 } from "./whatsapp/whatsapp.saga";
 export { reservationStateOrchestrator } from "./reservations/reservation-state-orchestrator";

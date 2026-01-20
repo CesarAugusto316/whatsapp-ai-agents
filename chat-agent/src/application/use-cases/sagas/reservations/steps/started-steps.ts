@@ -269,8 +269,8 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           result: message,
           continue: false,
           metadata: {
-            description: "IS_OUT_OF_BUSINESS_HOURS",
-            value: isWithinSchedule,
+            description: "IS_WITHIN_HOLIDAY",
+            value: isWithinRange,
           },
         };
       }
@@ -299,7 +299,14 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           data,
         });
         const result = await humanizerAgent(msg);
-        return { result, continue: false };
+        return {
+          result,
+          continue: false,
+          metadata: {
+            description: "RESERVATION_NOT_AVAILABLE",
+            value: availability,
+          },
+        };
       }
 
       // FINAL: ✅ INPUT DATA VALIDATED
@@ -324,7 +331,16 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
 
       // ✨ SEND SUCCESS MESSAGE
       const result = await humanizerAgent(responseMsg);
-      return { result, data, shouldTransition: true, continue: false };
+      return {
+        result,
+        data,
+        shouldTransition: true,
+        continue: false,
+        metadata: {
+          description: "DATA_VALIDATED",
+          value: transition.nextState,
+        },
+      };
     }
 
     return { continue: true };
