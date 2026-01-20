@@ -50,25 +50,18 @@ export const reservationStateOrchestrator = async (
   }
   if (status) {
     const sagaOrchestrator = statusSagaMap[status];
-    if (!sagaOrchestrator)
+    if (!sagaOrchestrator) {
       throw new Error(`No saga found for status ${status}`);
-
+    }
     const { lastStepResult, bag } = await sagaOrchestrator(ctx);
+    const result =
+      lastStepResult?.execute?.result || lastStepResult?.compensate?.result;
 
-    if (lastStepResult?.execute?.result) {
-      const { result } = lastStepResult.execute;
-
-      if (result && result !== InputIntent.CUSTOMER_QUESTION) {
-        await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
-        return { lastStepResult, bag };
-      }
+    if (result && result !== InputIntent.CUSTOMER_QUESTION) {
+      await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
+      return { lastStepResult, bag };
     }
   }
-  // else {
-  //   /** @todo refactor to use SagaOrchestrator and Saga mapper */
-  //   FlowOptions;
-  //   // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
-  // }
 
   /**
    *

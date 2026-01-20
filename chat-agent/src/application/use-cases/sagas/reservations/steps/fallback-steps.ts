@@ -24,15 +24,15 @@ import { initReservationChangeSteps } from "./initial-steps";
 export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
   const {
     RESERVATION_STATE,
-    customerMessage = "",
-    reservationKey = "",
+    customerMessage,
+    reservationKey,
     customer,
     business,
-    chatKey = "",
+    chatKey,
   } = Object.freeze(structuredClone(ctx));
 
   // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
-  if (!RESERVATION_STATE) {
+  if (!RESERVATION_STATE?.status) {
     //
     const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
     const isFirstMessage = chatHistoryCache.length === 0;
