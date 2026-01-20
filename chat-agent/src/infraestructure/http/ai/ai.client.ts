@@ -53,7 +53,7 @@ class AiClient {
        * @link https://www.ibm.com/granite/docs/models/granite
        */
       temperature,
-      // response_format = { type: "json_schema" },
+      response_format,
       max_tokens = 1024,
     }: MessagesBasedRequest,
     prompt: string,
@@ -68,6 +68,7 @@ class AiClient {
           messages: [{ role: "system", content: prompt }, ...messages],
           temperature,
           max_tokens,
+          response_format,
         }),
       });
       if (!response.ok) {

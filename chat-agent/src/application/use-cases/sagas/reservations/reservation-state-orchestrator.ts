@@ -59,7 +59,7 @@ export const reservationStateOrchestrator = async (
 
     if (result && result !== InputIntent.CUSTOMER_QUESTION) {
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
-      return { lastStepResult, bag };
+      return { bag, lastStepResult };
     }
   }
 
@@ -70,7 +70,9 @@ export const reservationStateOrchestrator = async (
    * @see updateStarted
    * @see {InputIntent}
    */
-  const w2Result: string = await fallbackWorkflow(ctx);
-  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, w2Result);
-  return { lastStepResult: { execute: { result: w2Result } }, bag: {} };
+  const { bag, lastStepResult } = await fallbackWorkflow(ctx);
+  const message =
+    lastStepResult?.execute?.result || lastStepResult?.compensate?.result || "";
+  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, message);
+  return { bag, lastStepResult };
 };

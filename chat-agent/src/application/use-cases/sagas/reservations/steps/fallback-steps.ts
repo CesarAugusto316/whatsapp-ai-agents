@@ -12,8 +12,8 @@ import {
 } from "@/domain/restaurant/reservations/prompts";
 import { cacheAdapter, chatHistoryAdapter } from "@/infraestructure/adapters";
 import { aiClient, ChatMessage } from "@/infraestructure/http/ai";
-import { logger } from "@/infraestructure/logging";
 import { initReservationChangeSteps } from "./initial-steps";
+import { ReservationResult } from "../reservation-saga";
 
 /**
  *
@@ -21,7 +21,9 @@ import { initReservationChangeSteps } from "./initial-steps";
  * Handles unstructured or out-of-FSM interactions using AI agents.
  * No authoritative business logic lives here.
  */
-export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
+export async function fallbackWorkflow(
+  ctx: RestaurantCtx,
+): Promise<ReservationResult> {
   const {
     RESERVATION_STATE,
     customerMessage,
@@ -50,11 +52,17 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
         { messages },
         howSystemWorksPrompt(business),
       );
-      logger.info("AI Fallback executed", {
-        isFirstMessage,
-        customerMessage,
-      });
-      return assistantResponse;
+      return {
+        bag: {},
+        lastStepResult: {
+          execute: {
+            result: assistantResponse,
+            metadata: {
+              value: "FIRST_MESSAGE",
+            },
+          },
+        },
+      };
     }
 
     if (customerMessage == FlowOptions.MAKE_RESERVATION) {
@@ -69,38 +77,63 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
       const responseMsg = systemMessages.getCreateMsg({
         userName: customer?.name,
       });
-      logger.info("AI Fallback executed", {
-        FlowOption: FlowOptions.MAKE_RESERVATION,
-      });
-      return humanizerAgent(responseMsg);
+      const humanizedResponse = await humanizerAgent(responseMsg);
+      return {
+        bag: {},
+        lastStepResult: {
+          execute: {
+            result: humanizedResponse,
+            metadata: {
+              value: FlowOptions.MAKE_RESERVATION,
+            },
+          },
+        },
+      };
     }
 
     if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
       const timezone = business.general.timezone;
-      logger.info("AI Fallback executed", {
-        FlowOption: FlowOptions.UPDATE_RESERVATION,
-      });
-      return initReservationChangeSteps({
+      const msg = await initReservationChangeSteps({
         business,
         customer,
         flowOption: FlowOptions.UPDATE_RESERVATION,
         getMessage: (state) => systemMessages.getUpdateMsg(state, timezone),
         reservationKey,
       });
+
+      return {
+        bag: {},
+        lastStepResult: {
+          execute: {
+            result: msg,
+            metadata: {
+              value: FlowOptions.UPDATE_RESERVATION,
+            },
+          },
+        },
+      };
     }
 
     if (customerMessage == FlowOptions.CANCEL_RESERVATION) {
       const timezone = business.general.timezone;
-      logger.info("AI Fallback executed", {
-        FlowOption: FlowOptions.CANCEL_RESERVATION,
-      });
-      return initReservationChangeSteps({
+      const msg = await initReservationChangeSteps({
         business,
         customer,
         flowOption: FlowOptions.CANCEL_RESERVATION,
         getMessage: (state) => systemMessages.getCancelMsg(state, timezone),
         reservationKey,
       });
+      return {
+        bag: {},
+        lastStepResult: {
+          execute: {
+            result: msg,
+            metadata: {
+              value: FlowOptions.CANCEL_RESERVATION,
+            },
+          },
+        },
+      };
     }
   }
 
@@ -115,10 +148,6 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
 
   // 2. INTENT HANDLING WHEN CUSTOMER ASKS THE HOW OF SOMETHING
   const customerIntent = await intentClassifierAgent.howOrWhat(customerMessage);
-  logger.info("AI Fallback executed", {
-    customerIntent,
-    customerMessage,
-  });
 
   // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS
   if (customerIntent === CUSTOMER_INTENT.HOW) {
@@ -127,7 +156,17 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
       { messages },
       howSystemWorksPrompt(business, RESERVATION_STATE?.status),
     );
-    return assistantResponse;
+    return {
+      bag: {},
+      lastStepResult: {
+        execute: {
+          result: assistantResponse,
+          metadata: {
+            value: CUSTOMER_INTENT.HOW,
+          },
+        },
+      },
+    };
   }
 
   // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
@@ -135,5 +174,15 @@ export async function fallbackWorkflow(ctx: RestaurantCtx): Promise<string> {
     { messages },
     buildInfoReservationsSystemPrompt(business, RESERVATION_STATE?.status),
   );
-  return assistantResponse;
+  return {
+    bag: {},
+    lastStepResult: {
+      execute: {
+        result: assistantResponse,
+        metadata: {
+          value: CUSTOMER_INTENT.WHAT,
+        },
+      },
+    },
+  };
 }

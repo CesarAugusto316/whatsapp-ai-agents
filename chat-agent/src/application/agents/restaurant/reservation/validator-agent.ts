@@ -20,7 +20,6 @@ export const validatorAgent = {
     business: Business,
     customerMessage: string,
     previousState: ReservationSchema,
-    temp = 0,
   ) {
     const PARSER_PROMPT = validationPrompts.dataParser(business);
     const messages: ChatMessage[] = [
