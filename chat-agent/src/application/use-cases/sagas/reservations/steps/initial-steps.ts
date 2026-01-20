@@ -48,14 +48,7 @@ export const initReservationChangeSteps = async ({
     limit: 1, // only one reservation
   });
 
-  if (lastRes.status !== 200) {
-    return humanizerAgent(
-      "Ocurrió un error al buscar la reserva, intenta de nuevo",
-    );
-  }
-  const reservation = (
-    (await lastRes.json()) as { docs: Appointment[] }
-  ).docs.at(0);
+  const reservation = lastRes.docs.at(0);
 
   if (!reservation) {
     return humanizerAgent(

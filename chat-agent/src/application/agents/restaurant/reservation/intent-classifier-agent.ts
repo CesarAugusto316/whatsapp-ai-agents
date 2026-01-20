@@ -18,7 +18,7 @@ export const intentClassifierAgent = {
    */
   async howOrWhat(message: string): Promise<CUSTOMER_INTENT> {
     try {
-      const temperature = 0.1;
+      const temperature = 0;
       const raw = await aiClient.userMsg(
         [{ role: "user", content: message }],
         CLASSIFIER_PROMPT,
@@ -42,7 +42,7 @@ export const intentClassifierAgent = {
    */
   async inputIntent(message: string): Promise<InputIntent> {
     try {
-      const temperature = 0.1;
+      const temperature = 0;
       const raw = await aiClient.userMsg(
         [{ role: "user", content: message }],
         validationPrompts.intentClassifier(),

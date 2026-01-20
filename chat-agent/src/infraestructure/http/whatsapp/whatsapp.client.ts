@@ -8,17 +8,32 @@ import { SendContactPayload } from "./whatsapp-types/send-contact";
 import { SendLocationPayload } from "./whatsapp-types/send-location";
 import { SendEventPayload } from "./whatsapp-types/send-appointment";
 import { formatForWhatsApp } from "./format-for-whatsapp";
-import { resilientQuery, ResilientQueryOptions } from "@/application/patterns";
+import {
+  CircuitBreaker,
+  resilientQuery,
+  ResilientQueryOptions,
+} from "@/application/patterns";
 
 const apiUrl = env.WAHA_API + "/api";
 const apiKey = env.WAHA_API_KEY; // waha API key
 
-const whatappConfig = {
-  builtIn: "api",
-  timeoutMs: 15_000, // WhatsApp es rápido
+// Configuración específica para LLMs
+const circuitBreaker = new CircuitBreaker(
+  {
+    failureThreshold: 3, // 3 fallos seguidos abren el circuito
+    resetTimeout: 60_000, // 30 segundos en OPEN
+    halfOpenSuccessThreshold: 2, // 2 éxitos para cerrar
+  },
+  "whatsapp-client",
+);
+
+const resilientConfig = {
+  timeoutMs: 45_000,
+  circuitBraker: circuitBreaker,
   retryConfig: {
-    maxAttempts: 3, // Poco reintentos para no spammear
-    intervalSeconds: 1,
+    backoffRate: 2,
+    maxAttempts: 3,
+    intervalSeconds: 2,
   },
 } satisfies ResilientQueryOptions;
 
@@ -64,57 +79,46 @@ class WhatsAppClient {
    */
   public async sendSeen<T>(args: SendSeenPayload) {
     await this.timeOut();
-    return resilientQuery<T>(
-      async () => {
-        const res = await fetch(`${apiUrl}/sendSeen`, {
-          method: "POST",
-          headers: this.headers,
-          body: JSON.stringify(args),
-        });
+    return resilientQuery<T>(async () => {
+      const res = await fetch(`${apiUrl}/sendSeen`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify(args),
+      });
 
-        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+      if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
-        return res.json() as T;
-      },
-      { ...whatappConfig },
-    );
+      return res.json() as T;
+    }, resilientConfig);
   }
 
   public async sendStartTyping<T>(args: SendSeenPayload) {
     await this.timeOut();
-    return resilientQuery<T>(
-      async () => {
-        const res = await fetch(`${apiUrl}/startTyping`, {
-          method: "POST",
-          headers: this.headers,
-          body: JSON.stringify(args),
-        });
+    return resilientQuery<T>(async () => {
+      const res = await fetch(`${apiUrl}/startTyping`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify(args),
+      });
 
-        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+      if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
-        return res.json() as T;
-      },
-      { ...whatappConfig },
-    );
+      return res.json() as T;
+    }, resilientConfig);
   }
 
   public async sendStopTyping<T>(args: SendSeenPayload) {
-    return resilientQuery<T>(
-      async () => {
-        const res = await fetch(`${apiUrl}/stopTyping`, {
-          method: "POST",
-          headers: this.headers,
-          body: JSON.stringify(args),
-        });
+    return resilientQuery<T>(async () => {
+      const res = await fetch(`${apiUrl}/stopTyping`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify(args),
+      });
 
-        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+      if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
-        return res.json() as T;
-      },
-      {
-        ...whatappConfig,
-      },
-    );
+      return res.json() as T;
+    }, resilientConfig);
   }
 
   private randomTime() {
@@ -129,29 +133,24 @@ class WhatsAppClient {
 
   public async sendText<T>({ session, text, chatId }: SendMessagePayload) {
     await this.timeOut();
-    return resilientQuery<T>(
-      async () => {
-        const res = await fetch(`${apiUrl}/sendText`, {
-          method: "POST",
-          headers: this.headers,
-          body: JSON.stringify({
-            chatId,
-            session,
-            text: formatForWhatsApp(text ?? ""),
-            reply_to: null,
-            linkPreview: true,
-            linkPreviewHighQuality: false,
-          } as SendMessagePayload),
-        });
+    return resilientQuery<T>(async () => {
+      const res = await fetch(`${apiUrl}/sendText`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify({
+          chatId,
+          session,
+          text: formatForWhatsApp(text ?? ""),
+          reply_to: null,
+          linkPreview: true,
+          linkPreviewHighQuality: false,
+        } as SendMessagePayload),
+      });
 
-        if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+      if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
-        return res.json() as T;
-      },
-      {
-        ...whatappConfig,
-      },
-    );
+      return res.json() as T;
+    }, resilientConfig);
   }
 
   public async sendContact(args: SendContactPayload) {

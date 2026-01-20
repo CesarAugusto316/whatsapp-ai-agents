@@ -20,7 +20,7 @@ export const validatorAgent = {
     business: Business,
     customerMessage: string,
     previousState: ReservationSchema,
-    temp = 0.1,
+    temp = 0,
   ) {
     const PARSER_PROMPT = validationPrompts.dataParser(business);
     const messages: ChatMessage[] = [
@@ -62,7 +62,7 @@ export const validatorAgent = {
   async collectMissingData(
     business: Business,
     errors: Partial<z.core.$ZodIssue>[],
-    temp = 0.7,
+    temp = 0,
   ) {
     const COLLECTOR_PROMPT = validationPrompts.humanizeErrors(business);
     const mappedErrors = mapZodErrorsToCollector(errors);

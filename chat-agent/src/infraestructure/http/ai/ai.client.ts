@@ -1,6 +1,30 @@
 import { env } from "bun";
-import { ChatCompletionResponse, ChatMessage } from "./";
-import { resilientQuery } from "@/application/patterns";
+import { ChatCompletionResponse, ChatMessage } from "./index";
+import {
+  CircuitBreaker,
+  resilientQuery,
+  ResilientQueryOptions,
+} from "@/application/patterns";
+
+// Configuración específica para LLMs
+const circuitBreaker = new CircuitBreaker(
+  {
+    failureThreshold: 3, // 3 fallos seguidos abren el circuito
+    resetTimeout: 60_000, // 30 segundos en OPEN
+    halfOpenSuccessThreshold: 2, // 2 éxitos para cerrar
+  },
+  "ai-client",
+);
+
+const resilientConfig = {
+  timeoutMs: 60_000,
+  circuitBraker: circuitBreaker,
+  retryConfig: {
+    backoffRate: 2,
+    maxAttempts: 3,
+    intervalSeconds: 2,
+  },
+} satisfies ResilientQueryOptions;
 
 class AiClient {
   private config =
@@ -34,55 +58,49 @@ class AiClient {
     tools?: Record<string, any>[],
   ): Promise<string> {
     //
-    return resilientQuery(
-      async () => {
-        const response = await fetch(this.config.url, {
-          method: "POST",
-          headers: this.config.headers,
-          body: JSON.stringify({
-            model: this.config.model,
-            temperature,
-            messages: [{ role: "system", content: prompt }, ...messages],
-          }),
-        });
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-        const result = (await response.json()) as ChatCompletionResponse;
-        const content = result.choices?.[0]?.message?.content?.trim();
-        if (!content) {
-          throw new Error("No se recibió respuesta de la AI");
-        }
-        return content;
-      },
-      { builtIn: "api" },
-    );
+    return resilientQuery(async () => {
+      const response = await fetch(this.config.url, {
+        method: "POST",
+        headers: this.config.headers,
+        body: JSON.stringify({
+          model: this.config.model,
+          temperature,
+          messages: [{ role: "system", content: prompt }, ...messages],
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      const result = (await response.json()) as ChatCompletionResponse;
+      const content = result.choices?.[0]?.message?.content?.trim();
+      if (!content) {
+        throw new Error("No se recibió respuesta de la AI");
+      }
+      return content;
+    }, resilientConfig);
   }
 
   async systemMsg(message: string, temperature = 0) {
-    return resilientQuery(
-      async () => {
-        const response = await fetch(this.config.url, {
-          method: "POST",
-          headers: this.config.headers,
-          body: JSON.stringify({
-            model: this.config.model,
-            temperature,
-            messages: [{ role: "system", content: message }],
-          }),
-        });
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-        const result = (await response.json()) as ChatCompletionResponse;
-        const content = result.choices?.[0]?.message?.content?.trim();
-        if (!content) {
-          throw new Error("No se recibió respuesta de la AI");
-        }
-        return content;
-      },
-      { builtIn: "api" },
-    );
+    return resilientQuery(async () => {
+      const response = await fetch(this.config.url, {
+        method: "POST",
+        headers: this.config.headers,
+        body: JSON.stringify({
+          model: this.config.model,
+          temperature,
+          messages: [{ role: "system", content: message }],
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      const result = (await response.json()) as ChatCompletionResponse;
+      const content = result.choices?.[0]?.message?.content?.trim();
+      if (!content) {
+        throw new Error("No se recibió respuesta de la AI");
+      }
+      return content;
+    }, resilientConfig);
   }
 }
 
