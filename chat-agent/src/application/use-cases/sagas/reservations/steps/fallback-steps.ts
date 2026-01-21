@@ -6,8 +6,8 @@ import { resolveNextState } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { CUSTOMER_INTENT, FlowOptions } from "@/domain/restaurant/reservations";
 import {
-  buildInfoReservationsSystemPrompt,
-  howSystemWorksPrompt,
+  buildInfo,
+  buildHowToProceed,
   systemMessages,
 } from "@/domain/restaurant/reservations/prompts";
 import { cacheAdapter, chatHistoryAdapter } from "@/infraestructure/adapters";
@@ -50,7 +50,7 @@ export async function fallbackWorkflow(
       ];
       const assistantResponse = await aiClient.userMsg(
         { messages },
-        howSystemWorksPrompt(business),
+        buildHowToProceed(business),
       );
       return {
         bag: {},
@@ -58,14 +58,15 @@ export async function fallbackWorkflow(
           execute: {
             result: assistantResponse,
             metadata: {
-              value: "FIRST_MESSAGE",
+              description: "INITIALIZATION, chatHistoryCache.length = 0",
+              value: `isFirstMessage=${isFirstMessage}`,
             },
           },
         },
       };
     }
 
-    if (customerMessage == FlowOptions.MAKE_RESERVATION) {
+    if (customerMessage === FlowOptions.MAKE_RESERVATION) {
       // choice 2
       const transition = resolveNextState(FlowOptions.MAKE_RESERVATION);
       await cacheAdapter.save(reservationKey, {
@@ -84,14 +85,15 @@ export async function fallbackWorkflow(
           execute: {
             result: humanizedResponse,
             metadata: {
-              value: FlowOptions.MAKE_RESERVATION,
+              description: "MAKE_RESERVATION, option selected",
+              value: `customerMessage=${FlowOptions.MAKE_RESERVATION}`,
             },
           },
         },
       };
     }
 
-    if (customerMessage == FlowOptions.UPDATE_RESERVATION) {
+    if (customerMessage === FlowOptions.UPDATE_RESERVATION) {
       const timezone = business.general.timezone;
       const msg = await initReservationChangeSteps({
         business,
@@ -100,21 +102,21 @@ export async function fallbackWorkflow(
         getMessage: (state) => systemMessages.getUpdateMsg(state, timezone),
         reservationKey,
       });
-
       return {
         bag: {},
         lastStepResult: {
           execute: {
             result: msg,
             metadata: {
-              value: FlowOptions.UPDATE_RESERVATION,
+              description: "UPDATE_RESERVATION, option selected",
+              value: `customerMessage=${FlowOptions.UPDATE_RESERVATION}`,
             },
           },
         },
       };
     }
 
-    if (customerMessage == FlowOptions.CANCEL_RESERVATION) {
+    if (customerMessage === FlowOptions.CANCEL_RESERVATION) {
       const timezone = business.general.timezone;
       const msg = await initReservationChangeSteps({
         business,
@@ -129,7 +131,8 @@ export async function fallbackWorkflow(
           execute: {
             result: msg,
             metadata: {
-              value: FlowOptions.CANCEL_RESERVATION,
+              description: "CANCEL_RESERVATION, option selected",
+              value: `customerMessage=${FlowOptions.CANCEL_RESERVATION}`,
             },
           },
         },
@@ -154,7 +157,7 @@ export async function fallbackWorkflow(
     // choice 4 again
     const assistantResponse = await aiClient.userMsg(
       { messages },
-      howSystemWorksPrompt(business, RESERVATION_STATE?.status),
+      buildHowToProceed(business),
     );
     return {
       bag: {},
@@ -162,7 +165,8 @@ export async function fallbackWorkflow(
         execute: {
           result: assistantResponse,
           metadata: {
-            value: CUSTOMER_INTENT.HOW,
+            description: "HOW_SYSTEM_WORKS, option selected",
+            value: `customerMessage=${CUSTOMER_INTENT.HOW}`,
           },
         },
       },
@@ -172,7 +176,7 @@ export async function fallbackWorkflow(
   // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
   const assistantResponse = await aiClient.userMsg(
     { messages },
-    buildInfoReservationsSystemPrompt(business, RESERVATION_STATE?.status),
+    buildInfo(business),
   );
   return {
     bag: {},
@@ -180,7 +184,8 @@ export async function fallbackWorkflow(
       execute: {
         result: assistantResponse,
         metadata: {
-          value: CUSTOMER_INTENT.WHAT,
+          description: "WHAT_IS_THE_SYSTEM, option selected",
+          value: `customerMessage=${CUSTOMER_INTENT.WHAT}`,
         },
       },
     },

@@ -1,5 +1,5 @@
 import { Business } from "@/infraestructure/http/cms/cms-types";
-import { CustomerActions, InputIntent } from "../reservation.types";
+import { InputIntent } from "../reservation.types";
 import { WRITING_STYLE } from "./conversational-prompts";
 
 export const validationPrompts = {
@@ -12,45 +12,89 @@ export const validationPrompts = {
    */
   intentClassifier() {
     return `
-        You are an intention classification module for a restaurant reservation system.
+      You are an intention classification module for a restaurant reservation system.
 
-        Your only task is to classify the user's input message into exactly one of two categories:
+      TASK:
+      Classify the user's Spanish input message into EXACTLY ONE of these two categories:
 
-        1. "${InputIntent.INPUT_DATA}" → if the message contains *any explicit information for a reservation*, including:
-           - Customer name
-           - Reservation date (absolute or relative, e.g., "mañana", "pasado mañana")
-           - Reservation start time or end time
-           - Number of people
-           Even if the information is incomplete, approximate, abbreviated, or mixed with a question, it should be classified as INPUT_DATA.
+      1. ${InputIntent.INPUT_DATA} → The message contains ANY explicit reservation information, including:
+          - Customer name
+          - Reservation date (absolute or relative like "mañana", "pasado mañana")
+          - Start or end time
+          - Number of people
+          - Any numerical data, dates, or times
+          Note: Incomplete, approximate, abbreviated, or mixed data still qualifies.
 
-        2. "${InputIntent.CUSTOMER_QUESTION}" → if the message:
-           - Asks about restaurant hours, availability, menu, or policies
-           - Is a comment, doubt, or inquiry
-           - Mentions dates or times but *does not provide any data about the user's reservation*
-           - Is purely interrogative, without attempting to send reservation information
+      2. ${InputIntent.CUSTOMER_QUESTION} → The message is purely:
+          - An inquiry about hours, availability, menu, or policies
+          - A comment, doubt, or question
+          - Without ANY attempt to provide reservation details
 
-        STRICT RULES:
-        - Input messages are in Spanish.
-        - Only return one of the exact strings: "${InputIntent.INPUT_DATA}" or "${InputIntent.CUSTOMER_QUESTION}".
-        - Do NOT include explanations, examples, quotes, or extra text.
-        - Do NOT guess or infer missing information; classify *based only on explicit presence of user reservation data*.
-        - Partial, relative, or abbreviated data counts as "${InputIntent.INPUT_DATA}".
-        - If the message combines a question with reservation data, prioritize the *presence of reservation data*: classify as "${InputIntent.INPUT_DATA}".
+      STRICT CLASSIFICATION RULES:
+      - Input messages are ALWAYS in Spanish.
+      - Return ONLY this exact string: "${InputIntent.INPUT_DATA}" OR "${InputIntent.CUSTOMER_QUESTION}"
+      - NO explanations, examples, quotes, or additional text.
+      - Base classification SOLELY on explicit presence of reservation data.
+      - Partial/abbreviated data → ${InputIntent.INPUT_DATA}
+      - Question + reservation data → ${InputIntent.INPUT_DATA} (data presence takes priority)
 
-        INPUT EXAMPLES AND INTENDED OUTPUT (for reference only, do not output these):
-        - "A nombre de Sergio Rivera para el 25 de diciembre a las 8 de la noche para 4 personas" → "${InputIntent.INPUT_DATA}"
-        - "¿A qué hora abre el restaurante mañana?" → "${InputIntent.CUSTOMER_QUESTION}"
-        - "Mañana a las 7pm para dos personas, Raúl Lara" → "${InputIntent.INPUT_DATA}"
-        - "¿Pueden acomodarnos en una mesa al aire libre?" → "${InputIntent.CUSTOMER_QUESTION}"
-        - "A las 8 para 3 personas" → "${InputIntent.INPUT_DATA}"
-        - "Quisiera reservar para pasado mañana a las 6" → "${InputIntent.INPUT_DATA}"
-        - "¿Tienen mesas libres mañana a las 8?" → "${InputIntent.CUSTOMER_QUESTION}"
-        - "Raul R. 25/12 20h 4 pers" → "${InputIntent.INPUT_DATA}"
-        Single values like:
-          ${Object.values(CustomerActions)
-            .map((action) => `- "${action}" → "${InputIntent.INPUT_DATA}"`)
-            .join("\n")}
-      `.trim();
+      EXAMPLE CLASSIFICATIONS (reference only - do not output these):
+
+      USER: "A nombre de Sergio Rivera para el 25 de diciembre a las 8 de la noche para 4 personas"
+      THOUGHT: First, I scan for reservation data elements. I find: customer name ("Sergio Rivera"), specific date ("25 de diciembre"), specific time ("8 de la noche"), and number of people ("4 personas"). Since all four data elements are present, this is clearly reservation input data.
+      OUTPUT: ${InputIntent.INPUT_DATA}
+
+      USER: "¿A qué hora abre el restaurante mañana?"
+      THOUGHT: The message asks about opening hours ("abre el restaurante") for tomorrow ("mañana"). There is no customer name, no reservation time being specified, no number of people, and the date reference is about the restaurant's schedule, not a reservation. This is purely an informational question.
+      OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
+
+      USER: "Mañana a las 7pm para dos personas, Raúl Lara"
+      THOUGHT: I identify reservation data elements: date ("mañana"), time ("7pm"), number of people ("dos personas"), and customer name ("Raúl Lara"). All four key elements are present. The presence of this explicit reservation data dictates the classification.
+      OUTPUT: ${InputIntent.INPUT_DATA}
+
+      USER: "Pueden acomodarnos una mesa al aire libre"
+      THOUGHT: I check for reservation data elements. The message asks about accommodation ("mesa al aire libre") but provides no specific date, time, number of people, or customer name. It's a general inquiry about restaurant facilities, not an attempt to provide reservation details.
+      OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
+
+      USER: "A las 8 para 3 personas"
+      THOUGHT: I search for reservation data elements. I find specific time ("a las 8") and number of people ("3 personas"). Even though date and name are missing, the rules state partial reservation data still counts as input data. Two explicit data elements are present.
+      OUTPUT: ${InputIntent.INPUT_DATA}
+
+      USER: "Para 2"
+      THOUGHT: I examine for reservation data. The message contains number of people ("2"). This is abbreviated and minimal, but according to the rules, even partial or abbreviated data qualifies as reservation input. One explicit data element is present.
+      OUTPUT: ${InputIntent.INPUT_DATA}
+
+      USER: "Quisiera reservar para pasado mañana a las 6"
+      THOUGHT: I scan for reservation data elements. I identify date ("pasado mañana") and time ("a las 6"). The expression of intent ("Quisiera reservar") reinforces but doesn't determine classification. Two explicit reservation data elements are present.
+      OUTPUT: ${InputIntent.INPUT_DATA}
+
+      USER: "Tienen mesas libres mañana a las 8?"
+      THOUGHT: I analyze for reservation data. The message mentions date ("mañana") and time ("a las 8"), but these are part of an availability inquiry, not data being provided for a reservation. No customer name or number of people is given, and the intent is to ask about availability rather than submit reservation details.
+      OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
+
+      USER: "Raul R. 25/12 20h 4 pers"
+      THOUGHT: I check for reservation data elements in abbreviated form. I find: customer name ("Raul R."), date ("25/12"), time ("20h"), and number of people ("4 pers"). Despite the shorthand format, all four reservation data elements are explicitly present.
+      OUTPUT: ${InputIntent.INPUT_DATA}
+
+      USER: "Podemos ir 6 personas este viernes"
+      THOUGHT: I examine the message structure. It's phrased as a question but contains explicit reservation data: number of people ("6 personas") and date ("este viernes"). Following the rule to prioritize presence of reservation data over interrogative form, two data elements are present.
+      OUTPUT: ${InputIntent.INPUT_DATA}
+
+      USER: "Necesitaría una mesa, tienen disponibilidad"
+      THOUGHT: I analyze the message structure and content. The first part expresses need but provides no reservation data. The second part asks about availability without question marks, but the wording "tienen disponibilidad" functions as a question. Since no reservation data elements are present (no date, time, number of people, or name), this is a general inquiry.
+      OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
+
+      USER: "Sigamos, vamos con la reserva"
+      THOUGHT: I analyze the message structure and content. The first part expresses action, and the second part is a continuation of the action.
+      OUTPUT: ${InputIntent.INPUT_DATA}
+
+      FINAL OUTPUT REQUIREMENTS:
+      - Output ONLY: ${InputIntent.INPUT_DATA} or ${InputIntent.CUSTOMER_QUESTION}
+      - NO explanations
+      - NO additional text
+      - NO quotes around the output
+      - Do NOT respond to the user's message
+   `.trim();
   },
 
   dataParser(business: Business) {
@@ -176,8 +220,9 @@ export const validationPrompts = {
           ==============================
 
           Example 1 - User provides time range:
-          Input: "Para mañana de 22:00 a 01:00 para 2 personas"
-          Output:
+          USER: "Para mañana de 22:00 a 01:00 para 2 personas"
+          THOUGHT: First, I extract the date reference "mañana" and convert it to a concrete date. Then I identify the time range "22:00 a 01:00" and recognize it crosses midnight. The Number of people "2 personas" is extracted directly. I calculate the end date by adding one day since the end time is after midnight.
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -188,7 +233,8 @@ export const validationPrompts = {
           }
 
           Example 2 - User provides ONLY start time (average time = ${averageTimeMinutes} min):
-          Input: "Mañana a las 8pm para 3 personas"
+          USER: "Mañana a las 8pm para 3 personas"
+          THOUGHT: I identify "Mañana" as the date and extract the start time "8pm" (converted to 20:00). Since no end time is provided, I calculate it by adding the average duration of ${averageTimeMinutes} minutes to the start time. The Number of people "3 personas" is extracted directly.
           Calculation: 20:00 + ${averageTimeMinutes} minutes = ${(() => {
             const hours = Math.floor(averageTimeMinutes / 60);
             const minutes = averageTimeMinutes % 60;
@@ -196,7 +242,7 @@ export const validationPrompts = {
             const endMinute = minutes.toString().padStart(2, "0");
             return `${endHour.toString().padStart(2, "0")}:${endMinute}`;
           })()}
-          Output:
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -213,8 +259,9 @@ export const validationPrompts = {
           }
 
           Example 3 - User provides time range crossing midnight:
-          Input: "Hoy de 23:00 a 02:00 para 4 personas"
-          Output:
+          USER: "Hoy de 23:00 a 02:00 para 4 personas"
+          THOUGHT: I recognize "Hoy" as today's date. The time range "23:00 a 02:00" clearly crosses midnight, so the end date must be tomorrow. I extract the Number of people "4 personas" directly.
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -225,9 +272,10 @@ export const validationPrompts = {
           }
 
           Example 4 - User provides weekday with only start time:
-          Input: "El viernes a las 19:30 para 4 personas"
+          USER: "El viernes a las 19:30 para 4 personas"
+          THOUGHT: I identify "El viernes" and determine the next occurring Friday. The start time "19:30" is extracted. Without an end time, I calculate it by adding ${averageTimeMinutes} minutes to 19:30. Number of people "4 personas" is noted.
           Calculation: 19:30 + ${averageTimeMinutes} minutes
-          Output:
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -243,14 +291,16 @@ export const validationPrompts = {
           }
 
           Example 5 - User provides explicit time range (ignore average time):
-          Input: "Para 5 personas el domingo de 12:00 a 14:00"
+          USER: "Para 5 personas el domingo de 12:00 a 14:00"
+          THOUGHT: I extract the Number of people "5 personas" and date reference "domingo" (next Sunday). The explicit time range "12:00 a 14:00" is used directly without applying average duration.
           // Encontrar próximo domingo
           ${(() => {
             const sunday = new Date(now);
             while (sunday.getDay() !== 0) {
               sunday.setDate(sunday.getDate() + 1);
             }
-            return `Output:
+            return `
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -262,7 +312,8 @@ export const validationPrompts = {
           })()}
 
           Example 6 - User provides date with only start time:
-          Input: "Para el 15 de enero a las 10:00 para 6 personas"
+          USER: "Para el 15 de enero a las 10:00 para 6 personas"
+          THOUGHT: I parse the explicit date "15 de enero" (adjusting year if needed). Start time "10:00" is extracted. Since no end time is given, I calculate it by adding ${averageTimeMinutes} minutes to 10:00. Number of people "6 personas" is noted.
           // Asumiendo año actual
           ${(() => {
             const jan15 = new Date(now.getFullYear(), 0, 15);
@@ -270,7 +321,8 @@ export const validationPrompts = {
             if (jan15 < now) {
               jan15.setFullYear(now.getFullYear() + 1);
             }
-            return `Output:
+            return `
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -287,8 +339,9 @@ export const validationPrompts = {
           })()}
 
           Example 7 - No time or date:
-          Input: "Para 2 personas"
-          Output:
+          USER: "Para 2 personas"
+          THOUGHT: I identify only the Number of people "2 personas". No date or time information is present, so I leave those fields empty in the OUTPUT.
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -299,8 +352,9 @@ export const validationPrompts = {
           }
 
           Example 8 - Time WITHOUT date:
-          Input: "A las 8pm para 2 personas"
-          Output:
+          USER: "A las 8pm para 2 personas"
+          THOUGHT: I extract the start time "8pm" (converted to 20:00) but note there's no date reference. I calculate the end time by adding ${averageTimeMinutes} minutes to 20:00. Number of people "2 personas" is extracted.
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -317,8 +371,9 @@ export const validationPrompts = {
           }
 
           Example 9 - Date WITHOUT time:
-          Input: "Para mañana para 2 personas"
-          Output:
+          USER: "Para mañana para 2 personas"
+          THOUGHT: I identify "mañana" as the date but note there's no time information. Number of people "2 personas" is extracted. I populate the date fields but leave time fields empty.
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -333,8 +388,9 @@ export const validationPrompts = {
           ==============================
 
           Example 10 - Time range without minutes (only hours):
-          Input: "Mañana de 8 a 10 para 2 personas"
-          Output:
+          USER: "Mañana de 8 a 10 para 2 personas"
+          THOUGHT: I extract "Mañana" as the date. The time range "de 8 a 10" is interpreted as 08:00 to 10:00 (adding ":00" for minutes). Number of people "2 personas" is noted.
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -345,9 +401,10 @@ export const validationPrompts = {
           }
 
           Example 11 - "Pasado mañana" (day after tomorrow):
-          Input: "Pasado mañana a las 15:00 para 4 personas"
+          USER: "Pasado mañana a las 15:00 para 4 personas"
+          THOUGHT: I identify "Pasado mañana" as the day after tomorrow. Start time "15:00" is extracted. Since no end time is given, I calculate it by adding ${averageTimeMinutes} minutes to 15:00. Number of people "4 personas" is noted.
           Calculation: 15:00 + ${averageTimeMinutes} minutes
-          Output:
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -363,9 +420,10 @@ export const validationPrompts = {
           }
 
           Example 12 - "Fin de semana" (weekend):
-          Input: "Para el fin de semana a las 20:00 para 5 personas"
+          USER: "Para el fin de semana a las 20:00 para 5 personas"
+          THOUGHT: I interpret "fin de semana" as the upcoming Saturday. Start time "20:00" is extracted. Without an end time, I calculate it by adding ${averageTimeMinutes} minutes to 20:00. Number of people "5 personas" is noted.
           // "fin de semana" typically refers to Saturday
-          Output:
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -381,8 +439,9 @@ export const validationPrompts = {
           }
 
           Example 13 - 12-hour format without minutes:
-          Input: "A las 5pm para 3 personas"
-          Output:
+          USER: "A las 5pm para 3 personas"
+          THOUGHT: I extract the start time "5pm" (converted to 17:00) but note there's no date. I calculate the end time by adding ${averageTimeMinutes} minutes to 17:00. Number of people "3 personas" is extracted.
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -398,8 +457,9 @@ export const validationPrompts = {
           }
 
           Example 14 - Multiple dates range:
-          Input: "Del 15 al 17 de enero para 2 personas"
-          Output:
+          USER: "Del 15 al 17 de enero para 2 personas"
+          THOUGHT: I identify a date range "Del 15 al 17 de enero" and extract both start and end dates. No time information is present, so I leave time fields empty. Number of people "2 personas" is noted.
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -410,9 +470,10 @@ export const validationPrompts = {
           }
 
           Example 15 - Ambiguous weekday ("el próximo viernes"):
-          Input: "El próximo viernes a las 19:00 para 4 personas"
+          USER: "El próximo viernes a las 19:00 para 4 personas"
+          THOUGHT: I interpret "el próximo viernes" as the next occurring Friday. Start time "19:00" is extracted. Without an end time, I calculate it by adding ${averageTimeMinutes} minutes to 19:00. Number of people "4 personas" is noted.
           // Assuming "próximo viernes" means the next Friday
-          Output:
+          OUTPUT:
           {
             "customerName": "",
             "datetime": {
@@ -489,7 +550,6 @@ export const validationPrompts = {
               OUTPUT: A SINGLE Spanish message that:
                 1. Asks POLITELY for missing information using QUESTIONS
                 2. Uses natural, conversational Spanish like a helpful host
-                3. Includes 1-2 relevant emojis
                 4. Covers ALL errors in ONE coherent message
                 5. Groups related errors together naturally
                 6. De-duplicates multiple errors for the same field into ONE clear question
@@ -512,7 +572,7 @@ export const validationPrompts = {
               - Always frame as a QUESTION, not a statement
               - Use phrases like: "¿Para qué día...?", "¿A qué hora...?", "¿Cómo te llamas?"
 
-              FIELD QUESTIONS AND EXAMPLES:
+              FIELD QUESTIONS AND SHORT EXAMPLES:
               - "customerName": ["¿Cómo te llamas?", "¿Cuál es tu nombre completo?"]
               - "startDate": ["¿Para qué día te gustaría reservar?", "¿Qué fecha tienes en mente?"] + EXAMPLES: "mañana", "el próximo viernes", "el 15 de marzo"
               - "startTime": ["¿A qué hora prefieres?", "¿A qué hora te vendría bien?"] + EXAMPLES: "a las 7pm", "a las 14:30", "en la tarde"
@@ -534,30 +594,39 @@ export const validationPrompts = {
               OUTPUT EXAMPLES - CONVERSATIONAL:
 
               Input: [{field: "startDate", error: "invalid_date_format"}]
+              THOUGHT: First, I identify there's one error in "startDate" with "invalid_date_format". Since it's a single error, I ask a direct question about the reservation date. I provide natural examples like "mañana", "el próximo viernes", or "el 10 de enero" instead of technical formats. I end with a relevant emoji (📅).
               Output: "¿Para qué día te gustaría reservar? Por ejemplo: mañana, el próximo viernes o el 10 de enero. 📅"
 
               Input: [{field: "startDate", error: "invalid_date_format"}, {field: "endDate", error: "invalid_date_format"}]
+              THOUGHT: I identify two errors for "startDate" and "endDate" with "invalid_date_format". Since both are date-related, I group them into one coherent question about the reservation period. I frame it as a question about the start date and optionally the end date for multi-day reservations. I provide natural range examples like "mañana" or "del 10 al 12 de enero".
               Output: "¿Para qué día quieres la reserva? Y si es por varios días, ¿hasta cuándo? Por ejemplo: "mañana" o "del 10 al 12 de enero". 📅"
 
               Input: [{field: "customerName", error: ""}, {field: "numberOfPeople", error: ""}]
-              Output: "¡Hola! ¿Cómo te llamas? Y ¿para cuántas personas sería la reserva? 😊"
+              THOUGHT: I identify two missing fields: "customerName" and "numberOfPeople". I start with a friendly greeting and ask for both pieces of information in one natural question. I use a warm tone and include a smiling emoji (😊).
+              Output: "¿Cómo te llamas? Y ¿para cuántas personas sería la reserva? 😊"
 
               Input: [{field: "startDate", error: ""}, {field: "startTime", error: ""}, {field: "numberOfPeople", error: ""}]
+              THOUGHT: I identify three missing fields: "startDate", "startTime", and "numberOfPeople". I group them as part of completing the reservation. I ask for all three pieces of information in a single, enthusiastic question. I use a celebratory emoji (🎉) to maintain positive tone.
               Output: "¡Perfecto! Para completar tu reserva: ¿qué fecha te gustaría? ¿A qué hora? ¿Y para cuántas personas? 🎉"
 
               Input: [{field: "startTime", error: "invalid_time_format"}]
+              THOUGHT: I identify one error in "startTime" with "invalid_time_format". I ask a direct question about preferred time. I provide natural time examples like "a las 7pm", "a las 14:30", or "en la tarde" instead of technical formats. I add a clock emoji (🕐).
               Output: "¿A qué hora prefieres? Por ejemplo: a las 7pm, a las 14:30 o en la tarde. 🕐"
 
               Input: [{field: "startDate", error: "invalid_date"}]
+              THOUGHT: I identify one error in "startDate" with "invalid_date". I acknowledge the issue politely and ask for the correct date. I provide natural examples like "mañana" or "el próximo sábado". I include a calendar emoji (📅).
               Output: "Esa fecha no parece correcta. ¿Podrías decirme para qué día quieres reservar? Por ejemplo: mañana o el próximo sábado. 📅"
 
               Input: [{field: "datetime", error: "end_before_start"}]
+              THOUGHT: I identify a "datetime" error with "end_before_start". I explain the issue in simple terms ("hora de fin es antes que la de inicio") and ask the user to review the times. I use a neutral, helpful tone with a clock emoji (🕒).
               Output: "Parece que la hora de fin es antes que la de inicio. ¿Podrías revisar las horas? 🕒"
 
               Input: [{field: "customerName", error: "too_short"}]
+              THOUGHT: I identify a "customerName" error with "too_short". I ask for the full name and gently mention the minimum requirement ("al menos 3 letras") in a positive context ("para personalizar tu reserva"). I use a sparkle emoji (✨) for warmth.
               Output: "¿Podrías decirme tu nombre completo? Necesitamos al menos 3 letras para personalizar tu reserva. ✨"
 
               Input: [{field: "numberOfPeople", error: "too_large"}]
+              THOUGHT: I identify a "numberOfPeople" error with "too_large". I explain the need for special preparation for large groups and ask for the exact number. I use a respectful tone with a pleading emoji (🙏) to show appreciation for the information.
               Output: "Para grupos grandes necesitamos preparación especial. ¿Podrías decirme cuántos serán exactamente? 🙏"
 
               CRITICAL DECISION TREE:
@@ -566,7 +635,6 @@ export const validationPrompts = {
               3. Group related fields (date+time, etc.)
               4. Add NATURAL EXAMPLES (not technical)
               5. Keep tone warm and conversational
-              6. End with emoji
               7. NEVER use technical language
               8. NEVER say "necesitamos" - always ask
 
@@ -578,18 +646,11 @@ export const validationPrompts = {
               - "Me ayudas con..."
               - "Para completar tu reserva..."
 
-              CRITICAL FORMATTING REMINDER:
-              - Your response will be displayed on WhatsApp
-              - Use SINGLE asterisks for bold: *texto*
-              - NEVER use double asterisks **texto** or Markdown
-              - This is non-negotiable
-
               REMEMBER:
               - You're a friendly host, not a system validator
               - Always ask questions, never state requirements
               - Give human examples, not format examples
               - Keep it simple and warm
-              - One array → One friendly question
             `.trim();
   },
 };

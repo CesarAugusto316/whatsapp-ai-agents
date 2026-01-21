@@ -1,8 +1,4 @@
-import {
-  FlowOptions,
-  FMStatus,
-  InputIntent,
-} from "@/domain/restaurant/reservations";
+import { FMStatus, InputIntent } from "@/domain/restaurant/reservations";
 import { ReservationResult, reservationSaga } from "./reservation-saga";
 import { StartedFuncSagaResult } from "./steps/started-steps";
 import { ValidateFuncSagaResult } from "./steps/validated-steps";
@@ -19,15 +15,6 @@ const statusSagaMap: Partial<
   MAKE_VALIDATED: reservationSaga.makeValidated,
   UPDATE_VALIDATED: reservationSaga.updateValidated,
   CANCEL_VALIDATED: reservationSaga.cancelValidated,
-};
-
-// EXAMPLE
-const initialStatusSagaMap: Partial<
-  Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
-> = {
-  [FlowOptions.MAKE_RESERVATION]: reservationSaga.makeStarted, // EXAMPLE
-  [FlowOptions.UPDATE_RESERVATION]: reservationSaga.makeStarted, // EXAMPLE
-  [FlowOptions.CANCEL_RESERVATION]: reservationSaga.makeStarted, // EXAMPLE
 };
 
 export const reservationStateOrchestrator = async (

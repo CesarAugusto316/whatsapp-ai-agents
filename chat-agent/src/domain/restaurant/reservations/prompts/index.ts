@@ -1,9 +1,10 @@
 export { CLASSIFIER_PROMPT } from "./classifier-prompts";
 export {
   WRITING_STYLE,
-  howSystemWorksPrompt,
-  buildInfoReservationsSystemPrompt,
+  buildHowToProceed,
+  buildInfo,
 } from "./conversational-prompts";
+
 export { humanizerPrompt } from "./humanizer-prompt";
 export { systemMessages } from "./system-messages";
 export type { ReservationMode } from "./system-messages";

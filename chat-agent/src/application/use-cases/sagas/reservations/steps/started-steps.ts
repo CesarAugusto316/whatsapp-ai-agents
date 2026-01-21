@@ -105,7 +105,6 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
     if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
       logger.info("Customer asked a question", {
         inputIntent,
-        customerMessage,
       });
       return {
         result: InputIntent.CUSTOMER_QUESTION,
