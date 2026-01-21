@@ -15,6 +15,7 @@ import { aiClient, ChatMessage } from "@/infraestructure/http/ai";
 import { initReservationChangeSteps } from "./initial-steps";
 import { ReservationResult } from "../reservation-saga";
 import { buildGuidance } from "@/domain/restaurant/reservations/prompts/conversational-prompts";
+import { attachProcessReminder } from "@/application/patterns/FSM-workflow/resolve-next-state";
 
 /**
  *
@@ -163,7 +164,7 @@ export async function fallbackWorkflow(
       buildHowToProceed(business),
     );
     const reminderMSG = status
-      ? await aiClient.userMsg({ messages }, buildGuidance(status))
+      ? attachProcessReminder(assistantResponse, status)
       : assistantResponse;
 
     return {
@@ -186,7 +187,7 @@ export async function fallbackWorkflow(
     buildInfo(business),
   );
   const reminderMSG = status
-    ? await aiClient.userMsg({ messages }, buildGuidance(status))
+    ? attachProcessReminder(assistantResponse, status)
     : assistantResponse;
 
   return {

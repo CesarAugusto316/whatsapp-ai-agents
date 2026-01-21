@@ -48,7 +48,7 @@ export const validationPrompts = {
       THOUGHT: The message asks about opening hours ("abre el restaurante") for tomorrow ("mañana"). There is no customer name, no reservation time being specified, no number of people, and the date reference is about the restaurant's schedule, not a reservation. This is purely an informational question.
       OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
 
-      USER: "Mañana a las 7pm para dos personas, Raúl Lara"
+      USER: "Deseo una reserva para mañana a las 7pm para dos personas, Raúl Lara"
       THOUGHT: I identify reservation data elements: date ("mañana"), time ("7pm"), number of people ("dos personas"), and customer name ("Raúl Lara"). All four key elements are present. The presence of this explicit reservation data dictates the classification.
       OUTPUT: ${InputIntent.INPUT_DATA}
 
@@ -56,7 +56,7 @@ export const validationPrompts = {
       THOUGHT: I check for reservation data elements. The message asks about accommodation ("mesa al aire libre") but provides no specific date, time, number of people, or customer name. It's a general inquiry about restaurant facilities, not an attempt to provide reservation details.
       OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
 
-      USER: "A las 8 para 3 personas"
+      USER: "Ok entonces, a las 8 para 3 personas"
       THOUGHT: I search for reservation data elements. I find specific time ("a las 8") and number of people ("3 personas"). Even though date and name are missing, the rules state partial reservation data still counts as input data. Two explicit data elements are present.
       OUTPUT: ${InputIntent.INPUT_DATA}
 
@@ -72,11 +72,11 @@ export const validationPrompts = {
       THOUGHT: I analyze for reservation data. The message mentions date ("mañana") and time ("a las 8"), but these are part of an availability inquiry, not data being provided for a reservation. No customer name or number of people is given, and the intent is to ask about availability rather than submit reservation details.
       OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
 
-      USER: "Raul R. 25/12 20h 4 pers"
+      USER: "Ya veo, entonces, Raul R. 25/12 20h 4 pers"
       THOUGHT: I check for reservation data elements in abbreviated form. I find: customer name ("Raul R."), date ("25/12"), time ("20h"), and number of people ("4 pers"). Despite the shorthand format, all four reservation data elements are explicitly present.
       OUTPUT: ${InputIntent.INPUT_DATA}
 
-      USER: "Podemos ir 6 personas este viernes"
+      USER: "Comprendo, entonces Podemos ir 6 personas este viernes"
       THOUGHT: I examine the message structure. It's phrased as a question but contains explicit reservation data: number of people ("6 personas") and date ("este viernes"). Following the rule to prioritize presence of reservation data over interrogative form, two data elements are present.
       OUTPUT: ${InputIntent.INPUT_DATA}
 
@@ -233,7 +233,7 @@ export const validationPrompts = {
           }
 
           Example 2 - User provides ONLY start time (average time = ${averageTimeMinutes} min):
-          USER: "Mañana a las 8pm para 3 personas"
+          USER: "Comprendo, Mañana a las 8pm para 3 personas, entonces"
           THOUGHT: I identify "Mañana" as the date and extract the start time "8pm" (converted to 20:00). Since no end time is provided, I calculate it by adding the average duration of ${averageTimeMinutes} minutes to the start time. The Number of people "3 personas" is extracted directly.
           Calculation: 20:00 + ${averageTimeMinutes} minutes = ${(() => {
             const hours = Math.floor(averageTimeMinutes / 60);
@@ -259,7 +259,7 @@ export const validationPrompts = {
           }
 
           Example 3 - User provides time range crossing midnight:
-          USER: "Hoy de 23:00 a 02:00 para 4 personas"
+          USER: "Ok, Hoy de 23:00 a 02:00 para 4 personas"
           THOUGHT: I recognize "Hoy" as today's date. The time range "23:00 a 02:00" clearly crosses midnight, so the end date must be tomorrow. I extract the Number of people "4 personas" directly.
           OUTPUT:
           {
@@ -272,7 +272,7 @@ export const validationPrompts = {
           }
 
           Example 4 - User provides weekday with only start time:
-          USER: "El viernes a las 19:30 para 4 personas"
+          USER: "Ya veo, entonces para el viernes a las 19:30 para 4 personas"
           THOUGHT: I identify "El viernes" and determine the next occurring Friday. The start time "19:30" is extracted. Without an end time, I calculate it by adding ${averageTimeMinutes} minutes to 19:30. Number of people "4 personas" is noted.
           Calculation: 19:30 + ${averageTimeMinutes} minutes
           OUTPUT:
