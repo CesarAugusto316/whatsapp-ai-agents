@@ -4,12 +4,7 @@ import {
   ReservationState,
 } from "@/domain/restaurant/reservations";
 import { cacheAdapter } from "@/infraestructure/adapters";
-import {
-  Appointment,
-  Business,
-  cmsClient,
-  Customer,
-} from "@/infraestructure/http/cms";
+import { Business, cmsClient, Customer } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";
 import { humanizerAgent } from "@/application/agents/restaurant";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";

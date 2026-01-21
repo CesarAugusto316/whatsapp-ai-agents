@@ -35,6 +35,8 @@ export const buildGuidance = (state?: FMStatus): string => {
     CONVERSATION CONTEXT (READ-ONLY)
     ==============================
 
+    ${WRITING_STYLE}
+
     CRITICAL FACTS:
     • You have an ACTIVE reservation process at this moment
     • Current process status: ${state}
@@ -57,7 +59,7 @@ export const buildGuidance = (state?: FMStatus): string => {
     • You CANNOT advance, confirm, modify, or cancel reservations
     • You CANNOT request data from the user
     • You MUST maintain the reminder in EACH response while there is an active process
-    • The reminder must be natural, friendly, and in Spanish
+    • The reminder must be SHORT, natural, friendly, and in Spanish
     • Use relevant emojis in the reminder (🔄✅❌)
 `.trim();
 };

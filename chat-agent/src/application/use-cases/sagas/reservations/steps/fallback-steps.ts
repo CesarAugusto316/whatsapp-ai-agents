@@ -14,6 +14,7 @@ import { cacheAdapter, chatHistoryAdapter } from "@/infraestructure/adapters";
 import { aiClient, ChatMessage } from "@/infraestructure/http/ai";
 import { initReservationChangeSteps } from "./initial-steps";
 import { ReservationResult } from "../reservation-saga";
+import { buildGuidance } from "@/domain/restaurant/reservations/prompts/conversational-prompts";
 
 /**
  *
@@ -33,8 +34,10 @@ export async function fallbackWorkflow(
     chatKey,
   } = Object.freeze(structuredClone(ctx));
 
+  const status = RESERVATION_STATE?.status;
+
   // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
-  if (!RESERVATION_STATE?.status) {
+  if (!status) {
     //
     const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
     const isFirstMessage = chatHistoryCache.length === 0;
@@ -59,7 +62,7 @@ export async function fallbackWorkflow(
             result: assistantResponse,
             metadata: {
               description: "INITIALIZATION, chatHistoryCache.length = 0",
-              value: `isFirstMessage=${isFirstMessage}`,
+              internal: `isFirstMessage=${isFirstMessage}`,
             },
           },
         },
@@ -86,7 +89,7 @@ export async function fallbackWorkflow(
             result: humanizedResponse,
             metadata: {
               description: "MAKE_RESERVATION, option selected",
-              value: `customerMessage=${FlowOptions.MAKE_RESERVATION}`,
+              internal: `customerMessage=${FlowOptions.MAKE_RESERVATION}`,
             },
           },
         },
@@ -109,7 +112,7 @@ export async function fallbackWorkflow(
             result: msg,
             metadata: {
               description: "UPDATE_RESERVATION, option selected",
-              value: `customerMessage=${FlowOptions.UPDATE_RESERVATION}`,
+              internal: `customerMessage=${FlowOptions.UPDATE_RESERVATION}`,
             },
           },
         },
@@ -132,7 +135,7 @@ export async function fallbackWorkflow(
             result: msg,
             metadata: {
               description: "CANCEL_RESERVATION, option selected",
-              value: `customerMessage=${FlowOptions.CANCEL_RESERVATION}`,
+              internal: `customerMessage=${FlowOptions.CANCEL_RESERVATION}`,
             },
           },
         },
@@ -159,14 +162,18 @@ export async function fallbackWorkflow(
       { messages },
       buildHowToProceed(business),
     );
+    const reminderMSG = status
+      ? await aiClient.userMsg({ messages }, buildGuidance(status))
+      : assistantResponse;
+
     return {
       bag: {},
       lastStepResult: {
         execute: {
-          result: assistantResponse,
+          result: reminderMSG,
           metadata: {
             description: "HOW_SYSTEM_WORKS, option selected",
-            value: `customerMessage=${CUSTOMER_INTENT.HOW}`,
+            internal: `customerMessage=${CUSTOMER_INTENT.HOW}`,
           },
         },
       },
@@ -178,14 +185,18 @@ export async function fallbackWorkflow(
     { messages },
     buildInfo(business),
   );
+  const reminderMSG = status
+    ? await aiClient.userMsg({ messages }, buildGuidance(status))
+    : assistantResponse;
+
   return {
     bag: {},
     lastStepResult: {
       execute: {
-        result: assistantResponse,
+        result: reminderMSG,
         metadata: {
           description: "WHAT_IS_THE_SYSTEM, option selected",
-          value: `customerMessage=${CUSTOMER_INTENT.WHAT}`,
+          internal: `customerMessage=${CUSTOMER_INTENT.WHAT}`,
         },
       },
     },

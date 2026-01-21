@@ -33,7 +33,7 @@ export type SagaBag = Record<string, unknown> & {
   shouldTransition?: boolean;
   metadata?: {
     description?: string;
-    value?: unknown;
+    internal?: unknown;
   };
 };
 

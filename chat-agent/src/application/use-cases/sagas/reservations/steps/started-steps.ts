@@ -70,7 +70,7 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
         continue: false,
         metadata: {
           description: "CUSTOMER_EXITED_FLOW",
-          value: CustomerActions.EXIT,
+          internal: CustomerActions.EXIT,
         },
       };
     }
@@ -94,7 +94,7 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
         continue: false,
         metadata: {
           description: "MAX_ATTEMPTS_REACHED",
-          value: reservation.attempts,
+          internal: reservation.attempts,
         },
       };
     }
@@ -111,7 +111,7 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
         continue: false,
         metadata: {
           description: "INPUT_CLASSIFICATION_RESULT",
-          value: InputIntent.CUSTOMER_QUESTION,
+          internal: InputIntent.CUSTOMER_QUESTION,
         },
       };
     }
@@ -119,7 +119,7 @@ const earlyConditions = (mode: ReservationMode): StartedFuncSagaStep => ({
       continue: true,
       metadata: {
         description: "NO_CONDITION_MATCH",
-        value: undefined,
+        internal: undefined,
       },
     };
   },
@@ -160,7 +160,7 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
         continue: false,
         metadata: {
           description: "NO_PARSING_RESULT",
-          value: agentResult,
+          internal: agentResult,
         },
       };
     }
@@ -185,7 +185,7 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
         continue: false,
         metadata: {
           description: "COLLECTING_MISSING_DATA",
-          value: errors,
+          internal: errors,
         },
       };
     }
@@ -243,7 +243,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           continue: false,
           metadata: {
             description: "IS_OUT_OF_BUSINESS_HOURS",
-            value: isWithinSchedule,
+            internal: isWithinSchedule,
           },
         };
       }
@@ -269,7 +269,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           continue: false,
           metadata: {
             description: "IS_WITHIN_HOLIDAY",
-            value: isWithinRange,
+            internal: isWithinRange,
           },
         };
       }
@@ -303,7 +303,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           continue: false,
           metadata: {
             description: "RESERVATION_NOT_AVAILABLE",
-            value: availability,
+            internal: availability,
           },
         };
       }
@@ -337,7 +337,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         continue: false,
         metadata: {
           description: "DATA_VALIDATED",
-          value: transition.nextState,
+          internal: transition.nextState,
         },
       };
     }
