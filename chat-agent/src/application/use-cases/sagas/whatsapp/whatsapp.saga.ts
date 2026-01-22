@@ -131,7 +131,12 @@ const reservationSagaStep: WhatsappSagaStep = {
   },
   execute: async ({ ctx }) => {
     const { lastStepResult } = await reservationStateOrchestrator(ctx);
-    return { text: lastStepResult?.execute?.result ?? "", continue: true };
+    const result =
+      lastStepResult?.execute?.result ||
+      lastStepResult?.compensate?.result ||
+      "Ocurrio un error, vuelva a intentarlo más tarde";
+
+    return { text: result, continue: true };
   },
 };
 

@@ -24,9 +24,12 @@ export const whatsappReservationHandler: Handler<
   }
 
   const { bag } = await whatsappSagaOrchestrator(ctx);
+  const message =
+    bag?.["execute:reservationFlow"].text ||
+    "Ocurrio un error, vuelva a intentarlo más tarde";
 
   return c.json({
     received: true,
-    message: bag?.["execute:reservationFlow"].text ?? "",
+    message,
   });
 };
