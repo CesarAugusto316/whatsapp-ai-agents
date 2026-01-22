@@ -85,13 +85,13 @@ export const systemMessages = {
        👥 *Número de personas*: ${data.numberOfPeople}
 
        Si los datos son correctos, escribe:
-       ✅ ${CustomerActions.CONFIRM}
+       ✅ *${CustomerActions.CONFIRM}*
 
        Si deseas corregirlos, escribe:
-       ✏️ ${CustomerActions.RESTART}
+       ✏️ *${CustomerActions.RESTART}*
 
        Si no deseas continuar, escribe:
-       🚪 ${CustomerActions.EXIT}
+       🚪 *${CustomerActions.EXIT}*
      `.trim();
   },
 

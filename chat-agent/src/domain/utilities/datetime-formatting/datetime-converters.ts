@@ -158,7 +158,7 @@ export function formatLocalDateTimeWithIntl(
 
   // 2. Configurar el formateador de fecha en español
   const dateFormatter = new Intl.DateTimeFormat("es-ES", {
-    timeZone: timeZone || "Europa/Madrid",
+    // timeZone: timeZone || "Europa/Madrid",
     year: "numeric",
     month: "long",
     day: "numeric",
