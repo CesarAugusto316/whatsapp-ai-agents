@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CUSTOMER_INTENT, InputIntent } from "./reservation.types";
+import { logger } from "@/infraestructure/logging";
 
 // Esquema mejorado con validaciones más claras
 const dateTime = z.object({
@@ -97,10 +98,7 @@ export const mapZodErrorsToCollector = (
         const jsonArrayString = match[1];
         issues = JSON.parse(jsonArrayString);
       } else {
-        console.error(
-          "No se pudo extraer array ZodError del string:",
-          (zodError as unknown as string).substring(0, 200),
-        );
+        logger.error("No se pudo extraer array ZodError del string:", zodError);
         return [];
       }
     } catch (parseError) {
@@ -115,7 +113,7 @@ export const mapZodErrorsToCollector = (
   }
   // Caso 4: Si no podemos extraer issues, retornar array vacío
   else {
-    console.error("Formato de ZodError no reconocido:", zodError);
+    logger.error("Formato de ZodError no reconocido:", zodError);
     return [];
   }
 

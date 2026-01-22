@@ -16,7 +16,7 @@ import { attachProcessReminder } from "@/application/patterns";
  * Handles unstructured or out-of-FSM interactions using AI agents.
  * No authoritative business logic lives here.
  */
-export async function fallbackWorkflow(
+export async function conversationalWorkflow(
   ctx: RestaurantCtx,
 ): Promise<ReservationResult> {
   const { RESERVATION_STATE, customerMessage, business, chatKey } =

@@ -3,7 +3,7 @@ import { ReservationResult, reservationSaga } from "./reservation-saga";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters";
 import {
-  fallbackWorkflow,
+  conversationalWorkflow,
   initialOptionsWorkflow,
   StartedFuncSagaResult,
   ValidateFuncSagaResult,
@@ -57,8 +57,16 @@ export const reservationStateOrchestrator = async (
       return { bag, lastStepResult };
     }
   } else {
-    const result = await initialOptionsWorkflow(ctx);
-    if (result) return result;
+    const res = await initialOptionsWorkflow(ctx);
+    if (res) {
+      const { lastStepResult } = res;
+      const result =
+        lastStepResult?.execute?.result ||
+        lastStepResult?.compensate?.result ||
+        "";
+      await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
+      return res;
+    }
   }
 
   /**
@@ -68,7 +76,7 @@ export const reservationStateOrchestrator = async (
    * @see updateStarted
    * @see {InputIntent}
    */
-  const { bag, lastStepResult } = await fallbackWorkflow(ctx);
+  const { bag, lastStepResult } = await conversationalWorkflow(ctx);
   const assistantMsg =
     lastStepResult?.execute?.result || lastStepResult?.compensate?.result || "";
   await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistantMsg);

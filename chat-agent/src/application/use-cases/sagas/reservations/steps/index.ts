@@ -1,6 +1,6 @@
 export { initReservationChangeSteps } from "./initial-change-steps";
 export { initialOptionsWorkflow } from "./initial-options-steps";
-export { fallbackWorkflow } from "./fallback-steps";
+export { conversationalWorkflow } from "./fallback-steps";
 export { startedSteps, ATTEMPTS } from "./started-steps";
 export type {
   StartedFuncSagaResult,

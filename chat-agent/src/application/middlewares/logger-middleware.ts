@@ -250,7 +250,9 @@ function formatDevLog(data: LogData) {
   }
 
   if (state) {
-    contextLines.push(`\x1b[90m│\x1b[0m \x1b[90mState:\x1b[0m ${state}`);
+    contextLines.push(
+      `\x1b[90m│\x1b[0m \x1b[90mState:\x1b[0m ${JSON.stringify(state)}`,
+    );
   }
 
   if (response) {

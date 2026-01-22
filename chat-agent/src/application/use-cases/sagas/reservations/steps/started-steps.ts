@@ -150,7 +150,6 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
     if (!agentResult) {
       logger.info("Failed to parse customer data", {
         customerMessage,
-        previousState,
       });
       const result = await humanizerAgent(
         "Lo siento no pude comprender tus datos, podrias escribirlos de nuevo con mas claridad ?",
