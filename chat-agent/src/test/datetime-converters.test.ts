@@ -1,7 +1,4 @@
-import {
-  localDateTimeToUTC,
-  utcToLocalDateTime,
-} from "@/domain/utilities";
+import { localDateTimeToUTC, utcToLocalDateTime } from "@/domain/utilities";
 import { describe, expect, test, mock } from "bun:test";
 
 describe("localDateTimeToUTC", () => {

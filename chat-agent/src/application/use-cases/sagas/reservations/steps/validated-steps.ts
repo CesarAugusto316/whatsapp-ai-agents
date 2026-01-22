@@ -22,7 +22,11 @@ import {
 } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
-import type { Appointment, Customer } from "@/infraestructure/http/cms";
+import type {
+  Appointment,
+  CreateAppointment,
+  Customer,
+} from "@/infraestructure/http/cms";
 
 export const ATTEMPTS = 4;
 
@@ -93,20 +97,24 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       const timezone = business.general.timezone;
       const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
       const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
+      const payload = {
+        business: business.id,
+        customer: newCustomer?.id!,
+        startDateTime,
+        endDateTime,
+        customerName: newCustomer?.name!,
+        numberOfPeople,
+        status: "confirmed",
+      } satisfies CreateAppointment;
+
+      logger.info("✨Creating reservation, payload", payload);
       const reservation = (
-        (await (
-          await cmsClient.createAppointment({
-            business: business.id,
-            customer: newCustomer?.id!,
-            startDateTime,
-            endDateTime,
-            customerName: newCustomer?.name!,
-            numberOfPeople,
-            status: "confirmed",
-          })
-        ).json()) as { doc: Appointment }
+        (await (await cmsClient.createAppointment(payload)).json()) as {
+          doc: Appointment;
+        }
       ).doc;
 
+      logger.info("✨Reservation created, response", reservation);
       return { reservation, continue: true };
     }
     return {
@@ -234,7 +242,7 @@ const sendConfirmationMsg = (mode: ReservationMode): ValidateFuncSagaStep => ({
     const assistantMsg = systemMessages.getSuccessMsg(
       {
         id: reservation?.id,
-        datetime,
+        datetime, // localTime
         customerName: customerName || customer?.name || "",
         numberOfPeople,
       },
