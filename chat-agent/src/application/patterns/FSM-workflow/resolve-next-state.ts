@@ -5,6 +5,7 @@ import {
   FMStatus,
   ReservationStatuses,
 } from "@/domain/restaurant/reservations";
+import { ChatMessage } from "@/infraestructure/http/ai";
 
 // Mapa de mensajes para el usuario por estado
 const STATE_MESSAGES: Partial<Record<FMStatus, string>> = {
@@ -35,7 +36,6 @@ const STATE_MESSAGES: Partial<Record<FMStatus, string>> = {
 
 export interface StateTransition {
   nextState: FMStatus;
-  verb?: string;
   suggestedActions: string[];
   messageHint: string; // opcional, solo para LLM
   userMessage?: string; // mensaje amigable para el usuario
@@ -59,7 +59,6 @@ export function resolveNextState(
     case FlowOptions.MAKE_RESERVATION:
       return {
         nextState: ReservationStatuses.MAKE_STARTED,
-        verb: "iniciar",
         suggestedActions: [],
         messageHint: "",
         userMessage: STATE_MESSAGES[condition],
@@ -69,7 +68,6 @@ export function resolveNextState(
         userMessage: STATE_MESSAGES[condition],
         nextState: ReservationStatuses.MAKE_VALIDATED,
         suggestedActions: [CustomerActions.EXIT],
-        verb: "salir",
         messageHint:
           "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
       };
@@ -77,7 +75,6 @@ export function resolveNextState(
       return {
         userMessage: STATE_MESSAGES[condition],
         nextState: ReservationStatuses.MAKE_CONFIRMED,
-        verb: "confirmar",
         suggestedActions: [
           CustomerActions.CONFIRM,
           CustomerActions.RESTART,
@@ -89,7 +86,6 @@ export function resolveNextState(
     case ReservationStatuses.MAKE_VALIDATED + CustomerActions.RESTART:
       return {
         nextState: ReservationStatuses.MAKE_STARTED,
-        verb: "reiniciar",
         suggestedActions: [],
         messageHint: "",
       };
@@ -99,7 +95,6 @@ export function resolveNextState(
       return {
         userMessage: STATE_MESSAGES[condition],
         nextState: ReservationStatuses.UPDATE_STARTED,
-        verb: "actualizar",
         suggestedActions: [],
         messageHint: "",
       };
@@ -107,7 +102,6 @@ export function resolveNextState(
       return {
         userMessage: STATE_MESSAGES[condition],
         nextState: ReservationStatuses.UPDATE_VALIDATED,
-        verb: "salir",
         suggestedActions: [CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
@@ -116,7 +110,6 @@ export function resolveNextState(
       return {
         userMessage: STATE_MESSAGES[condition],
         nextState: ReservationStatuses.UPDATE_CONFIRMED,
-        verb: "confirmar",
         suggestedActions: [
           CustomerActions.CONFIRM,
           CustomerActions.RESTART,
@@ -128,7 +121,6 @@ export function resolveNextState(
     case ReservationStatuses.UPDATE_VALIDATED + CustomerActions.RESTART:
       return {
         nextState: ReservationStatuses.UPDATE_STARTED,
-        verb: "reiniciar",
         suggestedActions: [],
         messageHint: "",
       };
@@ -138,7 +130,6 @@ export function resolveNextState(
       return {
         userMessage: STATE_MESSAGES[condition],
         nextState: ReservationStatuses.CANCEL_VALIDATED,
-        verb: "cancelar",
         suggestedActions: [],
         messageHint: "",
       };
@@ -146,7 +137,6 @@ export function resolveNextState(
       return {
         userMessage: STATE_MESSAGES[condition],
         nextState: ReservationStatuses.CANCEL_CONFIRMED,
-        verb: "confirmar",
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation cancellation is in progress and they can confirm or exit.",
@@ -219,6 +209,7 @@ export function resolveNextState(
 export function attachProcessReminder(
   originalMessage: string,
   status: FMStatus,
+  messages: ChatMessage[],
 ): string {
   // If no guidance, status, or userMessage, return original message
   const guidance = resolveNextState(status);
@@ -235,6 +226,14 @@ export function attachProcessReminder(
       .map((action) => `• ${action}`)
       .join("\n");
     reminder += `\n\nPara continuar, escribe:\n${actionsList}`;
+  }
+
+  const hasReminder = messages
+    .filter((msg) => msg.role === "assistant") // reminder always will be included in assistant messages
+    .some((msg) => msg.content.includes(reminder));
+
+  if (hasReminder) {
+    return originalMessage;
   }
 
   // Return original message followed by the reminder

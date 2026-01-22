@@ -1,21 +1,14 @@
-import {
-  humanizerAgent,
-  intentClassifierAgent,
-} from "@/application/agents/restaurant";
-import { resolveNextState } from "@/application/patterns";
+import { intentClassifierAgent } from "@/application/agents/restaurant";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { CUSTOMER_INTENT, FlowOptions } from "@/domain/restaurant/reservations";
+import { CUSTOMER_INTENT } from "@/domain/restaurant/reservations";
 import {
   buildInfo,
   buildHowToProceed,
-  systemMessages,
 } from "@/domain/restaurant/reservations/prompts";
-import { cacheAdapter, chatHistoryAdapter } from "@/infraestructure/adapters";
+import { chatHistoryAdapter } from "@/infraestructure/adapters";
 import { aiClient, ChatMessage } from "@/infraestructure/http/ai";
-import { initReservationChangeSteps } from "./initial-steps";
 import { ReservationResult } from "../reservation-saga";
-import { buildGuidance } from "@/domain/restaurant/reservations/prompts/conversational-prompts";
-import { attachProcessReminder } from "@/application/patterns/FSM-workflow/resolve-next-state";
+import { attachProcessReminder } from "@/application/patterns";
 
 /**
  *
@@ -26,123 +19,10 @@ import { attachProcessReminder } from "@/application/patterns/FSM-workflow/resol
 export async function fallbackWorkflow(
   ctx: RestaurantCtx,
 ): Promise<ReservationResult> {
-  const {
-    RESERVATION_STATE,
-    customerMessage,
-    reservationKey,
-    customer,
-    business,
-    chatKey,
-  } = Object.freeze(structuredClone(ctx));
+  const { RESERVATION_STATE, customerMessage, business, chatKey } =
+    Object.freeze(structuredClone(ctx));
 
   const status = RESERVATION_STATE?.status;
-
-  // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
-  if (!status) {
-    //
-    const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
-    const isFirstMessage = chatHistoryCache.length === 0;
-    if (isFirstMessage) {
-      const messages: ChatMessage[] = [
-        {
-          role: "user",
-          content: systemMessages.initialGreeting(
-            customerMessage,
-            customer?.name,
-          ),
-        },
-      ];
-      const assistantResponse = await aiClient.userMsg(
-        { messages },
-        buildHowToProceed(business),
-      );
-      return {
-        bag: {},
-        lastStepResult: {
-          execute: {
-            result: assistantResponse,
-            metadata: {
-              description: "INITIALIZATION, chatHistoryCache.length = 0",
-              internal: `isFirstMessage=${isFirstMessage}`,
-            },
-          },
-        },
-      };
-    }
-
-    if (customerMessage === FlowOptions.MAKE_RESERVATION) {
-      // choice 2
-      const transition = resolveNextState(FlowOptions.MAKE_RESERVATION);
-      await cacheAdapter.save(reservationKey, {
-        businessId: business?.id,
-        customerId: customer?.id,
-        customerName: customer?.name || "",
-        status: transition.nextState, // MAKE_STARTED
-      });
-      const responseMsg = systemMessages.getCreateMsg({
-        userName: customer?.name,
-      });
-      const humanizedResponse = await humanizerAgent(responseMsg);
-      return {
-        bag: {},
-        lastStepResult: {
-          execute: {
-            result: humanizedResponse,
-            metadata: {
-              description: "MAKE_RESERVATION, option selected",
-              internal: `customerMessage=${FlowOptions.MAKE_RESERVATION}`,
-            },
-          },
-        },
-      };
-    }
-
-    if (customerMessage === FlowOptions.UPDATE_RESERVATION) {
-      const timezone = business.general.timezone;
-      const msg = await initReservationChangeSteps({
-        business,
-        customer,
-        flowOption: FlowOptions.UPDATE_RESERVATION,
-        getMessage: (state) => systemMessages.getUpdateMsg(state, timezone),
-        reservationKey,
-      });
-      return {
-        bag: {},
-        lastStepResult: {
-          execute: {
-            result: msg,
-            metadata: {
-              description: "UPDATE_RESERVATION, option selected",
-              internal: `customerMessage=${FlowOptions.UPDATE_RESERVATION}`,
-            },
-          },
-        },
-      };
-    }
-
-    if (customerMessage === FlowOptions.CANCEL_RESERVATION) {
-      const timezone = business.general.timezone;
-      const msg = await initReservationChangeSteps({
-        business,
-        customer,
-        flowOption: FlowOptions.CANCEL_RESERVATION,
-        getMessage: (state) => systemMessages.getCancelMsg(state, timezone),
-        reservationKey,
-      });
-      return {
-        bag: {},
-        lastStepResult: {
-          execute: {
-            result: msg,
-            metadata: {
-              description: "CANCEL_RESERVATION, option selected",
-              internal: `customerMessage=${FlowOptions.CANCEL_RESERVATION}`,
-            },
-          },
-        },
-      };
-    }
-  }
 
   const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
   const messages: ChatMessage[] = [
@@ -164,7 +44,7 @@ export async function fallbackWorkflow(
       buildHowToProceed(business),
     );
     const reminderMSG = status
-      ? attachProcessReminder(assistantResponse, status)
+      ? attachProcessReminder(assistantResponse, status, messages)
       : assistantResponse;
 
     return {
@@ -187,7 +67,7 @@ export async function fallbackWorkflow(
     buildInfo(business),
   );
   const reminderMSG = status
-    ? attachProcessReminder(assistantResponse, status)
+    ? attachProcessReminder(assistantResponse, status, messages)
     : assistantResponse;
 
   return {

@@ -19,7 +19,10 @@ export type {
   CircuitState,
 } from "./saga-orchestrator/circut-braker/circut-braker";
 export { CircuitBreaker } from "./saga-orchestrator/circut-braker/circut-braker";
-export { resolveNextState } from "./FSM-workflow/resolve-next-state";
+export {
+  resolveNextState,
+  attachProcessReminder,
+} from "./FSM-workflow/resolve-next-state";
 export type { StateTransition } from "./FSM-workflow/resolve-next-state";
 export { resilientQuery } from "./saga-orchestrator/resilient-query.strategy";
 export type { ResilientQueryOptions } from "./saga-orchestrator/resilient-query.strategy";

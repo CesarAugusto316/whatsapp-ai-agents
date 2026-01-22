@@ -1,10 +1,13 @@
 import { FMStatus, InputIntent } from "@/domain/restaurant/reservations";
 import { ReservationResult, reservationSaga } from "./reservation-saga";
-import { StartedFuncSagaResult } from "./steps/started-steps";
-import { ValidateFuncSagaResult } from "./steps/validated-steps";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters";
-import { fallbackWorkflow } from "./steps/fallback-steps";
+import {
+  fallbackWorkflow,
+  initialOptionsWorkflow,
+  StartedFuncSagaResult,
+  ValidateFuncSagaResult,
+} from "./steps";
 
 const statusSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
@@ -17,6 +20,11 @@ const statusSagaMap: Partial<
   CANCEL_VALIDATED: reservationSaga.cancelValidated,
 };
 
+/**
+ *
+ * @param ctx
+ * @returns
+ */
 export const reservationStateOrchestrator = async (
   ctx: RestaurantCtx,
 ): Promise<ReservationResult> => {
@@ -48,6 +56,9 @@ export const reservationStateOrchestrator = async (
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return { bag, lastStepResult };
     }
+  } else {
+    const result = await initialOptionsWorkflow(ctx);
+    if (result) return result;
   }
 
   /**
@@ -58,8 +69,8 @@ export const reservationStateOrchestrator = async (
    * @see {InputIntent}
    */
   const { bag, lastStepResult } = await fallbackWorkflow(ctx);
-  const message =
+  const assistantMsg =
     lastStepResult?.execute?.result || lastStepResult?.compensate?.result || "";
-  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, message);
+  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistantMsg);
   return { bag, lastStepResult };
 };

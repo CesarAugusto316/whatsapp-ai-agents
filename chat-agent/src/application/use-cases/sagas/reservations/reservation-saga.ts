@@ -1,17 +1,15 @@
 import { SagaOrchestrator, SagaResult } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
 import {
-  startedSteps,
-  StartedSagaResult,
-  StartedSteps,
   StartedFuncSagaResult,
-} from "./steps/started-steps";
-import {
+  StartedSagaResult,
+  startedSteps,
+  StartedSteps,
   validatedSteps,
   ValidateFuncSagaResult,
   ValidateSagaResult,
   ValidateSagaSteps,
-} from "./steps/validated-steps";
+} from "./steps";
 
 // started reservation (make | update)
 const makeStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {

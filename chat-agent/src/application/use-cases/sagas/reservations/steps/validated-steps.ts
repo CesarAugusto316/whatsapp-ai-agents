@@ -305,7 +305,7 @@ const restart = (): ValidateFuncSagaStep => ({
   },
 });
 
-export const cancelConfirmed = (): ValidateFuncSagaStep => ({
+const cancelConfirmed = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "CONFIRM", ...stepConfig } },
   execute: async ({ ctx }) => {
     //
