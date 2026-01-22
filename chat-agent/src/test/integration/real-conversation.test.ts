@@ -53,9 +53,9 @@ describe("Real conversation flow integration test", () => {
           },
         );
         const res = await fetch(req);
-        console.log({ res });
         expect(res.status).toBe(200);
         const responseBody = await res.json();
+        console.log({ responseBody });
         return responseBody as TestResponse;
       };
 

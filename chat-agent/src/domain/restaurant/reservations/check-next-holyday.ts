@@ -1,4 +1,4 @@
-import { checkUtcDateInRange, utcToLocalDateTime } from "@/domain/utilities";
+import { checkUtcDateInRange, toLocalDateTime } from "@/domain/utilities";
 import { Business } from "@/infraestructure/http/cms";
 
 // Formatear para mostrar
@@ -33,10 +33,10 @@ export function isWithinHolydayRange(
     // Convertir fechas UTC a formato local
     const holiday = {
       startLocal: formatDate(
-        utcToLocalDateTime(isWithinHoliday.startDate, timezone).date,
+        toLocalDateTime(isWithinHoliday.startDate, timezone).date,
       ),
       endLocal: formatDate(
-        utcToLocalDateTime(isWithinHoliday.endDate, timezone).date,
+        toLocalDateTime(isWithinHoliday.endDate, timezone).date,
       ),
     };
 

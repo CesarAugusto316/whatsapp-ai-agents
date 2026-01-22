@@ -10,7 +10,7 @@ import {
 } from "@/domain/restaurant/reservations";
 import { cacheAdapter } from "@/infraestructure/adapters";
 import { logger } from "@/infraestructure/logging";
-import { localDateTimeToUTC } from "@/domain/utilities";
+// import { localDateTimeToUTC } from "@/domain/utilities";
 import { cmsClient } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";
 import { humanizerAgent } from "@/application/agents/restaurant";
@@ -27,6 +27,7 @@ import type {
   CreateAppointment,
   Customer,
 } from "@/infraestructure/http/cms";
+import { toUTC } from "@/domain/utilities";
 
 export const ATTEMPTS = 4;
 
@@ -95,8 +96,8 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
 
     if (newCustomer?.id && business?.id) {
       const timezone = business.general.timezone;
-      const startDateTime = localDateTimeToUTC(datetime?.start, timezone);
-      const endDateTime = localDateTimeToUTC(datetime?.end, timezone);
+      const startDateTime = toUTC(datetime?.start, timezone);
+      const endDateTime = toUTC(datetime?.end, timezone);
       const payload = {
         business: business.id,
         customer: newCustomer?.id!,
@@ -172,8 +173,8 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
     if (customer?.id && RESERVATION_STATE?.id) {
       const timezone = business.general.timezone;
       const { start, end } = datetime;
-      const startDateTime = localDateTimeToUTC(start, timezone);
-      const endDateTime = localDateTimeToUTC(end, timezone);
+      const startDateTime = toUTC(start, timezone);
+      const endDateTime = toUTC(end, timezone);
 
       const reservation = (
         (await (

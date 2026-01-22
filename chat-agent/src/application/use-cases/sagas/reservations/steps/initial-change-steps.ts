@@ -8,7 +8,7 @@ import { Business, cmsClient, Customer } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";
 import { humanizerAgent } from "@/application/agents/restaurant";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
-import { utcToLocalDateTime } from "@/domain/utilities";
+import { toLocalDateTime } from "@/domain/utilities";
 
 type Args = {
   customer?: Customer;
@@ -52,8 +52,8 @@ export const initReservationChangeSteps = async ({
   }
   const timezone = business.general.timezone;
   const transition = resolveNextState(flowOption);
-  const start = utcToLocalDateTime(reservation.startDateTime, timezone);
-  const end = utcToLocalDateTime(reservation?.endDateTime ?? "", timezone);
+  const start = toLocalDateTime(reservation.startDateTime, timezone);
+  const end = toLocalDateTime(reservation?.endDateTime ?? "", timezone);
   const previousState = {
     id: reservation.id,
     customerName: reservation.customerName || customer?.name || "",

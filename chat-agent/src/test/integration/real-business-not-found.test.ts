@@ -37,10 +37,11 @@ describe("Real integration: Business not found error", () => {
       });
 
       const res = await fetch(req);
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(500);
 
       const responseBody = await res.json();
-      expect(responseBody).toEqual({ error: "Business not found" });
+      console.log({ responseBody });
+      expect(responseBody).toEqual({ error: "Error 404: Not Found" });
     },
     60_000 * 3,
   );

@@ -1,4 +1,4 @@
-import { formatLocalDateTimeWithIntl } from "@/domain/utilities/datetime-formatting/datetime-converters";
+import { formatLocalDateTime } from "@/domain/utilities";
 import { CustomerActions, ReservationState } from "../reservation.types";
 
 export type ReservationMode = "create" | "update";
@@ -71,8 +71,8 @@ export const systemMessages = {
   ) {
     const copy = ACTION_MODES[mode];
     const { datetime } = data;
-    const dateStart = formatLocalDateTimeWithIntl(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTimeWithIntl(datetime?.end, timeZone);
+    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
+    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
     return `
        1.  Ya tenemos las datos listos para tu reserva !!
        2.  Hemos CONFIRMADO que hay disponibilidad ✅.
@@ -97,8 +97,8 @@ export const systemMessages = {
 
   getUpdateMsg(data: Partial<ReservationState>, timeZone?: string) {
     const { datetime } = data;
-    const dateStart = formatLocalDateTimeWithIntl(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTimeWithIntl(datetime?.end, timeZone);
+    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
+    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
     return `
        ✨ Hemos encontrado tu más reciente reserva!
 
@@ -118,8 +118,8 @@ export const systemMessages = {
 
   getCancelMsg(data: Partial<ReservationState>, timeZone?: string) {
     const { datetime } = data;
-    const dateStart = formatLocalDateTimeWithIntl(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTimeWithIntl(datetime?.end, timeZone);
+    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
+    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
     return `
        ✨ Hemos encontrado tu más reciente reserva!
 
@@ -147,8 +147,8 @@ export const systemMessages = {
   ): string {
     const { customerName, datetime, numberOfPeople } = appointment;
     const copy = ACTION_MODES[mode];
-    const dateStart = formatLocalDateTimeWithIntl(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTimeWithIntl(datetime?.end, timeZone);
+    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
+    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
     return `
        ✅ Tu reserva ha sido ${copy.verb} con éxito.
 

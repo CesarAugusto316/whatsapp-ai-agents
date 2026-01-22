@@ -13,7 +13,7 @@ import {
 } from "@/domain/restaurant/reservations";
 import { cacheAdapter } from "@/infraestructure/adapters";
 import { logger } from "@/infraestructure/logging";
-import { formatSchedule, localDateTimeToUTC } from "@/domain/utilities";
+import { formatSchedule, toUTC } from "@/domain/utilities";
 import { cmsClient } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";
 import {
@@ -246,8 +246,8 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           },
         };
       }
-      const startDateTime = localDateTimeToUTC(start, timezone);
-      const endDateTime = localDateTimeToUTC(end, timezone);
+      const startDateTime = toUTC(start, timezone);
+      const endDateTime = toUTC(end, timezone);
 
       const { isWithinRange, message } = isWithinHolydayRange(
         business,
