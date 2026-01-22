@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "bun --hot ./src/index.ts --external @dbos-inc/dbos-sdk --external superjson",
     "llm": "ollama serve",
-    "test": "NODE_ENV=test bun test",
+    "test": "bun test",
+    "test:integration": "bun test src/test/integration/*.test.ts",
     "debug": "bun --inspect=localhost:4000/prefix ./src/index.ts --external @dbos-inc/dbos-sdk --external superjson",
     "build:standalone": "bun build --compile --minify --sourcemap ./src/index.ts --outfile=myapp --external @dbos-inc/dbos-sdk --external superjson",
     "build": "bun build --minify ./src/index.ts --outdir ./dist --target bun --external @dbos-inc/dbos-sdk --external superjson",
