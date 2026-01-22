@@ -1,4 +1,3 @@
-import { formatLocalDateTime } from "@/domain/utilities";
 import { CustomerActions, ReservationState } from "../reservation.types";
 
 export type ReservationMode = "create" | "update";
@@ -66,25 +65,19 @@ export const systemMessages = {
 
   getConfirmationMsg(
     data: Partial<ReservationState>,
-    timezone: string,
     mode: ReservationMode = "create",
   ) {
     const copy = ACTION_MODES[mode];
-    const endDateTime = data?.datetime?.end
-      ? formatLocalDateTime(data?.datetime?.end, timezone)
-      : "";
-    const startDateTime = data?.datetime?.start
-      ? formatLocalDateTime(data?.datetime?.start, timezone)
-      : "";
-
+    const { datetime } = data;
     return `
        1.  Ya tenemos las datos listos para tu reserva !!
        2.  Hemos CONFIRMADO que hay disponibilidad ✅.
        Por favor revisa antes de confirmar la ${copy.process} de tu reserva:
 
        👤 *Nombre*: ${data?.customerName}
-       ⏰ *Hora de entrada*: ${startDateTime}
-       ⏰ *Hora de salida*: ${endDateTime}
+       📆 Día : ${datetime?.start.date}
+       ⏰ Hora de *entrada*: ${datetime?.start.time}
+       ⏰ Hora de *salida*: ${datetime?.end.time}
        👥 *Número de personas*: ${data.numberOfPeople}
 
        Si los datos son correctos, escribe:
@@ -98,20 +91,15 @@ export const systemMessages = {
      `.trim();
   },
 
-  getUpdateMsg(data: Partial<ReservationState>, timezone: string) {
-    const startDateTime = data?.datetime?.start
-      ? formatLocalDateTime(data?.datetime?.start, timezone)
-      : "";
-    const endDateTime = data?.datetime?.end
-      ? formatLocalDateTime(data?.datetime?.end, timezone)
-      : "";
-
+  getUpdateMsg(data: Partial<ReservationState>) {
+    const { datetime } = data;
     return `
        ✨ Hemos encontrado tu más reciente reserva!
 
        👤 A *nombre* de: ${data?.customerName}
-       ⏰ Hora de *entrada*: ${startDateTime}
-       ⏰ Hora de *salida*: ${endDateTime}
+       📆 Día : ${datetime?.start.date}
+       ⏰ Hora de *entrada*: ${datetime?.start.time}
+       ⏰ Hora de *salida*: ${datetime?.end.time}
        👥 *Número de personas*: ${data.numberOfPeople}
 
        Si gustas cambiarla ayudanos con tus nuevos datos.
@@ -122,20 +110,15 @@ export const systemMessages = {
      `.trim();
   },
 
-  getCancelMsg(data: Partial<ReservationState>, timezone: string) {
-    const startDateTime = data?.datetime?.start
-      ? formatLocalDateTime(data?.datetime?.start, timezone)
-      : "";
-    const endDateTime = data?.datetime?.end
-      ? formatLocalDateTime(data?.datetime?.end, timezone)
-      : "";
-
+  getCancelMsg(data: Partial<ReservationState>) {
+    const { datetime } = data;
     return `
        ✨ Hemos encontrado tu más reciente reserva!
 
        👤 A *nombre* de: ${data?.customerName}
-       ⏰ Hora de *entrada*: ${startDateTime}
-       ⏰ Hora de *salida*: ${endDateTime}
+       📆 Día : ${datetime?.start.date}
+       ⏰ Hora de *entrada*: ${datetime?.start.time}
+       ⏰ Hora de *salida*: ${datetime?.end.time}
        👥 Número de personas: ${data.numberOfPeople}
 
        Si deseas cancelarla, escribe:
@@ -151,24 +134,18 @@ export const systemMessages = {
    */
   getSuccessMsg(
     appointment: Partial<ReservationState>,
-    timezone: string,
     mode: ReservationMode = "create",
   ): string {
     const { customerName, datetime, numberOfPeople } = appointment;
     const copy = ACTION_MODES[mode];
-    const startDateTime = datetime?.start
-      ? formatLocalDateTime(datetime.start, timezone)
-      : "";
-    const endDateTime = datetime?.end
-      ? formatLocalDateTime(datetime.end, timezone)
-      : "";
 
     return `
        ✅ Tu reserva ha sido ${copy.verb} con éxito.
 
        👤 Nombre: ${customerName}
-       ⏰ Hora de *entrada*: ${startDateTime}
-       ⏰ Hora de *salida*: ${endDateTime}
+       📆 Día : ${datetime?.start.date}
+       ⏰ Hora de *entrada*: ${datetime?.start.time}
+       ⏰ Hora de *salida*: ${datetime?.end.time}
        👥 Personas: ${numberOfPeople}
 
        🆔 ID de reserva: ${appointment.id}

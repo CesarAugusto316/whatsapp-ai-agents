@@ -215,14 +215,8 @@ const sendConfirmationMsg = (mode: ReservationMode): ValidateFuncSagaStep => ({
     execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
   },
   execute: async ({ ctx, getStepResult }) => {
-    const {
-      customerMessage,
-      RESERVATION_STATE,
-      reservationKey,
-      customer,
-      business,
-    } = ctx;
-    const timezone = business.general.timezone;
+    const { customerMessage, RESERVATION_STATE, reservationKey, customer } =
+      ctx;
     const {
       customerName = "",
       datetime,
@@ -246,7 +240,6 @@ const sendConfirmationMsg = (mode: ReservationMode): ValidateFuncSagaStep => ({
         customerName: customerName || customer?.name || "",
         numberOfPeople,
       },
-      timezone,
       mode,
     );
     await cacheAdapter.delete(reservationKey);

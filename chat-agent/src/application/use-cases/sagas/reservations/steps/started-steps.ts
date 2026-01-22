@@ -321,11 +321,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           ...data,
         },
       });
-      const responseMsg = systemMessages.getConfirmationMsg(
-        data,
-        timezone,
-        mode,
-      );
+      const responseMsg = systemMessages.getConfirmationMsg(data, mode);
 
       // ✨ SEND SUCCESS MESSAGE
       const result = await humanizerAgent(responseMsg);
