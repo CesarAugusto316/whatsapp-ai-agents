@@ -109,7 +109,8 @@ describe("Real conversation flow integration test", () => {
       expect(result5).toContain("REINGRESAR");
       expect(result5).toContain("SALIR");
       expect(result5).toContain("26 de enero");
-      expect(result5).toContain("06:00pm");
+      expect(result5).toContain("18:00");
+      expect(result5).toContain("19:00");
 
       // Step 6: Clarify confirmation step
       console.log("Step 6: Asking 'solo escribir confirmar?'");

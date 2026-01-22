@@ -87,7 +87,8 @@ export async function initialOptionsWorkflow(
       business,
       customer,
       flowOption: FlowOptions.UPDATE_RESERVATION,
-      getMessage: (state) => systemMessages.getUpdateMsg(state),
+      getMessage: (state) =>
+        systemMessages.getUpdateMsg(state, business.general.timezone),
       reservationKey,
     });
     return {
@@ -109,7 +110,8 @@ export async function initialOptionsWorkflow(
       business,
       customer,
       flowOption: FlowOptions.CANCEL_RESERVATION,
-      getMessage: (state) => systemMessages.getCancelMsg(state),
+      getMessage: (state) =>
+        systemMessages.getCancelMsg(state, business.general.timezone),
       reservationKey,
     });
     return {

@@ -1,3 +1,4 @@
+import { formatLocalDateTimeWithIntl } from "@/domain/utilities/datetime-formatting/datetime-converters";
 import { CustomerActions, ReservationState } from "../reservation.types";
 
 export type ReservationMode = "create" | "update";
@@ -66,18 +67,21 @@ export const systemMessages = {
   getConfirmationMsg(
     data: Partial<ReservationState>,
     mode: ReservationMode = "create",
+    timeZone?: string,
   ) {
     const copy = ACTION_MODES[mode];
     const { datetime } = data;
+    const dateStart = formatLocalDateTimeWithIntl(datetime?.start, timeZone);
+    const dateEnd = formatLocalDateTimeWithIntl(datetime?.end, timeZone);
     return `
        1.  Ya tenemos las datos listos para tu reserva !!
        2.  Hemos CONFIRMADO que hay disponibilidad ✅.
        Por favor revisa antes de confirmar la ${copy.process} de tu reserva:
 
        👤 *Nombre*: ${data?.customerName}
-       📆 Día : ${datetime?.start.date}
-       ⏰ Hora de *entrada*: ${datetime?.start.time}
-       ⏰ Hora de *salida*: ${datetime?.end.time}
+       📆 Día : ${dateStart.date}
+       ⏰ Hora de *entrada*: ${dateStart.time}
+       ⏰ Hora de *salida*: ${dateEnd.time}
        👥 *Número de personas*: ${data.numberOfPeople}
 
        Si los datos son correctos, escribe:
@@ -91,15 +95,17 @@ export const systemMessages = {
      `.trim();
   },
 
-  getUpdateMsg(data: Partial<ReservationState>) {
+  getUpdateMsg(data: Partial<ReservationState>, timeZone?: string) {
     const { datetime } = data;
+    const dateStart = formatLocalDateTimeWithIntl(datetime?.start, timeZone);
+    const dateEnd = formatLocalDateTimeWithIntl(datetime?.end, timeZone);
     return `
        ✨ Hemos encontrado tu más reciente reserva!
 
        👤 A *nombre* de: ${data?.customerName}
-       📆 Día : ${datetime?.start.date}
-       ⏰ Hora de *entrada*: ${datetime?.start.time}
-       ⏰ Hora de *salida*: ${datetime?.end.time}
+       📆 Día : ${dateStart.date}
+       ⏰ Hora de *entrada*: ${dateStart.time}
+       ⏰ Hora de *salida*: ${dateEnd.time}
        👥 *Número de personas*: ${data.numberOfPeople}
 
        Si gustas cambiarla ayudanos con tus nuevos datos.
@@ -110,15 +116,17 @@ export const systemMessages = {
      `.trim();
   },
 
-  getCancelMsg(data: Partial<ReservationState>) {
+  getCancelMsg(data: Partial<ReservationState>, timeZone?: string) {
     const { datetime } = data;
+    const dateStart = formatLocalDateTimeWithIntl(datetime?.start, timeZone);
+    const dateEnd = formatLocalDateTimeWithIntl(datetime?.end, timeZone);
     return `
        ✨ Hemos encontrado tu más reciente reserva!
 
        👤 A *nombre* de: ${data?.customerName}
-       📆 Día : ${datetime?.start.date}
-       ⏰ Hora de *entrada*: ${datetime?.start.time}
-       ⏰ Hora de *salida*: ${datetime?.end.time}
+       📆 Día : ${dateStart.date}
+       ⏰ Hora de *entrada*: ${dateStart.time}
+       ⏰ Hora de *salida*: ${dateEnd.time}
        👥 Número de personas: ${data.numberOfPeople}
 
        Si deseas cancelarla, escribe:
@@ -135,17 +143,19 @@ export const systemMessages = {
   getSuccessMsg(
     appointment: Partial<ReservationState>,
     mode: ReservationMode = "create",
+    timeZone?: string,
   ): string {
     const { customerName, datetime, numberOfPeople } = appointment;
     const copy = ACTION_MODES[mode];
-
+    const dateStart = formatLocalDateTimeWithIntl(datetime?.start, timeZone);
+    const dateEnd = formatLocalDateTimeWithIntl(datetime?.end, timeZone);
     return `
        ✅ Tu reserva ha sido ${copy.verb} con éxito.
 
        👤 Nombre: ${customerName}
-       📆 Día : ${datetime?.start.date}
-       ⏰ Hora de *entrada*: ${datetime?.start.time}
-       ⏰ Hora de *salida*: ${datetime?.end.time}
+       📆 Día : ${dateStart.date}
+       ⏰ Hora de *entrada*: ${dateStart.time}
+       ⏰ Hora de *salida*: ${dateEnd.time}
        👥 Personas: ${numberOfPeople}
 
        🆔 ID de reserva: ${appointment.id}

@@ -215,8 +215,13 @@ const sendConfirmationMsg = (mode: ReservationMode): ValidateFuncSagaStep => ({
     execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
   },
   execute: async ({ ctx, getStepResult }) => {
-    const { customerMessage, RESERVATION_STATE, reservationKey, customer } =
-      ctx;
+    const {
+      customerMessage,
+      RESERVATION_STATE,
+      reservationKey,
+      customer,
+      business,
+    } = ctx;
     const {
       customerName = "",
       datetime,
@@ -241,6 +246,7 @@ const sendConfirmationMsg = (mode: ReservationMode): ValidateFuncSagaStep => ({
         numberOfPeople,
       },
       mode,
+      business.general.timezone,
     );
     await cacheAdapter.delete(reservationKey);
     logger.info("Customer selected an option", {
