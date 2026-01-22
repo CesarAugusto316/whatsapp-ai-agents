@@ -66,7 +66,12 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       numberOfPeople = 1,
     } = RESERVATION_STATE as ReservationState;
 
-    if (!RESERVATION_STATE) return { continue: true };
+    if (!RESERVATION_STATE) {
+      return {
+        continue: false,
+        result: "Ocurrió un error, vuelve a intearlo mas tarde",
+      };
+    }
 
     if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
