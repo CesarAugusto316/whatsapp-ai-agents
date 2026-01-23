@@ -3,16 +3,23 @@
   "type": "module",
   "scripts": {
     "dev": "bun --hot ./src/index.ts --external @dbos-inc/dbos-sdk --external superjson",
-    "test": "bun test",
+    "llm": "ollama serve",
+    "test:unit": "bun test src/test/unit",
+    "test:integration": "bun test src/test/integration/*.test.ts",
     "debug": "bun --inspect=localhost:4000/prefix ./src/index.ts --external @dbos-inc/dbos-sdk --external superjson",
     "build:standalone": "bun build --compile --minify --sourcemap ./src/index.ts --outfile=myapp --external @dbos-inc/dbos-sdk --external superjson",
     "build": "bun build --minify ./src/index.ts --outdir ./dist --target bun --external @dbos-inc/dbos-sdk --external superjson",
     "start": "bun ./dist/index.js",
-    "dokploy:dashbord": "ssh -L 3000:localhost:3000 cesar@168.119.115.194"
+    "dokploy:dashbord": "ssh -L 3000:localhost:3000 cesar@168.119.115.194",
+    "dbos:create": "npx dbos schema",
+    "dbos:reset": "npx dbos reset",
+    "dbos:list": "npx dbos workflow list",
+    "dbos:resume": "npx dbos workflow resume"
   },
   "dependencies": {
     "@dbos-inc/dbos-sdk": "^4.6.11",
     "@sentry/bun": "^10.32.1",
+    "date-fns-tz": "^3.2.0",
     "hono": "^4.10.8",
     "hono-rate-limiter": "^0.5.3",
     "zod": "^4.1.13"

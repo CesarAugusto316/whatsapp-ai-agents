@@ -1,6 +1,6 @@
-import { ModelMessage } from "@/infraestructure/http/ai/llm.types";
 import { ReservationSchema } from "./schemas";
-import { Business } from "@/infraestructure/http/cms/cms-types";
+import { Business } from "@/infraestructure/http/cms";
+import { ChatMessage } from "@/infraestructure/http/ai";
 
 export const BOOL = {
   YES: true,
@@ -22,7 +22,7 @@ export enum InputIntent {
 }
 
 export type AgentArgs = {
-  messages: ModelMessage[];
+  messages: ChatMessage[];
   business: Business;
   customerPhone: string;
 };
@@ -67,3 +67,10 @@ export const CustomerActions = {
   RESTART: "REINGRESAR",
   EXIT: "SALIR",
 } as const;
+
+export type CustomerActionKey = keyof typeof CustomerActions;
+
+export type CustomerActionValue =
+  | typeof CustomerActions.CONFIRM
+  | typeof CustomerActions.RESTART
+  | typeof CustomerActions.EXIT;

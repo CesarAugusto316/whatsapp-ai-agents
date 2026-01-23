@@ -1,4 +1,4 @@
-import { Business, Customer } from "@/infraestructure/http/cms/cms-types";
+import { Business, Customer } from "@/infraestructure/http/cms";
 import { ReservationState } from "./reservations/reservation.types";
 
 export type RestaurantCtx = {

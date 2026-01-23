@@ -1,188 +1,169 @@
-# Resumen de la Arquitectura del Proyecto Chat Agent
+Resumen de la Arquitectura del Proyecto Chat Agent
 
-📋 Descripción General
+Basándome en el análisis del código, puedo proporcionarte un resumen detallado de la arquitectura del proyecto, con especial enfoque en la implementación de **Domain-Driven Design (DDD)**.
 
-El proyecto **Chat Agent** es un agente conversacional inteligente diseñado para gestionar reservas (crear, actualizar, cancelar) a través de WhatsApp. Utiliza modelos de lenguaje (LLM) para entender la intención del usuario, validar datos y mantener conversaciones naturales, todo integrado con sistemas de negocio externos.
+### 🏗️ **Arquitectura General**
 
-## 🏗️ Arquitectura por Capas
-
-### **1. Capa de Entrada (HTTP/API)**
-- **Framework**: Hono (optimizado para entornos serverless/edge)
-- **Punto de entrada**: `src/index.ts`
-- **Endpoints principales**:
-  - `POST /received-messages/:businessId` → Procesa mensajes de WhatsApp
-  - `POST /test-ai/:businessId` → Endpoint de pruebas
-- **Middleware**: CORS configurado para dominios específicos (WAHA_API, CMS_API)
-
-### **2. Capa de Middleware**
-- **`contextMiddleware`**: Extrae y valida datos del evento de WhatsApp
-  - Parsea el JSON del evento
-  - Obtiene información del negocio y cliente desde CMS
-  - Establece variables de contexto (chatKey, reservationKey, etc.)
-  - Valida mensaje, negocio y teléfono del cliente
-
-### **3. Capa de Handlers**
-- **`aiWhatsappHandler`**: Flujo principal para mensajes de WhatsApp
-  1. Valida que el evento sea de tipo "message"
-  2. Ejecuta `whatsAppService.beforeSend()` (marca como visto + typing indicators)
-  3. Ejecuta el workflow de reservas (`runReservationWorkflow`)
-  4. Envía la respuesta formateada para WhatsApp
-- **`aiTestHandler`**: Handler para pruebas del agente
-
-### **4. Capa de Workflows (Máquina de Estados)**
-- **`StateWorkflowRunner`**: Patrón de máquina de estados finitos
-  - Ejecuta handlers específicos según el estado actual de la reserva
-  - Estados: `MAKE_STARTED`, `MAKE_VALIDATED`, `UPDATE_STARTED`, etc.
-- **Workflows principales**:
-  - **`make.workflow`**: Creación de reservas
-  - **`update.workflow`**: Actualización de reservas
-  - **`cancel.workflow`**: Cancelación de reservas
-- **`conversational-fallback`**: Maneja preguntas generales del cliente fuera del flujo
-
-#### **Ejecución Durable con DBOS**
-- **Propósito**: Garantizar la ejecución confiable de workflows críticos (creación, actualización y cancelación de reservas) mediante patrones de durable execution.
-- **Implementación**: Integración con DBOS (Database Operating System) para workflows que requieren tolerancia a fallos, resiliencia y garantías de exactamente una vez (exactly‑once).
-- **Beneficios**:
-  - **Resiliencia**: Los workflows sobreviven a fallos de infraestructura, reinicios y despliegues.
-  - **Tolerancia a fallos**: Cada paso se persiste en una base de datos transaccional, permitiendo recuperación automática.
-  - **Escalabilidad**: Ejecución distribuida con co‑routines gestionadas por DBOS.
-  - **Observabilidad**: Trazabilidad completa de la ejecución con logs estructurados.
-- **Workflows adaptados**: `make.workflow`, `update.workflow` y `cancel.workflow` utilizan DBOS para orquestar tareas de larga duración y llamadas externas.
-
-### **5. Capa de Servicios**
-- **`whatsAppService`**: Integración con WAHA API (WhatsApp Web API)
-  - Envío de mensajes, contactos, ubicaciones
-  - Gestión de estados (seen, typing)
-- **`cmsService`**: Integración con Payload CMS
-  - CRUD de negocios, clientes y reservas
-  - Validación de disponibilidad
-  - Cache en Redis para optimización
-- **`chatHistoryService`**: Historial de conversaciones en Redis
-  - Almacena últimos 20 mensajes por chat
-  - Expiración automática (2 horas)
-- **`reservationCacheService`**: Estado temporal de reservas en proceso
-
-### **6. Capa de Inteligencia Artificial (LLM)**
-- **Proveedor**: Cloudflare Workers AI (`@cf/ibm-granite/granite-4.0-h-micro`)
-- **Componentes**:
-  - **Clasificadores**: `customerIntentClassifier`, `inputIntentClassifier`
-  - **Agente validador**: `validatorAgent` (parse + error humanization)
-  - **Agente humanizador**: `humanizerAgent` (respuestas naturales)
-- **Prompts**: Separados en `src/llm/prompts/` (sistema, validación, clasificación)
-
-### **7. Capa de Almacenamiento**
-- **Redis**: Cache de negocio, clientes, historial de chat y estado de reservas
-- **Payload CMS**: Fuente principal de datos (negocios, clientes, reservas)
-- **Estructuras de cache**:
-  - `business:{id}` → Información del negocio (12 horas)
-  - `customer:business:{id}:phoneNumber:{phone}` → Datos del cliente (7 días)
-  - `chat:{businessId}:{phone}` → Historial de conversación (2 horas)
-  - `reservation:{businessId}:{phone}` → Estado de reserva en proceso
-
-### **8. Capa de Observabilidad y Monitoreo**
-- **Sentry**: Plataforma de monitoreo de errores y performance en tiempo real.
-  - **Error Tracking**: Captura automática de excepciones no controladas, tanto en el runtime (Bun) como en handlers asíncronos.
-  - **Logging Estructurado**: Integración con Sentry para enriquecer logs con contexto (businessId, phone, traceId).
-  - **Tracing Distribuido**: Seguimiento de transacciones a través de los diferentes servicios (WhatsApp, CMS, LLM, Redis).
-- **Logging en Producción**:
-  - **Niveles**: `error`, `warn`, `info`, `debug` configurados por entorno.
-  - **Formato**: JSON estructurado para ingestión en herramientas como Datadog o Elasticsearch.
-  - **Contexto**: Cada log incluye campos como `service: "chat-agent"`, `environment`, `businessId`, `phone`, `workflowState`.
-- **Métricas**:
-  - **Latencia por endpoint**: Tiempos de respuesta de los handlers.
-  - **Tasa de éxito/error**: Por workflow y por tipo de intención.
-  - **Uso de Redis y CMS**: Contadores de hits/misses de cache y latencia de APIs externas.
-
-## 🔄 Flujo de Datos Principal
-
-```mermaid
-graph TD
-    A[Evento WhatsApp] --> B[contextMiddleware]
-    B --> C[aiWhatsappHandler]
-    C --> D[StateWorkflowRunner]
-    D --> E{Estado Reserva?}
-    E -->|MAKE_STARTED| F[make.workflow]
-    E -->|UPDATE_STARTED| G[update.workflow]
-    E -->|CANCEL_STARTED| H[cancel.workflow]
-    E -->|Sin estado| I[conversational-fallback]
-    F --> J[collect-data.task]
-    J --> K[validatorAgent.parse]
-    K --> L[Validación Zod]
-    L -->|Éxito| M[Confirmación]
-    L -->|Error| N[humanizeErrors]
-    M --> O[Crear reserva en CMS]
-    O --> P[Enviar respuesta WhatsApp]
-```
-
-## 🛠️ Tecnologías Clave
-
-| Tecnología | Uso | Versión |
-|------------|-----|---------|
-| **Bun** | Runtime y package manager | Latest |
-| **Hono** | Framework web minimalista | ^4.10.8 |
-| **TypeScript** | Lenguaje principal | ^5 |
-| **Cloudflare Workers AI** | Modelos de lenguaje | granite‑4.0‑h‑micro |
-| **Redis** | Cache y estado temporal | Bun RedisClient |
-| **Payload CMS** | Gestión de contenido | API externa |
-| **WAHA API** | Integración con WhatsApp | API externa |
-| **Zod** | Validación de esquemas | ^4.1.13 |
-| **Sentry** | Error tracking y observabilidad | ^8.0.0 |
-| **DBOS** | Ejecución durable para workflows críticos | ^0.1.0 |
-
-## 📁 Estructura de Directorios
+El proyecto sigue una arquitectura en capas claramente definida, organizada según los principios de DDD:
 
 ```
 src/
-├── index.ts                    # Punto de entrada
-├── handlers/                   # Handlers HTTP
-├── middlewares/               # Middlewares de contexto
-├── services/                  # Servicios externos (WhatsApp, CMS, Cache)
-├── workflows/                 # Flujos de negocio principal
-│   ├── reservations/          # Workflows de reservas
-│   └── appointments/          # Workflows de citas
-├── workflow-fsm/              # Máquina de estados
-├── llm/                       # Integración con IA
-│   ├── prompts/              # Prompts del sistema
-│   ├── validators/           # Validadores de datos
-│   └── llm.config.ts         # Configuración de IA
-├── types/                     # Tipos TypeScript
-├── storage/                   # Configuración de almacenamiento
-├── helpers/                   # Utilidades
-└── test/                      # Pruebas
+├── domain/                    # Capa de Dominio (Core Domain)
+│   ├── restaurant/           # Subdominio de Restaurantes
+│   ├── real-state/           # Subdominio de Bienes Raíces  
+│   ├── e-commerce/           # Subdominio de E-commerce
+│   └── utilities/            # Utilidades compartidas
+├── application/              # Capa de Aplicación
+│   ├── handlers/            # Handlers HTTP por dominio
+│   ├── use-cases/           # Casos de uso específicos
+│   ├── patterns/            # Patrones de diseño
+│   ├── agents/              # Agentes de IA
+│   └── middlewares/         # Middlewares de contexto
+└── infraestructure/         # Capa de Infraestructura
+    ├── adapters/            # Adaptadores para servicios externos
+    ├── http/               # Clientes HTTP
+    ├── cache/              # Implementación de cache
+    └── logging/            # Configuración de logging
 ```
 
-## 🔌 Dependencias Externas
+### 🔄 **Flujo de Datos Principal**
 
-1. **WAHA API** (`WAHA_API`): Servicio de WhatsApp Web
-2. **Payload CMS** (`CMS_API`): Sistema de gestión de contenido
-3. **Cloudflare Workers AI**: Modelos de lenguaje
-4. **Redis**: Base de datos en memoria
-5. **Sentry**: Plataforma de observabilidad y error tracking
-6. **DBOS**: Framework de ejecución durable (base de datos transaccional)
+```mermaid
+graph LR
+    A[Evento WhatsApp] --> B[Middleware Bootstrap]
+    B --> C[Handler de Reserva]
+    C --> D[Saga Orchestrator]
+    D --> E[Workflow de Reserva]
+    E --> F[Agentes de IA]
+    F --> G[Persistencia CMS]
+    G --> H[Respuesta WhatsApp]
+```
 
-## 🚀 Despliegue y Ejecución
+### 🎯 **Implementación de DDD**
 
-- **Desarrollo**: `bun run dev` (hot-reload)
-- **Build**: `bun run build` (target: bun)
-- **Producción**: Docker + Cloudflare Workers compatible
-- **Variables de entorno**: WAHA_API, CMS_API, CLOUDFLARE_AUTH_TOKEN, REDIS_URL, SENTRY_DSN, DBOS_DATABASE_URL
+#### **1. Capa de Dominio (Domain Layer)**
+- **Entidades y Value Objects**: Definidos en `domain/restaurant/reservations/reservation.types.ts`
+- **Esquemas de Validación**: Usando Zod para invariantes de dominio (`schemas.ts`)
+- **Contextos Específicos de Dominio**: 
+  ```chatbots/chat-agent/src/domain/restaurant/context.types.ts#L1-12
+  export type RestaurantCtx = {
+    whatsappEvent: string;
+    businessId: string;
+    business: Business;
+    customer?: Customer;
+    session: string;
+    customerPhone: string;
+    customerMessage: string;
+    chatKey: string;
+    reservationKey: string;
+    RESERVATION_STATE: Partial<ReservationState> | undefined;
+  };
+  ```
+- **Lenguaje Ubicuo**: Términos como `ReservationState`, `CustomerIntent`, `FlowOption`
 
-## 🎯 Patrones de Diseño Destacados
+#### **2. Capa de Aplicación (Application Layer)**
+- **Casos de Uso**: Organizados por dominio (restaurante, real-state, e-commerce)
+- **Handlers Específicos de Dominio**: 
+  ```chatbots/chat-agent/src/application/handlers/restaurant/reservation/whatsapp-reservation.handler.ts#L1-40
+  export const whatsappReservationHandler: Handler<
+    DomainCtx<RestaurantCtx>
+  > = async (c) => {
+    const ctx = {
+      session: c.get("session"),
+      whatsappEvent: c.get("whatsappEvent"),
+      RESERVATION_STATE: c.get("RESERVATION_STATE"),
+      customerMessage: c.get("customerMessage"),
+      customerPhone: c.get("customerPhone"),
+      business: c.get("business"),
+      customer: c.get("customer"),
+      businessId: c.get("businessId"),
+      chatKey: c.get("chatKey"),
+      reservationKey: c.get("reservationKey"),
+    } satisfies RestaurantCtx;
+    // ... lógica del handler
+  };
+  ```
+- **Patrones de Diseño**:
+  - **Saga Orchestrator**: Para coordinación transaccional
+  - **State Machine Workflow**: Para flujos de reserva
+  - **Circuit Breaker**: Para resiliencia
 
-1. **State Machine**: Para flujos de reservas complejos
-2. **Middleware Chain**: Para procesamiento de requests
-3. **Service Layer**: Para abstraer APIs externas
-4. **CQRS Light**: Separación de lectura (cache) y escritura (CMS)
-5. **Strategy Pattern**: Diferentes workflows según estado
-6. **Durable Execution Pattern**: Para garantizar la finalización confiable de workflows largos mediante persistencia del estado de ejecución.
+#### **3. Capa de Infraestructura (Infrastructure Layer)**
+- **Adaptadores**: Para servicios externos (WhatsApp, CMS, Redis)
+- **Clientes HTTP**: Separados por servicio
+- **Ejecución Durable**: Integración con DBOS para workflows
 
-## 📈 Consideraciones de Escalabilidad
+### 🔧 **Patrones de Diseño Destacados**
 
-- **Stateless**: El estado se almacena en Redis, no en memoria
-- **Cache agresivo**: Reduce llamadas a CMS y WAHA API
-- **Edge-ready**: Hono es compatible con Cloudflare Workers
-- **Modular**: Los workflows pueden extenderse fácilmente
-- **Resiliencia**: Ejecución durable con DBOS asegura que los workflows críticos se completen incluso ante fallos
-- **Observabilidad**: Monitoreo integral con Sentry permite detectar y diagnosticar problemas rápidamente
+#### **Saga Orchestrator**
+Implementación completa del patrón Saga para gestión transaccional:
+```chatbots/chat-agent/src/application/patterns/saga-orchestrator/saga-orchestrator.ts#L1-100
+export class SagaOrchestrator<
+  Context,
+  T extends SagaBag,
+  Key extends string | number | bigint,
+> {
+  private readonly ctx: Readonly<Context>;
+  private steps: ISagaStep<Context, T, Key>[] = [];
+  private bag = {} as Record<`${SagaMode}:${Key}`, T>;
+  private executedSteps: string[] = [];
+  
+  // Métodos para ejecución y compensación
+}
+```
 
-Esta arquitectura permite manejar conversaciones complejas de reservas manteniendo un código mantenible y desacoplado de las APIs externas, ahora con mayor resiliencia, tolerancia a fallos y capacidad de observabilidad en producción.
+#### **Workflows por Estado**
+Máquina de estados para flujos de reserva:
+```chatbots/chat-agent/src/application/use-cases/workflows/reservations/reservation.workflow.ts#L1-30
+export async function reservationWorkflow(ctx: RestaurantCtx): Promise<string> {
+  const status = ctx.RESERVATION_STATE?.status;
+  const business = ctx.business;
+  const subWorkflow = new StateWorkflowRunner(ctx, status);
+
+  subWorkflow
+    .on("MAKE_STARTED", makeWorkflow.started)
+    .on("MAKE_VALIDATED", makeWorkflow.validated)
+    .on("UPDATE_STARTED", updateWorkflow.started)
+    .on("UPDATE_VALIDATED", updateWorkflow.validated)
+    .on("CANCEL_STARTED", cancellWorkflow.started);
+}
+```
+
+### 🧠 **Arquitectura de IA Integrada**
+
+- **Clasificadores de Intención**: `customerIntentClassifier`, `inputIntentClassifier`
+- **Agente Validador**: `validatorAgent` para parseo y humanización de errores
+- **Agente Humanizador**: `humanizerAgent` para respuestas naturales
+- **Proveedor LLM**: Cloudflare Workers AI (`granite-4.0-h-micro`)
+
+### 💾 **Estrategia de Persistencia**
+
+- **Cache Agresivo**: Redis para negocio, clientes, historial de chat
+- **Fuente de Verdad**: Payload CMS para datos maestros
+- **Estado Transaccional**: DBOS para ejecución durable de workflows
+
+### ✅ **Buenas Prácticas DDD Implementadas**
+
+1. **Separación Clara de Capas**: Dominio, Aplicación, Infraestructura
+2. **Contextos Delimitados**: Restaurant, RealState, ECommerce
+3. **Entidades Ricas**: Con validaciones y comportamiento
+4. **Anti-Corrupción Layer**: Adaptadores para APIs externas
+5. **Lenguaje Ubicuo**: Términos consistentes en todo el código
+
+### 🔄 **Dependencias Externas y Acoplamiento**
+
+Las dependencias externas están aisladas en la capa de infraestructura:
+- **WAHA API**: WhatsApp Web API
+- **Payload CMS**: Sistema de gestión de contenido
+- **Cloudflare Workers AI**: Modelos de lenguaje
+- **Redis**: Cache y estado temporal
+- **DBOS**: Ejecución durable para workflows
+
+### 📈 **Recomendaciones para Mejorar la Arquitectura DDD**
+
+1. **Repositorios Explícitos**: Considerar agregar interfaces de repositorio en la capa de dominio
+2. **Eventos de Dominio**: Implementar eventos de dominio para desacoplar lógica
+3. **Especificaciones**: Patrón Specification para reglas de negocio complejas
+4. **Módulos**: Agrupar entidades relacionadas en módulos dentro de cada subdominio
+
+Esta arquitectura proporciona una base sólida para escalar el sistema mientras mantiene el código mantenible y alineado con los objetivos de negocio. La separación clara de responsabilidades permite evolucionar cada capa independientemente.

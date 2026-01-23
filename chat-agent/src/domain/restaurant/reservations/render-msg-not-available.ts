@@ -1,10 +1,7 @@
-import { AvailabilityResponse } from "@/infraestructure/http/cms/chek-availability.types";
-import { Business } from "@/infraestructure/http/cms/cms-types";
+import type { AvailabilityResponse } from "@/infraestructure/http/cms";
+import type { Business } from "@/infraestructure/http/cms";
 import { ReservationSchema } from "./schemas";
-import {
-  formatLocalDateTime,
-  utcToLocalDateTime,
-} from "@/domain/utilities/datetime-formatting/datetime-converters";
+import { formatLocalDateTime, toLocalDateTime } from "@/domain/utilities";
 
 type Args = {
   availability: AvailabilityResponse;
@@ -12,32 +9,42 @@ type Args = {
   data: ReservationSchema;
 };
 
+/**
+ *
+ * @todo IMPROVE RECOMENDATIONS FOR NOT AVAILABLE DATE-TIME
+ * @param param0
+ * @returns
+ */
 export function renderMsgNotAvailable({ availability, business, data }: Args) {
   const timezone = business.general.timezone;
 
-  const requestedStartLocal = utcToLocalDateTime(
+  const requestedStartLocal = toLocalDateTime(
     availability.requestedStart,
     timezone,
   );
-  const requestedEndLocal = utcToLocalDateTime(
+  const requestedEndLocal = toLocalDateTime(
     availability.requestedEnd,
     timezone,
   );
 
   let mensaje = `Lo sentimos, no hay disponibilidad para ${data.numberOfPeople} ${data.numberOfPeople === 1 ? "persona" : "personas"} en el horario solicitado:\n`;
-  mensaje += `• ${formatLocalDateTime(requestedStartLocal, timezone)}\n`;
+  mensaje += `• Desde ${formatLocalDateTime(requestedStartLocal, timezone).date} \n`;
 
   if (availability.requestedEnd !== availability.requestedStart) {
-    mensaje += `  hasta ${formatLocalDateTime(requestedEndLocal, timezone)}\n`;
+    mensaje += `  hasta ${formatLocalDateTime(requestedEndLocal, timezone).date}\n`;
   }
 
   mensaje += `\n`;
+  if (availability.isFullyAvailable) {
+    // message for when isFullyAvailable=true
+  }
 
   if (availability.suggestedTimes && availability.suggestedTimes.length > 0) {
     mensaje += `✨ Te sugerimos estos horarios alternativos:\n`;
     availability.suggestedTimes.slice(0, 4).forEach((time, index) => {
-      const timeLocal = utcToLocalDateTime(time, timezone);
-      mensaje += `${index + 1}. ${formatLocalDateTime(timeLocal, timezone)}\n`;
+      const timeLocal = toLocalDateTime(time, timezone);
+      const date = formatLocalDateTime(timeLocal, timezone);
+      mensaje += `${index + 1}. ${date.date} - ${date.time}\n`;
     });
 
     if (availability.suggestedTimes.length > 4) {
