@@ -7,6 +7,7 @@ import {
   AvailabilityRequest,
   AvailabilityResponse,
   calculateAvailability,
+  DayMap,
   suggestAlternativeTimes,
 } from "./check-availability";
 
@@ -156,7 +157,6 @@ export const Appointments: CollectionConfig = {
               { status: 404 },
             );
           }
-
           const maxCapacityPerHour = businessFound.general.tables || 20;
 
           // Parsear fechas (Payload usa UTC)
@@ -175,7 +175,7 @@ export const Appointments: CollectionConfig = {
           searchEnd.setHours(searchEnd.getHours() + 1); // Incluir 1 hora después
           searchEnd.setMinutes(0, 0, 0);
 
-          const existingAppointments: { docs: Appointment[] } =
+          const existingAppointments: AppointmentSlot[] = (
             await req.payload.find({
               collection: "appointments",
               where: {
@@ -212,40 +212,35 @@ export const Appointments: CollectionConfig = {
                 ],
               },
               limit: 1000,
-            });
-
-          // Convertir a formato AppointmentSlot para usar la lógica pura
-          const appointmentSlots: AppointmentSlot[] =
-            existingAppointments.docs.map((doc) => ({
-              startDateTime: doc.startDateTime,
-              endDateTime: doc.endDateTime || undefined,
-              numberOfPeople: doc.numberOfPeople || 0,
-              status: doc.status,
-            }));
+            })
+          ).docs.map((doc) => ({
+            startDateTime: doc.startDateTime,
+            endDateTime: doc.endDateTime || undefined,
+            numberOfPeople: doc.numberOfPeople || 0,
+            status: doc.status,
+          }));
 
           // Calcular disponibilidad usando la función pura
-          const { timeSlots, isFullyAvailable } = calculateAvailability(
-            appointmentSlots,
+          const { timeSlots, isFullyAvailable } = calculateAvailability({
+            appointments: existingAppointments,
             maxCapacityPerHour,
-            startDate,
             endDate,
-            +numberOfPeople.equals,
-          );
+            startDate,
+            numberOfPeople: +numberOfPeople.equals || 1,
+          });
 
           // Si no hay disponibilidad, obtener más datos para sugerencias
           let suggestedTimes: string[] = [];
-          // if (!isFullyAvailable && +numberOfPeople.equals) {
-          // }
 
-          // Obtener más reservas para las próximas horas para sugerencias
-          const startForSuggestions = new Date(
-            startDate.getTime() + 3 * 60 * 60 * 1000,
-          ); // +3 horas
-          const endDateForSuggestions = new Date(
-            startDate.getTime() + 4 * 60 * 60 * 1000,
-          ); // +4 horas
+          const day = startDate.getDay();
 
-          const appointmentsForSuggestions: { docs: Appointment[] } =
+          const schedule = businessFound.schedule[DayMap[day]]; // 2 slots: morning, afternoon
+
+          const morningSlot = schedule.at(0);
+          const afternoonSlot = schedule.at(1);
+          morningSlot.open; // 60 * 8 , 8 horas desde la medianoche, hay que convertirlo a UTC
+
+          const appointmentsForSuggestions: AppointmentSlot[] = (
             await req.payload.find({
               collection: "appointments",
               where: {
@@ -260,33 +255,31 @@ export const Appointments: CollectionConfig = {
                   },
                   {
                     startDateTime: {
-                      greater_than_equal: startForSuggestions.toISOString(),
+                      // greater_than_equal: startForSuggestions.toISOString(),
                     },
                   },
                   {
                     startDateTime: {
-                      less_than_equal: endDateForSuggestions.toISOString(),
+                      // less_than_equal: endDateForSuggestions.toISOString(),
                     },
                   },
                 ],
               },
               limit: 1000,
-            });
-
-          const allAppointmentSlots: AppointmentSlot[] =
-            appointmentsForSuggestions.docs.map((doc) => ({
-              startDateTime: doc.startDateTime,
-              endDateTime: doc.endDateTime || undefined,
-              numberOfPeople: doc.numberOfPeople || 0,
-              status: doc.status,
-            }));
+            })
+          ).docs.map((doc) => ({
+            startDateTime: doc.startDateTime,
+            endDateTime: doc.endDateTime || undefined,
+            numberOfPeople: doc.numberOfPeople || 0,
+            status: doc.status,
+          }));
 
           // Usar función pura para sugerencias
           suggestedTimes = suggestAlternativeTimes({
-            existingAppointments: allAppointmentSlots,
+            appointments: appointmentsForSuggestions,
             maxCapacityPerHour,
-            originalStart: startDate,
-            numberOfPeople: +numberOfPeople.equals,
+            startDate: startDate,
+            numberOfPeople: +numberOfPeople.equals || 1,
           });
 
           const response: AvailabilityResponse = {
