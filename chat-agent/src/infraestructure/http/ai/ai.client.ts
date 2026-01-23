@@ -1,4 +1,4 @@
-import { env } from "bun";
+import { env, fetch } from "bun";
 import { ChatCompletionResponse, MessagesBasedRequest } from "./index";
 import {
   CircuitBreaker,

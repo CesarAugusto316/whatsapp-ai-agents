@@ -50,7 +50,9 @@ export const reservationStateOrchestrator = async (
     }
     const { lastStepResult, bag } = await sagaOrchestrator(ctx);
     const result =
-      lastStepResult?.execute?.result || lastStepResult?.compensate?.result;
+      lastStepResult?.execute?.result ||
+      lastStepResult?.compensate?.result ||
+      "";
 
     if (result && result !== InputIntent.CUSTOMER_QUESTION) {
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);

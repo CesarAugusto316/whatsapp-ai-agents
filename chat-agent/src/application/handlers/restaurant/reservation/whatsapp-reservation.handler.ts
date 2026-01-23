@@ -23,9 +23,10 @@ export const whatsappReservationHandler: Handler<
     return c.json({ message: "Invalid event" });
   }
 
-  const { bag } = await whatsappSagaOrchestrator(ctx);
+  const { bag, lastStepResult } = await whatsappSagaOrchestrator(ctx);
   const message =
     bag?.["execute:reservationFlow"].text ||
+    lastStepResult?.compensate?.result ||
     "Ocurrio un error, vuelva a intentarlo más tarde";
 
   return c.json({
