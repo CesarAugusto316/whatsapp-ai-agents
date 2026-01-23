@@ -1,7 +1,7 @@
 import {
   AppointmentSlot,
   calculateAvailability,
-  // suggestAlternativeTimes,
+  suggestAlternativeTimes,
 } from "@/collections/appointments/check-availability";
 import { describe, expect, test } from "bun:test";
 
@@ -24,13 +24,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       const startDate = new Date("2024-01-20T19:00:00.000Z");
       const endDate = new Date("2024-01-20T20:00:00.000Z");
 
-      const result = calculateAvailability(
-        [], // Sin reservas
-        20, // Capacidad máxima: 20 mesas/personas
+      const result = calculateAvailability({
+        appointments: [], // Sin reservas
+        maxCapacityPerHour: 20, // Capacidad máxima: 20 mesas/personas
         startDate,
         endDate,
-        4, // Grupo de 4 personas
-      );
+        numberOfPeople: 4, // Grupo de 4 personas
+      });
 
       expect(result.isFullyAvailable).toBe(true);
       expect(result.timeSlots).toHaveLength(1);
@@ -51,13 +51,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         }),
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20, // Capacidad máxima
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20, // Capacidad máxima
         startDate,
         endDate,
-        2, // Intentando reservar para 2 personas
-      );
+        numberOfPeople: 2, // Intentando reservar para 2 personas
+      });
 
       expect(result.isFullyAvailable).toBe(false);
       expect(result.timeSlots[0].availableSlots).toBe(0);
@@ -74,13 +74,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         }),
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20, // Capacidad total
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20, // Capacidad total
         startDate,
         endDate,
-        5, // Queremos reservar para 5
-      );
+        numberOfPeople: 5, // Queremos reservar para 5
+      });
 
       // 20 - 12 = 8 disponibles, alcanza para 5
       expect(result.isFullyAvailable).toBe(true);
@@ -111,13 +111,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         }),
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20,
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20,
         startDate,
         endDate,
-        8,
-      );
+        numberOfPeople: 8,
+      });
 
       // Solo debe contar confirmed y pending: 10 + 5 = 15
       // 20 - 15 = 5 disponibles, NO alcanza para 8
@@ -139,13 +139,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         }),
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20,
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20,
         startDate,
         endDate,
-        10, // Queremos 10 personas
-      );
+        numberOfPeople: 10, // Queremos 10 personas
+      });
 
       expect(result.timeSlots).toHaveLength(3);
 
@@ -184,13 +184,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         }),
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20,
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20,
         startDate,
         endDate,
-        5,
-      );
+        numberOfPeople: 5,
+      });
 
       // Total personas: 8 + 6 + 4 = 18
       // Disponibles: 20 - 18 = 2
@@ -211,13 +211,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         },
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20,
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20,
         startDate,
         endDate,
-        8,
-      );
+        numberOfPeople: 8,
+      });
 
       // Debería asumir 1 hora (19-20) y contar las 10 personas
       expect(result.timeSlots[0].availableSlots).toBe(10); // 20 - 10 = 10
@@ -228,7 +228,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       const startDate = new Date("2024-01-20T19:15:00.000Z"); // 19:15
       const endDate = new Date("2024-01-20T20:45:00.000Z"); // 20:45
 
-      const result = calculateAvailability([], 20, startDate, endDate, 5);
+      const result = calculateAvailability({
+        appointments: [],
+        maxCapacityPerHour: 20,
+        startDate,
+        endDate,
+        numberOfPeople: 5,
+      });
 
       // Debería normalizar a horas completas:
       // 19:15 → 19:00 (redondeo hacia abajo)
@@ -242,11 +248,137 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       const startDate = new Date("2024-01-20T19:00:00.000Z");
       const endDate = new Date("2024-01-20T20:00:00.000Z");
 
-      const result = calculateAvailability([], 20, startDate, endDate, 5);
+      const result = calculateAvailability({
+        appointments: [],
+        maxCapacityPerHour: 20,
+        startDate,
+        endDate,
+        numberOfPeople: 5,
+      });
 
       // Fechas exactas, no necesita redondeo
       expect(result.timeSlots).toHaveLength(1);
       expect(result.timeSlots[0].hour).toBe("2024-01-20T19:00:00.000Z");
+    });
+
+    test("debe usar valores por defecto cuando parámetros faltan", () => {
+      const startDate = new Date("2024-01-20T19:00:00.000Z");
+      const endDate = new Date("2024-01-20T20:00:00.000Z");
+
+      // Test sin maxCapacityPerHour, numberOfPeople
+      const result = calculateAvailability({
+        appointments: [],
+        startDate,
+        endDate,
+      });
+
+      expect(result.timeSlots).toHaveLength(1);
+      expect(result.timeSlots[0].availableSlots).toBe(20); // Valor por defecto de maxCapacityPerHour
+      expect(result.timeSlots[0].isAvailable).toBe(true); // Valor por defecto de numberOfPeople es 1
+    });
+
+    test("debe manejar cuando endDate es anterior a startDate", () => {
+      const startDate = new Date("2024-01-20T20:00:00.000Z");
+      const endDate = new Date("2024-01-20T19:00:00.000Z"); // Anterior
+
+      const result = calculateAvailability({
+        appointments: [],
+        maxCapacityPerHour: 20,
+        startDate,
+        endDate,
+        numberOfPeople: 5,
+      });
+
+      // Debería ajustar a 1 hora después de startDate
+      expect(result.timeSlots).toHaveLength(1);
+      expect(result.timeSlots[0].hour).toBe("2024-01-20T20:00:00.000Z");
+    });
+  });
+
+  describe("suggestAlternativeTimes", () => {
+    test("debe sugerir horarios alternativos cuando no hay disponibilidad", () => {
+      const startDate = new Date("2030-01-20T19:00:00.000Z");
+
+      const appointments: AppointmentSlot[] = [
+        createAppointmentSlot({
+          startDateTime: "2030-01-20T19:00:00.000Z",
+          endDateTime: "2030-01-20T20:00:00.000Z",
+          numberOfPeople: 20, // Capacidad completa
+        }),
+      ];
+
+      const suggestedTimes = suggestAlternativeTimes({
+        appointments,
+        maxCapacityPerHour: 20,
+        numberOfPeople: 2,
+        startDate,
+        hoursToCheck: 4,
+        intervalMinutes: 30,
+      });
+
+      // Debería buscar horarios alternativos en las próximas 4 horas
+      expect(suggestedTimes.length).toBeGreaterThan(0);
+      expect(suggestedTimes.length).toBeLessThanOrEqual(3);
+    });
+
+    test("debe retornar array vacío cuando no hay startDate", () => {
+      const suggestedTimes = suggestAlternativeTimes({
+        appointments: [],
+        maxCapacityPerHour: 20,
+        numberOfPeople: 2,
+        // No startDate
+      });
+
+      expect(suggestedTimes).toEqual([]);
+    });
+
+    test("debe sugerir horarios dentro del horario de búsqueda", () => {
+      const now = new Date("2030-01-20T18:00:00.000Z");
+      const startDate = new Date("2030-01-20T19:00:00.000Z");
+
+      // Mock Date.now para que las pruebas sean consistentes
+      const originalDateNow = Date.now;
+      Date.now = () => now.getTime();
+
+      try {
+        const appointments: AppointmentSlot[] = [
+          createAppointmentSlot({
+            startDateTime: "2030-01-20T19:00:00.000Z",
+            endDateTime: "2030-01-20T20:00:00.000Z",
+            numberOfPeople: 18, // 2 disponibles
+          }),
+        ];
+
+        const suggestedTimes = suggestAlternativeTimes({
+          appointments,
+          maxCapacityPerHour: 20,
+          numberOfPeople: 1, // Solo necesita 1 espacio
+          startDate,
+          hoursToCheck: 2,
+          intervalMinutes: 60,
+        });
+
+        // Debería encontrar horarios alternativos
+        expect(suggestedTimes.length).toBeGreaterThan(0);
+
+        // Cada tiempo sugerido debe ser un string ISO válido
+        suggestedTimes.forEach((time) => {
+          expect(() => new Date(time)).not.toThrow();
+        });
+      } finally {
+        Date.now = originalDateNow;
+      }
+    });
+
+    test("debe usar valores por defecto cuando parámetros faltan", () => {
+      const startDate = new Date("2024-01-20T19:00:00.000Z");
+
+      const suggestedTimes = suggestAlternativeTimes({
+        startDate,
+      });
+
+      // Debería retornar array (posiblemente vacío) sin errores
+      expect(Array.isArray(suggestedTimes)).toBe(true);
     });
   });
 
@@ -285,24 +417,18 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         }),
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20,
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20,
         startDate,
         endDate,
-        6, // Grupo de 6 personas
-      );
+        numberOfPeople: 6, // Grupo de 6 personas
+      });
 
       expect(result.timeSlots).toHaveLength(2);
 
-      // Hora 19-20:
-      // - 19:00-20:00: 8 personas
-      // - 19:15-20:15: 6 personas (se superpone 45 minutos)
-      // - 19:30-20:30: 4 personas (se superpone 30 minutos)
-      // Total efectivo para la hora completa: calcularemos
-      // Para simplificar, asumimos que cuenta completamente cada reserva
-      // En realidad, cada reserva se cuenta completa si se superpone con la hora
-      expect(result.timeSlots[0].availableSlots).toBeLessThan(20); // Debe tener menos de 20
+      // Hora 19-20: debe tener menos de 20 disponibles
+      expect(result.timeSlots[0].availableSlots).toBeLessThan(20);
       expect(result.timeSlots[0].isAvailable).toBe(false); // No alcanza para 6
 
       // Hora 20-21: similar cálculo
@@ -323,13 +449,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         }),
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20,
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20,
         startDate,
         endDate,
-        15, // Grupo grande de 15 personas
-      );
+        numberOfPeople: 15, // Grupo grande de 15 personas
+      });
 
       // 20 - 4 = 16 disponibles, alcanza para 15
       expect(result.isFullyAvailable).toBe(true);
@@ -356,13 +482,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         }),
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20,
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20,
         startDate,
         endDate,
-        8, // Reserva para 8 personas
-      );
+        numberOfPeople: 8, // Reserva para 8 personas
+      });
 
       expect(result.timeSlots).toHaveLength(2);
 
@@ -405,13 +531,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         },
       ];
 
-      const result = calculateAvailability(
-        existingAppointments,
-        20,
+      const result = calculateAvailability({
+        appointments: existingAppointments,
+        maxCapacityPerHour: 20,
         startDate,
         endDate,
-        10,
-      );
+        numberOfPeople: 10,
+      });
 
       // Solo debe contar la reserva de 19:30-19:45 (4 personas)
       // Las reservas en los bordes no deben contar

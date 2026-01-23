@@ -128,6 +128,18 @@ export const Appointments: CollectionConfig = {
       handler: async (req) => {
         try {
           const { where } = req.query as unknown as AvailabilityRequest;
+          // Validar que where y sus propiedades existan
+          if (!where || !where.business || !where.startDateTime) {
+            return Response.json(
+              {
+                success: false,
+                message:
+                  "Se requiere businessId y startDateTime en el parámetro where",
+              },
+              { status: 400 },
+            );
+          }
+
           const { business, endDateTime, numberOfPeople, startDateTime } =
             where;
 
@@ -143,10 +155,19 @@ export const Appointments: CollectionConfig = {
           }
 
           // Obtener el negocio
-          const businessFound: IBusiness = await req.payload.findByID({
-            collection: "businesses",
-            id: business.equals,
-          });
+          let businessFound: IBusiness | null = null;
+          try {
+            businessFound = await req.payload.findByID({
+              collection: "businesses",
+              id: business.equals,
+            });
+          } catch (error) {
+            // Si hay error al buscar (ej: ID inválido o no existe), tratamos como no encontrado
+            console.warn(
+              `Business not found or error: ${business.equals}`,
+              error,
+            );
+          }
 
           if (!businessFound) {
             return Response.json(
@@ -236,6 +257,7 @@ export const Appointments: CollectionConfig = {
 
           const schedule = businessFound.schedule[DayMap[day]]; // 2 slots: morning, afternoon
 
+          // SE DEBE BUSCAR EL HORARIO DISPONIBLE PARA EL DIA, CON ELLO SE PUEDE SUGERIR SLOTS
           const morningSlot = schedule.at(0);
           const afternoonSlot = schedule.at(1);
           morningSlot.open; // 60 * 8 , 8 horas desde la medianoche, hay que convertirlo a UTC

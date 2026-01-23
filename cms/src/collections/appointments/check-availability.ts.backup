@@ -74,41 +74,37 @@ type CalcArgs = {
  * Esta función NO hace llamadas a la base de datos
  */
 export function calculateAvailability({
-  appointments = [],
-  maxCapacityPerHour = 20,
-  numberOfPeople = 1,
+  appointments,
+  maxCapacityPerHour,
+  numberOfPeople,
   startDate,
   endDate,
 }: Partial<CalcArgs>): AvailabilityResult {
+  //
   const timeSlots: TimeSlot[] = [];
 
-  // Crear copias para no modificar los parámetros originales
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  // Normalizar fechas: inicio hacia abajo, fin hacia arriba
+  // const normalizedStart = new Date(startDate);
+  // normalizedStart.setMinutes(0, 0, 0);
 
-  // Normalizar a horas completas: start hacia abajo, end hacia arriba si tiene minutos
-  start.setMinutes(0, 0, 0);
+  // const normalizedEnd = new Date(endDate);
+  // // Redondear fin hacia arriba si no es hora exacta
+  // if (
+  //   normalizedEnd.getMinutes() > 0 ||
+  //   normalizedEnd.getSeconds() > 0 ||
+  //   normalizedEnd.getMilliseconds() > 0
+  // ) {
+  //   normalizedEnd.setHours(normalizedEnd.getHours() + 1);
+  // }
+  // normalizedEnd.setMinutes(0, 0, 0);
+  // let currentHour = new Date(normalizedStart);
 
-  // Redondear end hacia arriba si tiene minutos, segundos o milisegundos
-  if (
-    end.getMinutes() > 0 ||
-    end.getSeconds() > 0 ||
-    end.getMilliseconds() > 0
-  ) {
-    end.setHours(end.getHours() + 1);
-  }
-  end.setMinutes(0, 0, 0);
+  startDate.setMinutes(0, 0, 0);
+  endDate.setMinutes(0, 0, 0);
 
-  // Si end es anterior o igual a start, ajustar a 1 hora después
-  if (end <= start) {
-    end.setTime(start.getTime() + 60 * 60 * 1000);
-  }
-
-  let currentHour = new Date(start);
-
-  while (currentHour < end) {
-    const hourStart = new Date(currentHour);
-    const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+  while (startDate < endDate) {
+    const hourStart = new Date(startDate);
+    const hourEnd = new Date(endDate);
 
     // Encontrar reservas que se superponen con esta hora
     const overlappingAppointments = appointments.filter((appointment) => {
@@ -121,13 +117,8 @@ export function calculateAvailability({
       return apptStart < hourEnd && apptEnd > hourStart;
     });
 
-    // Filtrar solo reservas confirmed o pending
-    const validAppointments = overlappingAppointments.filter(
-      (appt) => appt.status === "confirmed" || appt.status === "pending",
-    );
-
     // Sumar personas ya reservadas en esta hora
-    const reservedPeople = validAppointments.reduce(
+    const reservedPeople = overlappingAppointments.reduce(
       (sum, appt) => sum + (appt.numberOfPeople || 0),
       0,
     );
@@ -141,11 +132,9 @@ export function calculateAvailability({
     });
 
     // Avanzar a la siguiente hora
-    currentHour = hourEnd;
+    startDate = hourEnd;
   }
-
-  const isFullyAvailable =
-    timeSlots.length > 0 && timeSlots.every((slot) => slot.isAvailable);
+  const isFullyAvailable = timeSlots.every((slot) => slot.isAvailable);
 
   return { timeSlots, isFullyAvailable };
 }
@@ -156,20 +145,16 @@ export function calculateAvailability({
  * Esta versión NO hace llamadas a la base de datos
  */
 export function suggestAlternativeTimes({
-  appointments = [],
-  hoursToCheck = 4,
-  intervalMinutes = 30,
-  maxCapacityPerHour = 20,
-  numberOfPeople = 1,
+  appointments,
+  hoursToCheck,
+  intervalMinutes,
+  maxCapacityPerHour,
+  numberOfPeople,
   startDate,
 }: Partial<CalcArgs>): string[] {
+  //
   const suggestedTimes: string[] = [];
   const now = new Date();
-
-  // Validar parámetros requeridos
-  if (!startDate) {
-    return suggestedTimes;
-  }
 
   // Convertir horas a verificar a milisegundos
   const endSearchTime = startDate.getTime() + hoursToCheck * 60 * 60 * 1000;
@@ -200,13 +185,8 @@ export function suggestAlternativeTimes({
       return apptStart < hourEnd && apptEnd > hourStart;
     });
 
-    // Filtrar solo reservas confirmed o pending
-    const validAppointments = overlappingAppointments.filter(
-      (appt) => appt.status === "confirmed" || appt.status === "pending",
-    );
-
     // Calcular personas ya reservadas en esta hora
-    const reservedPeople = validAppointments.reduce(
+    const reservedPeople = overlappingAppointments.reduce(
       (sum, appt) => sum + (appt.numberOfPeople || 0),
       0,
     );
@@ -221,61 +201,6 @@ export function suggestAlternativeTimes({
 
     // Avanzar al siguiente intervalo
     checkTime = new Date(checkTime.getTime() + intervalMinutes * 60 * 1000);
-  }
-
-  // Si no se encontraron sugerencias, intentar buscar en el mismo horario pero en horas diferentes
-  if (suggestedTimes.length === 0) {
-    // Buscar en el mismo día pero en diferentes horas
-    const sameDaySearchStart = new Date(startDate);
-    sameDaySearchStart.setHours(0, 0, 0, 0);
-    const sameDaySearchEnd = new Date(sameDaySearchStart);
-    sameDaySearchEnd.setHours(23, 59, 59, 999);
-
-    // Buscar todas las reservas del mismo día
-    const sameDayAppointments = appointments.filter((appointment) => {
-      const apptDate = new Date(appointment.startDateTime);
-      return apptDate >= sameDaySearchStart && apptDate <= sameDaySearchEnd;
-    });
-
-    // Probar horas en incrementos de 1 hora durante el día
-    for (let hour = 9; hour <= 21; hour++) {
-      // de 9 AM a 9 PM
-      const testTime = new Date(startDate);
-      testTime.setHours(hour, 0, 0, 0);
-
-      // No sugerir tiempos en el pasado
-      if (testTime < now) continue;
-
-      // Calcular disponibilidad para esta hora
-      const testHourStart = new Date(testTime);
-      testHourStart.setMinutes(0, 0, 0);
-      const testHourEnd = new Date(testHourStart.getTime() + 60 * 60 * 1000);
-
-      const overlappingAppointments = sameDayAppointments.filter(
-        (appointment) => {
-          const apptStart = new Date(appointment.startDateTime);
-          const apptEnd = appointment.endDateTime
-            ? new Date(appointment.endDateTime)
-            : new Date(apptStart.getTime() + 60 * 60 * 1000);
-
-          return apptStart < testHourEnd && apptEnd > testHourStart;
-        },
-      );
-
-      const validAppointments = overlappingAppointments.filter(
-        (appt) => appt.status === "confirmed" || appt.status === "pending",
-      );
-
-      const reservedPeople = validAppointments.reduce(
-        (sum, appt) => sum + (appt.numberOfPeople || 0),
-        0,
-      );
-
-      if (maxCapacityPerHour - reservedPeople >= numberOfPeople) {
-        suggestedTimes.push(testTime.toISOString());
-        if (suggestedTimes.length >= 3) break;
-      }
-    }
   }
 
   return suggestedTimes;
