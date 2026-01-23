@@ -1,16 +1,21 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { aiWhatsappHandler } from "@/handlers/ai-whatsapp.handler";
-import { aiTestHandler } from "@/handlers/ai-test.handler";
-import { CTX } from "@/types/hono.types";
 import { env } from "bun";
-import { contextMiddleware } from "@/middlewares/context.middleware";
 import { rateLimiter } from "hono-rate-limiter";
 import * as Sentry from "@sentry/bun";
-import { loggerMiddleware } from "./middlewares/logger-middleware";
 import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
+import { DomainCtx } from "@/domain";
+import { RestaurantCtx } from "@/domain/restaurant";
+import {
+  loggerMiddleware,
+  bootstrapMiddleware,
+} from "@/application/middlewares";
+import {
+  whatsappReservationHandler,
+  testReservationHandler,
+} from "@/application/handlers/restaurant";
 
-const app = new Hono<CTX>();
+const app = new Hono<DomainCtx<RestaurantCtx>>();
 
 Sentry.init({
   dsn: env?.SENTRY_DSN,
@@ -44,11 +49,11 @@ app.use(
 
 app.post(
   "/received-messages/:businessId",
-  contextMiddleware(),
-  aiWhatsappHandler,
+  bootstrapMiddleware(),
+  whatsappReservationHandler,
 );
 
-app.post("/test-ai/:businessId", contextMiddleware(), aiTestHandler);
+app.post("/test-ai/:businessId", bootstrapMiddleware(), testReservationHandler);
 
 app.get("/test-sentry-async-error", async (c) => {
   await Promise.reject(new Error("Second error"));
@@ -68,8 +73,8 @@ app.onError((error, c) => {
   );
 });
 
-// export default app;
 export default {
   port: env?.PORT ?? 3000,
   fetch: app.fetch,
+  // external: ["@dbos-inc/dbos-sdk", "superjson"], // Bibliotecas externas
 };

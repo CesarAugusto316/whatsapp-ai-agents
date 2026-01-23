@@ -10,7 +10,7 @@ import {
   suggestAlternativeTimes,
 } from "./check-availability";
 
-// TODO: NORMALIZE DATES
+/** @todo corregir en el dashboard para que muestre año/mes/dia en la tabla de reservas */
 export const Appointments: CollectionConfig = {
   slug: "appointments",
   labels: {
@@ -186,56 +186,60 @@ export const Appointments: CollectionConfig = {
 
           // Si no hay disponibilidad, obtener más datos para sugerencias
           let suggestedTimes: string[] = [];
-          if (!isFullyAvailable && +numberOfPeople.equals) {
-            // Obtener más reservas para las próximas horas para sugerencias
-            const endDateForSuggestions = new Date(
-              startDate.getTime() + 5 * 60 * 60 * 1000,
-            ); // +5 horas
+          // if (!isFullyAvailable && +numberOfPeople.equals) {
+          // }
 
-            const appointmentsForSuggestions: { docs: Appointment[] } =
-              await req.payload.find({
-                collection: "appointments",
-                where: {
-                  and: [
-                    {
-                      business,
-                    },
-                    {
-                      status: {
-                        in: ["confirmed", "pending"],
-                      },
-                    },
-                    {
-                      startDateTime: {
-                        greater_than_equal: startDate.toISOString(),
-                      },
-                    },
-                    {
-                      startDateTime: {
-                        less_than_equal: endDateForSuggestions.toISOString(),
-                      },
-                    },
-                  ],
-                },
-                limit: 1000,
-              });
+          // Obtener más reservas para las próximas horas para sugerencias
+          const startForSuggestions = new Date(
+            startDate.getTime() + 3 * 60 * 60 * 1000,
+          ); // +3 horas
+          const endDateForSuggestions = new Date(
+            startDate.getTime() + 4 * 60 * 60 * 1000,
+          ); // +4 horas
 
-            const allAppointmentSlots: AppointmentSlot[] =
-              appointmentsForSuggestions.docs.map((doc) => ({
-                startDateTime: doc.startDateTime,
-                endDateTime: doc.endDateTime || undefined,
-                numberOfPeople: doc.numberOfPeople || 0,
-                status: doc.status,
-              }));
+          const appointmentsForSuggestions: { docs: Appointment[] } =
+            await req.payload.find({
+              collection: "appointments",
+              where: {
+                and: [
+                  {
+                    business,
+                  },
+                  {
+                    status: {
+                      in: ["confirmed", "pending"],
+                    },
+                  },
+                  {
+                    startDateTime: {
+                      greater_than_equal: startForSuggestions.toISOString(),
+                    },
+                  },
+                  {
+                    startDateTime: {
+                      less_than_equal: endDateForSuggestions.toISOString(),
+                    },
+                  },
+                ],
+              },
+              limit: 1000,
+            });
 
-            // Usar función pura para sugerencias
-            suggestedTimes = suggestAlternativeTimes(
-              allAppointmentSlots,
-              maxCapacityPerHour,
-              startDate,
-              +numberOfPeople.equals,
-            );
-          }
+          const allAppointmentSlots: AppointmentSlot[] =
+            appointmentsForSuggestions.docs.map((doc) => ({
+              startDateTime: doc.startDateTime,
+              endDateTime: doc.endDateTime || undefined,
+              numberOfPeople: doc.numberOfPeople || 0,
+              status: doc.status,
+            }));
+
+          // Usar función pura para sugerencias
+          suggestedTimes = suggestAlternativeTimes({
+            existingAppointments: allAppointmentSlots,
+            maxCapacityPerHour,
+            originalStart: startDate,
+            numberOfPeople: +numberOfPeople.equals,
+          });
 
           const response: AvailabilityResponse = {
             success: true,
