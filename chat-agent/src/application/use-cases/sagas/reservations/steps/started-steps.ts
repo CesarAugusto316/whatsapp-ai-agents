@@ -354,23 +354,15 @@ export const startedSteps = {
 // -----------------------------------------------------------
 // DECORATOR PATTERN FOR FSM TRANSISIONS
 // -----------------------------------------------------------
-const step = (): StartedFuncSagaStep => ({
-  config: { execute: { name: "check_availability", ...stepConfig } },
-  execute: async ({ ctx, getStepResult }) => {
-    //
-    return { continue: true };
-  },
-});
-
-const withTransitionStep = (
+export const withTransitionStep = (
   step: StartedFuncSagaStep,
 ): StartedFuncSagaStep => ({
   config: step.config,
   execute: async (args) => {
     //
-    const retult = await step.execute(args);
+    const result = await step.execute(args);
     // await resolveNextState(result?.status)
-    return { continue: false };
+    return { continue: false, ...result };
   },
   compensate: async (args) => {
     if (step.compensate) {
@@ -379,3 +371,5 @@ const withTransitionStep = (
     return { continue: true };
   },
 });
+
+// withTransitionStep(earlyConditions("create"));

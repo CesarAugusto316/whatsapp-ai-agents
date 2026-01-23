@@ -54,7 +54,7 @@ export async function conversationalWorkflow(
           result: reminderMSG,
           metadata: {
             description: "HOW_SYSTEM_WORKS, option selected",
-            internal: `customerMessage=${CUSTOMER_INTENT.HOW}`,
+            internal: `intent=${CUSTOMER_INTENT.HOW}`,
           },
         },
       },
@@ -77,7 +77,7 @@ export async function conversationalWorkflow(
         result: reminderMSG,
         metadata: {
           description: "WHAT_IS_THE_SYSTEM, option selected",
-          internal: `customerMessage=${CUSTOMER_INTENT.WHAT}`,
+          internal: `intent=${CUSTOMER_INTENT.WHAT}`,
         },
       },
     },

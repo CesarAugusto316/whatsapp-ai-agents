@@ -40,6 +40,7 @@ export interface AvailabilityResult {
 }
 
 /**
+ *
  * Calcula la disponibilidad puramente basado en datos existentes
  * Esta función NO hace llamadas a la base de datos
  */
@@ -54,7 +55,6 @@ export function calculateAvailability(
   const relevantAppointments = existingAppointments.filter(
     (appt) => appt.status === "confirmed" || appt.status === "pending",
   );
-
   const timeSlots: TimeSlot[] = [];
 
   // Normalizar fechas: inicio hacia abajo, fin hacia arriba
@@ -71,7 +71,6 @@ export function calculateAvailability(
     normalizedEnd.setHours(normalizedEnd.getHours() + 1);
   }
   normalizedEnd.setMinutes(0, 0, 0);
-
   let currentHour = new Date(normalizedStart);
 
   while (currentHour < normalizedEnd) {
@@ -99,7 +98,6 @@ export function calculateAvailability(
 
     const availableSlots = maxCapacityPerHour - reservedPeople;
     const isAvailable = availableSlots >= numberOfPeople;
-
     timeSlots.push({
       hour: hourStart.toISOString(),
       availableSlots,
@@ -109,24 +107,34 @@ export function calculateAvailability(
     // Avanzar a la siguiente hora
     currentHour = hourEnd;
   }
-
   const isFullyAvailable = timeSlots.every((slot) => slot.isAvailable);
 
   return { timeSlots, isFullyAvailable };
 }
 
+type AlternativeArgs = {
+  existingAppointments: AppointmentSlot[];
+  maxCapacityPerHour: number;
+  originalStart: Date;
+  numberOfPeople: number;
+  hoursToCheck: number;
+  intervalMinutes: number;
+};
+
 /**
+ *
  * Genera sugerencias de horarios alternativos (pura)
  * Esta versión NO hace llamadas a la base de datos
  */
-export function suggestAlternativeTimes(
-  existingAppointments: AppointmentSlot[],
-  maxCapacityPerHour: number,
-  originalStart: Date,
-  numberOfPeople: number,
-  hoursToCheck: number = 4,
-  intervalMinutes: number = 30,
-): string[] {
+export function suggestAlternativeTimes({
+  existingAppointments,
+  hoursToCheck,
+  intervalMinutes,
+  maxCapacityPerHour,
+  numberOfPeople,
+  originalStart,
+}: Partial<AlternativeArgs>): string[] {
+  //
   const suggestedTimes: string[] = [];
   const now = new Date();
 
@@ -150,13 +158,8 @@ export function suggestAlternativeTimes(
     hourStart.setMinutes(0, 0, 0);
     const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
 
-    // Filtrar solo reservas relevantes (confirmed o pending)
-    const relevantAppointments = existingAppointments.filter(
-      (appt) => appt.status === "confirmed" || appt.status === "pending",
-    );
-
     // Encontrar reservas que se superponen con esta hora
-    const overlappingAppointments = relevantAppointments.filter(
+    const overlappingAppointments = existingAppointments.filter(
       (appointment) => {
         const apptStart = new Date(appointment.startDateTime);
         const apptEnd = appointment.endDateTime

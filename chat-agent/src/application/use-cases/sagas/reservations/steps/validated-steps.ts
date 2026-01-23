@@ -10,7 +10,6 @@ import {
 } from "@/domain/restaurant/reservations";
 import { cacheAdapter } from "@/infraestructure/adapters";
 import { logger } from "@/infraestructure/logging";
-// import { localDateTimeToUTC } from "@/domain/utilities";
 import { cmsClient } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";
 import { humanizerAgent } from "@/application/agents/restaurant";
@@ -108,7 +107,6 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
         status: "confirmed",
       } satisfies CreateAppointment;
 
-      logger.info("✨Creating reservation, payload", payload);
       const reservation = (
         (await (await cmsClient.createAppointment(payload)).json()) as {
           doc: Appointment;

@@ -9,6 +9,12 @@ type Args = {
   data: ReservationSchema;
 };
 
+/**
+ *
+ * @todo IMPROVE RECOMENDATIONS FOR NOT AVAILABLE DATE-TIME
+ * @param param0
+ * @returns
+ */
 export function renderMsgNotAvailable({ availability, business, data }: Args) {
   const timezone = business.general.timezone;
 
@@ -29,6 +35,9 @@ export function renderMsgNotAvailable({ availability, business, data }: Args) {
   }
 
   mensaje += `\n`;
+  if (availability.isFullyAvailable) {
+    // message for when isFullyAvailable=true
+  }
 
   if (availability.suggestedTimes && availability.suggestedTimes.length > 0) {
     mensaje += `✨ Te sugerimos estos horarios alternativos:\n`;
