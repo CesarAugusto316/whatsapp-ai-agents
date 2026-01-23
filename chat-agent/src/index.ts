@@ -42,7 +42,7 @@ app.use(
   rateLimiter({
     // handler
     windowMs: 10 * 60 * 1000, // 10 minutes
-    limit: 200, // Limit each client to 100 requests per window
+    limit: 200, // Limit each client to 200 requests per window
     keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "", // Use IP address as key
   }),
 );

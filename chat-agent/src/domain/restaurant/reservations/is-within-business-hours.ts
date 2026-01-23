@@ -1,4 +1,5 @@
 import { WeekDay } from "@/infraestructure/http/cms";
+import { logger } from "@/infraestructure/logging";
 
 /**
  * Verifica si una fecha/hora específica cae dentro del horario de atención del restaurante
@@ -57,7 +58,7 @@ export function isWithinBusinessHours(
       return currentMinutes >= slot.open && currentMinutes <= closeTime;
     });
   } catch (error) {
-    console.error("Error en isWithinBusinessHours:", error);
+    logger.error("Error en isWithinBusinessHours:", error as Error);
     return false;
   }
 }

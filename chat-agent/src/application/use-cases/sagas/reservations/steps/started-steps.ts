@@ -207,6 +207,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
       ctx;
     const reservation = RESERVATION_STATE as ReservationState;
 
+    // if collect_and_validate OK
     if (previous?.continue && previous?.data) {
       const timezone = business.general.timezone;
       const data = previous.data!;
@@ -216,6 +217,10 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         start: isWithinBusinessHours(business.schedule, timezone, start),
         end: isWithinBusinessHours(business.schedule, timezone, end),
       };
+
+      /**
+       * @todo Recommend suggested available slots
+       */
       if (!isWithinSchedule.start || !isWithinSchedule.end) {
         logger.info("Reservation out of business hours", {
           customerMessage,
@@ -236,9 +241,9 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           HORARIO DE ATENCION
           ==============================
           ${SCHEDULE_BLOCK}
-        `);
+        `); // Dar el horario de ese dia en especifico y/o suggested slots
         return {
-          result,
+          result, // suggest available slots
           continue: false,
           metadata: {
             description: "IS_OUT_OF_BUSINESS_HOURS",
@@ -253,6 +258,10 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         business,
         startDateTime,
       );
+
+      /**
+       * @todo Recommend suggested available slots
+       */
       if (isWithinRange) {
         logger.info("Reservation within business hours", {
           isWithinRange,
@@ -264,7 +273,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         } satisfies Partial<ReservationState>);
 
         return {
-          result: message,
+          result: message, // suggest available slots
           continue: false,
           metadata: {
             description: "IS_WITHIN_HOLIDAY",
@@ -279,6 +288,9 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         "where[numberOfPeople][equals]": data.numberOfPeople,
       });
 
+      /**
+       * @todo Recommend suggested available slots
+       */
       if (availability && !availability?.isFullyAvailable) {
         logger.info("Reservation not available", {
           availability,
@@ -291,6 +303,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           attempts: retries,
         } satisfies Partial<ReservationState>);
 
+        // suggest available slots
         const msg = renderMsgNotAvailable({
           availability,
           business,
@@ -298,7 +311,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         });
         const result = await humanizerAgent(msg);
         return {
-          result,
+          result, // suggest available slots
           continue: false,
           metadata: {
             description: "RESERVATION_NOT_AVAILABLE",

@@ -73,12 +73,60 @@ export const Appointments: CollectionConfig = {
   },
   endpoints: [
     {
+      path: "/suggest-slots",
+      method: "get",
+      handler: async (req) => {
+        try {
+          const { where } = req.query as unknown as AvailabilityRequest;
+          // endDateTime & startDateTime  in UTC format
+          const { business, endDateTime, numberOfPeople, startDateTime } =
+            where;
+
+          // Validar parámetros requeridos
+          if (!business.equals || !startDateTime.equals) {
+            return Response.json(
+              {
+                success: false,
+                message: "Se requiere businessId y startDateTime",
+              },
+              { status: 400 },
+            );
+          }
+
+          // Obtener el negocio
+          const businessFound: IBusiness = await req.payload.findByID({
+            collection: "businesses",
+            id: business.equals,
+          });
+
+          if (!businessFound) {
+            return Response.json(
+              {
+                success: false,
+                message: "Negocio no encontrado",
+              },
+              { status: 404 },
+            );
+          }
+        } catch (error) {
+          console.error("Error checking availability:", error);
+          return Response.json(
+            {
+              success: false,
+              message: "Error al sugerir disponibilidad",
+              error: (error as Error).message,
+            },
+            { status: 500 },
+          );
+        }
+      },
+    },
+    {
       path: "/check-availability",
       method: "get",
       handler: async (req) => {
         try {
           const { where } = req.query as unknown as AvailabilityRequest;
-
           const { business, endDateTime, numberOfPeople, startDateTime } =
             where;
 
