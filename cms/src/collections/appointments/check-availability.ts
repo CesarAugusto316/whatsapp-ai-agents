@@ -1,4 +1,4 @@
-import { Business } from "@/payload-types";
+import { Appointment, Business } from "@/payload-types";
 
 export interface AvailabilityRequest {
   depth: string;
@@ -10,12 +10,6 @@ export interface AvailabilityRequest {
   };
 }
 
-interface TimeSlot {
-  hour: string;
-  availableSlots: number;
-  isAvailable: boolean;
-}
-
 export interface AvailabilityResponse {
   success: boolean;
   message?: string;
@@ -24,31 +18,37 @@ export interface AvailabilityResponse {
   requestedEnd: string;
   requestedPeople?: number;
   totalCapacityPerHour: number;
-  availableSlotsPerHour: TimeSlot[];
-  isFullyAvailable: boolean;
+  overlappingSlots: AppointmentSlot[];
+  totalSlotReservations: number;
+  isRequestedDateTimeAvailable: boolean;
   suggestedTimes?: string[];
 }
 
-export interface AppointmentSlot {
-  startDateTime: string;
-  endDateTime?: string;
-  numberOfPeople: number;
-  status?: string;
-}
+export type AppointmentSlot = Pick<
+  Appointment,
+  | "startDateTime"
+  | "endDateTime"
+  | "numberOfPeople"
+  | "status"
+  | "createdAt"
+  | "customer"
+  | "id"
+>;
 
 export interface AvailabilityResult {
-  timeSlots: TimeSlot[];
-  isFullyAvailable: boolean;
+  totalSlotReservations: number;
+  overlappingSlots: AppointmentSlot[];
+  isRequestedDateTimeAvailable: boolean;
 }
 
 type WeekDay = Omit<Business["schedule"], "averageTime">;
-type Days = keyof WeekDay;
+export type WeekDayKey = keyof WeekDay;
 
 /**
  *
  * @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getDay
  */
-export const DayMap: Record<number, Days> = {
+export const DayMap: Record<number, WeekDayKey> = {
   0: "sunday",
   1: "monday",
   2: "tuesday",
@@ -61,7 +61,15 @@ export const DayMap: Record<number, Days> = {
 type CalcArgs = {
   appointments: AppointmentSlot[]; // only status confirmed or pending
   maxCapacityPerHour: number;
+  /**
+   *
+   * @description the exact start date
+   */
   startDate: Date;
+  /**
+   *
+   * @description the exact end date
+   */
   endDate: Date;
   numberOfPeople: number;
   hoursToCheck: number;
@@ -80,7 +88,7 @@ export function calculateAvailability({
   startDate,
   endDate,
 }: Partial<CalcArgs>): AvailabilityResult {
-  const timeSlots: TimeSlot[] = [];
+  const overlappingSlots: AppointmentSlot[] = [];
 
   // Crear copias para no modificar los parámetros originales
   const start = new Date(startDate);
@@ -106,48 +114,47 @@ export function calculateAvailability({
 
   let currentHour = new Date(start);
 
+  // we advance 1 hour by adding 60 minutes to the current hour, for example time maybe from 20:30 to 23:30
+  // 3 hours, so this loope will iterate 3 times
   while (currentHour < end) {
     const hourStart = new Date(currentHour);
     const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
 
     // Encontrar reservas que se superponen con esta hora
-    const overlappingAppointments = appointments.filter((appointment) => {
-      const apptStart = new Date(appointment.startDateTime);
-      const apptEnd = appointment.endDateTime
-        ? new Date(appointment.endDateTime)
-        : new Date(apptStart.getTime() + 60 * 60 * 1000); // 1 hora por defecto
+    appointments
+      .filter((appointment) => {
+        const apptStart = new Date(appointment.startDateTime);
+        const apptEnd = appointment.endDateTime
+          ? new Date(appointment.endDateTime)
+          : new Date(apptStart.getTime() + 60 * 60 * 1000); // 1 hora por defecto
 
-      // Verificar si la reserva se superpone con esta hora
-      return apptStart < hourEnd && apptEnd > hourStart;
-    });
-
-    // Filtrar solo reservas confirmed o pending
-    const validAppointments = overlappingAppointments.filter(
-      (appt) => appt.status === "confirmed" || appt.status === "pending",
-    );
-
-    // Sumar personas ya reservadas en esta hora
-    const reservedPeople = validAppointments.reduce(
-      (sum, appt) => sum + (appt.numberOfPeople || 0),
-      0,
-    );
-
-    const availableSlots = maxCapacityPerHour - reservedPeople;
-    const isAvailable = availableSlots >= numberOfPeople;
-    timeSlots.push({
-      hour: hourStart.toISOString(),
-      availableSlots,
-      isAvailable,
-    });
+        // Verificar si la reserva se superpone con esta hora
+        return apptStart < hourEnd && apptEnd > hourStart;
+      })
+      .forEach((appointment) => {
+        const isPushed = overlappingSlots.find(
+          (slot) => slot.id === appointment.id,
+        );
+        if (!isPushed) {
+          overlappingSlots.push(appointment);
+        }
+      });
 
     // Avanzar a la siguiente hora
     currentHour = hourEnd;
   }
 
-  const isFullyAvailable =
-    timeSlots.length > 0 && timeSlots.every((slot) => slot.isAvailable);
+  const totalSlotReservations = overlappingSlots.reduce(
+    (sum, appt) => sum + (appt.numberOfPeople || 0),
+    0,
+  );
 
-  return { timeSlots, isFullyAvailable };
+  return {
+    totalSlotReservations,
+    overlappingSlots,
+    isRequestedDateTimeAvailable:
+      maxCapacityPerHour - totalSlotReservations >= numberOfPeople,
+  };
 }
 
 /**

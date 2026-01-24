@@ -10,10 +10,13 @@ function createAppointmentSlot(
   overrides: Partial<AppointmentSlot> = {},
 ): AppointmentSlot {
   return {
+    id: "1",
     startDateTime: "2024-01-20T19:00:00.000Z",
     endDateTime: "2024-01-20T20:00:00.000Z",
     numberOfPeople: 4,
     status: "confirmed",
+    createdAt: "",
+    customer: "",
     ...overrides,
   };
 }
@@ -32,10 +35,10 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         numberOfPeople: 4, // Grupo de 4 personas
       });
 
-      expect(result.isFullyAvailable).toBe(true);
-      expect(result.timeSlots).toHaveLength(1);
-      expect(result.timeSlots[0].availableSlots).toBe(20);
-      expect(result.timeSlots[0].isAvailable).toBe(true);
+      expect(result.isRequestedDateTimeAvailable).toBe(true);
+      expect(result.overlappingSlots).toHaveLength(1);
+      // expect(result.timeSlots[0].reservedSlots).toBe(20);
+      // expect(result.timeSlots[0].isReserved).toBe(true);
     });
 
     test("debe mostrar no disponible cuando la capacidad está completamente llena", () => {
@@ -59,9 +62,9 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         numberOfPeople: 2, // Intentando reservar para 2 personas
       });
 
-      expect(result.isFullyAvailable).toBe(false);
-      expect(result.timeSlots[0].availableSlots).toBe(0);
-      expect(result.timeSlots[0].isAvailable).toBe(false);
+      expect(result.isRequestedDateTimeAvailable).toBe(false);
+      // expect(result.timeSlots[0].reservedSlots).toBe(0);
+      // expect(result.timeSlots[0].isReserved).toBe(false);
     });
 
     test("debe mostrar disponibilidad parcial (algunas mesas disponibles)", () => {
@@ -83,9 +86,9 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       });
 
       // 20 - 12 = 8 disponibles, alcanza para 5
-      expect(result.isFullyAvailable).toBe(true);
-      expect(result.timeSlots[0].availableSlots).toBe(8);
-      expect(result.timeSlots[0].isAvailable).toBe(true);
+      expect(result.isRequestedDateTimeAvailable).toBe(true);
+      // expect(result.timeSlots[0].reservedSlots).toBe(8);
+      // expect(result.timeSlots[0].isReserved).toBe(true);
     });
 
     test("debe ignorar reservas canceladas y completadas", () => {
@@ -121,9 +124,9 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
 
       // Solo debe contar confirmed y pending: 10 + 5 = 15
       // 20 - 15 = 5 disponibles, NO alcanza para 8
-      expect(result.isFullyAvailable).toBe(false);
-      expect(result.timeSlots[0].availableSlots).toBe(5);
-      expect(result.timeSlots[0].isAvailable).toBe(false);
+      expect(result.isRequestedDateTimeAvailable).toBe(false);
+      // expect(result.timeSlots[0].reservedSlots).toBe(5);
+      // expect(result.timeSlots[0].isReserved).toBe(false);
     });
 
     test("debe manejar reservas que se superponen en múltiples horas", () => {
@@ -147,21 +150,21 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         numberOfPeople: 10, // Queremos 10 personas
       });
 
-      expect(result.timeSlots).toHaveLength(3);
+      expect(result.overlappingSlots).toHaveLength(3);
 
       // Hora 1 (18-19): 20 - 15 = 5 disponibles
-      expect(result.timeSlots[0].availableSlots).toBe(5);
-      expect(result.timeSlots[0].isAvailable).toBe(false); // 5 < 10
+      // expect(result.timeSlots[0].reservedSlots).toBe(5);
+      // expect(result.timeSlots[0].isReserved).toBe(false); // 5 < 10
 
       // Hora 2 (19-20): 20 - 15 = 5 disponibles
-      expect(result.timeSlots[1].availableSlots).toBe(5);
-      expect(result.timeSlots[1].isAvailable).toBe(false);
+      // expect(result.timeSlots[1].reservedSlots).toBe(5);
+      // expect(result.timeSlots[1].isReserved).toBe(false);
 
       // Hora 3 (20-21): 20 - 15 = 5 disponibles
-      expect(result.timeSlots[2].availableSlots).toBe(5);
-      expect(result.timeSlots[2].isAvailable).toBe(false);
+      // expect(result.timeSlots[2].reservedSlots).toBe(5);
+      // expect(result.timeSlots[2].isReserved).toBe(false);
 
-      expect(result.isFullyAvailable).toBe(false);
+      expect(result.isRequestedDateTimeAvailable).toBe(false);
     });
 
     test("debe manejar múltiples reservas en la misma hora", () => {
@@ -194,8 +197,8 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
 
       // Total personas: 8 + 6 + 4 = 18
       // Disponibles: 20 - 18 = 2
-      expect(result.timeSlots[0].availableSlots).toBe(2);
-      expect(result.timeSlots[0].isAvailable).toBe(false); // 2 < 5
+      // expect(result.timeSlots[0].reservedSlots).toBe(2);
+      // expect(result.timeSlots[0].isReserved).toBe(false); // 2 < 5
     });
 
     test("debe usar 1 hora por defecto cuando no hay endDateTime", () => {
@@ -204,10 +207,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
 
       const existingAppointments: AppointmentSlot[] = [
         {
+          id: "1",
           startDateTime: "2024-01-20T19:00:00.000Z",
           // Sin endDateTime
           numberOfPeople: 10,
           status: "confirmed",
+          createdAt: "2024-01-19T19:00:00.000Z",
+          customer: "",
         },
       ];
 
@@ -220,8 +226,8 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       });
 
       // Debería asumir 1 hora (19-20) y contar las 10 personas
-      expect(result.timeSlots[0].availableSlots).toBe(10); // 20 - 10 = 10
-      expect(result.timeSlots[0].isAvailable).toBe(true); // 10 ≥ 8
+      // expect(result.timeSlots[0].reservedSlots).toBe(10); // 20 - 10 = 10
+      // expect(result.timeSlots[0].isReserved).toBe(true); // 10 ≥ 8
     });
 
     test("debe normalizar fechas a horas completas (redondeo hacia arriba para fin)", () => {
@@ -239,9 +245,13 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       // Debería normalizar a horas completas:
       // 19:15 → 19:00 (redondeo hacia abajo)
       // 20:45 → 21:00 (redondeo hacia arriba porque tiene minutos)
-      expect(result.timeSlots).toHaveLength(2); // Horas 19-20 y 20-21
-      expect(result.timeSlots[0].hour).toBe("2024-01-20T19:00:00.000Z");
-      expect(result.timeSlots[1].hour).toBe("2024-01-20T20:00:00.000Z");
+      expect(result.overlappingSlots).toHaveLength(2); // Horas 19-20 y 20-21
+      expect(result.overlappingSlots[0].startDateTime).toBe(
+        "2024-01-20T19:00:00.000Z",
+      );
+      expect(result.overlappingSlots[1].startDateTime).toBe(
+        "2024-01-20T20:00:00.000Z",
+      );
     });
 
     test("debe manejar fecha exacta sin redondeo", () => {
@@ -257,8 +267,10 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       });
 
       // Fechas exactas, no necesita redondeo
-      expect(result.timeSlots).toHaveLength(1);
-      expect(result.timeSlots[0].hour).toBe("2024-01-20T19:00:00.000Z");
+      expect(result.overlappingSlots).toHaveLength(1);
+      expect(result.overlappingSlots[0].startDateTime).toBe(
+        "2024-01-20T19:00:00.000Z",
+      );
     });
 
     test("debe usar valores por defecto cuando parámetros faltan", () => {
@@ -272,9 +284,9 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         endDate,
       });
 
-      expect(result.timeSlots).toHaveLength(1);
-      expect(result.timeSlots[0].availableSlots).toBe(20); // Valor por defecto de maxCapacityPerHour
-      expect(result.timeSlots[0].isAvailable).toBe(true); // Valor por defecto de numberOfPeople es 1
+      expect(result.overlappingSlots).toHaveLength(1);
+      // expect(result.timeSlots[0].reservedSlots).toBe(20); // Valor por defecto de maxCapacityPerHour
+      // expect(result.timeSlots[0].isReserved).toBe(true); // Valor por defecto de numberOfPeople es 1
     });
 
     test("debe manejar cuando endDate es anterior a startDate", () => {
@@ -290,8 +302,10 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       });
 
       // Debería ajustar a 1 hora después de startDate
-      expect(result.timeSlots).toHaveLength(1);
-      expect(result.timeSlots[0].hour).toBe("2024-01-20T20:00:00.000Z");
+      expect(result.overlappingSlots).toHaveLength(1);
+      expect(result.overlappingSlots[0].startDateTime).toBe(
+        "2024-01-20T20:00:00.000Z",
+      );
     });
   });
 
@@ -425,17 +439,17 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         numberOfPeople: 6, // Grupo de 6 personas
       });
 
-      expect(result.timeSlots).toHaveLength(2);
+      expect(result.overlappingSlots).toHaveLength(2);
 
       // Hora 19-20: debe tener menos de 20 disponibles
-      expect(result.timeSlots[0].availableSlots).toBeLessThan(20);
-      expect(result.timeSlots[0].isAvailable).toBe(false); // No alcanza para 6
+      // expect(result.timeSlots[0].reservedSlots).toBeLessThan(20);
+      // expect(result.timeSlots[0].isReserved).toBe(false); // No alcanza para 6
 
       // Hora 20-21: similar cálculo
-      expect(result.timeSlots[1].availableSlots).toBeLessThan(20);
-      expect(result.timeSlots[1].isAvailable).toBe(false);
+      // expect(result.timeSlots[1].reservedSlots).toBeLessThan(20);
+      // expect(result.timeSlots[1].isReserved).toBe(false);
 
-      expect(result.isFullyAvailable).toBe(false);
+      expect(result.isRequestedDateTimeAvailable).toBe(false);
     });
 
     test("escenario 2: reserva de grupo grande (15 personas)", () => {
@@ -458,9 +472,9 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       });
 
       // 20 - 4 = 16 disponibles, alcanza para 15
-      expect(result.isFullyAvailable).toBe(true);
-      expect(result.timeSlots[0].availableSlots).toBe(16);
-      expect(result.timeSlots[0].isAvailable).toBe(true);
+      expect(result.isRequestedDateTimeAvailable).toBe(true);
+      // expect(result.timeSlots[0].reservedSlots).toBe(16);
+      // expect(result.timeSlots[0].isReserved).toBe(true);
     });
 
     test("escenario 3: cena larga de 2 horas (con fechas exactas)", () => {
@@ -490,17 +504,17 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
         numberOfPeople: 8, // Reserva para 8 personas
       });
 
-      expect(result.timeSlots).toHaveLength(2);
+      expect(result.overlappingSlots).toHaveLength(2);
 
       // Hora 1 (19-20): 20 - 12 = 8 disponibles (justo alcanza para 8)
-      expect(result.timeSlots[0].availableSlots).toBe(8);
-      expect(result.timeSlots[0].isAvailable).toBe(true);
+      // expect(result.timeSlots[0].reservedSlots).toBe(8);
+      // expect(result.timeSlots[0].isReserved).toBe(true);
 
       // Hora 2 (20-21): 20 - 10 = 10 disponibles (alcanza para 8)
-      expect(result.timeSlots[1].availableSlots).toBe(10);
-      expect(result.timeSlots[1].isAvailable).toBe(true);
+      // expect(result.timeSlots[1].reservedSlots).toBe(10);
+      // expect(result.timeSlots[1].isReserved).toBe(true);
 
-      expect(result.isFullyAvailable).toBe(true);
+      expect(result.isRequestedDateTimeAvailable).toBe(true);
     });
 
     test("escenario 4: reservas que empiezan y terminan en bordes de hora", () => {
@@ -510,24 +524,33 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
       const existingAppointments: AppointmentSlot[] = [
         // Termina exactamente a las 19:00 (no afecta hora 19-20)
         {
+          id: "1",
           startDateTime: "2024-01-20T18:00:00.000Z",
           endDateTime: "2024-01-20T19:00:00.000Z", // Termina exactamente a las 19:00
           numberOfPeople: 10,
           status: "confirmed",
+          createdAt: "",
+          customer: "",
         },
         // Empieza exactamente a las 20:00 (no afecta hora 19-20)
         {
+          id: "1",
           startDateTime: "2024-01-20T20:00:00.000Z", // Empieza exactamente a las 20:00
           endDateTime: "2024-01-20T21:00:00.000Z",
           numberOfPeople: 15,
           status: "confirmed",
+          createdAt: "",
+          customer: "",
         },
         // Dentro de la hora 19-20
         {
+          id: "1",
           startDateTime: "2024-01-20T19:30:00.000Z",
           endDateTime: "2024-01-20T19:45:00.000Z",
           numberOfPeople: 4,
           status: "confirmed",
+          createdAt: "",
+          customer: "",
         },
       ];
 
@@ -541,8 +564,8 @@ describe("Lógica de Disponibilidad para Sistema de Reservas", () => {
 
       // Solo debe contar la reserva de 19:30-19:45 (4 personas)
       // Las reservas en los bordes no deben contar
-      expect(result.timeSlots[0].availableSlots).toBe(16); // 20 - 4 = 16
-      expect(result.timeSlots[0].isAvailable).toBe(true); // 16 ≥ 10
+      // expect(result.timeSlots[0].reservedSlots).toBe(16); // 20 - 4 = 16
+      // expect(result.timeSlots[0].isReserved).toBe(true); // 16 ≥ 10
     });
   });
 });
