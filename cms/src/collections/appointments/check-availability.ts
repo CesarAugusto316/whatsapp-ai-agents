@@ -127,7 +127,25 @@ export function bucketByHour(
       from: new Date(slotStart).toISOString(),
       to: new Date(slotEnd).toISOString(),
       totalPeople,
-      slots: inside.map(({ start, end, ...rest }) => rest),
+      slots: inside.map(
+        ({
+          createdAt,
+          customer,
+          id,
+          startDateTime,
+          status,
+          endDateTime,
+          numberOfPeople,
+        }) => ({
+          id,
+          createdAt,
+          customer,
+          startDateTime,
+          status,
+          endDateTime,
+          numberOfPeople,
+        }),
+      ),
     } satisfies TimeWindow);
   }
 
