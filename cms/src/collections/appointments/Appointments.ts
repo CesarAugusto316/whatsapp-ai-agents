@@ -78,7 +78,7 @@ export const Appointments: CollectionConfig = {
           const { where } = req.query as unknown as AvailabilityRequest;
           // endDateTime & startDateTime  in UTC format
           const { business, startDateTime } = where;
-          
+
           const response = await appointmentService(req);
           return Response.json(response, { status: 200 });
         } catch (error) {

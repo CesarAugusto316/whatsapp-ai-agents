@@ -8,6 +8,8 @@ import {
 } from "./check-availability";
 import { fromZonedTime } from "date-fns-tz";
 import { Business as IBusiness } from "@/payload-types";
+import { getPayload } from "payload";
+import config from "@payload-config";
 
 /**
  *
@@ -17,39 +19,9 @@ import { Business as IBusiness } from "@/payload-types";
 export const appointmentService = async (req: PayloadRequest) => {
   const { where } = req.query as unknown as AvailabilityRequest;
 
-  // Validar que where y sus propiedades existan
-  if (!where || !where.business || !where.startDateTime) {
-    throw new Error(
-      "Se requiere businessId y startDateTime en el parámetro where",
-    );
-  }
-
-  const { business, endDateTime, numberOfPeople, startDateTime } = where;
-
+  const businessFound = await validateBusiness(where);
+  const { endDateTime, numberOfPeople, startDateTime } = where;
   const numbOfpeople = Number(numberOfPeople?.equals ?? 1);
-
-  // Validar parámetros requeridos
-  if (!business.equals || !startDateTime.equals) {
-    throw new Error("Se requiere businessId y startDateTime");
-  }
-
-  // Obtener el negocio
-  let businessFound: IBusiness | null = null;
-  try {
-    businessFound = await req.payload.findByID({
-      depth: 0,
-      collection: "businesses",
-      id: business.equals,
-    });
-  } catch (error) {
-    // Si hay error al buscar (ej: ID inválido o no existe), tratamos como no encontrado
-    console.warn(`Business not found or error: ${business.equals}`, error);
-    throw new Error("businessNotFound");
-  }
-
-  if (!businessFound) {
-    throw new Error("businessNotFound");
-  }
   const maxCapacityPerHour = businessFound.general.tables || 20;
 
   // Parsear fechas (Payload usa UTC)
@@ -132,7 +104,7 @@ export const appointmentService = async (req: PayloadRequest) => {
       depth: 0,
       sort: "startDateTime",
       where: {
-        business,
+        business: { equals: businessFound.id },
         status: {
           in: ["confirmed", "pending"],
         },
@@ -175,7 +147,7 @@ export const appointmentService = async (req: PayloadRequest) => {
 
   const response: AvailabilityResponse = {
     success: true,
-    businessId: business.equals,
+    businessId: businessFound.id,
     requestedStart: startDate.toISOString(),
     requestedEnd: endDate.toISOString(),
     requestedPeople: numbOfpeople,
@@ -190,4 +162,43 @@ export const appointmentService = async (req: PayloadRequest) => {
   };
 
   return response;
+};
+
+export const validateBusiness = async (where: {
+  business: { equals: string };
+}) => {
+  const payload = await getPayload({ config });
+  // Validar que where y sus propiedades existan
+  if (!where.business) {
+    throw new Error(
+      "Se requiere businessId y startDateTime en el parámetro where",
+    );
+  }
+
+  const { business } = where;
+
+  // Validar parámetros requeridos
+  if (!business.equals) {
+    throw new Error("Se requiere businessId");
+  }
+
+  // Obtener el negocio
+  let businessFound: IBusiness | null = null;
+  try {
+    businessFound = await payload.findByID({
+      depth: 0,
+      collection: "businesses",
+      id: business.equals,
+    });
+  } catch (error) {
+    // Si hay error al buscar (ej: ID inválido o no existe), tratamos como no encontrado
+    console.warn(`Business not found or error: ${business.equals}`, error);
+    throw new Error("businessNotFound");
+  }
+
+  if (!businessFound) {
+    throw new Error("businessNotFound");
+  }
+
+  return businessFound;
 };
