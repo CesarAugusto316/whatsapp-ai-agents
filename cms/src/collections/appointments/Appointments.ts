@@ -6,9 +6,7 @@ import {
   AppointmentSlot,
   AvailabilityRequest,
   AvailabilityResponse,
-  TimeWindow,
   bucketByHour,
-  calculateAvailability,
   getDayScheduleForDate,
 } from "./check-availability";
 import { fromZonedTime } from "date-fns-tz";
@@ -195,7 +193,10 @@ export const Appointments: CollectionConfig = {
                   (businessFound.schedule.averageTime || 60) * 60 * 1000,
               ); // +1 hora por defecto
 
-          const schedules = getDayScheduleForDate(businessFound, startDate); // 2 slots: morning, afternoon
+          const { schedule: schedules, weekDay } = getDayScheduleForDate(
+            businessFound,
+            startDate,
+          ); // 2 slots: morning, afternoon
 
           if (!schedules.length) {
             return Response.json(
@@ -246,7 +247,10 @@ export const Appointments: CollectionConfig = {
 
           const utcSchedule = utcSchedules.find(
             ({ closeTime: utcCloseTime, openTime: utcOpenTime }) => {
-              return startDate >= utcOpenTime && endDate <= utcCloseTime;
+              return (
+                startDate.getTime() >= utcOpenTime.getTime() &&
+                endDate.getTime() <= utcCloseTime.getTime()
+              );
             },
           );
 
@@ -261,33 +265,27 @@ export const Appointments: CollectionConfig = {
           }
 
           console.log({ startDate, endDate, utcSchedule });
+          const utcOpenTime = utcSchedule.openTime.toISOString();
+          const utcCloseTime = utcSchedule.closeTime.toISOString();
 
-          // Necesitamos un rango más amplio para calcular superposiciones correctamente
-          const searchStart = new Date(startDate);
-          searchStart.setHours(searchStart.getHours() - 1); // Incluir 1 hora antes
-          searchStart.setMinutes(0, 0, 0);
-
-          const searchEnd = new Date(endDate);
-          searchEnd.setHours(searchEnd.getHours() + 1); // Incluir 1 hora después
-          searchEnd.setMinutes(0, 0, 0);
-
-          const existingAppointments: AppointmentSlot[] = (
+          const appointmentsWindow: AppointmentSlot[] = (
             await req.payload.find({
-              depth: 0,
               collection: "appointments",
+              depth: 0,
+              sort: ["group", "startDateTime"],
               where: {
                 business,
                 status: {
                   in: ["confirmed", "pending"],
                 },
                 startDateTime: {
-                  greater_than_equal: searchStart.toISOString(), // UTC
+                  greater_than_equal: utcOpenTime,
                 },
                 endDateTime: {
-                  less_than_equal: searchEnd.toISOString(), // UTC
+                  less_than_equal: utcCloseTime,
                 },
               },
-              limit: maxCapacityPerHour * 3,
+              limit: 1000,
             })
           ).docs.map((doc) => ({
             id: doc.id,
@@ -299,60 +297,21 @@ export const Appointments: CollectionConfig = {
             customer: doc.customer,
           }));
 
-          // Calcular disponibilidad usando la función pura
-          const {
-            overlappingSlots,
-            isRequestedDateTimeAvailable,
-            totalSlotReservations,
-          } = calculateAvailability({
-            appointments: existingAppointments,
-            maxCapacityPerHour,
-            endDate,
-            startDate,
-            numberOfPeople: +numberOfPeople.equals || 1,
+          const timeWindow = bucketByHour(
+            utcOpenTime,
+            utcCloseTime,
+            appointmentsWindow,
+          );
+
+          const reqStart = startDate.getTime();
+          const reqEnd = endDate.getTime();
+
+          const overlappingSlots = timeWindow.filter((slot) => {
+            const slotStart = new Date(slot.from).getTime();
+            const slotEnd = new Date(slot.to).getTime();
+
+            return reqStart < slotEnd && reqEnd > slotStart;
           });
-
-          // Si no hay disponibilidad, obtener más datos para sugerencias
-          let timeWindow: TimeWindow[] = [];
-          const message = "";
-
-          // Solo sugerir horarios alternativos si no hay disponibilidad completa
-          if (isRequestedDateTimeAvailable) {
-            const appointmentsWindow: AppointmentSlot[] = (
-              await req.payload.find({
-                collection: "appointments",
-                depth: 0,
-                sort: ["group", "startDateTime"],
-                where: {
-                  business,
-                  status: {
-                    in: ["confirmed", "pending"],
-                  },
-                  startDateTime: {
-                    greater_than_equal: utcSchedule.openTime.toISOString(),
-                  },
-                  endDateTime: {
-                    less_than_equal: utcSchedule.closeTime.toISOString(),
-                  },
-                },
-                limit: 1000,
-              })
-            ).docs.map((doc) => ({
-              id: doc.id,
-              startDateTime: doc.startDateTime,
-              endDateTime: doc.endDateTime,
-              numberOfPeople: doc.numberOfPeople || 0,
-              status: doc.status,
-              createdAt: doc.createdAt,
-              customer: doc.customer,
-            }));
-
-            timeWindow = bucketByHour(
-              utcSchedule.openTime.toISOString(),
-              utcSchedule.closeTime.toISOString(),
-              appointmentsWindow,
-            );
-          }
 
           const response: AvailabilityResponse = {
             success: true,
@@ -361,10 +320,15 @@ export const Appointments: CollectionConfig = {
             requestedEnd: endDate.toISOString(),
             requestedPeople: +numberOfPeople.equals,
             totalCapacityPerHour: maxCapacityPerHour,
-            totalSlotReservations,
-            isRequestedDateTimeAvailable,
+            requestedDay: weekDay,
+            scheduleForTheRequestedDay: utcSchedules,
+            isRequestedDateTimeAvailable: overlappingSlots.every(
+              (slot) =>
+                maxCapacityPerHour - slot.totalPeople >=
+                (+numberOfPeople.equals || 1),
+            ),
             timeWindow,
-            message,
+            neededSlots: overlappingSlots,
           };
 
           return Response.json(response, { status: 200 });
