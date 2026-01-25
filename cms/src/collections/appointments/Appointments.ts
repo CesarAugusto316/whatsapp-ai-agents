@@ -146,6 +146,8 @@ export const Appointments: CollectionConfig = {
           const { business, endDateTime, numberOfPeople, startDateTime } =
             where;
 
+          const numbOfpeople = Number(numberOfPeople?.equals ?? 1);
+
           // Validar parámetros requeridos
           if (!business.equals || !startDateTime.equals) {
             return Response.json(
@@ -264,7 +266,6 @@ export const Appointments: CollectionConfig = {
             );
           }
 
-          console.log({ startDate, endDate, utcSchedule });
           const utcOpenTime = utcSchedule.openTime.toISOString();
           const utcCloseTime = utcSchedule.closeTime.toISOString();
 
@@ -279,10 +280,12 @@ export const Appointments: CollectionConfig = {
                   in: ["confirmed", "pending"],
                 },
                 startDateTime: {
-                  greater_than_equal: utcOpenTime,
+                  less_than: utcCloseTime,
+                  // greater_than_equal: utcOpenTime,
                 },
                 endDateTime: {
-                  less_than_equal: utcCloseTime,
+                  greater_than: utcOpenTime,
+                  // less_than_equal: utcCloseTime,
                 },
               },
               limit: 1000,
@@ -318,14 +321,12 @@ export const Appointments: CollectionConfig = {
             businessId: business.equals,
             requestedStart: startDate.toISOString(),
             requestedEnd: endDate.toISOString(),
-            requestedPeople: +numberOfPeople.equals,
+            requestedPeople: numbOfpeople,
             totalCapacityPerHour: maxCapacityPerHour,
             requestedDay: weekDay,
             scheduleForTheRequestedDay: utcSchedules,
             isRequestedDateTimeAvailable: overlappingSlots.every(
-              (slot) =>
-                maxCapacityPerHour - slot.totalPeople >=
-                (+numberOfPeople.equals || 1),
+              (slot) => maxCapacityPerHour - slot.totalPeople >= numbOfpeople,
             ),
             timeWindow,
             neededSlots: overlappingSlots,

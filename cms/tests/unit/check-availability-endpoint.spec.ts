@@ -129,19 +129,19 @@ describe("Endpoint de verificación de disponibilidad", () => {
       expect(response.status).toBe(200);
 
       const data: AvailabilityResponse = await response.json();
-      expect(data.overlappingSlots).toHaveLength(2); // 16-17 y 17-18
+      expect(data.timeWindow).toHaveLength(2); // 16-17 y 17-18
 
       // Cada slot debe tener la estructura correcta
-      data.overlappingSlots.forEach((slot) => {
+      data.timeWindow.forEach((slot) => {
         expect(slot).toHaveProperty("startDateTime");
         expect(slot).toHaveProperty("reservedSlots");
         expect(slot).toHaveProperty("isReserved");
-        expect(typeof slot.startDateTime).toBe("string");
+        expect(typeof slot.from).toBe("string");
         // expect(typeof slot.reservedSlots).toBe("number");
         // expect(typeof slot.isReserved).toBe("boolean");
 
         // Verificar que la hora sea válida
-        expect(() => new Date(slot.startDateTime)).not.toThrow();
+        expect(() => new Date(slot.from)).not.toThrow();
       });
 
       // isFullyAvailable debe ser consistente con los slots individuales
@@ -172,7 +172,7 @@ describe("Endpoint de verificación de disponibilidad", () => {
 
       // Debería normalizar a horas completas (16:30 → 16:00, 17:45 → 18:00)
       // Por lo tanto debería haber slots para 16-17 y 17-18
-      expect(data.overlappingSlots.length).toBeGreaterThanOrEqual(2);
+      expect(data.timeWindow.length).toBeGreaterThanOrEqual(2);
     });
 
     test("debe incluir tiempos sugeridos cuando no hay disponibilidad", async () => {
