@@ -19,10 +19,9 @@ export interface AvailabilityResponse {
   requestedEnd: string;
   requestedPeople?: number;
   totalCapacityPerHour: number;
-  overlappingSlots: AppointmentSlot[];
   totalSlotReservations: number;
   isRequestedDateTimeAvailable: boolean;
-  suggestedTimes?: string[];
+  timeWindow?: TimeWindow[];
 }
 
 export type AppointmentSlot = Pick<
@@ -249,4 +248,57 @@ export function getDayScheduleForDate(
     return [];
   }
   return daySchedule;
+}
+
+export interface TimeWindow {
+  from: string;
+  to: string;
+  totalPeople: number;
+  slots: AppointmentSlot[];
+}
+
+export function bucketByHour(
+  globalStartISO: string,
+  globalEndISO: string,
+  suggested: AppointmentSlot[],
+): TimeWindow[] {
+  const HOUR = 60 * 60 * 1000;
+
+  const globalStart = new Date(globalStartISO).getTime();
+  const globalEnd = new Date(globalEndISO).getTime();
+
+  const events = suggested.map((e) => ({
+    ...e,
+    start: new Date(e.startDateTime).getTime(),
+    end: new Date(e.endDateTime).getTime(),
+  }));
+
+  const result = [];
+
+  for (let slotStart = globalStart; slotStart < globalEnd; slotStart += HOUR) {
+    const slotEnd = slotStart + HOUR;
+
+    const inside = events.filter((e) => e.start < slotEnd && e.end > slotStart);
+
+    if (inside.length === 0) {
+      result.push({
+        from: new Date(slotStart).toISOString(),
+        to: new Date(slotEnd).toISOString(),
+        totalPeople: 0,
+        slots: [],
+      } satisfies TimeWindow);
+      continue;
+    }
+
+    const totalPeople = inside.reduce((sum, e) => sum + e.numberOfPeople, 0);
+
+    result.push({
+      from: new Date(slotStart).toISOString(),
+      to: new Date(slotEnd).toISOString(),
+      totalPeople,
+      slots: inside.map(({ start, end, ...rest }) => rest),
+    } satisfies TimeWindow);
+  }
+
+  return result;
 }

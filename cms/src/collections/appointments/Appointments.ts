@@ -6,6 +6,8 @@ import {
   AppointmentSlot,
   AvailabilityRequest,
   AvailabilityResponse,
+  TimeWindow,
+  bucketByHour,
   calculateAvailability,
   getDayScheduleForDate,
 } from "./check-availability";
@@ -311,12 +313,12 @@ export const Appointments: CollectionConfig = {
           });
 
           // Si no hay disponibilidad, obtener más datos para sugerencias
-          const suggestedTimes: string[] = [];
+          let timeWindow: TimeWindow[] = [];
           const message = "";
 
           // Solo sugerir horarios alternativos si no hay disponibilidad completa
-          if (!isRequestedDateTimeAvailable) {
-            const appointmentsForSuggestions: AppointmentSlot[] = (
+          if (isRequestedDateTimeAvailable) {
+            const appointmentsWindow: AppointmentSlot[] = (
               await req.payload.find({
                 collection: "appointments",
                 depth: 0,
@@ -345,14 +347,11 @@ export const Appointments: CollectionConfig = {
               customer: doc.customer,
             }));
 
-            console.log({ appointmentsForSuggestions });
-            // Si la hora solicitada cae dentro de un slot de horario
-            // if (index >= 0) {
-            //   //
-            // } else {
-            //   message =
-            //     "La Fecha solicitada esta fuera del horario de atencion del negocio";
-            // }
+            timeWindow = bucketByHour(
+              utcSchedule.openTime.toISOString(),
+              utcSchedule.closeTime.toISOString(),
+              appointmentsWindow,
+            );
           }
 
           const response: AvailabilityResponse = {
@@ -362,10 +361,9 @@ export const Appointments: CollectionConfig = {
             requestedEnd: endDate.toISOString(),
             requestedPeople: +numberOfPeople.equals,
             totalCapacityPerHour: maxCapacityPerHour,
-            overlappingSlots,
             totalSlotReservations,
             isRequestedDateTimeAvailable,
-            suggestedTimes,
+            timeWindow,
             message,
           };
 
