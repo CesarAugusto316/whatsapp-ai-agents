@@ -8,11 +8,13 @@ import {
   AvailabilityResponse,
   calculateAvailability,
   getDayScheduleForDate,
-  getScheduleIndex,
 } from "./check-availability";
 import { fromZonedTime } from "date-fns-tz";
 
-/** @todo corregir en el dashboard para que muestre año/mes/dia en la tabla de reservas */
+/**
+ *
+ * @todo corregir en el dashboard para que muestre año/mes/dia en la tabla de reservas
+ */
 export const Appointments: CollectionConfig = {
   slug: "appointments",
   labels: {
@@ -191,6 +193,73 @@ export const Appointments: CollectionConfig = {
                   (businessFound.schedule.averageTime || 60) * 60 * 1000,
               ); // +1 hora por defecto
 
+          const schedules = getDayScheduleForDate(businessFound, startDate); // 2 slots: morning, afternoon
+
+          if (!schedules.length) {
+            return Response.json(
+              {
+                success: false,
+                message: "Business does not work on this day",
+              },
+              { status: 404 },
+            );
+          }
+
+          const utcSchedules = schedules.map((schedule) => {
+            const openTime = fromZonedTime(
+              new Date(
+                startDate.getFullYear(),
+                startDate.getMonth(),
+                startDate.getDate(),
+                0, // hours
+                schedule.open, // minutes
+              ),
+              businessFound.general.timezone,
+            );
+            const closeTime = fromZonedTime(
+              new Date(
+                endDate.getFullYear(),
+                endDate.getMonth(),
+                endDate.getDate(),
+                0, // hours
+                schedule.close, // minutes
+              ),
+              businessFound.general.timezone,
+            );
+            return {
+              openTime,
+              closeTime,
+            };
+          });
+
+          if (startDate >= endDate) {
+            return Response.json(
+              {
+                success: true,
+                message: "StartDateTime must be before EndDateTime",
+              },
+              { status: 200 },
+            );
+          }
+
+          const utcSchedule = utcSchedules.find(
+            ({ closeTime: utcCloseTime, openTime: utcOpenTime }) => {
+              return startDate >= utcOpenTime && endDate <= utcCloseTime;
+            },
+          );
+
+          if (!utcSchedule) {
+            return Response.json(
+              {
+                success: true,
+                message: "Reservation date is out of business hours",
+              },
+              { status: 200 },
+            );
+          }
+
+          console.log({ startDate, endDate, utcSchedule });
+
           // Necesitamos un rango más amplio para calcular superposiciones correctamente
           const searchStart = new Date(startDate);
           searchStart.setHours(searchStart.getHours() - 1); // Incluir 1 hora antes
@@ -243,52 +312,10 @@ export const Appointments: CollectionConfig = {
 
           // Si no hay disponibilidad, obtener más datos para sugerencias
           const suggestedTimes: string[] = [];
-          let message = "";
+          const message = "";
 
           // Solo sugerir horarios alternativos si no hay disponibilidad completa
-          if (isRequestedDateTimeAvailable) {
-            const schedules = getDayScheduleForDate(
-              businessFound,
-              startDate,
-              businessFound.general.timezone,
-            ); // 2 slots: morning, afternoon
-
-            // Determinar en qué slot cae la hora solicitada
-            const index = getScheduleIndex(
-              schedules,
-              startDate,
-              businessFound.general.timezone,
-            );
-
-            console.log({ startDate });
-
-            const schedule = schedules[index];
-            console.log({ schedules, index });
-
-            // Obtener citas para el mismo día para sugerencias
-            const d1 = new Date(startDate);
-            const sameDayOpen = fromZonedTime(
-              new Date(
-                d1.getFullYear(),
-                d1.getMonth(),
-                d1.getDate(),
-                0, // hours
-                schedule.open, // minutes
-              ),
-              businessFound.general.timezone,
-            );
-            const d2 = new Date(endDate);
-            const sameDayClose = fromZonedTime(
-              new Date(
-                d2.getFullYear(),
-                d2.getMonth(),
-                d2.getDate(),
-                0, // hours
-                schedule.close, // minutes
-              ),
-              businessFound.general.timezone,
-            );
-
+          if (!isRequestedDateTimeAvailable) {
             const appointmentsForSuggestions: AppointmentSlot[] = (
               await req.payload.find({
                 collection: "appointments",
@@ -300,10 +327,10 @@ export const Appointments: CollectionConfig = {
                     in: ["confirmed", "pending"],
                   },
                   startDateTime: {
-                    greater_than_equal: sameDayOpen.toISOString(),
+                    greater_than_equal: utcSchedule.openTime.toISOString(),
                   },
                   endDateTime: {
-                    less_than_equal: sameDayClose.toISOString(),
+                    less_than_equal: utcSchedule.closeTime.toISOString(),
                   },
                 },
                 limit: 1000,
@@ -320,12 +347,12 @@ export const Appointments: CollectionConfig = {
 
             console.log({ appointmentsForSuggestions });
             // Si la hora solicitada cae dentro de un slot de horario
-            if (index >= 0) {
-              //
-            } else {
-              message =
-                "La Fecha solicitada esta fuera del horario de atencion del negocio";
-            }
+            // if (index >= 0) {
+            //   //
+            // } else {
+            //   message =
+            //     "La Fecha solicitada esta fuera del horario de atencion del negocio";
+            // }
           }
 
           const response: AvailabilityResponse = {

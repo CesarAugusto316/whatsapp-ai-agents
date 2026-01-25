@@ -1,5 +1,5 @@
 import { Appointment, Business } from "@/payload-types";
-import { fromZonedTime } from "date-fns-tz";
+// import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 export interface AvailabilityRequest {
   depth: string;
@@ -235,15 +235,13 @@ export function getSuggestedDateTimes({
 // Helper functions for schedule and timezone handling
 export function getDayScheduleForDate(
   business: Business,
-  date: Date,
-  timezone: string,
+  utcdate: Date,
 ): { open: number; close: number }[] {
-  // Get day of week in business timezone
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    weekday: "long",
-  });
-  const weekday = formatter.format(date).toLowerCase() as WeekDayKey;
+  const zonedDate = new Date(utcdate);
+
+  // Get day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = zonedDate.getDay();
+  const weekday = DayMap[dayOfWeek] satisfies WeekDayKey;
 
   // Get schedule for the day, ensuring it's an array
   const daySchedule = business.schedule[weekday];
@@ -251,45 +249,4 @@ export function getDayScheduleForDate(
     return [];
   }
   return daySchedule;
-}
-
-export function getScheduleIndex(
-  schedule: { open: number; close: number }[],
-  date: Date,
-  timezone: string,
-): number {
-  const minutesFromMidnight = utcDateToMinutesFromMidnight(date, timezone);
-
-  for (let i = 0; i < schedule.length; i++) {
-    const slot = schedule[i];
-    if (minutesFromMidnight >= slot.open && minutesFromMidnight <= slot.close) {
-      return i; // Return index of the slot (0 for morning, 1 for afternoon)
-    }
-  }
-  return -1; // Not in any schedule slot
-}
-
-/**
- * Convert UTC Date to minutes from midnight in business timezone
- * @param date UTC Date object
- * @param timezone Business timezone string (e.g., "Europe/Madrid")
- * @returns Minutes from midnight in business local time
- */
-function utcDateToMinutesFromMidnight(date: Date, timezone: string): number {
-  // Format the UTC date to get local time parts in business timezone
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(date);
-  const hourPart = parts.find((p) => p.type === "hour")?.value || "0";
-  const minutePart = parts.find((p) => p.type === "minute")?.value || "0";
-
-  const hour = parseInt(hourPart, 10);
-  const minute = parseInt(minutePart, 10);
-
-  return hour * 60 + minute;
 }
