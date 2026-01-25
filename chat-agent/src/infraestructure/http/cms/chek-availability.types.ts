@@ -1,7 +1,21 @@
-interface TimeSlot {
-  hour: string;
-  availableSlots: number;
-  isAvailable: boolean;
+import { Appointment } from "./cms-types";
+
+type AppointmentSlot = Pick<
+  Appointment,
+  | "startDateTime"
+  | "endDateTime"
+  | "numberOfPeople"
+  | "status"
+  | "createdAt"
+  | "customer"
+  | "id"
+>;
+
+interface TimeWindow {
+  from: string;
+  to: string;
+  totalPeople: number;
+  slots: AppointmentSlot[];
 }
 
 export interface AvailabilityResponse {
@@ -12,7 +26,12 @@ export interface AvailabilityResponse {
   requestedEnd: string;
   requestedPeople?: number;
   totalCapacityPerHour: number;
-  availableSlotsPerHour: TimeSlot[];
-  isFullyAvailable: boolean;
-  suggestedTimes?: string[];
+  isRequestedDateTimeAvailable: boolean;
+  neededSlots?: TimeWindow[];
+  timeWindow?: TimeWindow[];
+  requestedDay?: string;
+  scheduleForTheRequestedDay?: {
+    openTime: string; // iso datetime
+    closeTime: string; // iso datetime
+  }[];
 }

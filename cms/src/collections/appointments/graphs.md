@@ -1,3 +1,5 @@
+## https://recharts.github.io/en-US/examples/TimelineExample/
+
 Sí — y aquí voy a ser muy concreto.
 
 Voy a darte un **esquema visual tipo pixel-art** que representa exactamente lo que tú ya modelaste:

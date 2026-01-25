@@ -2,14 +2,7 @@ import type { CollectionConfig, CollectionSlug } from "payload";
 import { Business } from "../Businesses";
 import { Customers } from "../Costumers";
 import { Business as IBusiness } from "@/payload-types";
-import {
-  AppointmentSlot,
-  AvailabilityRequest,
-  AvailabilityResponse,
-  bucketByHour,
-  getDayScheduleForDate,
-} from "./check-availability";
-import { fromZonedTime } from "date-fns-tz";
+import { AvailabilityRequest } from "./check-availability";
 import { appointmentService } from "./Appointment.service";
 
 /**
@@ -84,35 +77,10 @@ export const Appointments: CollectionConfig = {
         try {
           const { where } = req.query as unknown as AvailabilityRequest;
           // endDateTime & startDateTime  in UTC format
-          const { business, endDateTime, numberOfPeople, startDateTime } =
-            where;
-
-          // Validar parámetros requeridos
-          if (!business.equals || !startDateTime.equals) {
-            return Response.json(
-              {
-                success: false,
-                message: "Se requiere businessId y startDateTime",
-              },
-              { status: 400 },
-            );
-          }
-
-          // Obtener el negocio
-          const businessFound: IBusiness = await req.payload.findByID({
-            collection: "businesses",
-            id: business.equals,
-          });
-
-          if (!businessFound) {
-            return Response.json(
-              {
-                success: false,
-                message: "Negocio no encontrado",
-              },
-              { status: 404 },
-            );
-          }
+          const { business, startDateTime } = where;
+          
+          const response = await appointmentService(req);
+          return Response.json(response, { status: 200 });
         } catch (error) {
           console.error("Error checking availability:", error);
           return Response.json(

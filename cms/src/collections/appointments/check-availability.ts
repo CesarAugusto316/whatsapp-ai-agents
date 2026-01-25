@@ -10,6 +10,13 @@ export interface AvailabilityRequest {
   };
 }
 
+export interface TimeWindow {
+  from: string;
+  to: string;
+  totalPeople: number;
+  slots: AppointmentSlot[];
+}
+
 export interface AvailabilityResponse {
   success: boolean;
   message?: string;
@@ -79,13 +86,6 @@ export function getDayScheduleForDate(
     return { schedule: [] };
   }
   return { schedule: daySchedule, weekDay: weekday };
-}
-
-export interface TimeWindow {
-  from: string;
-  to: string;
-  totalPeople: number;
-  slots: AppointmentSlot[];
 }
 
 export function bucketByHour(

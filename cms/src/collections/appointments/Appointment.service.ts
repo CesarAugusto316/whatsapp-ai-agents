@@ -16,6 +16,7 @@ import { Business as IBusiness } from "@/payload-types";
  */
 export const appointmentService = async (req: PayloadRequest) => {
   const { where } = req.query as unknown as AvailabilityRequest;
+
   // Validar que where y sus propiedades existan
   if (!where || !where.business || !where.startDateTime) {
     throw new Error(
