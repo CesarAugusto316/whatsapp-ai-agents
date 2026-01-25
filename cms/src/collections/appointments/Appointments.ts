@@ -7,299 +7,10 @@ import {
   AvailabilityRequest,
   AvailabilityResponse,
   calculateAvailability,
-  WeekDayKey,
+  getDayScheduleForDate,
+  getScheduleIndex,
 } from "./check-availability";
-
-// Helper functions for schedule and timezone handling
-function getDayScheduleForDate(
-  business: IBusiness,
-  date: Date,
-  timezone: string,
-): { open: number; close: number }[] {
-  // Get day of week in business timezone
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    weekday: "long",
-  });
-  const weekday = formatter.format(date).toLowerCase() as WeekDayKey;
-
-  // Get schedule for the day, ensuring it's an array
-  const daySchedule = business.schedule[weekday];
-  if (!daySchedule || !Array.isArray(daySchedule)) {
-    return [];
-  }
-
-  // Map to the expected format (strip id field if present)
-  return daySchedule.map((slot) => ({
-    open: slot.open,
-    close: slot.close,
-  }));
-}
-
-function getTimeSlotForTime(
-  schedule: { open: number; close: number }[],
-  date: Date,
-  timezone: string,
-): number {
-  const minutesFromMidnight = utcDateToMinutesFromMidnight(date, timezone);
-
-  for (let i = 0; i < schedule.length; i++) {
-    const slot = schedule[i];
-    if (minutesFromMidnight >= slot.open && minutesFromMidnight <= slot.close) {
-      return i; // Return index of the slot (0 for morning, 1 for afternoon)
-    }
-  }
-  return -1; // Not in any schedule slot
-}
-
-/**
- * Convert UTC Date to minutes from midnight in business timezone
- * @param date UTC Date object
- * @param timezone Business timezone string (e.g., "Europe/Madrid")
- * @returns Minutes from midnight in business local time
- */
-function utcDateToMinutesFromMidnight(date: Date, timezone: string): number {
-  // Format the UTC date to get local time parts in business timezone
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(date);
-  const hourPart = parts.find((p) => p.type === "hour")?.value || "0";
-  const minutePart = parts.find((p) => p.type === "minute")?.value || "0";
-
-  const hour = parseInt(hourPart, 10);
-  const minute = parseInt(minutePart, 10);
-
-  return hour * 60 + minute;
-}
-
-/**
- * Convert minutes from midnight in business timezone to UTC Date
- * @param date The date portion (should be in UTC)
- * @param minutesFromMidnight Minutes from midnight in business local time
- * @param timezone Business timezone string (e.g., "Europe/Madrid")
- * @returns UTC Date object
- */
-function localMinutesToUTCDate(
-  date: Date,
-  minutesFromMidnight: number,
-  timezone: string,
-): Date {
-  // Create a date at midnight UTC for the given UTC date
-  const midnightUTC = new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      0,
-      0,
-      0,
-      0,
-    ),
-  );
-
-  // Get timezone offset in minutes for this date in the business timezone
-  const offsetFormatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    timeZoneName: "longOffset",
-  });
-  const offsetParts = offsetFormatter.formatToParts(midnightUTC);
-  const offsetPart = offsetParts.find((p) => p.type === "timeZoneName");
-  let offsetMinutes = 0;
-  if (offsetPart && offsetPart.value.startsWith("GMT")) {
-    const offsetStr = offsetPart.value.replace("GMT", "").trim();
-    if (offsetStr) {
-      const sign = offsetStr[0] === "-" ? -1 : 1;
-      const [h, m = 0] = offsetStr.slice(1).split(":").map(Number);
-      offsetMinutes = sign * (h * 60 + m);
-    }
-  }
-
-  // Local midnight in UTC = midnightUTC - offsetMinutes
-  const localMidnightUTC = new Date(
-    midnightUTC.getTime() - offsetMinutes * 60000,
-  );
-
-  // Add minutesFromMidnight to get the UTC time
-  const utcDate = new Date(
-    localMidnightUTC.getTime() + minutesFromMidnight * 60000,
-  );
-
-  // Adjust for DST if needed by checking offset at the calculated time
-  // This is a simple correction; for precise DST handling, we'd need to iterate
-  const finalOffsetFormatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    timeZoneName: "longOffset",
-  });
-  const finalOffsetParts = finalOffsetFormatter.formatToParts(utcDate);
-  const finalOffsetPart = finalOffsetParts.find(
-    (p) => p.type === "timeZoneName",
-  );
-  let finalOffsetMinutes = 0;
-  if (finalOffsetPart && finalOffsetPart.value.startsWith("GMT")) {
-    const offsetStr = finalOffsetPart.value.replace("GMT", "").trim();
-    if (offsetStr) {
-      const sign = offsetStr[0] === "-" ? -1 : 1;
-      const [h, m = 0] = offsetStr.slice(1).split(":").map(Number);
-      finalOffsetMinutes = sign * (h * 60 + m);
-    }
-  }
-
-  // If offset changed (DST transition), adjust
-  if (finalOffsetMinutes !== offsetMinutes) {
-    const adjustedUTC = new Date(
-      utcDate.getTime() + (offsetMinutes - finalOffsetMinutes) * 60000,
-    );
-    return adjustedUTC;
-  }
-
-  return utcDate;
-}
-
-/**
- * Generate alternative time slots when requested time is not available
- * @param business Business object
- * @param date Requested date (UTC)
- * @param targetSlotIndex Index of the schedule slot where requested time falls (-1 if not in schedule)
- * @param maxCapacityPerHour Maximum capacity per hour
- * @param appointments Existing appointments for the day
- * @param numberOfPeople Number of people for the reservation
- * @param timezone Business timezone
- * @returns Array of ISO string UTC times
- */
-function generateAlternativeSlots(
-  business: IBusiness,
-  date: Date,
-  targetSlotIndex: number,
-  maxCapacityPerHour: number,
-  appointments: AppointmentSlot[],
-  numberOfPeople: number,
-  timezone: string,
-): string[] {
-  const suggestedTimes: string[] = [];
-  const daySchedule = getDayScheduleForDate(business, date, timezone);
-
-  if (daySchedule.length === 0) {
-    return suggestedTimes;
-  }
-
-  // Helper function to check and add time slot
-  const checkAndAddSlot = (
-    slotIndex: number,
-    minutesFromMidnight: number,
-  ): boolean => {
-    const testTime = localMinutesToUTCDate(date, minutesFromMidnight, timezone);
-
-    if (
-      isTimeAvailable(
-        testTime,
-        appointments,
-        maxCapacityPerHour,
-        numberOfPeople,
-      )
-    ) {
-      suggestedTimes.push(testTime.toISOString());
-      return true;
-    }
-    return false;
-  };
-
-  // Try alternative times in the same slot first (starting 30 minutes after requested time)
-  if (targetSlotIndex >= 0) {
-    const targetSlot = daySchedule[targetSlotIndex];
-    const requestedMinutes = utcDateToMinutesFromMidnight(date, timezone);
-    const slotDuration = targetSlot.close - targetSlot.open;
-    const interval = 60; // 60-minute intervals
-
-    // Try times after requested time within the same slot
-    for (let offset = 60; offset <= slotDuration; offset += interval) {
-      const testMinutes = requestedMinutes + offset;
-      if (testMinutes >= targetSlot.close) break;
-      if (testMinutes >= targetSlot.open) {
-        if (
-          checkAndAddSlot(targetSlotIndex, testMinutes) &&
-          suggestedTimes.length >= 3
-        ) {
-          return suggestedTimes;
-        }
-      }
-    }
-
-    // Try times before requested time within the same slot
-    for (let offset = 60; offset <= slotDuration; offset += interval) {
-      const testMinutes = requestedMinutes - offset;
-      if (testMinutes < targetSlot.open) break;
-      if (testMinutes <= targetSlot.close) {
-        if (
-          checkAndAddSlot(targetSlotIndex, testMinutes) &&
-          suggestedTimes.length >= 3
-        ) {
-          return suggestedTimes;
-        }
-      }
-    }
-  }
-
-  // If not enough suggestions, try all slots in the same day
-  for (let slotIndex = 0; slotIndex < daySchedule.length; slotIndex++) {
-    // If we already tried this slot, skip it
-    if (slotIndex === targetSlotIndex) continue;
-
-    const slot = daySchedule[slotIndex];
-    const slotDuration = slot.close - slot.open;
-    const interval = 60;
-
-    // Try times throughout the slot
-    for (let offset = 0; offset <= slotDuration; offset += interval) {
-      const testMinutes = slot.open + offset;
-      if (testMinutes >= slot.close) break;
-
-      if (
-        checkAndAddSlot(slotIndex, testMinutes) &&
-        suggestedTimes.length >= 3
-      ) {
-        return suggestedTimes;
-      }
-    }
-  }
-
-  return suggestedTimes;
-}
-
-function isTimeAvailable(
-  time: Date,
-  appointments: AppointmentSlot[],
-  maxCapacityPerHour: number,
-  numberOfPeople: number,
-): boolean {
-  const hourStart = new Date(time);
-  hourStart.setMinutes(0, 0, 0);
-  const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
-
-  const overlappingAppointments = appointments.filter((appointment) => {
-    const apptStart = new Date(appointment.startDateTime);
-    const apptEnd = appointment.endDateTime
-      ? new Date(appointment.endDateTime)
-      : new Date(apptStart.getTime() + 60 * 60 * 1000);
-
-    return apptStart < hourEnd && apptEnd > hourStart;
-  });
-
-  const validAppointments = overlappingAppointments.filter(
-    (appt) => appt.status === "confirmed" || appt.status === "pending",
-  );
-
-  const reservedPeople = validAppointments.reduce(
-    (sum, appt) => sum + (appt.numberOfPeople || 0),
-    0,
-  );
-
-  return maxCapacityPerHour - reservedPeople >= numberOfPeople;
-}
+import { fromZonedTime } from "date-fns-tz";
 
 /** @todo corregir en el dashboard para que muestre año/mes/dia en la tabla de reservas */
 export const Appointments: CollectionConfig = {
@@ -517,8 +228,6 @@ export const Appointments: CollectionConfig = {
             customer: doc.customer,
           }));
 
-          console.log({ existingAppointments });
-
           // Calcular disponibilidad usando la función pura
           const {
             overlappingSlots,
@@ -533,43 +242,68 @@ export const Appointments: CollectionConfig = {
           });
 
           // Si no hay disponibilidad, obtener más datos para sugerencias
-          let suggestedTimes: string[] = [];
+          const suggestedTimes: string[] = [];
+          let message = "";
 
           // Solo sugerir horarios alternativos si no hay disponibilidad completa
-          if (!isRequestedDateTimeAvailable) {
-            const schedule = getDayScheduleForDate(
+          if (isRequestedDateTimeAvailable) {
+            const schedules = getDayScheduleForDate(
               businessFound,
               startDate,
               businessFound.general.timezone,
             ); // 2 slots: morning, afternoon
 
             // Determinar en qué slot cae la hora solicitada
-            const requestedSlotIndex = getTimeSlotForTime(
-              schedule,
+            const index = getScheduleIndex(
+              schedules,
               startDate,
               businessFound.general.timezone,
             );
 
+            console.log({ startDate });
+
+            const schedule = schedules[index];
+            console.log({ schedules, index });
+
             // Obtener citas para el mismo día para sugerencias
-            const sameDayStart = new Date(startDate);
-            sameDayStart.setHours(0, 0, 0, 0);
-            const sameDayEnd = new Date(startDate);
-            sameDayEnd.setHours(23, 59, 59, 999);
+            const d1 = new Date(startDate);
+            const sameDayOpen = fromZonedTime(
+              new Date(
+                d1.getFullYear(),
+                d1.getMonth(),
+                d1.getDate(),
+                0, // hours
+                schedule.open, // minutes
+              ),
+              businessFound.general.timezone,
+            );
+            const d2 = new Date(endDate);
+            const sameDayClose = fromZonedTime(
+              new Date(
+                d2.getFullYear(),
+                d2.getMonth(),
+                d2.getDate(),
+                0, // hours
+                schedule.close, // minutes
+              ),
+              businessFound.general.timezone,
+            );
 
             const appointmentsForSuggestions: AppointmentSlot[] = (
               await req.payload.find({
                 collection: "appointments",
                 depth: 0,
+                sort: ["group", "startDateTime"],
                 where: {
                   business,
                   status: {
                     in: ["confirmed", "pending"],
                   },
                   startDateTime: {
-                    greater_than_equal: sameDayStart.toISOString(),
+                    greater_than_equal: sameDayOpen.toISOString(),
                   },
                   endDateTime: {
-                    less_than_equal: sameDayEnd.toISOString(),
+                    less_than_equal: sameDayClose.toISOString(),
                   },
                 },
                 limit: 1000,
@@ -584,18 +318,13 @@ export const Appointments: CollectionConfig = {
               customer: doc.customer,
             }));
 
+            console.log({ appointmentsForSuggestions });
             // Si la hora solicitada cae dentro de un slot de horario
-            if (requestedSlotIndex >= 0 && schedule.length > 0) {
-              // Usar la función mejorada que considera el horario del negocio
-              suggestedTimes = generateAlternativeSlots(
-                businessFound,
-                startDate,
-                requestedSlotIndex,
-                maxCapacityPerHour,
-                appointmentsForSuggestions,
-                +numberOfPeople.equals || 1,
-                businessFound.general.timezone,
-              );
+            if (index >= 0) {
+              //
+            } else {
+              message =
+                "La Fecha solicitada esta fuera del horario de atencion del negocio";
             }
           }
 
@@ -610,6 +339,7 @@ export const Appointments: CollectionConfig = {
             totalSlotReservations,
             isRequestedDateTimeAvailable,
             suggestedTimes,
+            message,
           };
 
           return Response.json(response, { status: 200 });
