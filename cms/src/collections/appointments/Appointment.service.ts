@@ -16,7 +16,10 @@ import config from "@payload-config";
  * @param req
  * @returns
  */
-export const checkAvailabilityService = async (req: PayloadRequest) => {
+export const checkAvailabilityService = async (
+  req: PayloadRequest,
+  checkOverlapping: boolean = true,
+) => {
   const { where } = req.query as unknown as AvailabilityRequest;
 
   const business = await validateBusiness(where);
@@ -34,13 +37,13 @@ export const checkAvailabilityService = async (req: PayloadRequest) => {
   if (!rest2.success) return rest2;
 
   const { open, close } = matchedAvailabilityRange;
-  const { availableSlots, slotsByTimeRange } = await generateSlots(
+  const { availableSlots, slotsByTimeRange } = await generateSlots({
     business,
-    startDate,
-    endDate,
+    startDate: checkOverlapping ? startDate : undefined,
+    endDate: checkOverlapping ? endDate : undefined,
     open,
     close,
-  );
+  });
 
   const maxCapacityPerHour = business.general.tables || 20;
   const response: AvailabilityResponse = {
@@ -88,13 +91,13 @@ export const suggestSlotsService = async (
   if (!rest2.success) return rest2;
 
   const { open, close } = matchedAvailabilityRange;
-  const { availableSlots, slotsByTimeRange } = await generateSlots(
+  const { availableSlots, slotsByTimeRange } = await generateSlots({
     business,
     startDate,
     endDate,
     open,
     close,
-  );
+  });
 
   const maxCapacityPerHour = business.general.tables || 20;
   const response: AvailabilityResponse = {
@@ -118,13 +121,22 @@ export const suggestSlotsService = async (
   return response;
 };
 
-async function generateSlots(
-  business: IBusiness,
-  startDate: Date,
-  endDate: Date,
-  open: string,
-  close: string,
-) {
+type GenerateSlots = {
+  business: IBusiness;
+  open: string;
+  close: string;
+  startDate?: Date;
+  endDate?: Date;
+};
+
+async function generateSlots({
+  business,
+  open,
+  close,
+  startDate,
+  endDate,
+}: GenerateSlots) {
+  //
   const payload = await getPayload({ config });
   const appointmentsWindow: AppointmentSlot[] = (
     await payload.find({
@@ -158,6 +170,10 @@ async function generateSlots(
   }));
 
   const slotsByTimeRange = calcSlotsByHour(open, close, appointmentsWindow);
+
+  if (!startDate || !endDate) {
+    return { availableSlots: [], slotsByTimeRange };
+  }
   const reqStart = startDate.getTime();
   const reqEnd = endDate.getTime();
 
@@ -389,14 +405,14 @@ function generateScheduleAvailability(
   });
 
   return {
-    startDate: availabilityRanges[0].open,
+    startDate: availabilityRanges[0]?.open,
     endDate: new Date(
-      availabilityRanges[0].open.getTime() + (averageTime || 60) * 60 * 1000,
+      availabilityRanges[0]?.open?.getTime() + (averageTime || 60) * 60 * 1000,
     ),
     weekDay,
     availabilityRanges,
     matchedAvailabilityRange: {
-      open: availabilityRanges[0].open.toISOString(),
+      open: availabilityRanges[0]?.open?.toISOString(),
       close:
         availabilityRanges[1]?.close?.toISOString() ||
         availabilityRanges[0]?.close?.toISOString(),

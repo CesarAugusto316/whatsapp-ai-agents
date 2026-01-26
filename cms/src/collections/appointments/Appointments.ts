@@ -94,6 +94,30 @@ export const Appointments: CollectionConfig = {
       },
     },
     {
+      path: "/check-slots",
+      method: "get",
+      handler: async (req) => {
+        try {
+          const checkOverlapping = false;
+          const response = await checkAvailabilityService(
+            req,
+            checkOverlapping,
+          );
+          return Response.json(response, { status: 200 });
+        } catch (error) {
+          console.error("Error checking availability:", error);
+          return Response.json(
+            {
+              success: false,
+              message: "Error al sugerir disponibilidad",
+              error: (error as Error).message,
+            },
+            { status: 500 },
+          );
+        }
+      },
+    },
+    {
       path: "/check-availability",
       method: "get",
       handler: async (req) => {
