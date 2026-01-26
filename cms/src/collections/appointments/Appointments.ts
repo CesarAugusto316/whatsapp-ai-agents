@@ -78,7 +78,7 @@ export const Appointments: CollectionConfig = {
       handler: async (req) => {
         try {
           const { where } = req.query as unknown as AvailabilityRequest;
-          const response = await suggestSlotsService(where);
+          const response = await suggestSlotsService(where); // business query param only
           return Response.json(response, { status: 200 });
         } catch (error) {
           console.error("Error checking availability:", error);

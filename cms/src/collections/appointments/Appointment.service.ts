@@ -74,15 +74,16 @@ export const suggestSlotsService = async (
 ) => {
   const business = await validateBusiness(where);
 
-  const averageTime = business.schedule.averageTime;
   const numberOfPeople = 0;
-  const startDate = new Date();
-  const endDate = new Date(
-    startDate.getTime() + (averageTime || 60) * 60 * 1000,
-  ); // +1 hora por defecto
 
-  const { availabilityRanges, matchedAvailabilityRange, weekDay, ...rest2 } =
-    validateScheduleAvailability(business, startDate, endDate);
+  const {
+    startDate,
+    endDate,
+    availabilityRanges,
+    matchedAvailabilityRange,
+    weekDay,
+    ...rest2
+  } = generateScheduleAvailability(business);
 
   if (!rest2.success) return rest2;
 
@@ -313,6 +314,76 @@ function validateScheduleAvailability(
     matchedAvailabilityRange: {
       open: matchedAvailabilityRange.open.toISOString(),
       close: matchedAvailabilityRange.close.toISOString(),
+    },
+    success: true,
+    message: "",
+  };
+}
+
+/**
+ *
+ * @todo handle day after holiday {business.general.nextHoliday}
+ * @param business
+ * @param startDate
+ * @param endDate
+ * @returns
+ */
+function generateScheduleAvailability(
+  business: IBusiness,
+  startDate = new Date(),
+) {
+  //
+  const averageTime = business.schedule.averageTime;
+  const endDate = new Date(
+    startDate.getTime() + (averageTime || 60) * 60 * 1000,
+  ); // +1 hora por defecto
+
+  const { daySchedule, weekDay } = getCurrentDaySchedule(business, startDate);
+
+  if (!daySchedule.length) {
+    return generateScheduleAvailability(
+      business,
+      new Date(startDate.getTime() + 24 * 60 * 60 * 1000),
+    );
+  }
+
+  const availabilityRanges = daySchedule.map((range) => {
+    const open = fromZonedTime(
+      new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+        0,
+        range.open,
+      ),
+      business.general.timezone,
+    );
+    const close = fromZonedTime(
+      new Date(
+        endDate.getFullYear(),
+        endDate.getMonth(),
+        endDate.getDate(),
+        0,
+        range.close,
+      ),
+      business.general.timezone,
+    );
+
+    return { open, close };
+  });
+
+  return {
+    startDate: availabilityRanges[0].open,
+    endDate: new Date(
+      availabilityRanges[0].open.getTime() + (averageTime || 60) * 60 * 1000,
+    ),
+    weekDay,
+    availabilityRanges,
+    matchedAvailabilityRange: {
+      open: availabilityRanges[0].open.toISOString(),
+      close:
+        availabilityRanges[1]?.close?.toISOString() ||
+        availabilityRanges[0]?.close?.toISOString(),
     },
     success: true,
     message: "",
