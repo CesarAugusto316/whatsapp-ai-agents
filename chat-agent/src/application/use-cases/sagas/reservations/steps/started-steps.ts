@@ -328,6 +328,18 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         status: transition.nextState, // UPDATE_VALIDATED,
       } satisfies Partial<ReservationState>);
 
+      /** @todo implement semantic memory */
+
+      // await semanticMemory.upsert({
+      //   chatId: reservationKey,
+      //   type: "reservation_state",
+      //   payload: {
+      //     status: transition.nextState,
+      //     datetime: data.datetime,
+      //     people: data.numberOfPeople
+      //   }
+      // });
+
       logger.info("✅ Reservation data validated", {
         reservation: {
           ...reservation,

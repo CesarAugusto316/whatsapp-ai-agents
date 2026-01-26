@@ -30,8 +30,8 @@ export interface AvailabilityResponse {
   slotsByTimeRange?: TimeWindow[];
   weekDay?: string;
   weekDaySchedule?: {
-    open: Date;
-    close: Date;
+    open: string;
+    close: string;
   }[];
 }
 

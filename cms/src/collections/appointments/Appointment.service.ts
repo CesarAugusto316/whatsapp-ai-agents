@@ -34,9 +34,46 @@ export const appointmentService = async (req: PayloadRequest) => {
   if (!rest2.success) return rest2;
 
   const { open, close } = matchedAvailabilityRange;
+  const { availableSlots, slotsByTimeRange } = await generateSlots(
+    business,
+    startDate,
+    endDate,
+    open,
+    close,
+  );
 
+  const maxCapacityPerHour = business.general.tables || 20;
+  const response: AvailabilityResponse = {
+    success: true,
+    businessId: business.id,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    numberOfPeople,
+    maxCapacityPerHour,
+    weekDay,
+    weekDaySchedule: availabilityRanges.map((s) => ({
+      open: s.open.toISOString(),
+      close: s.close.toISOString(),
+    })),
+    isSlotAvailable: availableSlots.every(
+      (slot) => maxCapacityPerHour - slot.totalPeople >= numberOfPeople,
+    ),
+    slotsByTimeRange, // 60 minnutes, could be 30 minutes in the future
+    availableSlots,
+  };
+  return response;
+};
+
+async function generateSlots(
+  business: IBusiness,
+  startDate: Date,
+  endDate: Date,
+  open: string,
+  close: string,
+) {
+  const payload = await getPayload({ config });
   const appointmentsWindow: AppointmentSlot[] = (
-    await req.payload.find({
+    await payload.find({
       collection: "appointments",
       depth: 0,
       sort: "startDateTime",
@@ -76,32 +113,15 @@ export const appointmentService = async (req: PayloadRequest) => {
     return reqStart < slotEnd && reqEnd > slotStart;
   });
 
-  const maxCapacityPerHour = business.general.tables || 20;
-
-  const response: AvailabilityResponse = {
-    success: true,
-    businessId: business.id,
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-    numberOfPeople,
-    maxCapacityPerHour,
-    weekDay,
-    weekDaySchedule: availabilityRanges,
-    isSlotAvailable: availableSlots.every(
-      (slot) => maxCapacityPerHour - slot.totalPeople >= numberOfPeople,
-    ),
-    slotsByTimeRange, // 60 minnutes, could be 30 minutes in the future
-    availableSlots,
-  };
-  return response;
-};
+  return { availableSlots, slotsByTimeRange };
+}
 
 /**
  *
  * @param where
  * @returns
  */
-export const validateBusiness = async (where: AvailabilityRequest["where"]) => {
+async function validateBusiness(where: AvailabilityRequest["where"]) {
   //
   const payload = await getPayload({ config });
   const { business } = where;
@@ -130,7 +150,7 @@ export const validateBusiness = async (where: AvailabilityRequest["where"]) => {
   }
 
   return businessFound;
-};
+}
 
 /**
  *
@@ -138,10 +158,10 @@ export const validateBusiness = async (where: AvailabilityRequest["where"]) => {
  * @param averageTime
  * @returns
  */
-export const validateDates = (
+function validateDates(
   where: AvailabilityRequest["where"],
   averageTime?: number,
-) => {
+) {
   const { endDateTime, numberOfPeople, startDateTime } = where;
   if (!startDateTime?.equals) {
     throw new Error("startDateTime is required");
@@ -168,7 +188,7 @@ export const validateDates = (
     success: true,
     message: "",
   };
-};
+}
 
 /**
  *
@@ -177,11 +197,11 @@ export const validateDates = (
  * @param endDate
  * @returns
  */
-export const validateScheduleAvailability = (
+function validateScheduleAvailability(
   business: IBusiness,
   startDate: Date,
   endDate: Date,
-) => {
+) {
   const { daySchedule, weekDay } = getCurrentDaySchedule(business, startDate);
 
   if (!daySchedule.length) {
@@ -239,4 +259,4 @@ export const validateScheduleAvailability = (
     success: true,
     message: "",
   };
-};
+}
