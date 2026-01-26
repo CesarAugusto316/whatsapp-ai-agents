@@ -2,7 +2,10 @@ import type { CollectionConfig, CollectionSlug } from "payload";
 import { Business } from "../Businesses";
 import { Customers } from "../Costumers";
 import { AvailabilityRequest } from "./check-availability";
-import { appointmentService } from "./Appointment.service";
+import {
+  checkAvailabilityService,
+  suggestSlotsService,
+} from "./Appointment.service";
 
 /**
  *
@@ -75,10 +78,7 @@ export const Appointments: CollectionConfig = {
       handler: async (req) => {
         try {
           const { where } = req.query as unknown as AvailabilityRequest;
-          // endDateTime & startDateTime  in UTC format
-          const { business, startDateTime } = where;
-
-          const response = await appointmentService(req);
+          const response = await suggestSlotsService(where);
           return Response.json(response, { status: 200 });
         } catch (error) {
           console.error("Error checking availability:", error);
@@ -98,7 +98,7 @@ export const Appointments: CollectionConfig = {
       method: "get",
       handler: async (req) => {
         try {
-          const response = await appointmentService(req);
+          const response = await checkAvailabilityService(req);
           return Response.json(response, { status: 200 });
         } catch (error) {
           console.error("Error checking availability:", error);

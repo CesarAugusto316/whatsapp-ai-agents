@@ -14,6 +14,13 @@ import { Appointments } from "./collections/appointments/Appointments";
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
+/**
+ *
+ * @description custom components
+ * @link https://recharts.github.io/en-US/examples/TimelineExample/
+ * @link https://payloadcms.com/docs/custom-components/overview#building-custom-components
+ * @link https://payloadcms.com/docs/custom-components/root-components
+ */
 export default buildConfig({
   /**
    *
@@ -32,7 +39,7 @@ export default buildConfig({
       //   },
       //   // ...other timezones
       // ],
-      defaultTimezone: "UTC",
+      // defaultTimezone: "UTC",
     },
     dateFormat: "MMMM do, yyyy",
     user: Users.slug,
@@ -40,7 +47,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  maxDepth: 4,
+  maxDepth: 2,
   collections: [Users, ThirdPartyAccess, Appointments, Customers, Business],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {

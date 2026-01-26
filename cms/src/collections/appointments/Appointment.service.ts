@@ -16,7 +16,7 @@ import config from "@payload-config";
  * @param req
  * @returns
  */
-export const appointmentService = async (req: PayloadRequest) => {
+export const checkAvailabilityService = async (req: PayloadRequest) => {
   const { where } = req.query as unknown as AvailabilityRequest;
 
   const business = await validateBusiness(where);
@@ -27,6 +27,59 @@ export const appointmentService = async (req: PayloadRequest) => {
   );
 
   if (!rest1.success) return rest1;
+
+  const { availabilityRanges, matchedAvailabilityRange, weekDay, ...rest2 } =
+    validateScheduleAvailability(business, startDate, endDate);
+
+  if (!rest2.success) return rest2;
+
+  const { open, close } = matchedAvailabilityRange;
+  const { availableSlots, slotsByTimeRange } = await generateSlots(
+    business,
+    startDate,
+    endDate,
+    open,
+    close,
+  );
+
+  const maxCapacityPerHour = business.general.tables || 20;
+  const response: AvailabilityResponse = {
+    success: true,
+    businessId: business.id,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    numberOfPeople,
+    maxCapacityPerHour,
+    weekDay,
+    weekDaySchedule: availabilityRanges.map((s) => ({
+      open: s.open.toISOString(),
+      close: s.close.toISOString(),
+    })),
+    isSlotAvailable: availableSlots.every(
+      (slot) => maxCapacityPerHour - slot.totalPeople >= numberOfPeople,
+    ),
+    slotsByTimeRange, // 60 minnutes, could be 30 minutes in the future
+    availableSlots,
+  };
+  return response;
+};
+
+/**
+ *
+ * @param req
+ * @returns
+ */
+export const suggestSlotsService = async (
+  where: Pick<AvailabilityRequest["where"], "business">,
+) => {
+  const business = await validateBusiness(where);
+
+  const averageTime = business.schedule.averageTime;
+  const numberOfPeople = 0;
+  const startDate = new Date();
+  const endDate = new Date(
+    startDate.getTime() + (averageTime || 60) * 60 * 1000,
+  ); // +1 hora por defecto
 
   const { availabilityRanges, matchedAvailabilityRange, weekDay, ...rest2 } =
     validateScheduleAvailability(business, startDate, endDate);
@@ -121,7 +174,9 @@ async function generateSlots(
  * @param where
  * @returns
  */
-async function validateBusiness(where: AvailabilityRequest["where"]) {
+async function validateBusiness(
+  where: Pick<AvailabilityRequest["where"], "business">,
+) {
   //
   const payload = await getPayload({ config });
   const { business } = where;
@@ -159,7 +214,10 @@ async function validateBusiness(where: AvailabilityRequest["where"]) {
  * @returns
  */
 function validateDates(
-  where: AvailabilityRequest["where"],
+  where: Pick<
+    AvailabilityRequest["where"],
+    "startDateTime" | "numberOfPeople" | "endDateTime"
+  >,
   averageTime?: number,
 ) {
   const { endDateTime, numberOfPeople, startDateTime } = where;
