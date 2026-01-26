@@ -4,7 +4,7 @@ import {
   AvailabilityRequest,
   AvailabilityResponse,
   bucketByHour,
-  getDayScheduleForDate,
+  getCurrentDaySchedule,
 } from "./check-availability";
 import { fromZonedTime } from "date-fns-tz";
 import { Business as IBusiness } from "@/payload-types";
@@ -21,66 +21,19 @@ export const appointmentService = async (req: PayloadRequest) => {
 
   const business = await validateBusiness(where);
 
-  const { startDate, endDate, numberOfPeople, ...rest } = validateDates(
+  const { startDate, endDate, numberOfPeople, ...rest1 } = validateDates(
     where,
     business.schedule.averageTime,
   );
 
-  if (!rest.success) return rest;
+  if (!rest1.success) return rest1;
 
-  const { daySchedule, weekDay } = getDayScheduleForDate(business, startDate); // 2 slots: morning, afternoon
-  if (!daySchedule.length) {
-    return {
-      success: false,
-      message: "Business does not work on this day",
-    };
-  }
+  const { availabilityRanges, matchedAvailabilityRange, weekDay, ...rest2 } =
+    validateBusinessAvailability(business, startDate, endDate);
 
-  const utcSchedules = daySchedule.map((schedule) => {
-    const openTime = fromZonedTime(
-      new Date(
-        startDate.getFullYear(),
-        startDate.getMonth(),
-        startDate.getDate(),
-        0, // hours
-        schedule.open, // minutes
-      ),
-      business.general.timezone,
-    );
-    const closeTime = fromZonedTime(
-      new Date(
-        endDate.getFullYear(),
-        endDate.getMonth(),
-        endDate.getDate(),
-        0, // hours
-        schedule.close, // minutes
-      ),
-      business.general.timezone,
-    );
-    return {
-      openTime,
-      closeTime,
-    };
-  });
+  if (!rest2.success) return rest2;
 
-  const utcScheduleRange = utcSchedules.find(
-    ({ closeTime: utcCloseTime, openTime: utcOpenTime }) => {
-      return (
-        startDate.getTime() >= utcOpenTime.getTime() &&
-        endDate.getTime() <= utcCloseTime.getTime()
-      );
-    },
-  );
-
-  if (!utcScheduleRange) {
-    return {
-      success: false,
-      message: "Reservation date is out of business hours",
-    };
-  }
-
-  const utcOpenTime = utcScheduleRange.openTime.toISOString();
-  const utcCloseTime = utcScheduleRange.closeTime.toISOString();
+  const { open, close } = matchedAvailabilityRange;
 
   const appointmentsWindow: AppointmentSlot[] = (
     await req.payload.find({
@@ -93,11 +46,11 @@ export const appointmentService = async (req: PayloadRequest) => {
           in: ["confirmed", "pending"],
         },
         startDateTime: {
-          less_than: utcCloseTime,
+          less_than: close,
           // greater_than_equal: utcOpenTime,
         },
         endDateTime: {
-          greater_than: utcOpenTime,
+          greater_than: open,
           // less_than_equal: utcCloseTime,
         },
       },
@@ -113,11 +66,7 @@ export const appointmentService = async (req: PayloadRequest) => {
     customer: doc.customer,
   }));
 
-  const timeWindow = bucketByHour(
-    utcOpenTime,
-    utcCloseTime,
-    appointmentsWindow,
-  );
+  const timeWindow = bucketByHour(open, close, appointmentsWindow);
 
   const reqStart = startDate.getTime();
   const reqEnd = endDate.getTime();
@@ -137,7 +86,7 @@ export const appointmentService = async (req: PayloadRequest) => {
     requestedPeople: numberOfPeople,
     totalCapacityPerHour: maxCapacityPerHour,
     requestedDay: weekDay,
-    scheduleForTheRequestedDay: utcSchedules,
+    scheduleForTheRequestedDay: availabilityRanges,
     isRequestedDateTimeAvailable: overlappingSlots.every(
       (slot) => maxCapacityPerHour - slot.totalPeople >= numberOfPeople,
     ),
@@ -216,6 +165,77 @@ export const validateDates = (
     startDate,
     endDate,
     numberOfPeople: numbOfpeople,
+    success: true,
+    message: "",
+  };
+};
+
+/**
+ *
+ * @param business
+ * @param startDate
+ * @param endDate
+ * @returns
+ */
+export const validateBusinessAvailability = (
+  business: IBusiness,
+  startDate: Date,
+  endDate: Date,
+) => {
+  const { daySchedule, weekDay } = getCurrentDaySchedule(business, startDate);
+
+  if (!daySchedule.length) {
+    return {
+      success: false,
+      message: "Business does not work on this day",
+    };
+  }
+
+  const availabilityRanges = daySchedule.map((range) => {
+    const open = fromZonedTime(
+      new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+        0,
+        range.open,
+      ),
+      business.general.timezone,
+    );
+    const close = fromZonedTime(
+      new Date(
+        endDate.getFullYear(),
+        endDate.getMonth(),
+        endDate.getDate(),
+        0,
+        range.close,
+      ),
+      business.general.timezone,
+    );
+
+    return { open, close };
+  });
+
+  const matchedAvailabilityRange = availabilityRanges.find(
+    ({ open, close }) => {
+      return startDate >= open && endDate <= close;
+    },
+  );
+
+  if (!matchedAvailabilityRange) {
+    return {
+      success: false,
+      message: "Reservation date is out of business hours",
+    };
+  }
+
+  return {
+    weekDay,
+    availabilityRanges,
+    matchedAvailabilityRange: {
+      open: matchedAvailabilityRange.open.toISOString(),
+      close: matchedAvailabilityRange.close.toISOString(),
+    },
     success: true,
     message: "",
   };

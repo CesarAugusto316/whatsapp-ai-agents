@@ -30,8 +30,8 @@ export interface AvailabilityResponse {
   timeWindow?: TimeWindow[];
   requestedDay?: string;
   scheduleForTheRequestedDay?: {
-    openTime: Date;
-    closeTime: Date;
+    open: Date;
+    close: Date;
   }[];
 }
 
@@ -70,7 +70,7 @@ export const DayMap: Record<number, WeekDayKey> = {
 };
 
 // Helper functions for schedule and timezone handling
-export function getDayScheduleForDate(
+export function getCurrentDaySchedule(
   business: Business,
   utcdate: Date,
 ): { daySchedule: { open: number; close: number }[]; weekDay?: WeekDayKey } {
@@ -89,16 +89,16 @@ export function getDayScheduleForDate(
 }
 
 export function bucketByHour(
-  globalStartISO: string,
-  globalEndISO: string,
-  suggested: AppointmentSlot[],
+  openRange: string,
+  closeRange: string,
+  slots: AppointmentSlot[],
 ): TimeWindow[] {
   //
   const HOUR = 60 * 60 * 1000;
-  const globalStart = new Date(globalStartISO).getTime();
-  const globalEnd = new Date(globalEndISO).getTime();
+  const globalOpen = new Date(openRange).getTime();
+  const globalClose = new Date(closeRange).getTime();
 
-  const events = suggested.map((e) => ({
+  const events = slots.map((e) => ({
     ...e,
     _start: new Date(e.startDateTime).getTime(),
     _end: new Date(e.endDateTime).getTime(),
@@ -106,7 +106,7 @@ export function bucketByHour(
 
   const result = [];
 
-  for (let slotStart = globalStart; slotStart < globalEnd; slotStart += HOUR) {
+  for (let slotStart = globalOpen; slotStart < globalClose; slotStart += HOUR) {
     const slotEnd = slotStart + HOUR;
 
     const inside = events.filter(
