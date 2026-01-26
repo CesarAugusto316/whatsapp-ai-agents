@@ -73,9 +73,9 @@ export const DayMap: Record<number, WeekDayKey> = {
 export function getDayScheduleForDate(
   business: Business,
   utcdate: Date,
-): { schedule: { open: number; close: number }[]; weekDay?: WeekDayKey } {
+): { daySchedule: { open: number; close: number }[]; weekDay?: WeekDayKey } {
+  //
   const zonedDate = new Date(utcdate);
-
   // Get day of week (0 = Sunday, 1 = Monday, etc.)
   const dayOfWeek = zonedDate.getDay();
   const weekday = DayMap[dayOfWeek] satisfies WeekDayKey;
@@ -83,9 +83,9 @@ export function getDayScheduleForDate(
   // Get schedule for the day, ensuring it's an array
   const daySchedule = business.schedule[weekday];
   if (!daySchedule || !Array.isArray(daySchedule)) {
-    return { schedule: [] };
+    return { daySchedule: [] };
   }
-  return { schedule: daySchedule, weekDay: weekday };
+  return { daySchedule, weekDay: weekday };
 }
 
 export function bucketByHour(
@@ -93,15 +93,15 @@ export function bucketByHour(
   globalEndISO: string,
   suggested: AppointmentSlot[],
 ): TimeWindow[] {
+  //
   const HOUR = 60 * 60 * 1000;
-
   const globalStart = new Date(globalStartISO).getTime();
   const globalEnd = new Date(globalEndISO).getTime();
 
   const events = suggested.map((e) => ({
     ...e,
-    start: new Date(e.startDateTime).getTime(),
-    end: new Date(e.endDateTime).getTime(),
+    _start: new Date(e.startDateTime).getTime(),
+    _end: new Date(e.endDateTime).getTime(),
   }));
 
   const result = [];
@@ -109,7 +109,9 @@ export function bucketByHour(
   for (let slotStart = globalStart; slotStart < globalEnd; slotStart += HOUR) {
     const slotEnd = slotStart + HOUR;
 
-    const inside = events.filter((e) => e.start < slotEnd && e.end > slotStart);
+    const inside = events.filter(
+      (e) => e._start < slotEnd && e._end > slotStart,
+    );
 
     if (inside.length === 0) {
       result.push({
@@ -127,25 +129,7 @@ export function bucketByHour(
       from: new Date(slotStart).toISOString(),
       to: new Date(slotEnd).toISOString(),
       totalPeople,
-      slots: inside.map(
-        ({
-          createdAt,
-          customer,
-          id,
-          startDateTime,
-          status,
-          endDateTime,
-          numberOfPeople,
-        }) => ({
-          id,
-          createdAt,
-          customer,
-          startDateTime,
-          status,
-          endDateTime,
-          numberOfPeople,
-        }),
-      ),
+      slots: inside.map(({ _start, _end, ...rest }) => rest),
     } satisfies TimeWindow);
   }
 

@@ -19,33 +19,24 @@ import config from "@payload-config";
 export const appointmentService = async (req: PayloadRequest) => {
   const { where } = req.query as unknown as AvailabilityRequest;
 
-  const businessFound = await validateBusiness(where);
-  const { endDateTime, numberOfPeople, startDateTime } = where;
-  const numbOfpeople = Number(numberOfPeople?.equals ?? 1);
-  const maxCapacityPerHour = businessFound.general.tables || 20;
+  const business = await validateBusiness(where);
 
-  // Parsear fechas (Payload usa UTC)
-  const startDate = new Date(startDateTime.equals);
-  const endDate = endDateTime
-    ? new Date(endDateTime.equals)
-    : new Date(
-        startDate.getTime() +
-          (businessFound.schedule.averageTime || 60) * 60 * 1000,
-      ); // +1 hora por defecto
+  const { startDate, endDate, numberOfPeople, ...rest } = validateDates(
+    where,
+    business.schedule.averageTime,
+  );
 
-  const { schedule: schedules, weekDay } = getDayScheduleForDate(
-    businessFound,
-    startDate,
-  ); // 2 slots: morning, afternoon
+  if (!rest.success) return rest;
 
-  if (!schedules.length) {
+  const { daySchedule, weekDay } = getDayScheduleForDate(business, startDate); // 2 slots: morning, afternoon
+  if (!daySchedule.length) {
     return {
       success: false,
       message: "Business does not work on this day",
     };
   }
 
-  const utcSchedules = schedules.map((schedule) => {
+  const utcSchedules = daySchedule.map((schedule) => {
     const openTime = fromZonedTime(
       new Date(
         startDate.getFullYear(),
@@ -54,7 +45,7 @@ export const appointmentService = async (req: PayloadRequest) => {
         0, // hours
         schedule.open, // minutes
       ),
-      businessFound.general.timezone,
+      business.general.timezone,
     );
     const closeTime = fromZonedTime(
       new Date(
@@ -64,7 +55,7 @@ export const appointmentService = async (req: PayloadRequest) => {
         0, // hours
         schedule.close, // minutes
       ),
-      businessFound.general.timezone,
+      business.general.timezone,
     );
     return {
       openTime,
@@ -72,14 +63,7 @@ export const appointmentService = async (req: PayloadRequest) => {
     };
   });
 
-  if (startDate >= endDate) {
-    return {
-      success: false,
-      message: "StartDateTime must be before EndDateTime",
-    };
-  }
-
-  const utcSchedule = utcSchedules.find(
+  const utcScheduleRange = utcSchedules.find(
     ({ closeTime: utcCloseTime, openTime: utcOpenTime }) => {
       return (
         startDate.getTime() >= utcOpenTime.getTime() &&
@@ -88,15 +72,15 @@ export const appointmentService = async (req: PayloadRequest) => {
     },
   );
 
-  if (!utcSchedule) {
+  if (!utcScheduleRange) {
     return {
       success: false,
       message: "Reservation date is out of business hours",
     };
   }
 
-  const utcOpenTime = utcSchedule.openTime.toISOString();
-  const utcCloseTime = utcSchedule.closeTime.toISOString();
+  const utcOpenTime = utcScheduleRange.openTime.toISOString();
+  const utcCloseTime = utcScheduleRange.closeTime.toISOString();
 
   const appointmentsWindow: AppointmentSlot[] = (
     await req.payload.find({
@@ -104,7 +88,7 @@ export const appointmentService = async (req: PayloadRequest) => {
       depth: 0,
       sort: "startDateTime",
       where: {
-        business: { equals: businessFound.id },
+        business: { equals: business.id },
         status: {
           in: ["confirmed", "pending"],
         },
@@ -141,40 +125,36 @@ export const appointmentService = async (req: PayloadRequest) => {
   const overlappingSlots = timeWindow.filter((slot) => {
     const slotStart = new Date(slot.from).getTime();
     const slotEnd = new Date(slot.to).getTime();
-
     return reqStart < slotEnd && reqEnd > slotStart;
   });
 
+  const maxCapacityPerHour = business.general.tables || 20;
   const response: AvailabilityResponse = {
     success: true,
-    businessId: businessFound.id,
+    businessId: business.id,
     requestedStart: startDate.toISOString(),
     requestedEnd: endDate.toISOString(),
-    requestedPeople: numbOfpeople,
+    requestedPeople: numberOfPeople,
     totalCapacityPerHour: maxCapacityPerHour,
     requestedDay: weekDay,
     scheduleForTheRequestedDay: utcSchedules,
     isRequestedDateTimeAvailable: overlappingSlots.every(
-      (slot) => maxCapacityPerHour - slot.totalPeople >= numbOfpeople,
+      (slot) => maxCapacityPerHour - slot.totalPeople >= numberOfPeople,
     ),
     timeWindow,
     neededSlots: overlappingSlots,
   };
-
   return response;
 };
 
-export const validateBusiness = async (where: {
-  business: { equals: string };
-}) => {
+/**
+ *
+ * @param where
+ * @returns
+ */
+export const validateBusiness = async (where: AvailabilityRequest["where"]) => {
+  //
   const payload = await getPayload({ config });
-  // Validar que where y sus propiedades existan
-  if (!where.business) {
-    throw new Error(
-      "Se requiere businessId y startDateTime en el parámetro where",
-    );
-  }
-
   const { business } = where;
 
   // Validar parámetros requeridos
@@ -201,4 +181,42 @@ export const validateBusiness = async (where: {
   }
 
   return businessFound;
+};
+
+/**
+ *
+ * @param where
+ * @param averageTime
+ * @returns
+ */
+export const validateDates = (
+  where: AvailabilityRequest["where"],
+  averageTime?: number,
+) => {
+  const { endDateTime, numberOfPeople, startDateTime } = where;
+  if (!startDateTime?.equals) {
+    throw new Error("startDateTime is required");
+  }
+  const numbOfpeople = Number(numberOfPeople?.equals ?? 0);
+
+  // Parsear fechas (Payload usa UTC)
+  const startDate = new Date(startDateTime.equals);
+  const endDate = endDateTime
+    ? new Date(endDateTime.equals)
+    : new Date(startDate.getTime() + (averageTime || 60) * 60 * 1000); // +1 hora por defecto
+
+  if (startDate >= endDate) {
+    return {
+      success: false,
+      message: "StartDateTime must be before EndDateTime",
+    };
+  }
+
+  return {
+    startDate,
+    endDate,
+    numberOfPeople: numbOfpeople,
+    success: true,
+    message: "",
+  };
 };
