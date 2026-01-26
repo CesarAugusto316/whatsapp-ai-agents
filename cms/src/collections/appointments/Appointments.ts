@@ -1,7 +1,6 @@
 import type { CollectionConfig, CollectionSlug } from "payload";
 import { Business } from "../Businesses";
 import { Customers } from "../Costumers";
-import { Business as IBusiness } from "@/payload-types";
 import { AvailabilityRequest } from "./check-availability";
 import { appointmentService } from "./Appointment.service";
 

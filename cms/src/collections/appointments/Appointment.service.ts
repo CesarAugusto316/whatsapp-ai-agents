@@ -3,7 +3,7 @@ import {
   AppointmentSlot,
   AvailabilityRequest,
   AvailabilityResponse,
-  bucketByHour,
+  calcSlotsByHour,
   getCurrentDaySchedule,
 } from "./check-availability";
 import { fromZonedTime } from "date-fns-tz";
@@ -29,7 +29,7 @@ export const appointmentService = async (req: PayloadRequest) => {
   if (!rest1.success) return rest1;
 
   const { availabilityRanges, matchedAvailabilityRange, weekDay, ...rest2 } =
-    validateBusinessAvailability(business, startDate, endDate);
+    validateScheduleAvailability(business, startDate, endDate);
 
   if (!rest2.success) return rest2;
 
@@ -66,32 +66,32 @@ export const appointmentService = async (req: PayloadRequest) => {
     customer: doc.customer,
   }));
 
-  const timeWindow = bucketByHour(open, close, appointmentsWindow);
-
+  const slotsByTimeRange = calcSlotsByHour(open, close, appointmentsWindow);
   const reqStart = startDate.getTime();
   const reqEnd = endDate.getTime();
 
-  const overlappingSlots = timeWindow.filter((slot) => {
+  const availableSlots = slotsByTimeRange.filter((slot) => {
     const slotStart = new Date(slot.from).getTime();
     const slotEnd = new Date(slot.to).getTime();
     return reqStart < slotEnd && reqEnd > slotStart;
   });
 
   const maxCapacityPerHour = business.general.tables || 20;
+
   const response: AvailabilityResponse = {
     success: true,
     businessId: business.id,
-    requestedStart: startDate.toISOString(),
-    requestedEnd: endDate.toISOString(),
-    requestedPeople: numberOfPeople,
-    totalCapacityPerHour: maxCapacityPerHour,
-    requestedDay: weekDay,
-    scheduleForTheRequestedDay: availabilityRanges,
-    isRequestedDateTimeAvailable: overlappingSlots.every(
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    numberOfPeople,
+    maxCapacityPerHour,
+    weekDay,
+    weekDaySchedule: availabilityRanges,
+    isSlotAvailable: availableSlots.every(
       (slot) => maxCapacityPerHour - slot.totalPeople >= numberOfPeople,
     ),
-    timeWindow,
-    neededSlots: overlappingSlots,
+    slotsByTimeRange, // 60 minnutes, could be 30 minutes in the future
+    availableSlots,
   };
   return response;
 };
@@ -177,7 +177,7 @@ export const validateDates = (
  * @param endDate
  * @returns
  */
-export const validateBusinessAvailability = (
+export const validateScheduleAvailability = (
   business: IBusiness,
   startDate: Date,
   endDate: Date,

@@ -21,15 +21,15 @@ export interface AvailabilityResponse {
   success: boolean;
   message?: string;
   businessId: string;
-  requestedStart: string;
-  requestedEnd: string;
-  requestedPeople?: number;
-  totalCapacityPerHour: number;
-  isRequestedDateTimeAvailable: boolean;
-  neededSlots?: TimeWindow[];
-  timeWindow?: TimeWindow[];
-  requestedDay?: string;
-  scheduleForTheRequestedDay?: {
+  startDate: string;
+  endDate: string;
+  numberOfPeople?: number;
+  maxCapacityPerHour: number;
+  isSlotAvailable: boolean;
+  availableSlots?: TimeWindow[];
+  slotsByTimeRange?: TimeWindow[];
+  weekDay?: string;
+  weekDaySchedule?: {
     open: Date;
     close: Date;
   }[];
@@ -88,7 +88,7 @@ export function getCurrentDaySchedule(
   return { daySchedule, weekDay: weekday };
 }
 
-export function bucketByHour(
+export function calcSlotsByHour(
   openRange: string,
   closeRange: string,
   slots: AppointmentSlot[],

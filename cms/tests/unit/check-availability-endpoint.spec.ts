@@ -26,13 +26,13 @@ describe("Endpoint de verificación de disponibilidad", () => {
       const data: AvailabilityResponse = await response.json();
       expect(data.success).toBe(true);
       expect(data.businessId).toBe(TEST_BUSINESS_ID);
-      expect(data.requestedStart).toBe("2026-01-10T16:00:00.000Z");
-      expect(data.requestedEnd).toBe("2026-01-10T17:00:00.000Z");
-      expect(data.requestedPeople).toBe(2);
-      expect(data.totalCapacityPerHour).toBeGreaterThan(0);
+      expect(data.startDate).toBe("2026-01-10T16:00:00.000Z");
+      expect(data.endDate).toBe("2026-01-10T17:00:00.000Z");
+      expect(data.numberOfPeople).toBe(2);
+      expect(data.maxCapacityPerHour).toBeGreaterThan(0);
       // expect(Array.isArray(data.overlappingSlots)).toBe(true);
-      expect(typeof data.isRequestedDateTimeAvailable).toBe("boolean");
-      expect(data.timeWindow).toBeDefined();
+      expect(typeof data.isSlotAvailable).toBe("boolean");
+      expect(data.slotsByTimeRange).toBeDefined();
     });
 
     test("debe usar 1 hora por defecto cuando no se proporciona endDateTime", async () => {
@@ -52,8 +52,8 @@ describe("Endpoint de verificación de disponibilidad", () => {
       expect(data.success).toBe(true);
 
       // Verificar que el endDateTime calculado sea 1 hora después del startDateTime
-      const startDate = new Date(data.requestedStart);
-      const endDate = new Date(data.requestedEnd);
+      const startDate = new Date(data.startDate);
+      const endDate = new Date(data.endDate);
       const diffInHours =
         (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
       expect(diffInHours).toBe(1);
@@ -129,10 +129,10 @@ describe("Endpoint de verificación de disponibilidad", () => {
       expect(response.status).toBe(200);
 
       const data: AvailabilityResponse = await response.json();
-      expect(data.timeWindow).toHaveLength(2); // 16-17 y 17-18
+      expect(data.slotsByTimeRange).toHaveLength(2); // 16-17 y 17-18
 
       // Cada slot debe tener la estructura correcta
-      data.timeWindow.forEach((slot) => {
+      data.slotsByTimeRange.forEach((slot) => {
         expect(slot).toHaveProperty("startDateTime");
         expect(slot).toHaveProperty("reservedSlots");
         expect(slot).toHaveProperty("isReserved");
@@ -172,7 +172,7 @@ describe("Endpoint de verificación de disponibilidad", () => {
 
       // Debería normalizar a horas completas (16:30 → 16:00, 17:45 → 18:00)
       // Por lo tanto debería haber slots para 16-17 y 17-18
-      expect(data.timeWindow.length).toBeGreaterThanOrEqual(2);
+      expect(data.slotsByTimeRange.length).toBeGreaterThanOrEqual(2);
     });
 
     test("debe incluir tiempos sugeridos cuando no hay disponibilidad", async () => {
@@ -194,9 +194,9 @@ describe("Endpoint de verificación de disponibilidad", () => {
       const data: AvailabilityResponse = await response.json();
 
       // Si no hay disponibilidad, podría sugerir horarios alternativos
-      expect(data.timeWindow).toBeDefined();
-      if (data.timeWindow && data.timeWindow.length > 0) {
-        data.timeWindow.forEach((time) => {
+      expect(data.slotsByTimeRange).toBeDefined();
+      if (data.slotsByTimeRange && data.slotsByTimeRange.length > 0) {
+        data.slotsByTimeRange.forEach((time) => {
           // expect(() => new Date(time)).not.toThrow();
         });
       }
@@ -222,7 +222,7 @@ describe("Endpoint de verificación de disponibilidad", () => {
         expect(response.status).toBe(200);
 
         const data: AvailabilityResponse = await response.json();
-        expect(data.requestedPeople).toBe(numberOfPeople);
+        expect(data.numberOfPeople).toBe(numberOfPeople);
 
         // isAvailable debe ser consistente con availableSlots y numberOfPeople
         // data.reservedSlotsPerHour.forEach((slot) => {

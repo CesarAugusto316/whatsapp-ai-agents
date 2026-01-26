@@ -218,7 +218,10 @@ export const Business: CollectionConfig = {
                 condition: (data) =>
                   data?.general?.businessType === "restaurant",
               },
-              label: { en: "Number of people", es: "Número de Personas" },
+              label: {
+                en: "Maximum capacity",
+                es: "Capacidad máxima de asistentes",
+              },
               min: 1,
               max: 500,
             },
