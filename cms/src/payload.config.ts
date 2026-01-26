@@ -10,6 +10,8 @@ import { postgresAdapter } from "@payloadcms/db-postgres";
 import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 import { Appointments } from "./collections/appointments/Appointments";
+import { s3Storage } from "@payloadcms/storage-s3";
+import { Media } from "./collections/Media";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -31,16 +33,7 @@ export default buildConfig({
     supportedLanguages: { en, es },
   },
   admin: {
-    timezones: {
-      // supportedTimezones: [
-      //   {
-      //     label: "UTC",
-      //     value: "UTC",
-      //   },
-      //   // ...other timezones
-      // ],
-      // defaultTimezone: "UTC",
-    },
+    // timezones: {},
     dateFormat: "MMMM do, yyyy",
     user: Users.slug,
     importMap: {
@@ -48,7 +41,14 @@ export default buildConfig({
     },
   },
   maxDepth: 2,
-  collections: [Users, ThirdPartyAccess, Appointments, Customers, Business],
+  collections: [
+    Users,
+    ThirdPartyAccess,
+    Appointments,
+    Customers,
+    Business,
+    Media,
+  ],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
@@ -69,4 +69,34 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI!,
     },
   }),
+  plugins: [
+    s3Storage({
+      disableLocalStorage: false,
+      collections: {
+        media: true,
+        // media: true,
+        // {
+        //   prefix: "media", // Optional prefix for uploaded files
+        //   generateFileURL: ({
+        //     filename,
+        //     prefix,
+        //   }: {
+        //     filename: string;
+        //     prefix: string;
+        //   }) =>
+        //     `https://${process.env.R2_BUCKET}.${process.env.R2_ENDPOINT}/${prefix}/${filename}`,
+        // },
+      },
+      bucket: process.env.R2_BUCKET || "",
+      config: {
+        endpoint: `https://${process.env.R2_ENDPOINT}` || "", // Protocol is required here
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+        },
+        region: "auto", // Required for R2
+        forcePathStyle: true, // Required for R2
+      },
+    }),
+  ],
 });

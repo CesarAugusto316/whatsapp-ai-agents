@@ -283,9 +283,6 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         "where[numberOfPeople][equals]": data.numberOfPeople,
       });
 
-      /**
-       * @todo Recommend suggested available slots
-       */
       if (availability && !availability?.isSlotAvailable) {
         logger.info("Reservation not available", {
           availability,
