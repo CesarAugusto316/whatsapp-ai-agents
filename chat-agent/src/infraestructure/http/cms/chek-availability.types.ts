@@ -11,7 +11,7 @@ type AppointmentSlot = Pick<
   | "id"
 >;
 
-interface TimeWindow {
+export interface TimeWindow {
   from: string;
   to: string;
   totalPeople: number;

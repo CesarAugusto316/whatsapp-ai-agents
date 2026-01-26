@@ -1,8 +1,4 @@
-type Slot = {
-  from: string;
-  to: string;
-  totalPeople: number;
-};
+import { TimeWindow } from "@/infraestructure/http/cms";
 
 /**
  * @example
@@ -16,26 +12,31 @@ type Slot = {
  * @param locale
  * @returns
  */
-function formatAvailability(
-  slots: Slot[],
+export function formatAvailability(
+  slots: TimeWindow[],
   capacity: number,
   locale = "es-EC",
-): string[] {
+): string {
   //
-  return slots.map((slot) => {
-    const from = new Date(slot.from);
-    const to = new Date(slot.to);
+  return slots
+    .map((slot) => {
+      const from = new Date(slot.from);
+      const to = new Date(slot.to);
 
-    const label =
-      from.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) +
-      " - " +
-      to.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+      const label =
+        from.toLocaleTimeString(locale, {
+          hour: "2-digit",
+          minute: "2-digit",
+        }) +
+        " - " +
+        to.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 
-    const free = capacity - slot.totalPeople;
+      const free = capacity - slot.totalPeople;
 
-    if (free <= 0) {
-      return `${label}  🔴 Lleno`;
-    }
-    return `${label}  🟢 Disponible para ${free} personas`;
-  });
+      if (free <= 0) {
+        return `${label}  🔴 Lleno`;
+      }
+      return `${label}  🟢 Disponible para ${free} personas`;
+    })
+    .join("\n");
 }

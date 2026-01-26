@@ -5,3 +5,4 @@ export {
   toUTC,
   toLocalDateTime,
 } from "./datetime-formatting/better-datetime-converter";
+export { formatAvailability } from "./availability/format-availability";

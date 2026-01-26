@@ -12,4 +12,7 @@ export type {
   WeekDay,
 } from "./cms-types";
 
-export type { AvailabilityResponse } from "./chek-availability.types";
+export type {
+  AvailabilityResponse,
+  TimeWindow,
+} from "./chek-availability.types";

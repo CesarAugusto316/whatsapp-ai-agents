@@ -331,8 +331,20 @@ function validateScheduleAvailability(
 function generateScheduleAvailability(
   business: IBusiness,
   startDate = new Date(),
+  maxAttempts = 7, // Límite de 1 año máximo
+  currentAttempt = 0,
 ) {
-  //
+  // Protección contra recursión infinita
+  if (currentAttempt >= maxAttempts) {
+    return {
+      startDate: new Date(),
+      endDate: new Date(),
+      success: false,
+      message:
+        "No se encontró horario disponible después de buscar en el horario",
+    };
+  }
+
   const averageTime = business.schedule.averageTime;
   const endDate = new Date(
     startDate.getTime() + (averageTime || 60) * 60 * 1000,
@@ -340,10 +352,14 @@ function generateScheduleAvailability(
 
   const { daySchedule, weekDay } = getCurrentDaySchedule(business, startDate);
 
-  if (!daySchedule.length) {
+  // Si no hay horario o el día es feriado, buscar en el siguiente día
+  if (!daySchedule.length || isHoliday(business, startDate)) {
+    const nextDay = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
     return generateScheduleAvailability(
       business,
-      new Date(startDate.getTime() + 24 * 60 * 60 * 1000),
+      nextDay,
+      maxAttempts,
+      currentAttempt + 1,
     );
   }
 
@@ -388,4 +404,61 @@ function generateScheduleAvailability(
     success: true,
     message: "",
   };
+}
+
+/**
+ * Función helper para verificar si un día es feriado
+ * Busca en el array de nextHoliday la fecha más cercana que coincida
+ */
+function isHoliday(business: IBusiness, date: Date): boolean {
+  const holidays = business.general?.nextHoliday;
+  if (!holidays || holidays.length === 0) return false;
+
+  // Convertir la fecha actual a string en formato YYYY-MM-DD para comparación
+  const dateString = date.toISOString().split("T")[0];
+
+  // Buscar si la fecha está dentro de algún rango de feriado
+  for (const holiday of holidays) {
+    const holidayStart = new Date(holiday.startDate);
+    const holidayEnd = new Date(holiday.endDate);
+
+    // Verificar si la fecha está dentro del rango [inicio, fin]
+    if (date >= holidayStart && date <= holidayEnd) {
+      return true;
+    }
+
+    // Comparación adicional por si las fechas son del mismo día
+    const holidayStartString = holidayStart.toISOString().split("T")[0];
+    const holidayEndString = holidayEnd.toISOString().split("T")[0];
+
+    if (dateString === holidayStartString || dateString === holidayEndString) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Función auxiliar para encontrar el próximo feriado (opcional)
+ * Puede ser útil para optimizar la búsqueda de días laborales
+ */
+export function getNextHoliday(
+  holidays: Array<{ startDate: string; endDate: string }>,
+  fromDate: Date,
+): Date | null {
+  let closestHoliday: Date | null = null;
+
+  for (const holiday of holidays) {
+    const holidayStart = new Date(holiday.startDate);
+
+    // Solo considerar feriados futuros
+    if (holidayStart >= fromDate) {
+      if (!closestHoliday || holidayStart < closestHoliday) {
+        closestHoliday = holidayStart;
+      }
+    }
+  }
+
+  return closestHoliday;
 }

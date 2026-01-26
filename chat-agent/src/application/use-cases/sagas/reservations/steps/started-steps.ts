@@ -8,12 +8,11 @@ import {
   InputIntent,
   isWithinBusinessHours,
   isWithinHolydayRange,
-  renderMsgNotAvailable,
   ReservationState,
 } from "@/domain/restaurant/reservations";
 import { cacheAdapter } from "@/infraestructure/adapters";
 import { logger } from "@/infraestructure/logging";
-import { formatSchedule, toUTC } from "@/domain/utilities";
+import { formatAvailability, formatSchedule, toUTC } from "@/domain/utilities";
 import { cmsClient } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";
 import {
@@ -218,9 +217,6 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         end: isWithinBusinessHours(business.schedule, timezone, end),
       };
 
-      /**
-       * @todo Recommend suggested available slots
-       */
       if (!isWithinSchedule.start || !isWithinSchedule.end) {
         logger.info("Reservation out of business hours", {
           customerMessage,
@@ -231,19 +227,18 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           ...data,
         } satisfies Partial<ReservationState>);
 
-        const schedule = business.schedule;
-        const SCHEDULE_BLOCK = formatSchedule(schedule, timezone);
-        const result = await humanizerAgent(`
-          😔 Lo sentimos, el día y hora seleccionados no están dentro del horario
-          de atención del negocio. Por favor, selecciona otro día y hora.
-
-          ==============================
-          HORARIO DE ATENCION
-          ==============================
-          ${SCHEDULE_BLOCK}
-        `); // Dar el horario de ese dia en especifico y/o suggested slots
+        const availability = await cmsClient.suggestSlots({
+          "where[business][equals]": business.id,
+        });
+        const titleMsg =
+          "Estas fuera del horario de atención del negocio, te recomendamos reservar en";
+        const msg = formatAvailability(
+          availability.slotsByTimeRange ?? [],
+          availability.maxCapacityPerHour,
+          business.general.timezone,
+        );
         return {
-          result, // suggest available slots
+          result: `${titleMsg} ${msg}`, // suggest available slots
           continue: false,
           metadata: {
             description: "IS_OUT_OF_BUSINESS_HOURS",
@@ -263,7 +258,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
        * @todo Recommend suggested available slots
        */
       if (isWithinRange) {
-        logger.info("Reservation within business hours", {
+        logger.info("Reservation within holyday", {
           isWithinRange,
           customerMessage,
         });
@@ -291,7 +286,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
       /**
        * @todo Recommend suggested available slots
        */
-      if (availability && !availability?.isFullyAvailable) {
+      if (availability && !availability?.isSlotAvailable) {
         logger.info("Reservation not available", {
           availability,
           customerMessage,
@@ -304,14 +299,16 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
         } satisfies Partial<ReservationState>);
 
         // suggest available slots
-        const msg = renderMsgNotAvailable({
-          availability,
-          business,
-          data,
-        });
-        const result = await humanizerAgent(msg);
+        const titleMsg =
+          "La fecha que has seleccionado no está disponible. Te recomendamos reservar en";
+        const msg = formatAvailability(
+          availability.slotsByTimeRange ?? [],
+          availability.maxCapacityPerHour,
+          business.general.timezone,
+        );
+
         return {
-          result, // suggest available slots
+          result: `${titleMsg}: \n${msg}`, // suggest available slots
           continue: false,
           metadata: {
             description: "RESERVATION_NOT_AVAILABLE",

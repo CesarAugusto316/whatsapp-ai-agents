@@ -142,6 +142,25 @@ class CMSClient {
     }, resilientConfig);
   }
 
+  public async suggestSlots(
+    queryParams: Pick<CMSQueryParams, "where[business][equals]">,
+  ) {
+    return resilientQuery(async () => {
+      const url = generateUrl("appointments/suggest-slots", {
+        depth: 0,
+        ...queryParams,
+      });
+      const res = await fetch(url, {
+        method: "GET",
+        headers: this.headers,
+      });
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
+      }
+      return res.json() as Promise<AvailabilityResponse>;
+    }, resilientConfig);
+  }
+
   // TODO phoneNumber as primary key
   public async getCostumerByPhone(
     queryParams: Pick<
