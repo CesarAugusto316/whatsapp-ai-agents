@@ -3,8 +3,8 @@ import { I18n } from "@payloadcms/translations";
 import { User } from "@/payload-types";
 import { suggestSlotsService } from "@/collections/appointments/Appointment.service";
 import { AvailabilityResponse } from "@/collections/appointments/check-availability";
-import { OccupancyHistogram } from "./simple-bar-chart";
-import { TimeLine } from "./gantt";
+import { OccupancyHistogram } from "./bar-chart";
+import { TimeLine } from "./time-line";
 
 export default async function Charts({}: {
   payload: Payload;

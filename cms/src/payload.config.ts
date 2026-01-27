@@ -47,12 +47,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     components: {
-      // views: {
-      //   // ["sas"]: {
-      //   //   // path: ""
-      //   // },
-      // }
-      beforeDashboard: ["./components/example"],
+      beforeDashboard: ["./components/chart-wrapper"],
     },
   },
   maxDepth: 2,
