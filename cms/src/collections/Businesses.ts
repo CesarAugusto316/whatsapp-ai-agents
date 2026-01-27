@@ -146,6 +146,20 @@ export const Business: CollectionConfig = {
   timestamps: true,
   disableDuplicate: true,
   trash: false,
+  upload: {
+    // disableLocalStorage: env.NODE_ENV === "production",
+    // staticDir: path.resolve(__dirname, "../media"),
+    formatOptions: {
+      format: "webp", // Convert uploads to WebP
+      options: {
+        quality: 80,
+      },
+    },
+    mimeTypes: ["image/*", "video/*"],
+    // These are not supported on Workers yet due to lack of sharp
+    crop: false,
+    focalPoint: false,
+  },
   fields: [
     {
       name: "name",
@@ -212,7 +226,7 @@ export const Business: CollectionConfig = {
             },
             {
               type: "number",
-              name: "tables",
+              name: "maxCapacity",
               defaultValue: 1,
               admin: {
                 condition: (data) =>

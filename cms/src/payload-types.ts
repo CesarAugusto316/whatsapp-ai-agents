@@ -73,7 +73,6 @@ export interface Config {
     appointments: Appointment;
     customers: Customer;
     businesses: Business;
-    media: Media;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,7 +85,6 @@ export interface Config {
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     businesses: BusinessesSelect<false> | BusinessesSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -231,7 +229,7 @@ export interface Business {
      */
     requireAppointmentApproval?: boolean | null;
     businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
-    tables?: number | null;
+    maxCapacity?: number | null;
     description?: string | null;
     user: string | User;
     timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
@@ -299,8 +297,16 @@ export interface Business {
         }[]
       | null;
   };
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -318,25 +324,6 @@ export interface Customer {
   email?: string | null;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: string;
-  alt: string;
-  business: string | Business;
-  prefix?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -381,10 +368,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'businesses';
         value: string | Business;
-      } | null)
-    | ({
-        relationTo: 'media';
-        value: string | Media;
       } | null);
   globalSlug?: string | null;
   user:
@@ -529,7 +512,7 @@ export interface BusinessesSelect<T extends boolean = true> {
         phoneNumber?: T;
         requireAppointmentApproval?: T;
         businessType?: T;
-        tables?: T;
+        maxCapacity?: T;
         description?: T;
         user?: T;
         timezone?: T;
@@ -596,16 +579,6 @@ export interface BusinessesSelect<T extends boolean = true> {
               id?: T;
             };
       };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
- */
-export interface MediaSelect<T extends boolean = true> {
-  alt?: T;
-  business?: T;
   prefix?: T;
   updatedAt?: T;
   createdAt?: T;

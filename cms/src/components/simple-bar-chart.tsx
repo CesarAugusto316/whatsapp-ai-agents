@@ -3,11 +3,6 @@ import { scaleBand, scaleLinear } from "@visx/scale";
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { TimeWindow } from "@/collections/appointments/check-availability";
 
-// type Slot = {
-//   from: string;
-//   totalPeople: number;
-// };
-
 export function OccupancyHistogram({
   slots,
   maxCapacity,
