@@ -39,6 +39,14 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      // views: {
+      //   // ["sas"]: {
+      //   //   // path: ""
+      //   // },
+      // }
+      afterDashboard: ["./components/example"],
+    },
   },
   maxDepth: 2,
   collections: [
@@ -70,22 +78,17 @@ export default buildConfig({
     },
   }),
   plugins: [
+    // https://bridger.to/payload-r2
+    // https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
     s3Storage({
       disableLocalStorage: false,
       collections: {
-        media: true,
-        // media: true,
-        // {
-        //   prefix: "media", // Optional prefix for uploaded files
-        //   generateFileURL: ({
-        //     filename,
-        //     prefix,
-        //   }: {
-        //     filename: string;
-        //     prefix: string;
-        //   }) =>
-        //     `https://${process.env.R2_BUCKET}.${process.env.R2_ENDPOINT}/${prefix}/${filename}`,
-        // },
+        media: {
+          disableLocalStorage: true, // Recommended for production
+          prefix: "media", // Optional prefix for uploaded files
+          generateFileURL: ({ filename, prefix }) =>
+            `https://${process.env.R2_BUCKET}.${process.env.R2_ENDPOINT}/${prefix}/${filename}`,
+        },
       },
       bucket: process.env.R2_BUCKET || "",
       config: {

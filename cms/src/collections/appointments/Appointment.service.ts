@@ -1,4 +1,3 @@
-import { PayloadRequest } from "payload";
 import {
   AppointmentSlot,
   AvailabilityRequest,
@@ -17,11 +16,10 @@ import config from "@payload-config";
  * @returns
  */
 export const checkAvailabilityService = async (
-  req: PayloadRequest,
+  where: AvailabilityRequest["where"],
   checkOverlapping: boolean = true,
 ) => {
-  const { where } = req.query as unknown as AvailabilityRequest;
-
+  //
   const business = await validateBusiness(where);
 
   const { startDate, endDate, numberOfPeople, ...rest1 } = validateDates(

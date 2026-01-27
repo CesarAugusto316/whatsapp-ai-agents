@@ -98,9 +98,10 @@ export const Appointments: CollectionConfig = {
       method: "get",
       handler: async (req) => {
         try {
+          const { where } = req.query as unknown as AvailabilityRequest;
           const checkOverlapping = false;
           const response = await checkAvailabilityService(
-            req,
+            where,
             checkOverlapping,
           );
           return Response.json(response, { status: 200 });
@@ -122,7 +123,8 @@ export const Appointments: CollectionConfig = {
       method: "get",
       handler: async (req) => {
         try {
-          const response = await checkAvailabilityService(req);
+          const { where } = req.query as unknown as AvailabilityRequest;
+          const response = await checkAvailabilityService(where);
           return Response.json(response, { status: 200 });
         } catch (error) {
           console.error("Error checking availability:", error);

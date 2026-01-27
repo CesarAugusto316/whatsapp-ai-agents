@@ -327,6 +327,7 @@ export interface Media {
   id: string;
   alt: string;
   business: string | Business;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -605,6 +606,7 @@ export interface BusinessesSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   business?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
