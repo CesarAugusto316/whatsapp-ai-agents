@@ -36,14 +36,18 @@
     "@payloadcms/storage-s3": "3.63.0",
     "@payloadcms/translations": "^3.63.0",
     "@payloadcms/ui": "3.63.0",
+    "@visx/axis": "^3.12.0",
+    "@visx/glyph": "^3.12.0",
+    "@visx/legend": "^3.12.0",
+    "@visx/scale": "^3.12.0",
+    "@visx/vendor": "^3.12.0",
     "cross-env": "^7.0.3",
     "date-fns-tz": "^3.2.0",
     "dotenv": "16.4.7",
     "next": "15.4.7",
     "payload": "3.63.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "recharts": "^3.7.0"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

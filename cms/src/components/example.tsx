@@ -3,7 +3,9 @@ import { I18n } from "@payloadcms/translations";
 import { User } from "@/payload-types";
 import { suggestSlotsService } from "@/collections/appointments/Appointment.service";
 import { AvailabilityResponse } from "@/collections/appointments/check-availability";
-import BarCharts from "./simple-bar-chart";
+import { OccupancyHistogram } from "./simple-bar-chart";
+import { ReservationTimeline } from "./gantt";
+// import BarCharts from "./simple-bar-chart";
 
 export default async function MyAfterDashboardComponent({
   ...rest
@@ -22,9 +24,15 @@ export default async function MyAfterDashboardComponent({
   })) as AvailabilityResponse;
 
   return (
-    <BarCharts
-      slotsByTimeRange={res.slotsByTimeRange ?? []}
-      maxCapacityPerHour={res.maxCapacityPerHour ?? 40}
-    />
+    <div>
+      <OccupancyHistogram
+        slots={res.slotsByTimeRange}
+        maxCapacity={res.maxCapacityPerHour}
+      />
+      <ReservationTimeline
+        slots={res.slotsByTimeRange}
+        maxCapacity={res.maxCapacityPerHour}
+      />
+    </div>
   );
 }

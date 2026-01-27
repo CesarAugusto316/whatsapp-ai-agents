@@ -1,56 +1,75 @@
-"use client";
+import { Group } from "@visx/group";
+import { scaleBand, scaleLinear } from "@visx/scale";
+import { AxisBottom, AxisLeft } from "@visx/axis";
 import { TimeWindow } from "@/collections/appointments/check-availability";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
 
-const formatHour = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-};
+// type Slot = {
+//   from: string;
+//   totalPeople: number;
+// };
 
-const toChartData = (slots: any[]) =>
-  slots.map((s) => ({
-    name: formatHour(s.from),
-    occupied: s.totalPeople,
-  }));
+export function OccupancyHistogram({
+  slots,
+  maxCapacity,
+  width = 700,
+  height = 250,
+}: {
+  slots: TimeWindow[];
+  maxCapacity: number;
+  width?: number;
+  height?: number;
+}) {
+  const margin = { top: 20, right: 20, bottom: 40, left: 40 };
 
-interface Props {
-  slotsByTimeRange: TimeWindow[];
-  maxCapacityPerHour: number;
-}
+  const xMax = width - margin.left - margin.right;
+  const yMax = height - margin.top - margin.bottom;
 
-export default function BarCharts({
-  slotsByTimeRange,
-  maxCapacityPerHour,
-}: Props) {
-  //
-  const data = toChartData(slotsByTimeRange);
+  const hours = slots.map((s) => s.from);
+
+  const xScale = scaleBand({
+    domain: hours,
+    range: [0, xMax],
+    padding: 0.2,
+  });
+
+  const yScale = scaleLinear({
+    domain: [0, maxCapacity],
+    range: [yMax, 0],
+  });
+
   return (
-    <BarChart
-      width={700}
-      height={350}
-      data={data}
-      margin={{ top: 20, bottom: 20 }}
-    >
-      <CartesianGrid strokeDasharray="3 3" />
+    <svg width={width} height={height}>
+      <Group top={margin.top} left={margin.left}>
+        {slots.map((s) => {
+          const x = xScale(s.from)!;
+          const y = yScale(s.totalPeople);
+          const h = yMax - y;
 
-      <XAxis dataKey="name" />
+          return (
+            <rect
+              key={s.from}
+              x={x}
+              y={y}
+              width={xScale.bandwidth()}
+              height={h}
+              fill="#4f46e5"
+            />
+          );
+        })}
 
-      <YAxis
-        domain={[0, maxCapacityPerHour]}
-        label={{ value: "Personas", angle: -90, position: "insideLeft" }}
-      />
+        {/* capacity line */}
+        <line
+          x1={0}
+          x2={xMax}
+          y1={yScale(maxCapacity)}
+          y2={yScale(maxCapacity)}
+          stroke="red"
+          strokeDasharray="4 4"
+        />
 
-      <Tooltip />
-
-      <Bar dataKey="occupied" fill="#10b981" background={{ fill: "#1f2937" }} />
-    </BarChart>
+        <AxisLeft scale={yScale} />
+        <AxisBottom top={yMax} scale={xScale} />
+      </Group>
+    </svg>
   );
 }
