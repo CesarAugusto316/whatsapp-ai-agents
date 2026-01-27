@@ -16,14 +16,16 @@ import config from "@payload-config";
  * @returns
  */
 export const checkAvailabilityService = async (
-  where: AvailabilityRequest["where"],
+  where: Partial<AvailabilityRequest["where"]>,
   checkOverlapping: boolean = true,
 ) => {
   //
-  const business = await validateBusiness(where);
+  const business = await validateBusiness(
+    where as AvailabilityRequest["where"],
+  );
 
   const { startDate, endDate, numberOfPeople, ...rest1 } = validateDates(
-    where,
+    where as AvailabilityRequest["where"],
     business.schedule.averageTime,
   );
 

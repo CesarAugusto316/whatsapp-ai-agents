@@ -1,7 +1,10 @@
 import { Locale, Payload } from "payload";
 import { I18n } from "@payloadcms/translations";
 import { User } from "@/payload-types";
-import { suggestSlotsService } from "@/collections/appointments/Appointment.service";
+import {
+  checkAvailabilityService,
+  suggestSlotsService,
+} from "@/collections/appointments/Appointment.service";
 import { AvailabilityResponse } from "@/collections/appointments/check-availability";
 import { OccupancyHistogram } from "./bar-chart";
 import { TimeLine } from "./time-line";
@@ -18,10 +21,6 @@ export default async function Charts({
   searchParams: Record<string, string>;
   user: User;
 }) {
-  const res = (await suggestSlotsService({
-    business: { equals: "e5e9aaa8-40bc-46c2-b5e0-9b932582ba0d" },
-  })) as AvailabilityResponse;
-
   const businesses = await payload.find({
     collection: "businesses",
     where: {
@@ -31,13 +30,28 @@ export default async function Charts({
     },
   });
 
+  const res = (await checkAvailabilityService(
+    {
+      startDateTime: {
+        // selected Date
+        equals: new Date().toISOString(),
+      },
+      business: {
+        equals:
+          // selected business ID
+          "e5e9aaa8-40bc-46c2-b5e0-9b932582ba0d",
+      },
+    },
+    false,
+  )) as AvailabilityResponse;
+
   console.log({ businesses, user });
 
   return (
     <div
       style={{ display: "grid", gap: 40, paddingTop: 30, paddingBottom: 30 }}
     >
-      <h1 style={{ textAlign: "center" }}>
+      <h2 style={{ textAlign: "center" }}>
         Reservaciones para el{" "}
         {new Date(res.startDate).toLocaleDateString("ES", {
           weekday: "long",
@@ -45,9 +59,10 @@ export default async function Charts({
           month: "long",
           day: "numeric",
         })}
-      </h1>
+      </h2>
 
       <div style={{ display: "flex", gap: 12 }}>
+        {/* To use hooks, must be componetized in an client component */}
         <Select
           options={businesses.docs.map((business) => ({
             label: business.name,
@@ -55,6 +70,8 @@ export default async function Charts({
             id: business.id,
           }))}
         />
+
+        {/* To use hooks, must be componetized in an client component */}
         <DatePicker />
       </div>
 
