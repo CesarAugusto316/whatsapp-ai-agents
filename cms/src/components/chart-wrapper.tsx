@@ -5,8 +5,12 @@ import { suggestSlotsService } from "@/collections/appointments/Appointment.serv
 import { AvailabilityResponse } from "@/collections/appointments/check-availability";
 import { OccupancyHistogram } from "./bar-chart";
 import { TimeLine } from "./time-line";
+import { DatePicker, Select } from "@payloadcms/ui";
 
-export default async function Charts({}: {
+export default async function Charts({
+  payload,
+  user,
+}: {
   payload: Payload;
   locale: Locale;
   i18n: I18n;
@@ -18,9 +22,22 @@ export default async function Charts({}: {
     business: { equals: "e5e9aaa8-40bc-46c2-b5e0-9b932582ba0d" },
   })) as AvailabilityResponse;
 
+  const businesses = await payload.find({
+    collection: "businesses",
+    where: {
+      "general.user": {
+        equals: user.id,
+      },
+    },
+  });
+
+  console.log({ businesses, user });
+
   return (
-    <div>
-      <h1 style={{ marginBottom: 26, marginTop: 26, textAlign: "center" }}>
+    <div
+      style={{ display: "grid", gap: 40, paddingTop: 30, paddingBottom: 30 }}
+    >
+      <h1 style={{ textAlign: "center" }}>
         Reservaciones para el{" "}
         {new Date(res.startDate).toLocaleDateString("ES", {
           weekday: "long",
@@ -30,9 +47,19 @@ export default async function Charts({}: {
         })}
       </h1>
 
+      <div style={{ display: "flex", gap: 12 }}>
+        <Select
+          options={businesses.docs.map((business) => ({
+            label: business.name,
+            value: business.id,
+            id: business.id,
+          }))}
+        />
+        <DatePicker />
+      </div>
+
       <section
         style={{
-          marginBottom: 40,
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           width: "100%",
