@@ -102,9 +102,9 @@ export function TimeLine({
 
   // Colores para diferentes estados
   const statusColors = {
-    confirmed: "oklch(67.1% 0.195 152.535)", // verde
-    pending: "oklch(84.1% 0.15 154.449)", // verde claro
-    cancelled: "oklch(39.3% 0.095 152.535)", // verde oscuro
+    confirmed: "oklch(69.6% 0.17 162.48)", // emerald
+    pending: "oklch(79.5% 0.184 86.047)", // verde claro
+    cancelled: "oklch(70.4% 0.191 22.216)", // verde oscuro
   };
 
   return (

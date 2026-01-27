@@ -29,7 +29,7 @@ export function OccupancyHistogram({
 
   const threshold = scaleLinear({
     domain: [0, maxCapacity],
-    range: ["oklch(87.1% 0.15 154.449)", "oklch(39.3% 0.095 152.535)"], // tailwind green-300 / gree-800
+    range: ["oklch(70.7% 0.165 254.624)", "oklch(28.2% 0.091 267.935)"], // tailwind green-300 / gree-800
   });
 
   const yScale = scaleLinear({
