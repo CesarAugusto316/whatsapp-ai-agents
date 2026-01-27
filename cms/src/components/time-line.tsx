@@ -5,6 +5,8 @@ import { scaleBand, scaleUtc } from "@visx/scale";
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { TimeWindow } from "@/collections/appointments/check-availability";
 import { useMemo } from "react";
+import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
+import { localPoint } from "@visx/event";
 
 interface GanttSlot {
   id: string;
@@ -26,6 +28,26 @@ export function TimeLine({
   width?: number;
   height?: number;
 }) {
+  const {
+    tooltipOpen,
+    tooltipLeft,
+    tooltipTop,
+    tooltipData,
+    showTooltip,
+    hideTooltip,
+  } = useTooltip<{ hour: string; value: number }>();
+
+  const { containerRef, TooltipInPortal } = useTooltipInPortal({
+    scroll: true,
+  });
+
+  const tooltipStyles = {
+    ...defaultStyles,
+    background: "rgba(0,0,0,.9)",
+    color: "white",
+    fontSize: 12,
+  };
+
   const margin = { top: 20, right: 20, bottom: 40, left: 40 };
 
   // Extraer todos los slots individuales de todas las horas
@@ -138,7 +160,11 @@ export function TimeLine({
 
         return (
           <div>
-            <svg width={responsiveWidth} height={responsiveHeight}>
+            <svg
+              ref={containerRef}
+              width={responsiveWidth}
+              height={responsiveHeight}
+            >
               <Group left={margin.left} top={margin.top}>
                 {/* Ejes */}
                 <AxisBottom
@@ -152,8 +178,9 @@ export function TimeLine({
                 />
 
                 <AxisLeft
+                  label="Reservas"
                   scale={yScale}
-                  tickFormat={() => ""} // No mostrar labels en eje Y
+                  tickFormat={(_reservaId) => ""} // No mostrar labels en eje Y
                 />
 
                 {/* Barras Gantt */}
@@ -168,6 +195,18 @@ export function TimeLine({
                   return (
                     <g key={slot.id}>
                       <rect
+                        onMouseLeave={hideTooltip}
+                        onMouseMove={(event) => {
+                          const coords = localPoint(event);
+                          showTooltip({
+                            tooltipLeft: startX + barWidth,
+                            tooltipTop: coords?.y,
+                            tooltipData: {
+                              value: slot.numberOfPeople,
+                              hour: `ID de reserva: ${slot.customer}`,
+                            },
+                          });
+                        }}
                         x={startX}
                         y={y}
                         width={barWidth}
@@ -216,6 +255,19 @@ export function TimeLine({
                 })}
               </Group>
             </svg>
+
+            {tooltipOpen && tooltipData && (
+              <TooltipInPortal
+                top={tooltipTop}
+                left={tooltipLeft}
+                style={tooltipStyles}
+              >
+                <div>
+                  <strong> {tooltipData.value} personas</strong>
+                  <div> {tooltipData.hour}</div>
+                </div>
+              </TooltipInPortal>
+            )}
 
             {/* Leyenda */}
             <div

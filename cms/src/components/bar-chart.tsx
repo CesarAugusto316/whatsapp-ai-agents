@@ -5,6 +5,8 @@ import { scaleBand, scaleLinear } from "@visx/scale";
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { TimeWindow } from "@/collections/appointments/check-availability";
 import { LegendOrdinal } from "@visx/legend";
+import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
+import { localPoint } from "@visx/event";
 
 export function OccupancyHistogram({
   slots,
@@ -16,6 +18,25 @@ export function OccupancyHistogram({
   width?: number;
   height?: number;
 }) {
+  const {
+    tooltipOpen,
+    tooltipLeft,
+    tooltipTop,
+    tooltipData,
+    showTooltip,
+    hideTooltip,
+  } = useTooltip<{ hour: string; value: number }>();
+
+  const { containerRef, TooltipInPortal } = useTooltipInPortal({
+    scroll: true,
+  });
+
+  const tooltipStyles = {
+    ...defaultStyles,
+    background: "rgba(0,0,0,.9)",
+    color: "white",
+    fontSize: 12,
+  };
   const margin = { top: 20, right: 20, bottom: 40, left: 40 };
   const yMax = height - margin.top - margin.bottom;
 
@@ -56,7 +77,11 @@ export function OccupancyHistogram({
 
         return (
           <div>
-            <svg width={responsiveWidth} height={responsiveHeight}>
+            <svg
+              ref={containerRef}
+              width={responsiveWidth}
+              height={responsiveHeight}
+            >
               <Group left={margin.left} top={margin.top}>
                 {slots.map((slot, i) => {
                   const hour = hours[i];
@@ -67,6 +92,18 @@ export function OccupancyHistogram({
 
                   return (
                     <rect
+                      onMouseLeave={hideTooltip}
+                      onMouseMove={(event) => {
+                        const coords = localPoint(event);
+                        showTooltip({
+                          tooltipLeft: x + xScale.bandwidth() / 2,
+                          tooltipTop: coords?.y,
+                          tooltipData: {
+                            hour,
+                            value,
+                          },
+                        });
+                      }}
                       key={slot.from}
                       x={x}
                       y={yScale(value)}
@@ -90,7 +127,18 @@ export function OccupancyHistogram({
                 />
               </Group>
             </svg>
-
+            {tooltipOpen && tooltipData && (
+              <TooltipInPortal
+                top={tooltipTop}
+                left={tooltipLeft}
+                style={tooltipStyles}
+              >
+                <div>
+                  <strong>{tooltipData.hour}</strong>
+                </div>
+                <div>{tooltipData.value} personas</div>
+              </TooltipInPortal>
+            )}
             <LegendOrdinal
               scale={threshold}
               direction="row"
