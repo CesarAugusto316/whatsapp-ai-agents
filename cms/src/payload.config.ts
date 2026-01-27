@@ -52,7 +52,7 @@ export default buildConfig({
       //   //   // path: ""
       //   // },
       // }
-      // afterDashboard: ["./components/example"],
+      beforeDashboard: ["./components/example"],
     },
   },
   maxDepth: 2,
