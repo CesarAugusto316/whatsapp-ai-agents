@@ -10,13 +10,6 @@ export interface AvailabilityRequest {
   };
 }
 
-export interface TimeWindow {
-  from: string;
-  to: string;
-  totalPeople: number;
-  slots: AppointmentSlot[];
-}
-
 export interface AvailabilityResponse {
   success: boolean;
   message?: string;
@@ -33,6 +26,13 @@ export interface AvailabilityResponse {
     open: string;
     close: string;
   }[];
+}
+
+export interface TimeWindow {
+  from: string;
+  to: string;
+  totalPeople: number;
+  slots: AppointmentSlot[];
 }
 
 export type AppointmentSlot = Pick<
