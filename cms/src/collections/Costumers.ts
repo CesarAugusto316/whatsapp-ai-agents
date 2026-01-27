@@ -1,5 +1,4 @@
-import { CollectionConfig, CollectionSlug } from "payload";
-import { Business } from "./Businesses";
+import { CollectionConfig } from "payload";
 
 export const Customers: CollectionConfig = {
   slug: "customers",
@@ -91,7 +90,7 @@ export const Customers: CollectionConfig = {
         en: "Business",
         es: "Negocio",
       },
-      relationTo: Business.slug as CollectionSlug,
+      relationTo: "businesses",
       required: true,
       admin: {
         readOnly: true,

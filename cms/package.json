@@ -17,7 +17,7 @@
     "db:migrate": "bun payload migrate",
     "db:migrate:create": "bun payload migrate:create",
     "db:status": "bun payload migrate:status",
-    "db:seed": "bun payload migrate:seed",
+    "db:seed": "bun run db:fresh --force-accept-warning && bun payload seed",
     "db:down": "bun payload migrate:down",
     "db:fresh": "bun payload migrate:fresh",
     "db:reset": "bun payload migrate:reset",

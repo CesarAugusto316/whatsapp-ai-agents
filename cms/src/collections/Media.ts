@@ -1,5 +1,4 @@
-import type { CollectionConfig, CollectionSlug } from "payload";
-import { Business } from "./Businesses";
+import type { CollectionConfig } from "payload";
 
 export const Media: CollectionConfig = {
   slug: "media",
@@ -76,11 +75,8 @@ export const Media: CollectionConfig = {
         en: "Business",
         es: "Negocio",
       },
-      admin: {
-        readOnly: true,
-      },
       required: true,
-      relationTo: Business.slug as CollectionSlug,
+      relationTo: "businesses",
       access: {
         update: ({ req }) => {
           if (req?.user?.collection === "third-party-access") {

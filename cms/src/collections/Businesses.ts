@@ -1,4 +1,4 @@
-import { CollectionConfig, CollectionSlug, Field } from "payload";
+import { CollectionConfig, Field } from "payload";
 import { Users } from "./Users";
 
 // ===== TIME DOMAIN =====
@@ -146,20 +146,6 @@ export const Business: CollectionConfig = {
   timestamps: true,
   disableDuplicate: true,
   trash: false,
-  upload: {
-    // disableLocalStorage: env.NODE_ENV === "production",
-    // staticDir: path.resolve(__dirname, "../media"),
-    formatOptions: {
-      format: "webp", // Convert uploads to WebP
-      options: {
-        quality: 80,
-      },
-    },
-    mimeTypes: ["image/*", "video/*"],
-    // These are not supported on Workers yet due to lack of sharp
-    crop: false,
-    focalPoint: false,
-  },
   fields: [
     {
       name: "name",
@@ -259,7 +245,7 @@ export const Business: CollectionConfig = {
                 en: "Owner",
                 es: "Propietario",
               },
-              relationTo: Users.slug as CollectionSlug,
+              relationTo: "users",
               filterOptions: ({ relationTo }) => {
                 if (relationTo === Users.slug) {
                   return {

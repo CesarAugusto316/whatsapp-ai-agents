@@ -11,6 +11,7 @@ import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 import { Appointments } from "./collections/appointments/Appointments";
 import { s3Storage } from "@payloadcms/storage-s3";
+import { Media } from "./collections/Media";
 // import { migrations } from "./migrations";
 
 const filename = fileURLToPath(import.meta.url);
@@ -51,11 +52,18 @@ export default buildConfig({
       //   //   // path: ""
       //   // },
       // }
-      afterDashboard: ["./components/example"],
+      // afterDashboard: ["./components/example"],
     },
   },
   maxDepth: 2,
-  collections: [Users, ThirdPartyAccess, Appointments, Customers, Business],
+  collections: [
+    Users,
+    ThirdPartyAccess,
+    Appointments,
+    Customers,
+    Business,
+    Media,
+  ],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
@@ -70,7 +78,7 @@ export default buildConfig({
     // MORE INFO ABOUT PRODUCTION MIGRATIONS:
     // https://payloadcms.com/docs/database/migrations#running-migrations-in-production
     // push: process.env.NODE_ENV === "development",
-    push: false,
+    push: true,
     idType: "uuid",
     // prodMigrations: migrations, // runs migrations on production on initialization
     pool: {
@@ -83,9 +91,9 @@ export default buildConfig({
     s3Storage({
       disableLocalStorage: false,
       collections: {
-        businesses: {
-          disableLocalStorage: true, // Recommended for production
+        media: {
           prefix: "media", // Optional prefix for uploaded files
+          disableLocalStorage: false, // Recommended for production
           generateFileURL: ({ filename, prefix }) =>
             `https://${process.env.R2_BUCKET}.${process.env.R2_ENDPOINT}/${prefix}/${filename}`,
         },

@@ -1,6 +1,4 @@
-import type { CollectionConfig, CollectionSlug } from "payload";
-import { Business } from "../Businesses";
-import { Customers } from "../Costumers";
+import type { CollectionConfig } from "payload";
 import { AvailabilityRequest } from "./check-availability";
 import {
   checkAvailabilityService,
@@ -154,7 +152,7 @@ export const Appointments: CollectionConfig = {
         readOnly: true,
       },
       required: true,
-      relationTo: Business.slug as CollectionSlug,
+      relationTo: "businesses",
       access: {
         update: ({ req }) => {
           if (req?.user?.collection === "third-party-access") {
@@ -179,7 +177,7 @@ export const Appointments: CollectionConfig = {
         es: "Cliente",
       },
       required: true,
-      relationTo: Customers.slug as CollectionSlug,
+      relationTo: "customers",
       access: {
         update: ({ req }) => {
           if (req.user?.collection === "third-party-access") {
