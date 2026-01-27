@@ -35,7 +35,8 @@ export function OccupancyHistogram({
     ...defaultStyles,
     background: "rgba(0,0,0,.9)",
     color: "white",
-    fontSize: 12,
+    lineHeight: "1.5",
+    fontSize: 13,
   };
   const margin = { top: 20, right: 20, bottom: 40, left: 40 };
   const yMax = height - margin.top - margin.bottom;

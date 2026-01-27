@@ -35,7 +35,7 @@ export function TimeLine({
     tooltipData,
     showTooltip,
     hideTooltip,
-  } = useTooltip<{ hour: string; value: number }>();
+  } = useTooltip<{ hour: string; value: number; id: string }>();
 
   const { containerRef, TooltipInPortal } = useTooltipInPortal({
     scroll: true,
@@ -45,7 +45,8 @@ export function TimeLine({
     ...defaultStyles,
     background: "rgba(0,0,0,.9)",
     color: "white",
-    fontSize: 12,
+    lineHeight: "1.5",
+    fontSize: 13,
   };
 
   const margin = { top: 20, right: 20, bottom: 40, left: 40 };
@@ -193,20 +194,37 @@ export function TimeLine({
                   if (y === undefined || barWidth <= 0) return null;
 
                   return (
-                    <g key={slot.id}>
+                    <g
+                      onMouseLeave={hideTooltip}
+                      onMouseMove={(event) => {
+                        const coords = localPoint(event);
+                        const start = new Date(
+                          slot.startDateTime,
+                        ).toLocaleTimeString("es-ES", {
+                          timeZone: "Europe/Madrid",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                        const end = new Date(
+                          slot.endDateTime,
+                        ).toLocaleTimeString("es-ES", {
+                          timeZone: "Europe/Madrid",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                        showTooltip({
+                          tooltipLeft: startX + barWidth,
+                          tooltipTop: coords?.y,
+                          tooltipData: {
+                            id: `ID de reserva: ${slot.id}`,
+                            value: slot.numberOfPeople,
+                            hour: `${start} - ${end}`,
+                          },
+                        });
+                      }}
+                      key={slot.id}
+                    >
                       <rect
-                        onMouseLeave={hideTooltip}
-                        onMouseMove={(event) => {
-                          const coords = localPoint(event);
-                          showTooltip({
-                            tooltipLeft: startX + barWidth,
-                            tooltipTop: coords?.y,
-                            tooltipData: {
-                              value: slot.numberOfPeople,
-                              hour: `ID de reserva: ${slot.customer}`,
-                            },
-                          });
-                        }}
                         x={startX}
                         y={y}
                         width={barWidth}
@@ -264,6 +282,7 @@ export function TimeLine({
               >
                 <div>
                   <strong> {tooltipData.value} personas</strong>
+                  <br />
                   <div> {tooltipData.hour}</div>
                 </div>
               </TooltipInPortal>
