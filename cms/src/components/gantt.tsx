@@ -1,14 +1,24 @@
 "use client";
 import { ParentSize } from "@visx/responsive";
 import { Group } from "@visx/group";
-import { scaleBand, scaleLinear } from "@visx/scale";
+import { scaleBand, scaleUtc } from "@visx/scale";
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { TimeWindow } from "@/collections/appointments/check-availability";
-import { LegendOrdinal } from "@visx/legend";
+import { useMemo } from "react";
+
+interface GanttSlot {
+  id: string;
+  startDateTime: string;
+  endDateTime: string;
+  numberOfPeople: number;
+  status: string;
+  createdAt: string;
+  customer: string;
+}
 
 export function TimeLine({
   slots,
-  maxCapacity,
+  maxCapacity: _maxCapacity,
   height = 400,
 }: {
   slots: TimeWindow[];
@@ -17,28 +27,85 @@ export function TimeLine({
   height?: number;
 }) {
   const margin = { top: 20, right: 20, bottom: 40, left: 40 };
-  const yMax = height - margin.top - margin.bottom;
 
-  const hours = slots.map((s) =>
-    new Date(s.from).toLocaleTimeString("es-ES", {
-      timeZone: "Europe/Madrid",
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  );
+  // Extraer todos los slots individuales de todas las horas
+  const allSlots = useMemo(() => {
+    const slotMap = new Map<string, GanttSlot>();
 
-  console.log({ slots });
+    slots.forEach((timeWindow) => {
+      try {
+        // Intentar parsear si es string
+        const slotsData =
+          typeof timeWindow.slots === "string"
+            ? JSON.parse(timeWindow.slots)
+            : timeWindow.slots;
 
-  const threshold = scaleLinear({
-    domain: [0, maxCapacity],
-    range: ["oklch(87.1% 0.15 154.449)", "oklch(39.3% 0.095 152.535)"], // tailwind green-300 / gree-800
-  });
+        if (Array.isArray(slotsData)) {
+          slotsData.forEach((slot: GanttSlot) => {
+            if (!slotMap.has(slot.id)) {
+              slotMap.set(slot.id, slot);
+            }
+          });
+        }
+      } catch (_error) {
+        // Ignorar errores de parseo
+      }
+    });
 
-  const yScale = scaleLinear({
-    domain: [0, maxCapacity],
-    range: [yMax, 0],
-    nice: true,
-  });
+    return Array.from(slotMap.values());
+  }, [slots]);
+
+  // Ordenar slots por hora de inicio
+  const sortedSlots = useMemo(() => {
+    return [...allSlots].sort(
+      (a, b) =>
+        new Date(a.startDateTime).getTime() -
+        new Date(b.startDateTime).getTime(),
+    );
+  }, [allSlots]);
+
+  // Encontrar el rango de tiempo total
+  const timeRange = useMemo(() => {
+    if (sortedSlots.length === 0) {
+      return { min: new Date(), max: new Date() };
+    }
+
+    const startTimes = sortedSlots.map((s) =>
+      new Date(s.startDateTime).getTime(),
+    );
+    const endTimes = sortedSlots.map((s) => new Date(s.endDateTime).getTime());
+
+    const minTime = Math.min(...startTimes);
+    const maxTime = Math.max(...endTimes);
+
+    // Si solo hay un slot, agregar margen de 1 hora
+    if (minTime === maxTime) {
+      return {
+        min: new Date(minTime),
+        max: new Date(maxTime + 60 * 60 * 1000),
+      };
+    }
+
+    return {
+      min: new Date(minTime),
+      max: new Date(maxTime),
+    };
+  }, [sortedSlots]);
+
+  // Crear escala para el eje Y (filas de slots)
+  const yScale = useMemo(() => {
+    return scaleBand({
+      domain: sortedSlots.map((slot) => slot.id),
+      padding: 0.2,
+    });
+  }, [sortedSlots]);
+
+  // Colores para diferentes estados
+  const statusColors = {
+    confirmed: "oklch(67.1% 0.195 152.535)", // verde
+    pending: "oklch(84.1% 0.15 154.449)", // verde claro
+    cancelled: "oklch(39.3% 0.095 152.535)", // verde oscuro
+  };
 
   return (
     <ParentSize>
@@ -47,68 +114,174 @@ export function TimeLine({
 
         const responsiveWidth = parentWidth;
         const responsiveHeight = height;
-
         const xMax = responsiveWidth - margin.left - margin.right;
+        const yMax = responsiveHeight - margin.top - margin.bottom;
 
-        const xScale = scaleBand({
-          domain: hours,
+        // Configurar escalas
+        const xScale = scaleUtc({
+          domain: [timeRange.min, timeRange.max],
           range: [0, xMax],
-          padding: 0.3,
         });
+
+        yScale.range([0, yMax]);
+
+        // Formatear horas para el eje X
+        const formatTime = (value: Date | { valueOf(): number }) => {
+          const date =
+            value instanceof Date ? value : new Date(value.valueOf());
+          return date.toLocaleTimeString("es-ES", {
+            timeZone: "Europe/Madrid",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        };
 
         return (
           <div>
             <svg width={responsiveWidth} height={responsiveHeight}>
               <Group left={margin.left} top={margin.top}>
-                {slots.map((slot, i) => {
-                  const hour = hours[i];
-                  const x = xScale(hour);
-                  if (x === undefined) return null;
-                  const value = slot.totalPeople;
-                  const barHeight = yScale(0) - yScale(value);
-
-                  return (
-                    <rect
-                      key={slot.from}
-                      x={x}
-                      y={yScale(value)}
-                      width={xScale.bandwidth()}
-                      height={barHeight}
-                      fill={threshold(value)}
-                      rx={4}
-                    />
-                  );
-                })}
-
-                <AxisLeft scale={yScale} />
-
+                {/* Ejes */}
                 <AxisBottom
                   top={yMax}
                   scale={xScale}
+                  tickFormat={formatTime}
                   tickLabelProps={() => ({
                     fontSize: 11,
                     textAnchor: "middle",
                   })}
                 />
+
+                <AxisLeft
+                  scale={yScale}
+                  tickFormat={() => ""} // No mostrar labels en eje Y
+                />
+
+                {/* Barras Gantt */}
+                {sortedSlots.map((slot) => {
+                  const startX = xScale(new Date(slot.startDateTime));
+                  const endX = xScale(new Date(slot.endDateTime));
+                  const barWidth = Math.max(1, endX - startX);
+                  const y = yScale(slot.id);
+
+                  if (y === undefined || barWidth <= 0) return null;
+
+                  return (
+                    <g key={slot.id}>
+                      <rect
+                        x={startX}
+                        y={y}
+                        width={barWidth}
+                        height={yScale.bandwidth()}
+                        fill={
+                          statusColors[
+                            slot.status as keyof typeof statusColors
+                          ] || statusColors.pending
+                        }
+                        rx={2}
+                        opacity={0.8}
+                      />
+                      {/* Etiqueta con número de personas */}
+                      {barWidth > 30 && (
+                        <text
+                          x={startX + barWidth / 2}
+                          y={y + yScale.bandwidth() / 2}
+                          textAnchor="middle"
+                          dy="0.33em"
+                          fontSize={10}
+                          fill="white"
+                          fontWeight="bold"
+                        >
+                          {slot.numberOfPeople}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {/* Líneas de tiempo de referencia */}
+                {slots.map((timeWindow, _i) => {
+                  const x = xScale(new Date(timeWindow.from));
+                  return (
+                    <line
+                      key={`line-${timeWindow.from}`}
+                      x1={x}
+                      x2={x}
+                      y1={0}
+                      y2={yMax}
+                      stroke="rgba(0,0,0,0.1)"
+                      strokeWidth={1}
+                      strokeDasharray="2,2"
+                    />
+                  );
+                })}
               </Group>
             </svg>
 
-            <LegendOrdinal
-              scale={threshold}
-              direction="row"
-              labelFormat={(d, i) =>
-                i === 0 ? "Disponible" : "Capacidad máxima"
-              }
-              itemMargin="0 16px 0 0"
-              shape="rect"
-              shapeWidth={20}
-              shapeHeight={14}
+            {/* Leyenda */}
+            <div
               style={{
-                fontSize: "13px",
-                fontWeight: 500,
+                display: "flex",
+                justifyContent: "center",
                 marginTop: 12,
               }}
-            />
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  fontSize: "13px",
+                  fontWeight: 500,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div
+                    style={{
+                      width: 20,
+                      height: 14,
+                      backgroundColor: statusColors.confirmed,
+                      borderRadius: 2,
+                    }}
+                  />
+                  <span>Confirmado</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div
+                    style={{
+                      width: 20,
+                      height: 14,
+                      backgroundColor: statusColors.pending,
+                      borderRadius: 2,
+                    }}
+                  />
+                  <span>Pendiente</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div
+                    style={{
+                      width: 20,
+                      height: 14,
+                      backgroundColor: statusColors.cancelled,
+                      borderRadius: 2,
+                    }}
+                  />
+                  <span>Cancelado</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Información de slots */}
+            <div
+              style={{
+                marginTop: 16,
+                fontSize: "12px",
+                color: "#666",
+                textAlign: "center",
+              }}
+            >
+              {sortedSlots.length === 0
+                ? "No hay reservas en este período"
+                : `${sortedSlots.length} reserva${sortedSlots.length !== 1 ? "s" : ""} mostrada${sortedSlots.length !== 1 ? "s" : ""}`}
+            </div>
           </div>
         );
       }}

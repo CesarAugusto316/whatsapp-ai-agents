@@ -54,15 +54,16 @@ Este gráfico SOLO existe porque hiciste discretización.
 Ahora el nivel fino:
 
 ```
-Hora →
-        13    14    15    16    17    18    19    20
-       |-----|-----|-----|-----|-----|-----|-----|
 
 R1             ██████████
 R2                    ██████████
 R3                          ██████████
 R4                          ██████████
 R5                          ██████████
+
+Hora →
+        13    14    15    16    17    18    19    20
+       |-----|-----|-----|-----|-----|-----|-----|
 ```
 
 Cada fila = una reserva
