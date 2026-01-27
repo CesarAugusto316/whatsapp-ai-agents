@@ -154,6 +154,18 @@ export const Business: CollectionConfig = {
       label: { en: "Business Name", es: "Nombre del Negocio" },
     },
     {
+      name: "assistantName",
+      type: "text",
+      required: true,
+      label: { en: "AI Assistant's Name", es: "Nombre del Asistente de IA" },
+      admin: {
+        placeholder: {
+          en: "Enter AI Assistant's Name",
+          es: "Ingrese el nombre del Asistente de IA",
+        },
+      },
+    },
+    {
       type: "tabs",
       tabs: [
         {
@@ -166,8 +178,6 @@ export const Business: CollectionConfig = {
             {
               name: "phoneNumber",
               type: "text",
-              required: true,
-              unique: true,
               defaultValue: "+34",
               minLength: 7,
               maxLength: 20,
@@ -213,7 +223,7 @@ export const Business: CollectionConfig = {
             {
               type: "number",
               name: "maxCapacity",
-              defaultValue: 1,
+              defaultValue: 10,
               admin: {
                 condition: (data) =>
                   data?.general?.businessType === "restaurant",

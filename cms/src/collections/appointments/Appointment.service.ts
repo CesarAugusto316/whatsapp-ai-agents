@@ -43,7 +43,7 @@ export const checkAvailabilityService = async (
     close,
   });
 
-  const maxCapacityPerHour = business.general.tables || 20;
+  const maxCapacityPerHour = business.general.maxCapacity || 20;
   const response: AvailabilityResponse = {
     success: true,
     businessId: business.id,
@@ -97,7 +97,7 @@ export const suggestSlotsService = async (
     close,
   });
 
-  const maxCapacityPerHour = business.general.tables || 20;
+  const maxCapacityPerHour = business.general.maxCapacity || 20;
   const response: AvailabilityResponse = {
     success: true,
     businessId: business.id,

@@ -224,8 +224,9 @@ export interface Appointment {
 export interface Business {
   id: string;
   name: string;
+  assistantName: string;
   general: {
-    phoneNumber: string;
+    phoneNumber?: string | null;
     /**
      * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
      */
@@ -523,6 +524,7 @@ export interface CustomersSelect<T extends boolean = true> {
  */
 export interface BusinessesSelect<T extends boolean = true> {
   name?: T;
+  assistantName?: T;
   general?:
     | T
     | {

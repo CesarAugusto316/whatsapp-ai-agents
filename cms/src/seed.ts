@@ -81,6 +81,7 @@ export const script = async (config: SanitizedConfig) => {
       collection: "businesses",
       data: {
         name: `Pizzeria Italiana ${i + 1}`,
+        assistantName: i < 2 ? "Rebeca" : "Paola",
         general: {
           phoneNumber: `+3411111111${i}`,
           businessType: "restaurant",
@@ -155,7 +156,7 @@ export const script = async (config: SanitizedConfig) => {
   let day = 0;
   let toggle = true;
 
-  for (let i = 0; i < 140; i++) {
+  for (let i = 0; i < 120; i++) {
     const business = businesses[i % 5];
     const customer = customers[i % 40];
 
