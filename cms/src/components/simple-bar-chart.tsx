@@ -27,11 +27,9 @@ export function OccupancyHistogram({
     }),
   );
 
-  console.log({ slots });
-
   const threshold = scaleLinear({
     domain: [0, maxCapacity],
-    range: ["oklch(87.1% 0.15 154.449)", "oklch(39.3% 0.095 152.535)"], // tailwind green-500 / red-500
+    range: ["oklch(87.1% 0.15 154.449)", "oklch(39.3% 0.095 152.535)"], // tailwind green-300 / gree-800
   });
 
   const yScale = scaleLinear({
@@ -64,9 +62,7 @@ export function OccupancyHistogram({
                   const hour = hours[i];
                   const x = xScale(hour);
                   if (x === undefined) return null;
-
                   const value = slot.totalPeople;
-
                   const barHeight = yScale(0) - yScale(value);
 
                   return (
