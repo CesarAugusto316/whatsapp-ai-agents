@@ -32,6 +32,8 @@ export default async function ChartsContainer({
     name: business.name,
   }));
 
+  if (user.role === "admin") return;
+
   // Si no hay negocios, mostrar un mensaje
   if (initialBusinesses.length === 0) {
     return (

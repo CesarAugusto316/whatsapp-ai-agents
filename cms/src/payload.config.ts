@@ -40,16 +40,23 @@ export default buildConfig({
     supportedLanguages: { en, es },
   },
   admin: {
-    timezones: {
-      supportedTimezones: [{ label: "Europe/Madrid", value: "Europe/Madrid" }],
-      defaultTimezone: "Europe/Madrid",
-    },
-    // dateFormat: "MMMM do, yyyy",
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
     components: {
+      beforeNavLinks: [{ path: "./components/Home.tsx" }],
+      graphics: {
+        Icon: {
+          clientProps: {
+            name: "Nexoti",
+          },
+          path: "./components/Icon.tsx",
+        },
+        Logo: {
+          path: "./components/Logo.tsx",
+        },
+      },
       beforeDashboard: ["./components/chart-wrapper-container"],
     },
   },
