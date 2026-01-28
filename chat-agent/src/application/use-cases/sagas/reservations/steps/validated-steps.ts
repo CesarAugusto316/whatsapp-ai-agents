@@ -105,6 +105,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
         customerName: newCustomer?.name!,
         numberOfPeople,
         status: "confirmed",
+        timezone: business.general.timezone,
       } satisfies CreateAppointment;
 
       const reservation = (

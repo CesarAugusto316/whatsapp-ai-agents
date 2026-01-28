@@ -141,6 +141,12 @@ export const Business: CollectionConfig = {
     },
   },
   admin: {
+    defaultColumns: [
+      "name",
+      "assistantName",
+      "general.maxCapacity",
+      "general.nextHoliday",
+    ],
     hideAPIURL: true,
     useAsTitle: "name",
   },
