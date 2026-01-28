@@ -14,6 +14,12 @@ interface ChartsProps {
   initialBusinesses: Business[];
 }
 
+// Claves para localStorage
+const STORAGE_KEYS = {
+  SELECTED_BUSINESS_ID: "chart-wrapper_selected-business-id",
+  SELECTED_DATE: "chart-wrapper_selected-date",
+} as const;
+
 // Función para llamar a la API de disponibilidad
 async function fetchAvailabilityData(
   businessId: string,
@@ -41,14 +47,74 @@ async function fetchAvailabilityData(
   return response.json();
 }
 
+// Helper para guardar en localStorage de manera segura
+const saveToLocalStorage = (key: string, value: string): void => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.error(`Error saving to localStorage key "${key}":`, error);
+  }
+};
+
+// Helper para cargar desde localStorage de manera segura
+const loadFromLocalStorage = (key: string, defaultValue: string): string => {
+  if (typeof window === "undefined") return defaultValue;
+  try {
+    const value = localStorage.getItem(key);
+    return value !== null ? value : defaultValue;
+  } catch (error) {
+    console.error(`Error loading from localStorage key "${key}":`, error);
+    return defaultValue;
+  }
+};
+
 export default function Charts({ initialBusinesses }: ChartsProps) {
+  // Obtener valores iniciales desde localStorage o valores por defecto
+  const getInitialBusinessId = (): string => {
+    const savedBusinessId = loadFromLocalStorage(
+      STORAGE_KEYS.SELECTED_BUSINESS_ID,
+      "",
+    );
+
+    // Verificar que el businessId guardado existe en la lista de negocios
+    if (
+      savedBusinessId &&
+      initialBusinesses.some((b) => b.id === savedBusinessId)
+    ) {
+      return savedBusinessId;
+    }
+
+    // Si no existe o no es válido, usar el primer negocio disponible
+    return initialBusinesses[0]?.id || "";
+  };
+
+  const getInitialDate = (): Date => {
+    const savedDateStr = loadFromLocalStorage(STORAGE_KEYS.SELECTED_DATE, "");
+
+    if (savedDateStr) {
+      try {
+        const savedDate = new Date(savedDateStr);
+        // Verificar que la fecha sea válida
+        if (!isNaN(savedDate.getTime())) {
+          return savedDate;
+        }
+      } catch (error) {
+        console.error("Error parsing saved date:", error);
+      }
+    }
+
+    // Si no hay fecha guardada o es inválida, usar la fecha actual
+    return new Date();
+  };
+
   // Estado para el negocio seleccionado
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>(
-    initialBusinesses[0]?.id || "",
+    getInitialBusinessId(),
   );
 
   // Estado para la fecha seleccionada
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(getInitialDate());
 
   // Estado para los datos de disponibilidad
   const [availabilityData, setAvailabilityData] =
@@ -94,21 +160,25 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
     }
   }, [selectedBusinessId, selectedDate, loadAvailabilityData]);
 
+  // Efecto para guardar el businessId en localStorage cuando cambia
+  useEffect(() => {
+    if (selectedBusinessId) {
+      saveToLocalStorage(STORAGE_KEYS.SELECTED_BUSINESS_ID, selectedBusinessId);
+    }
+  }, [selectedBusinessId]);
+
+  // Efecto para guardar la fecha en localStorage cuando cambia
+  useEffect(() => {
+    saveToLocalStorage(STORAGE_KEYS.SELECTED_DATE, selectedDate.toISOString());
+  }, [selectedDate]);
+
   // Manejar cambio de negocio
   const handleBusinessChange = useCallback((value: string) => {
-    /**
-     *
-     * @todo use local storage to persist selection
-     */
     setSelectedBusinessId(value);
   }, []);
 
   // Manejar cambio de fecha
   const handleDateChange = useCallback((date: Date) => {
-    /**
-     *
-     * @todo use local storage to persist selection
-     */
     setSelectedDate(date);
   }, []);
 
@@ -145,7 +215,6 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
           >
             Negocio:
           </label>
-          {/* use local storage to persist selection */}
           <select
             id="business-select"
             value={selectedBusinessId}
@@ -173,7 +242,6 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
           >
             Fecha:
           </label>
-          {/* use local storage to persist selection */}
           <input
             id="date-picker"
             type="date"
