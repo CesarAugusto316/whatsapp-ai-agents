@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
 import { AvailabilityResponse } from "@/collections/appointments/check-availability";
 import { OccupancyHistogram } from "./bar-chart";
 import { TimeLine } from "./time-line";
@@ -97,11 +96,19 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
 
   // Manejar cambio de negocio
   const handleBusinessChange = useCallback((value: string) => {
+    /**
+     *
+     * @todo use local storage to persist selection
+     */
     setSelectedBusinessId(value);
   }, []);
 
   // Manejar cambio de fecha
   const handleDateChange = useCallback((date: Date) => {
+    /**
+     *
+     * @todo use local storage to persist selection
+     */
     setSelectedDate(date);
   }, []);
 
@@ -138,6 +145,7 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
           >
             Negocio:
           </label>
+          {/* use local storage to persist selection */}
           <select
             id="business-select"
             value={selectedBusinessId}
@@ -165,6 +173,7 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
           >
             Fecha:
           </label>
+          {/* use local storage to persist selection */}
           <input
             id="date-picker"
             type="date"

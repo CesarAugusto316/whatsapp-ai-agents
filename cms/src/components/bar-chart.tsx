@@ -90,7 +90,6 @@ export function OccupancyHistogram({
                   if (x === undefined) return null;
                   const value = slot.totalPeople;
                   const barHeight = yScale(0) - yScale(value);
-
                   return (
                     <rect
                       onMouseLeave={hideTooltip}

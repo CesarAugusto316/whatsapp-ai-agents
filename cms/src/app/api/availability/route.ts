@@ -43,6 +43,14 @@ export async function POST(request: NextRequest) {
       }),
     };
 
+    /**
+     *
+     * @todo CUANDO SE usa checkAvailabilityService
+     * las fechas pueden caer fuera de horario laboral
+     * suggestSlotsService (No debe usarse aquí, su proposito es otro)
+     * suggestSlotsService solo funciona para sugerir
+     * slots para el dia habil actual o el proximo dia habil
+     */
     // Call the service
     const result = await suggestSlotsService(
       where,

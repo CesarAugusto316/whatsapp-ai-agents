@@ -7,6 +7,7 @@ import { TimeWindow } from "@/collections/appointments/check-availability";
 import { useMemo } from "react";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
+import Link from "next/link";
 
 interface GanttSlot {
   id: string;
@@ -28,6 +29,7 @@ export function TimeLine({
   width?: number;
   height?: number;
 }) {
+  //
   const {
     tooltipOpen,
     tooltipLeft,
@@ -194,64 +196,68 @@ export function TimeLine({
                   if (y === undefined || barWidth <= 0) return null;
 
                   return (
-                    <g
-                      onMouseLeave={hideTooltip}
-                      onMouseMove={(event) => {
-                        const coords = localPoint(event);
-                        const start = new Date(
-                          slot.startDateTime,
-                        ).toLocaleTimeString("es-ES", {
-                          timeZone: "Europe/Madrid",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        });
-                        const end = new Date(
-                          slot.endDateTime,
-                        ).toLocaleTimeString("es-ES", {
-                          timeZone: "Europe/Madrid",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        });
-                        showTooltip({
-                          tooltipLeft: startX + barWidth,
-                          tooltipTop: coords?.y,
-                          tooltipData: {
-                            id: `ID de reserva: ${slot.id}`,
-                            value: slot.numberOfPeople,
-                            hour: `${start} - ${end}`,
-                          },
-                        });
-                      }}
+                    <Link
+                      href={`/admin/collections/appointments/${slot.id}`}
                       key={slot.id}
                     >
-                      <rect
-                        x={startX}
-                        y={y}
-                        width={barWidth}
-                        height={yScale.bandwidth()}
-                        fill={
-                          statusColors[
-                            slot.status as keyof typeof statusColors
-                          ] || statusColors.pending
-                        }
-                        rx={2}
-                        opacity={0.8}
-                      />
-                      {/* Etiqueta con número de personas */}
-                      {barWidth > 30 && (
-                        <text
-                          x={startX + barWidth / 2}
-                          y={y + yScale.bandwidth() / 2}
-                          textAnchor="middle"
-                          dy="0.33em"
-                          fontSize={10}
-                          fill="white"
-                          fontWeight="bold"
-                        >
-                          {slot.numberOfPeople}
-                        </text>
-                      )}
-                    </g>
+                      <g
+                        onMouseLeave={hideTooltip}
+                        onMouseMove={(event) => {
+                          const coords = localPoint(event);
+                          const start = new Date(
+                            slot.startDateTime,
+                          ).toLocaleTimeString("es-ES", {
+                            timeZone: "Europe/Madrid",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                          const end = new Date(
+                            slot.endDateTime,
+                          ).toLocaleTimeString("es-ES", {
+                            timeZone: "Europe/Madrid",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                          showTooltip({
+                            tooltipLeft: startX + barWidth,
+                            tooltipTop: coords?.y,
+                            tooltipData: {
+                              id: `ID de reserva: ${slot.id}`,
+                              value: slot.numberOfPeople,
+                              hour: `${start} - ${end}`,
+                            },
+                          });
+                        }}
+                      >
+                        <rect
+                          x={startX}
+                          y={y}
+                          width={barWidth}
+                          height={yScale.bandwidth()}
+                          fill={
+                            statusColors[
+                              slot.status as keyof typeof statusColors
+                            ] || statusColors.pending
+                          }
+                          rx={2}
+                          opacity={0.8}
+                        />
+                        {/* Etiqueta con número de personas */}
+                        {barWidth > 30 && (
+                          <text
+                            x={startX + barWidth / 2}
+                            y={y + yScale.bandwidth() / 2}
+                            textAnchor="middle"
+                            dy="0.33em"
+                            fontSize={10}
+                            fill="white"
+                            fontWeight="bold"
+                          >
+                            {slot.numberOfPeople}
+                          </text>
+                        )}
+                      </g>
+                    </Link>
                   );
                 })}
 
