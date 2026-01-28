@@ -5,6 +5,7 @@ import {
   getSlotsByDayService,
   suggestSlotsService,
 } from "./Appointment.service";
+import { toZonedTime } from "date-fns-tz";
 
 /**
  *
@@ -23,6 +24,14 @@ export const Appointments: CollectionConfig = {
     },
   },
   admin: {
+    hideAPIURL: true,
+    defaultColumns: [
+      "customerName",
+      "startDateTime",
+      "status",
+      "numberOfPeople",
+      "business",
+    ],
     useAsTitle: "customerName", // header title is taken from "name" field
   },
   timestamps: true,
@@ -69,6 +78,36 @@ export const Appointments: CollectionConfig = {
       }
       return false;
     },
+  },
+  hooks: {
+    afterRead: [
+      async ({ doc, req }) => {
+        let timezone = "Europe/Madrid"; // Valor por defecto
+
+        if (doc.business) {
+          try {
+            const business = await req.payload.findByID({
+              collection: "businesses",
+              id: doc.business,
+              depth: 1,
+            });
+            timezone = business.general.timezone || timezone;
+          } catch (error) {
+            console.log("Error fetching business:", error);
+          }
+        }
+        // Agregar campos formateados al documento
+        return {
+          ...doc,
+          startDateTime: doc.startDateTime
+            ? toZonedTime(doc.startDateTime, timezone)
+            : undefined,
+          endDateTime: doc.endDateTime
+            ? toZonedTime(doc.endDateTime, timezone)
+            : undefined,
+        };
+      },
+    ],
   },
   endpoints: [
     {
@@ -298,24 +337,6 @@ export const Appointments: CollectionConfig = {
       defaultValue: 1,
       admin: {
         readOnly: true,
-        // condition: (data) => {
-        //   console.log({ data });
-        //   // data: {
-        //   //    id: 'c948628b-02d0-4088-84df-b1c8b91b1c9d',
-        //   //    business: '71358eb4-b61e-418d-a2fe-e34b8e5c5e6c',
-        //   //    customer: '1cf18943-2a2b-46de-b9fb-5407afce47ae',
-        //   //    customerName: 'Cesar',
-        //   //    day: '2025-12-31T00:00:00.000Z',
-        //   //    startDateTime: '2025-12-31T16:00:00.000Z',
-        //   //    endDateTime: '2025-12-31T17:00:00.000Z',
-        //   //    status: 'confirmed',
-        //   //    numberOfPeople: 3,
-        //   //    notes: null,
-        //   //    updatedAt: '2025-12-26T18:57:52.198Z',
-        //   //    createdAt: '2025-12-26T18:57:52.197Z'
-        //   //  }
-        //   return true;
-        // },
       },
       label: { en: "Number of People", es: "Número de Personas" },
       min: 1,

@@ -23,6 +23,7 @@ export const Users: CollectionConfig = {
     },
   },
   admin: {
+    hideAPIURL: true,
     // hide all the page if user is not admin
     hidden: ({ user }) => {
       return user?.collection === "users" && user?.role !== "admin";

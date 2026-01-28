@@ -141,6 +141,7 @@ export const Business: CollectionConfig = {
     },
   },
   admin: {
+    hideAPIURL: true,
     useAsTitle: "name",
   },
   timestamps: true,

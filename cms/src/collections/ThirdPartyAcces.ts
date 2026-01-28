@@ -24,6 +24,9 @@ export const ThirdPartyAccess: CollectionConfig = {
       es: "Accesos de Terceros",
     },
   },
+  admin: {
+    hideAPIURL: true,
+  },
   access: {
     read: isAdmin,
     update: isAdmin,

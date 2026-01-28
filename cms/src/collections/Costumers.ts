@@ -13,6 +13,7 @@ export const Customers: CollectionConfig = {
     },
   },
   admin: {
+    hideAPIURL: true,
     useAsTitle: "name", // header title is taken from "name" field
   },
   access: {

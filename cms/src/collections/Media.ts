@@ -89,6 +89,9 @@ export const Media: CollectionConfig = {
       },
     },
   ],
+  admin: {
+    hideAPIURL: true,
+  },
   upload: {
     // disableLocalStorage: env.NODE_ENV === "production",
     // staticDir: path.resolve(__dirname, "../media"),
