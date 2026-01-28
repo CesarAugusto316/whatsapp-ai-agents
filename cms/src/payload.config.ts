@@ -47,7 +47,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     components: {
-      beforeDashboard: ["./components/chart-wrapper"],
+      beforeDashboard: ["./components/chart-wrapper-container"],
     },
   },
   maxDepth: 2,
