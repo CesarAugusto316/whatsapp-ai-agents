@@ -28,7 +28,6 @@ async function fetchAvailabilityData(
     businessId,
     startDateTime: date.toISOString().split("T")[0],
   };
-  console.log({ payload });
   const response = await fetch("/api/availability", {
     method: "POST",
     headers: {
@@ -117,7 +116,6 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
 
       try {
         const res = await fetchAvailabilityData(businessId, date);
-        console.log({ res });
         setAvailabilityData(res);
       } catch (err) {
         console.error("Error loading availability data:", err);
@@ -247,11 +245,11 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
           }}
         >
           <OccupancyHistogram
-            slots={availabilityData.slotsByTimeRange ?? []}
+            slotsByTimeRage={availabilityData.slotsByTimeRange ?? []}
             maxCapacity={availabilityData.maxCapacityPerHour}
           />
           <TimeLine
-            slots={availabilityData.slotsByTimeRange ?? []}
+            slotsByTimeRage={availabilityData.slotsByTimeRange ?? []}
             maxCapacity={availabilityData.maxCapacityPerHour}
           />
         </section>

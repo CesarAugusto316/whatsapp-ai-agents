@@ -90,8 +90,8 @@ export function getCurrentDaySchedule(
 }
 
 export function calcSlotsByHour(
-  openRange: string,
-  closeRange: string,
+  openRange: string, // UTC format
+  closeRange: string, // UTC format
   slots: AppointmentSlot[],
 ): TimeWindow[] {
   //
@@ -127,8 +127,8 @@ export function calcSlotsByHour(
     const totalPeople = inside.reduce((sum, e) => sum + e.numberOfPeople, 0);
 
     result.push({
-      from: new Date(slotStart).toISOString(),
-      to: new Date(slotEnd).toISOString(),
+      from: new Date(slotStart).toISOString(), // UTC format
+      to: new Date(slotEnd).toISOString(), // UTC format
       totalPeople,
       slots: inside.map(({ _start, _end, ...rest }) => rest),
     } satisfies TimeWindow);

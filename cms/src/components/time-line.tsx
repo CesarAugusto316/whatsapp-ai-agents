@@ -20,11 +20,11 @@ interface GanttSlot {
 }
 
 export function TimeLine({
-  slots,
+  slotsByTimeRage,
   maxCapacity: _maxCapacity,
   height = 400,
 }: {
-  slots: TimeWindow[];
+  slotsByTimeRage: TimeWindow[];
   maxCapacity: number;
   width?: number;
   height?: number;
@@ -57,7 +57,7 @@ export function TimeLine({
   const allSlots = useMemo(() => {
     const slotMap = new Map<string, GanttSlot>();
 
-    slots.forEach((timeWindow) => {
+    slotsByTimeRage.forEach((timeWindow) => {
       try {
         // Intentar parsear si es string
         const slotsData =
@@ -78,7 +78,7 @@ export function TimeLine({
     });
 
     return Array.from(slotMap.values());
-  }, [slots]);
+  }, [slotsByTimeRage]);
 
   // Ordenar slots por hora de inicio
   const sortedSlots = useMemo(() => {
@@ -262,7 +262,7 @@ export function TimeLine({
                 })}
 
                 {/* Líneas de tiempo de referencia */}
-                {slots.map((timeWindow, _i) => {
+                {slotsByTimeRage.map((timeWindow, _i) => {
                   const x = xScale(new Date(timeWindow.from));
                   return (
                     <line

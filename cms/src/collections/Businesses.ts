@@ -224,6 +224,7 @@ export const Business: CollectionConfig = {
               type: "number",
               name: "maxCapacity",
               defaultValue: 10,
+              required: true,
               admin: {
                 condition: (data) =>
                   data?.general?.businessType === "restaurant",
