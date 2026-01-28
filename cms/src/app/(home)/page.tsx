@@ -1,8 +1,7 @@
 import { headers as getHeaders } from "next/headers.js";
-import Image from "next/image";
+import logo from "../../assets/nexoti_2.png";
 import { getPayload } from "payload";
 import React from "react";
-
 import config from "@/payload.config";
 import "./styles.css";
 
@@ -13,16 +12,19 @@ export default async function HomePage() {
   const { user } = await payload.auth({ headers });
   const userData = user?.collection === "users" ? user : undefined;
   // const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`;
+
   return (
     <div className="home">
       <div className="content">
         <picture>
-          <source srcSet="https://raw.githubusercontent.com/payloadcms/payload/main/packages/ui/src/assets/payload-favicon.svg" />
-          <Image
-            alt="Payload Logo"
-            height={65}
-            src="https://raw.githubusercontent.com/payloadcms/payload/main/packages/ui/src/assets/payload-favicon.svg"
-            width={65}
+          <img
+            style={{
+              width: 200,
+              height: "auto",
+              display: "block",
+            }}
+            src={logo.src}
+            alt="Nexoti Logo"
           />
         </picture>
         {!user && <h1>Welcome to your new project.</h1>}
