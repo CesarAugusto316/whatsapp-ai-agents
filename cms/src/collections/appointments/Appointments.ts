@@ -6,11 +6,14 @@ import {
   suggestSlotsService,
 } from "./Appointment.service";
 import { toZonedTime } from "date-fns-tz";
+import { Business } from "@/payload-types";
 
 /**
  *
- * @todo corregir en el dashboard para que muestre año/mes/dia en la tabla de reservas
+ * @todo improve caching with redis in the future
  */
+const businessCache = new Map<string, Business>();
+
 export const Appointments: CollectionConfig = {
   slug: "appointments",
   labels: {
@@ -83,15 +86,21 @@ export const Appointments: CollectionConfig = {
     afterRead: [
       async ({ doc, req }) => {
         let timezone = "Europe/Madrid"; // Valor por defecto
-
         if (doc.business) {
           try {
-            const business = await req.payload.findByID({
-              collection: "businesses",
-              id: doc.business,
-              depth: 1,
-            });
-            timezone = business.general.timezone || timezone;
+            const hasBussiness = businessCache.has(doc.business);
+            if (hasBussiness) {
+              const business = businessCache.get(doc.business);
+              timezone = business.general.timezone || timezone;
+            } else {
+              const business = await req.payload.findByID({
+                collection: "businesses",
+                id: doc.business,
+                depth: 1,
+              });
+              timezone = business.general.timezone || timezone;
+              businessCache.set(doc.business, business);
+            }
           } catch (error) {
             console.log("Error fetching business:", error);
           }
