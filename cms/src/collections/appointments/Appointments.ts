@@ -228,10 +228,9 @@ export const Appointments: CollectionConfig = {
             },
           },
           admin: {
+            readOnly: true,
             date: {
-              pickerAppearance: "timeOnly",
-              timeFormat: "HH:mm",
-              displayFormat: "HH:mm",
+              pickerAppearance: "dayAndTime",
             },
           },
         },
@@ -256,10 +255,9 @@ export const Appointments: CollectionConfig = {
             },
           },
           admin: {
+            readOnly: true,
             date: {
-              pickerAppearance: "timeOnly",
-              timeFormat: "HH:mm",
-              displayFormat: "HH:mm",
+              pickerAppearance: "dayAndTime",
             },
           },
         },

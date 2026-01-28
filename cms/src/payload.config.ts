@@ -40,8 +40,11 @@ export default buildConfig({
     supportedLanguages: { en, es },
   },
   admin: {
-    // timezones: {},
-    dateFormat: "MMMM do, yyyy",
+    timezones: {
+      supportedTimezones: [{ label: "Europe/Madrid", value: "Europe/Madrid" }],
+      defaultTimezone: "Europe/Madrid",
+    },
+    // dateFormat: "MMMM do, yyyy",
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
