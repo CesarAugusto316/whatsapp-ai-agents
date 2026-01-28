@@ -1,17 +1,16 @@
 "use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { AvailabilityResponse } from "@/collections/appointments/check-availability";
 import { OccupancyHistogram } from "./bar-chart";
 import { TimeLine } from "./time-line";
 
-interface Business {
+interface SelectorOptions {
   id: string;
   name: string;
 }
 
 interface ChartsProps {
-  initialBusinesses: Business[];
+  data: SelectorOptions[];
 }
 
 // Claves para localStorage
@@ -25,16 +24,17 @@ async function fetchAvailabilityData(
   businessId: string,
   date: Date,
 ): Promise<AvailabilityResponse> {
+  const payload = {
+    businessId,
+    startDateTime: date.toISOString().split("T")[0],
+  };
+  console.log({ payload });
   const response = await fetch("/api/availability", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      businessId,
-      startDateTime: date.toISOString(),
-      checkOverlapping: false,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -69,7 +69,7 @@ const loadFromLocalStorage = (key: string, defaultValue: string): string => {
   }
 };
 
-export default function Charts({ initialBusinesses }: ChartsProps) {
+export default function Charts({ data: initialBusinesses }: ChartsProps) {
   // Obtener valores iniciales desde localStorage o valores por defecto
   const getInitialBusinessId = (): string => {
     const savedBusinessId = loadFromLocalStorage(
@@ -89,32 +89,13 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
     return initialBusinesses[0]?.id || "";
   };
 
-  const getInitialDate = (): Date => {
-    const savedDateStr = loadFromLocalStorage(STORAGE_KEYS.SELECTED_DATE, "");
-
-    if (savedDateStr) {
-      try {
-        const savedDate = new Date(savedDateStr);
-        // Verificar que la fecha sea válida
-        if (!isNaN(savedDate.getTime())) {
-          return savedDate;
-        }
-      } catch (error) {
-        console.error("Error parsing saved date:", error);
-      }
-    }
-
-    // Si no hay fecha guardada o es inválida, usar la fecha actual
-    return new Date();
-  };
-
   // Estado para el negocio seleccionado
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>(
     getInitialBusinessId(),
   );
 
   // Estado para la fecha seleccionada
-  const [selectedDate, setSelectedDate] = useState<Date>(getInitialDate());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // Estado para los datos de disponibilidad
   const [availabilityData, setAvailabilityData] =
@@ -167,11 +148,6 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
     }
   }, [selectedBusinessId]);
 
-  // Efecto para guardar la fecha en localStorage cuando cambia
-  useEffect(() => {
-    saveToLocalStorage(STORAGE_KEYS.SELECTED_DATE, selectedDate.toISOString());
-  }, [selectedDate]);
-
   // Manejar cambio de negocio
   const handleBusinessChange = useCallback((value: string) => {
     setSelectedBusinessId(value);
@@ -189,7 +165,6 @@ export default function Charts({ initialBusinesses }: ChartsProps) {
     id: business.id,
   }));
 
-  console.log({ availabilityData });
   return (
     <div
       style={{ display: "grid", gap: 40, paddingTop: 30, paddingBottom: 30 }}

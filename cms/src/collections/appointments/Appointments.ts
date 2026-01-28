@@ -2,6 +2,7 @@ import type { CollectionConfig } from "payload";
 import { AvailabilityRequest } from "./check-availability";
 import {
   checkAvailabilityService,
+  getSlotsByDayService,
   suggestSlotsService,
 } from "./Appointment.service";
 
@@ -92,16 +93,12 @@ export const Appointments: CollectionConfig = {
       },
     },
     {
-      path: "/check-slots",
+      path: "/get-slots-by-day",
       method: "get",
       handler: async (req) => {
         try {
           const { where } = req.query as unknown as AvailabilityRequest;
-          const checkOverlapping = false;
-          const response = await checkAvailabilityService(
-            where,
-            checkOverlapping,
-          );
+          const response = await getSlotsByDayService(where);
           return Response.json(response, { status: 200 });
         } catch (error) {
           console.error("Error checking availability:", error);

@@ -45,5 +45,5 @@ export default async function ChartsContainer({
   }
 
   // Pasar los datos iniciales al componente cliente
-  return <Charts initialBusinesses={initialBusinesses} />;
+  return <Charts data={initialBusinesses} />;
 }

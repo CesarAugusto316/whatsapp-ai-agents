@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  checkAvailabilityService,
-  suggestSlotsService,
-} from "@/collections/appointments/Appointment.service";
+import { getSlotsByDayService } from "@/collections/appointments/Appointment.service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,32 +28,10 @@ export async function POST(request: NextRequest) {
       business: {
         equals: body.businessId,
       },
-      ...(body.numberOfPeople && {
-        numberOfPeople: {
-          equals: body.numberOfPeople.toString(),
-        },
-      }),
-      ...(body.endDateTime && {
-        endDateTime: {
-          equals: body.endDateTime,
-        },
-      }),
     };
 
-    /**
-     *
-     * @todo CUANDO SE usa checkAvailabilityService
-     * las fechas pueden caer fuera de horario laboral
-     * suggestSlotsService (No debe usarse aquí, su proposito es otro)
-     * suggestSlotsService solo funciona para sugerir
-     * slots para el dia habil actual o el proximo dia habil
-     */
     // Call the service
-    const result = await suggestSlotsService(
-      where,
-      // false,
-      // body.checkOverlapping || false,
-    );
+    const result = await getSlotsByDayService(where);
 
     return NextResponse.json(result);
   } catch (error) {

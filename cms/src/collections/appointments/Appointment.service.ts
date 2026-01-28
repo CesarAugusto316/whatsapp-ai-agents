@@ -5,7 +5,7 @@ import {
   calcSlotsByHour,
   getCurrentDaySchedule,
 } from "./check-availability";
-import { fromZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { Business as IBusiness } from "@/payload-types";
 import { getPayload } from "payload";
 import config from "@payload-config";
@@ -13,19 +13,17 @@ import config from "@payload-config";
 /**
  *
  * @param req
+ * @description startDatime & endDateTime are in UTCx
  * @returns
  */
 export const checkAvailabilityService = async (
-  where: Partial<AvailabilityRequest["where"]>,
-  checkOverlapping: boolean = true,
+  where: AvailabilityRequest["where"],
 ) => {
   //
-  const business = await validateBusiness(
-    where as AvailabilityRequest["where"],
-  );
+  const business = await validateBusiness(where);
 
   const { startDate, endDate, numberOfPeople, ...rest1 } = validateDates(
-    where as AvailabilityRequest["where"],
+    where,
     business.schedule.averageTime,
   );
 
@@ -39,8 +37,8 @@ export const checkAvailabilityService = async (
   const { open, close } = matchedAvailabilityRange;
   const { availableSlots, slotsByTimeRange } = await generateSlots({
     business,
-    startDate: checkOverlapping ? startDate : undefined,
-    endDate: checkOverlapping ? endDate : undefined,
+    startDate: startDate,
+    endDate: endDate,
     open,
     close,
   });
@@ -69,7 +67,84 @@ export const checkAvailabilityService = async (
 
 /**
  *
+ * @param where
+ * @description startDatime is in localtime year-month-day (ej: 2026-01-27)
+ * @returns
+ */
+export const getSlotsByDayService = async (
+  where: Pick<AvailabilityRequest["where"], "business" | "startDateTime">,
+) => {
+  //
+  const business = await validateBusiness(where);
+  const { startDateTime } = where;
+
+  const zonedTime = toZonedTime(
+    startDateTime.equals, // año-mes-dia (ej: 2026-01-27)
+    business.general.timezone,
+  );
+  const { daySchedule, weekDay } = getCurrentDaySchedule(business, zonedTime);
+
+  if (!daySchedule.length) {
+    return {
+      success: false,
+      message: "Business does not work on this day",
+    };
+  }
+
+  const availabilityRanges = daySchedule.map((range) => {
+    const open = fromZonedTime(
+      new Date(
+        zonedTime.getFullYear(),
+        zonedTime.getMonth(),
+        zonedTime.getDate(),
+        0,
+        range.open,
+      ),
+      business.general.timezone,
+    );
+    const close = fromZonedTime(
+      new Date(
+        zonedTime.getFullYear(),
+        zonedTime.getMonth(),
+        zonedTime.getDate(),
+        0,
+        range.close,
+      ),
+      business.general.timezone,
+    );
+    return {
+      open: open.toISOString(),
+      close: close.toISOString(),
+    };
+  });
+
+  const { slotsByTimeRange } = await generateSlots({
+    business,
+    open: availabilityRanges.at(0)?.open,
+    close: availabilityRanges.at(1)?.close || availabilityRanges.at(0)?.close,
+  });
+
+  const maxCapacityPerHour = business.general.maxCapacity || 20;
+  const response: AvailabilityResponse = {
+    success: true,
+    startDate: zonedTime.toISOString(),
+    businessId: business.id,
+    numberOfPeople: 0,
+    maxCapacityPerHour,
+    weekDay,
+    weekDaySchedule: availabilityRanges.map((s) => ({
+      open: s.open,
+      close: s.close,
+    })),
+    slotsByTimeRange, // 60 minnutes, could be 30 minutes in the future
+  };
+  return response;
+};
+
+/**
+ *
  * @param req
+ * @description startDatime & endDateTime are in UTCx
  * @returns
  */
 export const suggestSlotsService = async (

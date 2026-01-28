@@ -4,8 +4,8 @@ export interface AvailabilityRequest {
   depth: string;
   where: {
     business: { equals: string };
-    startDateTime: { equals: string };
-    endDateTime: { equals: string };
+    startDateTime: { equals: string }; // UTC format
+    endDateTime: { equals: string }; // UTC format
     numberOfPeople: { equals: string };
   };
 }
@@ -14,11 +14,11 @@ export interface AvailabilityResponse {
   success: boolean;
   message?: string;
   businessId: string;
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
   numberOfPeople?: number;
   maxCapacityPerHour: number;
-  isSlotAvailable: boolean;
+  isSlotAvailable?: boolean;
   availableSlots?: TimeWindow[];
   slotsByTimeRange?: TimeWindow[];
   weekDay?: string;
@@ -75,7 +75,8 @@ export function getCurrentDaySchedule(
   utcdate: Date,
 ): { daySchedule: { open: number; close: number }[]; weekDay?: WeekDayKey } {
   //
-  const zonedDate = new Date(utcdate);
+  const zonedDate = new Date(utcdate); // we copy the date to avoid mutating the original
+
   // Get day of week (0 = Sunday, 1 = Monday, etc.)
   const dayOfWeek = zonedDate.getDay();
   const weekday = DayMap[dayOfWeek] satisfies WeekDayKey;
