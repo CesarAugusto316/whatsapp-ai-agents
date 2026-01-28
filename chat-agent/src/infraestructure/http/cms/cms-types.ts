@@ -47,6 +47,7 @@ export interface Appointment {
   startDateTime: string;
   endDateTime?: string;
   status: "pending" | "confirmed" | "cancelled" | "completed";
+  timezone: string;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;

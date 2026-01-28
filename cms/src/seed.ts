@@ -179,6 +179,7 @@ export const script = async (config: SanitizedConfig) => {
         status: i % 3 === 0 ? "pending" : "confirmed",
         numberOfPeople: (i % 4) + 1,
         notes: "Seeded appointment",
+        timezone: "Europe/Madrid",
       },
     });
   }

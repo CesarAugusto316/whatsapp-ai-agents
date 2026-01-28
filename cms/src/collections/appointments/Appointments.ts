@@ -6,13 +6,6 @@ import {
   suggestSlotsService,
 } from "./Appointment.service";
 import { toZonedTime } from "date-fns-tz";
-import { Business } from "@/payload-types";
-
-/**
- *
- * @todo improve caching with redis in the future
- */
-const businessCache = new Map<string, Business>();
 
 export const Appointments: CollectionConfig = {
   slug: "appointments",
@@ -82,42 +75,24 @@ export const Appointments: CollectionConfig = {
       return false;
     },
   },
-  hooks: {
-    afterRead: [
-      async ({ doc, req }) => {
-        let timezone = "Europe/Madrid"; // Valor por defecto
-        if (doc.business) {
-          try {
-            const hasBussiness = businessCache.has(doc.business);
-            if (hasBussiness) {
-              const business = businessCache.get(doc.business);
-              timezone = business.general.timezone || timezone;
-            } else {
-              const business = await req.payload.findByID({
-                collection: "businesses",
-                id: doc.business,
-                depth: 1,
-              });
-              timezone = business.general.timezone || timezone;
-              businessCache.set(doc.business, business);
-            }
-          } catch (error) {
-            console.log("Error fetching business:", error);
-          }
-        }
-        // Agregar campos formateados al documento
-        return {
-          ...doc,
-          startDateTime: doc.startDateTime
-            ? toZonedTime(doc.startDateTime, timezone)
-            : undefined,
-          endDateTime: doc.endDateTime
-            ? toZonedTime(doc.endDateTime, timezone)
-            : undefined,
-        };
-      },
-    ],
-  },
+  // hooks: {
+  //   afterRead: [
+  //     async ({ doc, req }) => {
+  //       console.log({ doc, req: req.payload });
+  //       const timezone = doc.timezone || "Europe/Madrid"; // Valor por defecto
+  //       // Agregar campos formateados al documento
+  //       return {
+  //         ...doc,
+  //         startDateTime: doc.startDateTime
+  //           ? toZonedTime(doc.startDateTime, timezone)
+  //           : undefined,
+  //         endDateTime: doc.endDateTime
+  //           ? toZonedTime(doc.endDateTime, timezone)
+  //           : undefined,
+  //       };
+  //     },
+  //   ],
+  // },
   endpoints: [
     {
       path: "/suggest-slots",
@@ -250,6 +225,27 @@ export const Appointments: CollectionConfig = {
       },
       type: "text",
       label: { en: "Customer Name", es: "A nombre de" },
+    },
+    // time-zone
+    {
+      name: "timezone",
+      admin: {
+        readOnly: true,
+      },
+      access: {
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
+          );
+        },
+      },
+      type: "text",
+      label: { en: "Time zone", es: "Zona horaria" },
+      required: true,
     },
     // time: startDateTime - endDateTime
     {

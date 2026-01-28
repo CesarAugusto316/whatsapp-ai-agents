@@ -162,6 +162,7 @@ export interface Appointment {
   business: string | Business;
   customer: string | Customer;
   customerName?: string | null;
+  timezone: string;
   startDateTime: string;
   endDateTime?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -450,6 +451,7 @@ export interface AppointmentsSelect<T extends boolean = true> {
   business?: T;
   customer?: T;
   customerName?: T;
+  timezone?: T;
   startDateTime?: T;
   endDateTime?: T;
   status?: T;
