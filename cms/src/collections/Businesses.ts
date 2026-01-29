@@ -1,8 +1,8 @@
 import { CollectionConfig, Field } from "payload";
 import { Users } from "./Users";
-import { env, RedisClient } from "bun";
-export const redisClient = new RedisClient(env.REDIS_URL);
+import { RedisClient } from "bun";
 
+let redisClient!: unknown;
 // ===== TIME DOMAIN =====
 
 // Un día abstracto
@@ -155,24 +155,30 @@ export const Business: CollectionConfig = {
   timestamps: true,
   disableDuplicate: true,
   trash: false,
-  hooks: {
-    afterChange: [
-      async ({ doc, ...rest }) => {
-        const key = `business:${doc.id}`;
-        try {
-          await redisClient.set(
-            key,
-            JSON.stringify(doc),
-            "EX",
-            60 * 60 * 24 * 7, // 7 days
-          );
-        } catch (error) {
-          console.error("Error setting business data in Redis:", error);
-        }
-        return { ...rest, doc };
+  hooks: process.env.IS_CLI
+    ? undefined
+    : {
+        afterChange: [
+          async ({ doc, ...rest }) => {
+            try {
+              if (!redisClient) {
+                const { RedisClient } = await import("bun");
+                redisClient = new RedisClient(process.env.REDIS_URL);
+              }
+              const key = `business:${doc.id}`;
+              await (redisClient as RedisClient).set(
+                key,
+                JSON.stringify(doc),
+                "EX",
+                60 * 60 * 24 * 7, // 7 days
+              );
+            } catch (error) {
+              console.error("Error setting business data in Redis:", error);
+            }
+            return { ...rest, doc };
+          },
+        ],
       },
-    ],
-  },
   fields: [
     {
       name: "name",

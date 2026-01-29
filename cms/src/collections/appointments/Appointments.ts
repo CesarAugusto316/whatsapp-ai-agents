@@ -75,28 +75,31 @@ export const Appointments: CollectionConfig = {
       return false;
     },
   },
-  hooks: {
-    afterRead: [
-      async ({ doc, req }) => {
-        const isADminPanel =
-          req.url.includes("/admin/collections") || req.url.includes("/admin");
+  hooks: process.env.IS_CLI
+    ? undefined
+    : {
+        afterRead: [
+          async ({ doc, req }) => {
+            const isADminPanel =
+              req.url.includes("/admin/collections") ||
+              req.url.includes("/admin");
 
-        if (!isADminPanel) return doc;
+            if (!isADminPanel) return doc;
 
-        // when requests goes to the admin panel, then apply business timezone
-        const timezone = doc.timezone || "Europe/Madrid"; // Valor por defecto
-        return {
-          ...doc,
-          startDateTime: doc.startDateTime
-            ? toZonedTime(doc.startDateTime, timezone)
-            : undefined,
-          endDateTime: doc.endDateTime
-            ? toZonedTime(doc.endDateTime, timezone)
-            : undefined,
-        };
+            // when requests goes to the admin panel, then apply business timezone
+            const timezone = doc.timezone || "Europe/Madrid"; // Valor por defecto
+            return {
+              ...doc,
+              startDateTime: doc.startDateTime
+                ? toZonedTime(doc.startDateTime, timezone)
+                : undefined,
+              endDateTime: doc.endDateTime
+                ? toZonedTime(doc.endDateTime, timezone)
+                : undefined,
+            };
+          },
+        ],
       },
-    ],
-  },
   endpoints: [
     {
       path: "/suggest-slots",

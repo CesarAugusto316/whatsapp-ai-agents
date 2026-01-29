@@ -12,6 +12,7 @@ import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 import { Appointments } from "./collections/appointments/Appointments";
 import { s3Storage } from "@payloadcms/storage-s3";
 import { Media } from "./collections/Media";
+import { Products } from "./collections/Products";
 // import { migrations } from "./migrations";
 
 const filename = fileURLToPath(import.meta.url);
@@ -75,14 +76,17 @@ export default buildConfig({
     },
   },
   maxDepth: 2,
-  collections: [
-    Users,
-    ThirdPartyAccess,
-    Appointments,
-    Customers,
-    Business,
-    Media,
-  ],
+  collections: process.env.IS_CLI
+    ? [Users, ThirdPartyAccess, Appointments, Customers, Business]
+    : [
+        Users,
+        ThirdPartyAccess,
+        Appointments,
+        Customers,
+        Business,
+        Media, // includes file uploads
+        Products, // includes file uploads
+      ],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
@@ -104,29 +108,37 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI!,
     },
   }),
-  plugins: [
-    // https://bridger.to/payload-r2
-    // https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
-    s3Storage({
-      disableLocalStorage: true,
-      collections: {
-        media: {
-          prefix: "business-media", // Optional prefix for uploaded files
-          generateFileURL: ({ filename, prefix }) => {
-            return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
+  plugins: process.env.IS_CLI
+    ? undefined
+    : [
+        // https://bridger.to/payload-r2
+        // https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
+        s3Storage({
+          disableLocalStorage: true,
+          collections: {
+            media: {
+              prefix: "business-media", // Optional prefix for uploaded files
+              generateFileURL: ({ filename, prefix }) => {
+                return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
+              },
+            },
+            products: {
+              prefix: "business-products", // Optional prefix for uploaded files
+              generateFileURL: ({ filename, prefix }) => {
+                return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
+              },
+            },
           },
-        },
-      },
-      bucket: process.env.R2_BUCKET || "",
-      config: {
-        endpoint: process.env.S3_API || "", // Protocol is required here
-        credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
-        },
-        region: "auto", // Required for R2
-        forcePathStyle: true, // Required for R2
-      },
-    }),
-  ],
+          bucket: process.env.R2_BUCKET || "",
+          config: {
+            endpoint: process.env.S3_API || "", // Protocol is required here
+            credentials: {
+              accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+              secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+            },
+            region: "auto", // Required for R2
+            forcePathStyle: true, // Required for R2
+          },
+        }),
+      ],
 });

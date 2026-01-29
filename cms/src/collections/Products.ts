@@ -1,15 +1,15 @@
 import type { CollectionConfig } from "payload";
 
-export const Media: CollectionConfig = {
-  slug: "media",
+export const Products: CollectionConfig = {
+  slug: "products",
   labels: {
     singular: {
-      en: "Media",
-      es: "Elemento",
+      en: "Product",
+      es: "Producto",
     },
     plural: {
-      en: "Media",
-      es: "Galería",
+      en: "Products",
+      es: "Productos",
     },
   },
   access: {
@@ -59,11 +59,11 @@ export const Media: CollectionConfig = {
   timestamps: true,
   fields: [
     {
-      name: "alt",
+      name: "name",
       type: "text",
       label: {
-        en: "Alternative Text",
-        es: "Texto Alternativo",
+        en: "Name",
+        es: "Nombre",
       },
       required: true,
     },
