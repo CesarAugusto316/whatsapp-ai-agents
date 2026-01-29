@@ -5,9 +5,6 @@ import { buildConfig } from "payload";
 import { Users } from "./collections/Users";
 import { Appointment } from "./collections/Appoitnments";
 import { sqliteAdapter } from "@payloadcms/db-sqlite";
-import { loadEnv } from "payload/node";
-
-loadEnv();
 
 export default buildConfig({
   /**
