@@ -174,16 +174,34 @@ export function TimeLine({
                   top={yMax}
                   scale={xScale}
                   tickFormat={formatTime}
+                  label="Horas"
+                  labelProps={{
+                    strokeWidth: 0.7,
+                    stroke: "oklch(70.4% 0.04 256.788)",
+                  }}
+                  labelClassName="text-lg"
+                  stroke="oklch(70.4% 0.04 256.788)"
+                  tickStroke="oklch(70.4% 0.04 256.788)"
                   tickLabelProps={() => ({
-                    fontSize: 11,
+                    fontSize: 11.5,
+                    strokeWidth: 0.7,
+                    stroke: "oklch(70.4% 0.04 256.788)",
                     textAnchor: "middle",
                   })}
                 />
 
                 <AxisLeft
-                  label="Reservas"
                   scale={yScale}
                   tickFormat={(_reservaId) => ""} // No mostrar labels en eje Y
+                  label="Reservas"
+                  stroke="oklch(70.4% 0.04 256.788)"
+                  tickStroke="oklch(70.4% 0.04 256.788)"
+                  tickLabelProps={() => ({
+                    fontSize: 11.5,
+                    strokeWidth: 0.7,
+                    stroke: "oklch(70.4% 0.04 256.788)",
+                    textAnchor: "end",
+                  })}
                 />
 
                 {/* Barras Gantt */}

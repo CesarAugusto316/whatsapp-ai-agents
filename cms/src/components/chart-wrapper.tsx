@@ -68,6 +68,12 @@ const loadFromLocalStorage = (key: string, defaultValue: string): string => {
   }
 };
 
+/**
+ *
+ * @description React component for rendering charts.
+ * @param param0
+ * @returns
+ */
 export default function Charts({ data: initialBusinesses }: ChartsProps) {
   // Obtener valores iniciales desde localStorage o valores por defecto
   const getInitialBusinessId = (): string => {
@@ -113,7 +119,6 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
 
       setIsLoading(true);
       setError(null);
-
       try {
         const res = await fetchAvailabilityData(businessId, date);
         setAvailabilityData(res);

@@ -83,7 +83,11 @@ export function OccupancyHistogram({
               width={responsiveWidth}
               height={responsiveHeight}
             >
-              <Group left={margin.left} top={margin.top}>
+              <Group
+                style={{ color: "oklch(70.4% 0.04 256.788)" }}
+                left={margin.left}
+                top={margin.top}
+              >
                 {slotsByTimeRage.map((slot, i) => {
                   const hour = hours[i];
                   const x = xScale(hour);
@@ -115,13 +119,33 @@ export function OccupancyHistogram({
                   );
                 })}
 
-                <AxisLeft scale={yScale} />
+                <AxisLeft
+                  scale={yScale}
+                  stroke="oklch(70.4% 0.04 256.788)"
+                  tickStroke="oklch(70.4% 0.04 256.788)"
+                  tickLabelProps={() => ({
+                    fontSize: 11.5,
+                    strokeWidth: 0.7,
+                    stroke: "oklch(70.4% 0.04 256.788)",
+                    textAnchor: "end",
+                  })}
+                />
 
                 <AxisBottom
                   top={yMax}
                   scale={xScale}
+                  label="Horas"
+                  labelProps={{
+                    strokeWidth: 0.7,
+                    stroke: "oklch(70.4% 0.04 256.788)",
+                  }}
+                  labelClassName="text-lg"
+                  stroke="oklch(70.4% 0.04 256.788)"
+                  tickStroke="oklch(70.4% 0.04 256.788)"
                   tickLabelProps={() => ({
-                    fontSize: 11,
+                    fontSize: 11.5,
+                    strokeWidth: 0.7,
+                    stroke: "oklch(70.4% 0.04 256.788)",
                     textAnchor: "middle",
                   })}
                 />
