@@ -73,8 +73,11 @@ export interface Config {
     appointments: Appointment;
     customers: Customer;
     businesses: Business;
-    media: Media;
+    'businesses-media': BusinessesMedia;
     products: Product;
+    'products-media': ProductsMedia;
+    'product-order': ProductOrder;
+    'product-cart': ProductCart;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -87,8 +90,11 @@ export interface Config {
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     businesses: BusinessesSelect<false> | BusinessesSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
+    'businesses-media': BusinessesMediaSelect<false> | BusinessesMediaSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
+    'products-media': ProductsMediaSelect<false> | ProductsMediaSelect<true>;
+    'product-order': ProductOrderSelect<false> | ProductOrderSelect<true>;
+    'product-cart': ProductCartSelect<false> | ProductCartSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -303,6 +309,9 @@ export interface Business {
         }[]
       | null;
   };
+  country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
+  taxes?: number | null;
+  currency?: ('USD' | 'MXN' | 'PEN' | 'EUR' | 'GBP') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -325,9 +334,9 @@ export interface Customer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
+ * via the `definition` "businesses-media".
  */
-export interface Media {
+export interface BusinessesMedia {
   id: string;
   alt: string;
   business: string | Business;
@@ -349,7 +358,23 @@ export interface Media {
 export interface Product {
   id: string;
   name: string;
+  price: number;
+  type: 'physical' | 'digital';
+  inventory?: number | null;
+  enabled: boolean;
+  description: string;
   business: string | Business;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products-media".
+ */
+export interface ProductsMedia {
+  id: string;
+  alt: string;
+  product: string | Product;
   prefix?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -360,6 +385,30 @@ export interface Product {
   filesize?: number | null;
   width?: number | null;
   height?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-order".
+ */
+export interface ProductOrder {
+  id: string;
+  description: string;
+  business: string | Business;
+  product: string | Product;
+  customer: string | Customer;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-cart".
+ */
+export interface ProductCart {
+  id: string;
+  quantity?: number | null;
+  order: string | ProductOrder;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -406,12 +455,24 @@ export interface PayloadLockedDocument {
         value: string | Business;
       } | null)
     | ({
-        relationTo: 'media';
-        value: string | Media;
+        relationTo: 'businesses-media';
+        value: string | BusinessesMedia;
       } | null)
     | ({
         relationTo: 'products';
         value: string | Product;
+      } | null)
+    | ({
+        relationTo: 'products-media';
+        value: string | ProductsMedia;
+      } | null)
+    | ({
+        relationTo: 'product-order';
+        value: string | ProductOrder;
+      } | null)
+    | ({
+        relationTo: 'product-cart';
+        value: string | ProductCart;
       } | null);
   globalSlug?: string | null;
   user:
@@ -625,14 +686,17 @@ export interface BusinessesSelect<T extends boolean = true> {
               id?: T;
             };
       };
+  country?: T;
+  taxes?: T;
+  currency?: T;
   updatedAt?: T;
   createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
+ * via the `definition` "businesses-media_select".
  */
-export interface MediaSelect<T extends boolean = true> {
+export interface BusinessesMediaSelect<T extends boolean = true> {
   alt?: T;
   business?: T;
   prefix?: T;
@@ -652,7 +716,22 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface ProductsSelect<T extends boolean = true> {
   name?: T;
+  price?: T;
+  type?: T;
+  inventory?: T;
+  enabled?: T;
+  description?: T;
   business?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products-media_select".
+ */
+export interface ProductsMediaSelect<T extends boolean = true> {
+  alt?: T;
+  product?: T;
   prefix?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -663,6 +742,28 @@ export interface ProductsSelect<T extends boolean = true> {
   filesize?: T;
   width?: T;
   height?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-order_select".
+ */
+export interface ProductOrderSelect<T extends boolean = true> {
+  description?: T;
+  business?: T;
+  product?: T;
+  customer?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-cart_select".
+ */
+export interface ProductCartSelect<T extends boolean = true> {
+  quantity?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

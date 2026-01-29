@@ -3,17 +3,22 @@ import { en } from "@payloadcms/translations/languages/en";
 import path from "path";
 import { buildConfig } from "payload";
 import { fileURLToPath } from "url";
-import { Users } from "./collections/Users";
-import { Customers } from "./collections/Costumers";
-import { Business } from "./collections/Businesses";
 import { postgresAdapter } from "@payloadcms/db-postgres";
 import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
-import { Appointments } from "./collections/appointments/Appointments";
 import { s3Storage } from "@payloadcms/storage-s3";
-import { Media } from "./collections/Media";
-import { Products } from "./collections/Products";
 // import { migrations } from "./migrations";
+
+// collections
+import { Appointments } from "./collections/appointments/Appointments";
+import { BusinessMedia } from "./collections/business/Media";
+import { Users } from "./collections/Users";
+import { Customers } from "./collections/Costumers";
+import { Business } from "./collections/business/Businesses";
+import { Products } from "./collections/products/Products";
+import { ProductsMedia } from "./collections/products/Media";
+import { ProductOrder } from "./collections/products/ProductOrder";
+import { ProductCarts } from "./collections/products/ProductCart";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -61,6 +66,9 @@ export default buildConfig({
     },
     components: {
       beforeNavLinks: [{ path: "./components/Home.tsx" }],
+      // Nav: {
+      //   path: "./components/Navbar.tsx",
+      // },
       graphics: {
         Icon: {
           clientProps: {
@@ -77,15 +85,27 @@ export default buildConfig({
   },
   maxDepth: 2,
   collections: process.env.IS_CLI
-    ? [Users, ThirdPartyAccess, Appointments, Customers, Business]
+    ? [
+        Users,
+        ThirdPartyAccess,
+        Appointments,
+        Customers,
+        Business,
+        Products,
+        ProductOrder,
+        ProductCarts,
+      ]
     : [
         Users,
         ThirdPartyAccess,
         Appointments,
         Customers,
         Business,
-        Media, // includes file uploads
+        BusinessMedia, // includes file uploads
         Products, // includes file uploads
+        ProductsMedia,
+        ProductOrder,
+        ProductCarts,
       ],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
@@ -116,13 +136,13 @@ export default buildConfig({
         s3Storage({
           disableLocalStorage: true,
           collections: {
-            media: {
+            "businesses-media": {
               prefix: "business-media", // Optional prefix for uploaded files
               generateFileURL: ({ filename, prefix }) => {
                 return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
               },
             },
-            products: {
+            "products-media": {
               prefix: "business-products", // Optional prefix for uploaded files
               generateFileURL: ({ filename, prefix }) => {
                 return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;

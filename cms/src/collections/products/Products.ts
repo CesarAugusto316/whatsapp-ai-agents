@@ -68,6 +68,55 @@ export const Products: CollectionConfig = {
       required: true,
     },
     {
+      name: "price",
+      type: "number",
+      label: {
+        en: "Price",
+        es: "Precio",
+      },
+      required: true,
+    },
+    {
+      name: "type",
+      type: "select",
+      options: [
+        { label: "Physical", value: "physical" },
+        { label: "Digital", value: "digital" },
+      ],
+      label: {
+        en: "Type",
+        es: "Tipo",
+      },
+      required: true,
+    },
+    {
+      name: "inventory",
+      type: "number",
+      label: {
+        en: "Inventory",
+        es: "Inventario",
+      },
+    },
+    {
+      name: "enabled",
+      type: "checkbox",
+      label: {
+        en: "Enabled",
+        es: "Activo",
+      },
+      required: true,
+      defaultValue: true,
+    },
+    {
+      name: "description",
+      type: "textarea",
+      label: {
+        en: "Description",
+        es: "Descripción",
+      },
+      required: true,
+    },
+    {
       name: "business",
       type: "relationship",
       index: true,
@@ -90,20 +139,7 @@ export const Products: CollectionConfig = {
     },
   ],
   admin: {
+    hidden: true,
     hideAPIURL: true,
-  },
-  upload: {
-    // disableLocalStorage: env.NODE_ENV === "production",
-    // staticDir: path.resolve(__dirname, "../media"),
-    formatOptions: {
-      format: "webp", // Convert uploads to WebP
-      options: {
-        quality: 80,
-      },
-    },
-    mimeTypes: ["image/*", "video/*"],
-    // These are not supported on Workers yet due to lack of sharp
-    crop: false,
-    focalPoint: false,
   },
 };

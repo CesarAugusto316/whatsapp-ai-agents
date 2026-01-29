@@ -3,7 +3,7 @@ import {
   MORNING_BLOCK,
   AFTERNOON_BLOCK,
   APPOINTMENT_DEFAULT,
-} from "./collections/Businesses";
+} from "./collections/business/Businesses";
 
 function nextSlot(base: Date, minutes: number) {
   return new Date(base.getTime() + minutes * 60 * 1000);

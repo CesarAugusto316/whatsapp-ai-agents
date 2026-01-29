@@ -1,5 +1,5 @@
 import { CollectionConfig, Field } from "payload";
-import { Users } from "./Users";
+import { Users } from "../Users";
 import { RedisClient } from "bun";
 
 let redisClient!: unknown;
@@ -463,6 +463,51 @@ export const Business: CollectionConfig = {
           ],
         },
       ],
+    },
+
+    /**
+     *
+     * @todo PARA VENDER PORDUCTOS O SERVICIOS, SE DEBE AGREGAR LA MONEDA Y PAIS MINIMO
+     */
+    {
+      name: "country",
+      type: "select",
+      label: {
+        en: "Country",
+        es: "País",
+      },
+      options: [
+        { label: "España", value: "ES" },
+        { label: "Colombia", value: "COL" },
+        { label: "México", value: "MEX" },
+        { label: "Perú", value: "PE" },
+        { label: "Ecuador", value: "EC" },
+        { label: "EEUU", value: "US" },
+        { label: "Canada", value: "CA" },
+      ],
+    },
+    {
+      name: "taxes",
+      type: "number",
+      label: {
+        en: "Taxes",
+        es: "Impuestos",
+      },
+    },
+    {
+      name: "currency",
+      type: "select",
+      options: [
+        { label: "USD", value: "USD" },
+        { label: "MXN", value: "MXN" },
+        { label: "PEN", value: "PEN" },
+        { label: "EUR", value: "EUR" },
+        { label: "GBP", value: "GBP" },
+      ],
+      label: {
+        en: "Currency",
+        es: "Moneda",
+      },
     },
   ],
 };

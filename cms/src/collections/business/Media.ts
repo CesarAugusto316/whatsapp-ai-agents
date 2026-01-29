@@ -1,11 +1,11 @@
 import type { CollectionConfig } from "payload";
 
-export const Media: CollectionConfig = {
-  slug: "media",
+export const BusinessMedia: CollectionConfig = {
+  slug: "businesses-media",
   labels: {
     singular: {
       en: "Media",
-      es: "Elemento",
+      es: "Elemento de Galería",
     },
     plural: {
       en: "Media",
