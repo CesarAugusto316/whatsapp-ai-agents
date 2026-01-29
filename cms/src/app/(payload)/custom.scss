@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap");
 
 :root {
-  --font-mono: "Roboto", monospace;
+  --font-mono: "Roboto", sans-serif;
 }
 
 *,
@@ -10,13 +10,8 @@
   font-family: var(--font-mono);
 }
 
-.text-color {
-  color: #007bff !important;
-}
-
 .text-lg {
   font-size: 1.25rem;
   font-weight: 500;
   line-height: 1.5;
-  color: #007bff !important;
 }

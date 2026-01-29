@@ -111,7 +111,7 @@ class CMSClient {
       const business = (await res.json()) as Business;
 
       if (business) {
-        redisClient.set(key, JSON.stringify(business), "EX", 60 * 60 * 12);
+        redisClient.set(key, JSON.stringify(business), "EX", 60 * 60 * 24 * 7); // 7 days
       }
       return business;
     }, resilientConfig);

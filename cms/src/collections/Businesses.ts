@@ -1,5 +1,7 @@
 import { CollectionConfig, Field } from "payload";
 import { Users } from "./Users";
+import { env, RedisClient } from "bun";
+export const redisClient = new RedisClient(env.REDIS_URL);
 
 // ===== TIME DOMAIN =====
 
@@ -153,6 +155,24 @@ export const Business: CollectionConfig = {
   timestamps: true,
   disableDuplicate: true,
   trash: false,
+  hooks: {
+    afterChange: [
+      async ({ doc, ...rest }) => {
+        const key = `business:${doc.id}`;
+        try {
+          await redisClient.set(
+            key,
+            JSON.stringify(doc),
+            "EX",
+            60 * 60 * 24 * 7, // 7 days
+          );
+        } catch (error) {
+          console.error("Error setting business data in Redis:", error);
+        }
+        return { ...rest, doc };
+      },
+    ],
+  },
   fields: [
     {
       name: "name",

@@ -40,6 +40,20 @@ export default buildConfig({
     supportedLanguages: { en, es },
   },
   admin: {
+    meta: {
+      keywords: "AI agents, business intelligence, chatbots, whatsapp",
+      title: "Dashboard",
+      titleSuffix: "Nexoti",
+      applicationName: "Nexoti",
+      description: "Strategic AI Agents",
+      icons: [
+        {
+          rel: "icon",
+          type: "image/png",
+          url: "/nexoti_2.png",
+        },
+      ],
+    },
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
