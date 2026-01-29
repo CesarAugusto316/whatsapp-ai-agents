@@ -19,8 +19,8 @@ export interface AvailabilityResponse {
   numberOfPeople?: number;
   maxCapacityPerHour: number;
   isSlotAvailable?: boolean;
-  availableSlots?: TimeWindow[];
-  slotsByTimeRange?: TimeWindow[];
+  availableSlots?: TimeRangeWindow[];
+  slotsByTimeRange?: TimeRangeWindow[];
   weekDay?: string;
   weekDaySchedule?: {
     open: string;
@@ -28,7 +28,7 @@ export interface AvailabilityResponse {
   }[];
 }
 
-export interface TimeWindow {
+export interface TimeRangeWindow {
   from: string;
   to: string;
   totalPeople: number;
@@ -45,12 +45,6 @@ export type AppointmentSlot = Pick<
   | "customer"
   | "id"
 >;
-
-export interface AvailabilityResult {
-  totalSlotReservations: number;
-  overlappingSlots: AppointmentSlot[];
-  isRequestedDateTimeAvailable: boolean;
-}
 
 type WeekDay = Omit<Business["schedule"], "averageTime">;
 export type WeekDayKey = keyof WeekDay;
@@ -93,7 +87,7 @@ export function calcSlotsByHour(
   openRange: string, // UTC format
   closeRange: string, // UTC format
   slots: AppointmentSlot[],
-): TimeWindow[] {
+): TimeRangeWindow[] {
   //
   const HOUR = 60 * 60 * 1000;
   const globalOpen = new Date(openRange).getTime();
@@ -120,7 +114,7 @@ export function calcSlotsByHour(
         to: new Date(slotEnd).toISOString(),
         totalPeople: 0,
         slots: [],
-      } satisfies TimeWindow);
+      } satisfies TimeRangeWindow);
       continue;
     }
 
@@ -131,7 +125,7 @@ export function calcSlotsByHour(
       to: new Date(slotEnd).toISOString(), // UTC format
       totalPeople,
       slots: inside.map(({ _start, _end, ...rest }) => rest),
-    } satisfies TimeWindow);
+    } satisfies TimeRangeWindow);
   }
 
   return result;

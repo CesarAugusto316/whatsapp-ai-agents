@@ -3,7 +3,7 @@ import { ParentSize } from "@visx/responsive";
 import { Group } from "@visx/group";
 import { scaleBand, scaleLinear } from "@visx/scale";
 import { AxisBottom, AxisLeft } from "@visx/axis";
-import { TimeWindow } from "@/collections/appointments/check-availability";
+import { TimeRangeWindow } from "@/collections/appointments/check-availability";
 import { LegendOrdinal } from "@visx/legend";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
@@ -13,7 +13,7 @@ export function OccupancyHistogram({
   maxCapacity,
   height = 400,
 }: {
-  slotsByTimeRage: TimeWindow[];
+  slotsByTimeRage: TimeRangeWindow[];
   maxCapacity: number;
   width?: number;
   height?: number;

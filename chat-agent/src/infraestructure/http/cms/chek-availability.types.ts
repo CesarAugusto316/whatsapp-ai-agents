@@ -11,7 +11,7 @@ type AppointmentSlot = Pick<
   | "id"
 >;
 
-export interface TimeWindow {
+export interface TimeRangeWindow {
   from: string;
   to: string;
   totalPeople: number;
@@ -27,8 +27,8 @@ export interface AvailabilityResponse {
   numberOfPeople?: number;
   maxCapacityPerHour: number;
   isSlotAvailable: boolean;
-  availableSlots?: TimeWindow[];
-  slotsByTimeRange?: TimeWindow[];
+  availableSlots?: TimeRangeWindow[];
+  slotsByTimeRange?: TimeRangeWindow[];
   weekDay?: string;
   weekDaySchedule?: {
     open: string;

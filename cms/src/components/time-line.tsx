@@ -3,7 +3,7 @@ import { ParentSize } from "@visx/responsive";
 import { Group } from "@visx/group";
 import { scaleBand, scaleUtc } from "@visx/scale";
 import { AxisBottom, AxisLeft } from "@visx/axis";
-import { TimeWindow } from "@/collections/appointments/check-availability";
+import { TimeRangeWindow } from "@/collections/appointments/check-availability";
 import { useMemo } from "react";
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
@@ -24,7 +24,7 @@ export function TimeLine({
   maxCapacity: _maxCapacity,
   height = 400,
 }: {
-  slotsByTimeRage: TimeWindow[];
+  slotsByTimeRage: TimeRangeWindow[];
   maxCapacity: number;
   width?: number;
   height?: number;

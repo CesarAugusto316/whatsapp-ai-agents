@@ -93,6 +93,7 @@ export const Media: CollectionConfig = {
     hideAPIURL: true,
   },
   upload: {
+    
     // disableLocalStorage: env.NODE_ENV === "production",
     // staticDir: path.resolve(__dirname, "../media"),
     formatOptions: {

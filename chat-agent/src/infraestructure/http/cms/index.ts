@@ -14,5 +14,5 @@ export type {
 
 export type {
   AvailabilityResponse,
-  TimeWindow,
+  TimeRangeWindow as TimeWindow,
 } from "./chek-availability.types";

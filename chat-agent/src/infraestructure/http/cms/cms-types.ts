@@ -43,11 +43,11 @@ export interface Appointment {
   business: string | Business;
   customer: string | Customer;
   customerName: string;
-  numberOfPeople: number;
+  timezone: string;
   startDateTime: string;
   endDateTime?: string;
   status: "pending" | "confirmed" | "cancelled" | "completed";
-  timezone: string;
+  numberOfPeople: number;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -71,6 +71,7 @@ export type Day = {
 export interface Business {
   id: string;
   name: string;
+  assistantName: string;
   general: {
     phoneNumber: string;
     /**
@@ -78,7 +79,7 @@ export interface Business {
      */
     requireAppointmentApproval?: boolean | null;
     businessType: "restaurant" | "medical" | "legal" | "real_estate";
-    tables?: number | null;
+    maxCapacity?: number | null;
     description?: string | null;
     user: string | User;
     timezone:
@@ -112,6 +113,26 @@ export interface Business {
   };
   updatedAt: string;
   createdAt: string;
+}
+
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: string;
+  alt: string;
+  business: string | Business;
+  prefix?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 /**
