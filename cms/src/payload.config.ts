@@ -94,18 +94,18 @@ export default buildConfig({
     // https://bridger.to/payload-r2
     // https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
     s3Storage({
-      disableLocalStorage: false,
+      disableLocalStorage: true,
       collections: {
         media: {
-          prefix: "media", // Optional prefix for uploaded files
-          disableLocalStorage: false, // Recommended for production
-          generateFileURL: ({ filename, prefix }) =>
-            `https://${process.env.R2_BUCKET}.${process.env.R2_ENDPOINT}/${prefix}/${filename}`,
+          prefix: "business-media", // Optional prefix for uploaded files
+          generateFileURL: ({ filename, prefix }) => {
+            return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
+          },
         },
       },
       bucket: process.env.R2_BUCKET || "",
       config: {
-        endpoint: `https://${process.env.R2_ENDPOINT}` || "", // Protocol is required here
+        endpoint: process.env.S3_API || "", // Protocol is required here
         credentials: {
           accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
           secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
