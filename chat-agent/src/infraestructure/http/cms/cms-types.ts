@@ -72,6 +72,9 @@ export interface Business {
   id: string;
   name: string;
   assistantName: string;
+  country?: ("ES" | "COL" | "MEX" | "PE" | "EC" | "US" | "CA") | null;
+  taxes?: number | null;
+  currency?: ("USD" | "MXN" | "PEN" | "EUR" | "GBP") | null;
   general: {
     phoneNumber: string;
     /**
@@ -117,26 +120,6 @@ export interface Business {
 
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: string;
-  alt: string;
-  business: string | Business;
-  prefix?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-}
-
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "customers".
  */
 export interface Customer {
@@ -154,3 +137,87 @@ export interface Customer {
 }
 
 export type CreateCustomer = Omit<Customer, "id" | "updatedAt" | "createdAt">;
+
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "businesses-media".
+ */
+export interface BusinessesMedia {
+  id: string;
+  alt: string;
+  business: string | Business;
+  prefix?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  type: "physical" | "digital";
+  inventory?: number | null;
+  enabled: boolean;
+  description: string;
+  business: string | Business;
+  updatedAt: string;
+  createdAt: string;
+}
+
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products-media".
+ */
+export interface ProductsMedia {
+  id: string;
+  alt: string;
+  product: string | Product;
+  business: string | Business;
+  prefix?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-order".
+ */
+export interface ProductOrder {
+  id: string;
+  description: string;
+  business: string | Business;
+  customer: string | Customer;
+  updatedAt: string;
+  createdAt: string;
+}
+
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-cart".
+ */
+export interface ProductCart {
+  id: string;
+  quantity?: number | null;
+  product: string | Product;
+  order: string | ProductOrder;
+  updatedAt: string;
+  createdAt: string;
+}

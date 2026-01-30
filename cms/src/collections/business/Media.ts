@@ -13,14 +13,6 @@ export const BusinessMedia: CollectionConfig = {
     },
   },
   access: {
-    // create: ({ req }) => {
-    //   if (req.user?.collection === "third-party-access") {
-    //     return true;
-    //   }
-    //   if (req?.user?.collection === "users") {
-    //     return req?.user?.role === "admin";
-    //   }
-    // }, // bot
     // Función read corregida:
     read: async ({ req }) => {
       if (req?.user?.collection === "third-party-access") {

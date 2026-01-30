@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, beforeAll } from "bun:test";
 import { redisClient } from "@/infraestructure/cache/redis.client";
 
 // Constants from the logs
-const BUSINESS_ID = "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c";
+const BUSINESS_ID = "b14b1138-a09c-4c97-8152-23a495d1c245";
 const CUSTOMER_PHONE = "+3455555555";
 
 interface TestResponse {
