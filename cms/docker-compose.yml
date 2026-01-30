@@ -12,20 +12,21 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data # named volume
 
-  # app:
-  #   build: ./ # carpeta que contiene tu Dockerfile
-  #   container_name: next-bun
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - postgres
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     DATABASE_URI: postgresql://root:secret@postgres:5432/appdb
-  #     PAYLOAD_SECRET: ${PAYLOAD_SECRET}
-  #     NODE_ENV: production
-  #   networks:
-  #     - appnet
+  app:
+    build: ./ # carpeta que contiene tu Dockerfile
+    container_name: next-bun
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URI: postgresql://root:secret@postgres:5432/appdb
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      NODE_ENV: production
+    networks:
+      - appnet
 
 volumes:
   pgdata:

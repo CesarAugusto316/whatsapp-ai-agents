@@ -7,14 +7,14 @@ export default withPayload(
     //   resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.mts', '.cjs', '.cts'],
     // },
     devIndicators: false, // disable nextjs dev-tools in admin page
-    webpack: (webpackConfig: any) => {
-      webpackConfig.resolve.extensionAlias = {
-        ".cjs": [".cts", ".cjs"],
-        ".js": [".ts", ".tsx", ".js", ".jsx"],
-        ".mjs": [".mts", ".mjs"],
-      };
-      return webpackConfig;
-    },
+    // webpack: (webpackConfig: any) => {
+    //   webpackConfig.resolve.extensionAlias = {
+    //     ".cjs": [".cts", ".cjs"],
+    //     ".js": [".ts", ".tsx", ".js", ".jsx"],
+    //     ".mjs": [".mts", ".mjs"],
+    //   };
+    //   return webpackConfig;
+    // },
   },
   { devBundleServerPackages: false },
 );
