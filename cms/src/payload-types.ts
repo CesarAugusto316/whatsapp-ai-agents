@@ -340,6 +340,7 @@ export interface BusinessesMedia {
   id: string;
   alt: string;
   business: string | Business;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -375,6 +376,7 @@ export interface ProductsMedia {
   alt: string;
   product: string | Product;
   business: string | Business;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -698,6 +700,7 @@ export interface BusinessesSelect<T extends boolean = true> {
 export interface BusinessesMediaSelect<T extends boolean = true> {
   alt?: T;
   business?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -731,6 +734,7 @@ export interface ProductsMediaSelect<T extends boolean = true> {
   alt?: T;
   product?: T;
   business?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
