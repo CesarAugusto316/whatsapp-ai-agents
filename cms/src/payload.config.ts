@@ -117,37 +117,35 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI!,
     },
   }),
-  plugins: process.env.IS_CLI // this is skipped in migrations
-    ? undefined
-    : [
-        // https://bridger.to/payload-r2
-        // https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
-        s3Storage({
-          // disableLocalStorage: true,
-          collections: {
-            "businesses-media": {
-              prefix: "business-media", // Optional prefix for uploaded files
-              generateFileURL: ({ filename, prefix }) => {
-                return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
-              },
-            },
-            "products-media": {
-              prefix: "business-products", // Optional prefix for uploaded files
-              generateFileURL: ({ filename, prefix }) => {
-                return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
-              },
-            },
+  plugins: [
+    // https://bridger.to/payload-r2
+    // https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
+    s3Storage({
+      disableLocalStorage: true,
+      collections: {
+        "businesses-media": {
+          prefix: "business-media", // Optional prefix for uploaded files
+          generateFileURL: ({ filename, prefix }) => {
+            return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
           },
-          bucket: process.env.R2_BUCKET || "",
-          config: {
-            endpoint: process.env.S3_API || "", // Protocol is required here
-            credentials: {
-              accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
-              secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
-            },
-            region: "auto", // Required for R2
-            forcePathStyle: true, // Required for R2
+        },
+        "products-media": {
+          prefix: "business-products", // Optional prefix for uploaded files
+          generateFileURL: ({ filename, prefix }) => {
+            return `${process.env.PUBLIC_R2}/${prefix}/${filename}`;
           },
-        }),
-      ],
+        },
+      },
+      bucket: process.env.R2_BUCKET || "",
+      config: {
+        endpoint: process.env.S3_API || "", // Protocol is required here
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+        },
+        region: "auto", // Required for R2
+        forcePathStyle: true, // Required for R2
+      },
+    }),
+  ],
 });

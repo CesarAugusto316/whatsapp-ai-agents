@@ -1,5 +1,5 @@
 {
-  "id": "17b60c71-f290-4f9e-878e-135a2cdf3494",
+  "id": "e9fdf1d2-23c8-4a20-aa17-2dee1c1dd315",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1747,6 +1747,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "prefix": {
+          "name": "prefix",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'business-media'"
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp(3) with time zone",
@@ -2053,6 +2060,13 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "prefix": {
+          "name": "prefix",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'business-products'"
         },
         "updated_at": {
           "name": "updated_at",

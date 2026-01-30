@@ -12,24 +12,46 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data # named volume
 
-  # app:
-  #   build: ./ # carpeta que contiene tu Dockerfile
-  #   container_name: next-bun
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   depends_on:
-  #     - postgres
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     DATABASE_URI: postgresql://root:secret@postgres:5432/appdb
-  #     PAYLOAD_SECRET: ${PAYLOAD_SECRET}
-  #     NODE_ENV: production
-  #   networks:
-  #     - appnet
+#   app:
+#     build: ./ # carpeta que contiene tu Dockerfile
+#     container_name: next-bun
+#     restart: unless-stopped
+#     env_file: .env
+#     depends_on:
+#       - postgres
+#     ports:
+#       - "3000:3000"
+#     environment:
+#       DATABASE_URI: postgresql://root:secret@postgres:5432/appdb
+#       PAYLOAD_SECRET: "Hello World"
+#       NODE_ENV: production
+#       NODE_OPTIONS: --no-deprecation
+#       CLOUDFLARE_ACCOUNT_ID: "6d1e86aff03ca30f46ae347be5681fb1"
+#       R2_USER_TOKEN: "VOvhGEyvU5bXP09HQrq2QYq5Scdp_zRj9Lo4qzPQ"
+#       R2_ACCESS_KEY_ID: "c6d6f50c0aee12471ab806e9990deb64"
+#       R2_SECRET_ACCESS_KEY: "a761573d0b0b5a3f0e56f112a1ed8e48bf7bd7f17ded4cd3ad666c8289636749"
+#       S3_API: https://6d1e86aff03ca30f46ae347be5681fb1.r2.cloudflarestorage.com
+#       PUBLIC_R2: https://chatbots-cms.osit4s.com
+#       R2_BUCKET: chatbot-cms
+#       REDIS_URL: redis://redis:6379
 
-volumes:
-  pgdata:
+#   redis:
+#     image: redis:alpine
+#     container_name: redis-agent
+#     restart: unless-stopped
+#     ports:
+#       - "6379:6379"
+#     command: redis-server
+#     healthcheck: # Verifica que Redis esté listo[citation:1]
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 5s
+#       timeout: 3s
+#       retries: 3
+#     networks:
+#       - appnet
 
 # networks:
 #   appnet:
+
+volumes:
+  pgdata:
