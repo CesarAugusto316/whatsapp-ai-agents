@@ -7,7 +7,7 @@ import { postgresAdapter } from "@payloadcms/db-postgres";
 import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 import { s3Storage } from "@payloadcms/storage-s3";
-// import { migrations } from "./migrations";
+import { migrations } from "./migrations";
 
 // collections
 import { Appointments } from "./collections/appointments/Appointments";
@@ -112,12 +112,12 @@ export default buildConfig({
     // push: process.env.NODE_ENV === "development",
     push: true,
     idType: "uuid",
-    // prodMigrations: migrations, // runs migrations on production on initialization
+    prodMigrations: migrations, // runs migrations on production on initialization
     pool: {
       connectionString: process.env.DATABASE_URI!,
     },
   }),
-  plugins: process.env.IS_CLI
+  plugins: process.env.IS_CLI // this is skipped in migrations
     ? undefined
     : [
         // https://bridger.to/payload-r2

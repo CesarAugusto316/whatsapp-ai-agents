@@ -234,6 +234,9 @@ export interface Business {
   id: string;
   name: string;
   assistantName: string;
+  country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
+  taxes?: number | null;
+  currency?: ('USD' | 'MXN' | 'PEN' | 'EUR' | 'GBP') | null;
   general: {
     phoneNumber?: string | null;
     /**
@@ -309,9 +312,6 @@ export interface Business {
         }[]
       | null;
   };
-  country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
-  taxes?: number | null;
-  currency?: ('USD' | 'MXN' | 'PEN' | 'EUR' | 'GBP') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -340,7 +340,6 @@ export interface BusinessesMedia {
   id: string;
   alt: string;
   business: string | Business;
-  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -376,7 +375,6 @@ export interface ProductsMedia {
   alt: string;
   product: string | Product;
   business: string | Business;
-  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -614,6 +612,9 @@ export interface CustomersSelect<T extends boolean = true> {
 export interface BusinessesSelect<T extends boolean = true> {
   name?: T;
   assistantName?: T;
+  country?: T;
+  taxes?: T;
+  currency?: T;
   general?:
     | T
     | {
@@ -687,9 +688,6 @@ export interface BusinessesSelect<T extends boolean = true> {
               id?: T;
             };
       };
-  country?: T;
-  taxes?: T;
-  currency?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -700,7 +698,6 @@ export interface BusinessesSelect<T extends boolean = true> {
 export interface BusinessesMediaSelect<T extends boolean = true> {
   alt?: T;
   business?: T;
-  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -734,7 +731,6 @@ export interface ProductsMediaSelect<T extends boolean = true> {
   alt?: T;
   product?: T;
   business?: T;
-  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
