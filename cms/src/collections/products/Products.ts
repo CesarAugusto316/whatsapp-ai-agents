@@ -13,14 +13,6 @@ export const Products: CollectionConfig = {
     },
   },
   access: {
-    // create: ({ req }) => {
-    //   if (req.user?.collection === "third-party-access") {
-    //     return true;
-    //   }
-    //   if (req?.user?.collection === "users") {
-    //     return req?.user?.role === "admin";
-    //   }
-    // }, // bot
     // Función read corregida:
     read: async ({ req }) => {
       if (req?.user?.collection === "third-party-access") {
@@ -119,7 +111,6 @@ export const Products: CollectionConfig = {
     {
       name: "business",
       type: "relationship",
-      index: true,
       label: {
         en: "Business",
         es: "Negocio",

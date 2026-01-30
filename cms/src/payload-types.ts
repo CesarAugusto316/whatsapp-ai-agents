@@ -375,6 +375,7 @@ export interface ProductsMedia {
   id: string;
   alt: string;
   product: string | Product;
+  business: string | Business;
   prefix?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -394,7 +395,6 @@ export interface ProductOrder {
   id: string;
   description: string;
   business: string | Business;
-  product: string | Product;
   customer: string | Customer;
   updatedAt: string;
   createdAt: string;
@@ -406,6 +406,7 @@ export interface ProductOrder {
 export interface ProductCart {
   id: string;
   quantity?: number | null;
+  product: string | Product;
   order: string | ProductOrder;
   updatedAt: string;
   createdAt: string;
@@ -732,6 +733,7 @@ export interface ProductsSelect<T extends boolean = true> {
 export interface ProductsMediaSelect<T extends boolean = true> {
   alt?: T;
   product?: T;
+  business?: T;
   prefix?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -750,7 +752,6 @@ export interface ProductsMediaSelect<T extends boolean = true> {
 export interface ProductOrderSelect<T extends boolean = true> {
   description?: T;
   business?: T;
-  product?: T;
   customer?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -761,6 +762,7 @@ export interface ProductOrderSelect<T extends boolean = true> {
  */
 export interface ProductCartSelect<T extends boolean = true> {
   quantity?: T;
+  product?: T;
   order?: T;
   updatedAt?: T;
   createdAt?: T;

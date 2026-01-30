@@ -13,14 +13,14 @@ export const ProductOrder: CollectionConfig = {
     },
   },
   access: {
-    // create: ({ req }) => {
-    //   if (req.user?.collection === "third-party-access") {
-    //     return true;
-    //   }
-    //   if (req?.user?.collection === "users") {
-    //     return req?.user?.role === "admin";
-    //   }
-    // }, // bot
+    create: ({ req }) => {
+      if (req.user?.collection === "third-party-access") {
+        return true;
+      }
+      if (req?.user?.collection === "users") {
+        return req?.user?.role === "admin";
+      }
+    }, // bot
     // Función read corregida:
     read: async ({ req }) => {
       if (req?.user?.collection === "third-party-access") {
@@ -88,31 +88,10 @@ export const ProductOrder: CollectionConfig = {
         },
       },
     },
-    {
-      name: "product",
-      type: "relationship",
-      index: true,
-      label: {
-        en: "Product",
-        es: "Producto",
-      },
-      required: true,
-      relationTo: "products",
-      access: {
-        update: ({ req }) => {
-          if (req?.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
-          );
-        },
-      },
-    },
+
     {
       name: "customer",
       type: "relationship",
-      index: true,
       label: {
         en: "Customer",
         es: "Cliente",

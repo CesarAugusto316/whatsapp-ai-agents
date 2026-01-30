@@ -84,29 +84,18 @@ export default buildConfig({
     },
   },
   maxDepth: 2,
-  collections: process.env.IS_CLI
-    ? [
-        Users,
-        ThirdPartyAccess,
-        Appointments,
-        Customers,
-        Business,
-        Products,
-        ProductOrder,
-        ProductCarts,
-      ]
-    : [
-        Users,
-        ThirdPartyAccess,
-        Appointments,
-        Customers,
-        Business,
-        BusinessMedia, // includes file uploads
-        Products, // includes file uploads
-        ProductsMedia,
-        ProductOrder,
-        ProductCarts,
-      ],
+  collections: [
+    Users,
+    ThirdPartyAccess,
+    Appointments,
+    Customers,
+    Business,
+    BusinessMedia, // includes file uploads
+    Products,
+    ProductsMedia, // includes file uploads
+    ProductOrder,
+    ProductCarts,
+  ],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
     outputFile: path.resolve(dirname, "payload-types.ts"),
@@ -134,7 +123,7 @@ export default buildConfig({
         // https://bridger.to/payload-r2
         // https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
         s3Storage({
-          disableLocalStorage: true,
+          // disableLocalStorage: true,
           collections: {
             "businesses-media": {
               prefix: "business-media", // Optional prefix for uploaded files
