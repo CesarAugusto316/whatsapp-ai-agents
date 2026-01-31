@@ -7,6 +7,7 @@ import { TimeLine } from "./time-line";
 interface SelectorOptions {
   id: string;
   name: string;
+  timeZone: string;
 }
 
 interface ChartsProps {
@@ -173,15 +174,17 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
       style={{ display: "grid", gap: 40, paddingTop: 30, paddingBottom: 30 }}
     >
       <h2 style={{ textAlign: "center" }}>
-        {availabilityData
-          ? `Reservaciones para el ${new Date(
-              availabilityData.startDate,
-            ).toLocaleDateString("ES", {
+        {availabilityData?.startDate
+          ? `Reservaciones para el ${Intl.DateTimeFormat("es-ES", {
+              timeZone:
+                initialBusinesses.find(
+                  (option) => option.id === selectedBusinessId,
+                )?.timeZone || "Europe/Madrid",
               weekday: "long",
               year: "numeric",
               month: "long",
               day: "numeric",
-            })}`
+            })?.format(new Date(availabilityData?.startDate ?? ""))}`
           : "Cargando disponibilidad..."}
       </h2>
 

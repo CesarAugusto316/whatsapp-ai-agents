@@ -30,6 +30,7 @@ export default async function ChartsContainer({
   const initialBusinesses = businesses.docs.map((business) => ({
     id: business.id,
     name: business.name,
+    timeZone: business.general.timezone || "Europe/Madrid",
   }));
 
   if (user.role === "admin") return;
