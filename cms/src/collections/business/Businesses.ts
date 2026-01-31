@@ -1,6 +1,7 @@
 import { CollectionConfig, Field } from "payload";
 import { Users } from "../Users";
 import { RedisClient } from "bun";
+import { Business as IBusiness } from "@/payload-types";
 
 let redisClient!: unknown;
 // ===== TIME DOMAIN =====
@@ -159,14 +160,25 @@ export const Business: CollectionConfig = {
     ? undefined
     : {
         afterChange: [
-          async ({ doc, ...rest }) => {
+          async ({ doc }) => {
+            if (!doc?.id) return doc;
             try {
               if (!redisClient) {
                 const { RedisClient } = await import("bun");
                 redisClient = new RedisClient(process.env.REDIS_URL);
               }
               const key = `business:${doc.id}`;
-              const clean = structuredClone(doc);
+              const clean = structuredClone({
+                id: doc.id,
+                country: doc.country,
+                currency: doc.currency,
+                taxes: doc.taxes,
+                assistantName: doc.assistantName,
+                general: doc.general,
+                name: doc.name,
+                schedule: doc.schedule,
+              } satisfies Partial<IBusiness>);
+
               await (redisClient as RedisClient).set(
                 key,
                 JSON.stringify(clean),
@@ -176,7 +188,7 @@ export const Business: CollectionConfig = {
             } catch (error) {
               console.error("Error setting business data in Redis:", error);
             }
-            return { ...rest, doc };
+            return doc;
           },
         ],
       },
