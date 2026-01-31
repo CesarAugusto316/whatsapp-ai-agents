@@ -166,9 +166,10 @@ export const Business: CollectionConfig = {
                 redisClient = new RedisClient(process.env.REDIS_URL);
               }
               const key = `business:${doc.id}`;
+              const clean = structuredClone(doc);
               await (redisClient as RedisClient).set(
                 key,
-                JSON.stringify(doc),
+                JSON.stringify(clean),
                 "EX",
                 60 * 60 * 24 * 7, // 7 days
               );
