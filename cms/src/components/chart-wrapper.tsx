@@ -174,18 +174,23 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
       style={{ display: "grid", gap: 40, paddingTop: 30, paddingBottom: 30 }}
     >
       <h2 style={{ textAlign: "center" }}>
-        {availabilityData?.startDate
-          ? `Reservaciones para el ${Intl.DateTimeFormat("es-ES", {
-              timeZone:
-                initialBusinesses.find(
-                  (option) => option.id === selectedBusinessId,
-                )?.timeZone || "Europe/Madrid",
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })?.format(new Date(availabilityData?.startDate ?? ""))}`
-          : "Cargando disponibilidad..."}
+        {availabilityData?.startDate &&
+          !isLoading &&
+          `Reservaciones para el ${Intl.DateTimeFormat("es-ES", {
+            timeZone:
+              initialBusinesses.find(
+                (option) => option.id === selectedBusinessId,
+              )?.timeZone || "Europe/Madrid",
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })?.format(new Date(availabilityData.startDate))}`}
+
+        {isLoading && "Cargando..."}
+        {!isLoading &&
+          !availabilityData?.startDate &&
+          "No hay datos disponibles"}
       </h2>
 
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -244,24 +249,25 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
         <div style={{ color: "red", textAlign: "center" }}>Error: {error}</div>
       )}
 
-      {availabilityData && !isLoading && (
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            width: "100%",
-          }}
-        >
-          <OccupancyHistogram
-            slotsByTimeRage={availabilityData.slotsByTimeRange ?? []}
-            maxCapacity={availabilityData.maxCapacityPerHour}
-          />
-          <TimeLine
-            slotsByTimeRage={availabilityData.slotsByTimeRange ?? []}
-            maxCapacity={availabilityData.maxCapacityPerHour}
-          />
-        </section>
-      )}
+      <section
+        className="grid-container"
+        style={{
+          minHeight: 500,
+        }}
+      >
+        {availabilityData && !isLoading && (
+          <>
+            <OccupancyHistogram
+              slotsByTimeRage={availabilityData.slotsByTimeRange ?? []}
+              maxCapacity={availabilityData.maxCapacityPerHour}
+            />
+            <TimeLine
+              slotsByTimeRage={availabilityData.slotsByTimeRange ?? []}
+              maxCapacity={availabilityData.maxCapacityPerHour}
+            />
+          </>
+        )}
+      </section>
     </div>
   );
 }

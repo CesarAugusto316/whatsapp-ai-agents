@@ -36,9 +36,7 @@ export const Appointments: CollectionConfig = {
       if (req.user?.collection === "third-party-access") {
         return true;
       }
-      if (req?.user?.collection === "users") {
-        return req?.user?.role === "admin";
-      }
+      return false;
     }, // bot
     // Función read corregida:
     read: async ({ req }) => {
