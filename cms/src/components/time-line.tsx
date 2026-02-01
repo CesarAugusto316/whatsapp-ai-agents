@@ -20,10 +20,12 @@ interface GanttSlot {
 }
 
 export function TimeLine({
+  timeZone,
   slotsByTimeRage,
   maxCapacity: _maxCapacity,
   height = 400,
 }: {
+  timeZone: string;
   slotsByTimeRage: TimeRangeWindow[];
   maxCapacity: number;
   width?: number;
@@ -155,7 +157,7 @@ export function TimeLine({
           const date =
             value instanceof Date ? value : new Date(value.valueOf());
           return date.toLocaleTimeString("es-ES", {
-            timeZone: "Europe/Madrid",
+            timeZone: timeZone,
             hour: "2-digit",
             minute: "2-digit",
           });

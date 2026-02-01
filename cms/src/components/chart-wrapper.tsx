@@ -169,6 +169,10 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
     id: business.id,
   }));
 
+  const timeZone =
+    initialBusinesses?.find((option) => option?.id === selectedBusinessId)
+      ?.timeZone || "Europe/Madrid";
+
   return (
     <div
       style={{ display: "grid", gap: 40, paddingTop: 30, paddingBottom: 30 }}
@@ -177,10 +181,7 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
         {availabilityData?.startDate &&
           !isLoading &&
           `Reservaciones para el ${Intl.DateTimeFormat("es-ES", {
-            timeZone:
-              initialBusinesses.find(
-                (option) => option.id === selectedBusinessId,
-              )?.timeZone || "Europe/Madrid",
+            timeZone,
             weekday: "long",
             year: "numeric",
             month: "long",
@@ -258,10 +259,12 @@ export default function Charts({ data: initialBusinesses }: ChartsProps) {
         {availabilityData && !isLoading && (
           <>
             <OccupancyHistogram
+              timeZone={timeZone}
               slotsByTimeRage={availabilityData.slotsByTimeRange ?? []}
               maxCapacity={availabilityData.maxCapacityPerHour}
             />
             <TimeLine
+              timeZone={timeZone}
               slotsByTimeRage={availabilityData.slotsByTimeRange ?? []}
               maxCapacity={availabilityData.maxCapacityPerHour}
             />

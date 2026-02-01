@@ -9,10 +9,12 @@ import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip";
 import { localPoint } from "@visx/event";
 
 export function OccupancyHistogram({
+  timeZone,
   slotsByTimeRage,
   maxCapacity,
   height = 400,
 }: {
+  timeZone: string;
   slotsByTimeRage: TimeRangeWindow[];
   maxCapacity: number;
   width?: number;
@@ -43,7 +45,7 @@ export function OccupancyHistogram({
 
   const hours = slotsByTimeRage.map((s) =>
     new Date(s.from).toLocaleTimeString("es-ES", {
-      timeZone: "Europe/Madrid",
+      timeZone,
       hour: "2-digit",
       minute: "2-digit",
     }),

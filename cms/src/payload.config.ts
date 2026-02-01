@@ -46,6 +46,8 @@ export default buildConfig({
     supportedLanguages: { en, es },
   },
   admin: {
+    dateFormat: "d MMM yyy HH:mm", // Formato de 24 horas
+    // timeFormat: "HH:mm", // Formato de 24 horas para el selector de hora
     meta: {
       keywords: "AI agents, business intelligence, chatbots, whatsapp",
       title: "Dashboard",

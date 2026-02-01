@@ -287,7 +287,8 @@ export const Appointments: CollectionConfig = {
           admin: {
             readOnly: true,
             date: {
-              // displayFormat: "dd/MM/yyyy HH:mm",
+              displayFormat: "d MMM yyy HH:mm", // Formato de 24 horas
+              timeFormat: "HH:mm", // Formato de 24 horas para el selector de hora
               pickerAppearance: "dayAndTime",
             },
           },
@@ -315,7 +316,8 @@ export const Appointments: CollectionConfig = {
           admin: {
             readOnly: true,
             date: {
-              // displayFormat: "dd/MM/yyyy HH:mm",
+              displayFormat: "d MMM yyy HH:mm", // Formato de 24 horas
+              timeFormat: "HH:mm", // Formato de 24 horas para el selector de hora
               pickerAppearance: "dayAndTime",
             },
           },
