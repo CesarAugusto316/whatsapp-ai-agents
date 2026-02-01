@@ -484,8 +484,8 @@ export const Business: CollectionConfig = {
               min: APPOINTMENT_MIN,
               max: APPOINTMENT_MAX,
               label: {
-                en: "Average appointment duration (minutes)",
-                es: "Duración promedio de la cita (minutos)",
+                en: "Minimal appointment duration (minutes)",
+                es: "Duración mínima de la reserva (minutos)",
               },
             },
             {

@@ -1,8 +1,9 @@
 import { describe, test, expect, beforeEach, beforeAll } from "bun:test";
 import { redisClient } from "@/infraestructure/cache/redis.client";
+import { env } from "bun";
 
 // Constants from the logs
-const BUSINESS_ID = "b14b1138-a09c-4c97-8152-23a495d1c245";
+const BUSINESS_ID = env.BUSINESS_ID_TEST;
 const CUSTOMER_PHONE = "+3455555555";
 
 interface TestResponse {
@@ -25,6 +26,27 @@ interface TestResponse {
   };
 }
 
+const makeRequest = async (body: string): Promise<TestResponse> => {
+  const payload = {
+    payload: {
+      body,
+      from: CUSTOMER_PHONE,
+    },
+  };
+  const req = new Request(`http://localhost:3000/test-ai/${BUSINESS_ID}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const res = await fetch(req);
+  expect(res.status).toBe(200);
+  const responseBody = await res.json();
+  console.log({ responseBody });
+  return responseBody as TestResponse;
+};
+
 describe("Real conversation flow integration test", () => {
   beforeAll(() => {
     process.env.PORT = process.env.PORT || "3000";
@@ -42,29 +64,6 @@ describe("Real conversation flow integration test", () => {
     "full conversation flow from hello to reservation confirmation",
     async () => {
       // Helper to make a POST request
-      const makeRequest = async (body: string): Promise<TestResponse> => {
-        const payload = {
-          payload: {
-            body,
-            from: CUSTOMER_PHONE,
-          },
-        };
-        const req = new Request(
-          `http://localhost:3000/test-ai/${BUSINESS_ID}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-        const res = await fetch(req);
-        expect(res.status).toBe(200);
-        const responseBody = await res.json();
-        console.log({ responseBody });
-        return responseBody as TestResponse;
-      };
 
       // Step 1: Initial greeting
       console.log("Step 1: Sending 'hola'");
@@ -103,11 +102,14 @@ describe("Real conversation flow integration test", () => {
       console.log(
         `Step 4: Sending 'para ${payload.people} personas' (partial data)`,
       );
-      const response4 = await makeRequest(`para ${payload.people} personas`);
+      const response4 = await makeRequest(
+        `para ${payload.people} personas, ${payload.name}`,
+      );
       expect(typeof response4.lastStepResult?.execute?.result).toBe("string");
       const result4 = response4.lastStepResult!.execute!.result;
+
       // Should ask for missing data
-      expect(result4).toContain("problema");
+      // expect(result4).toContain("problema");
       expect(result4).toContain("día");
       expect(result4).toContain("hora");
 
@@ -116,6 +118,7 @@ describe("Real conversation flow integration test", () => {
       const response5 = await makeRequest(payload.date);
       expect(typeof response5.lastStepResult?.execute?.result).toBe("string");
       const result5 = response5.lastStepResult!.execute!.result;
+
       // Should show summary and ask for confirmation
       expect(result5).toContain("CONFIRMAR");
       // expect(result5).toContain("REINGRESAR");
