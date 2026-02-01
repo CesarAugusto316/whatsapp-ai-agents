@@ -5,7 +5,7 @@ import {
   getSlotsByDayService,
   suggestSlotsService,
 } from "./Appointment.service";
-import { toZonedTime } from "date-fns-tz";
+import { formatInTimeZone } from "date-fns-tz";
 
 export const Appointments: CollectionConfig = {
   slug: "appointments",
@@ -89,10 +89,18 @@ export const Appointments: CollectionConfig = {
             return {
               ...doc,
               startDateTime: doc.startDateTime
-                ? toZonedTime(doc.startDateTime, timezone)
+                ? formatInTimeZone(
+                    doc.startDateTime,
+                    timezone,
+                    "yyyy-MM-dd HH:mm",
+                  )
                 : undefined,
               endDateTime: doc.endDateTime
-                ? toZonedTime(doc.endDateTime, timezone)
+                ? formatInTimeZone(
+                    doc.endDateTime,
+                    timezone,
+                    "yyyy-MM-dd HH:mm",
+                  )
                 : undefined,
             };
           },
@@ -279,6 +287,7 @@ export const Appointments: CollectionConfig = {
           admin: {
             readOnly: true,
             date: {
+              // displayFormat: "dd/MM/yyyy HH:mm",
               pickerAppearance: "dayAndTime",
             },
           },
@@ -306,6 +315,7 @@ export const Appointments: CollectionConfig = {
           admin: {
             readOnly: true,
             date: {
+              // displayFormat: "dd/MM/yyyy HH:mm",
               pickerAppearance: "dayAndTime",
             },
           },
