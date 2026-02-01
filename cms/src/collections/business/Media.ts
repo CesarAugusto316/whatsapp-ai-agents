@@ -82,7 +82,13 @@ export const BusinessMedia: CollectionConfig = {
     },
   ],
   admin: {
+    // preview: (doc, { req, locale, token }) =>
+    //   `${req.protocol}//${req.host}/${doc.slug}`,
     hideAPIURL: true,
+    group: {
+      en: "My businesses",
+      es: "Mis negocios",
+    },
   },
   upload: {
     // disableLocalStorage: env.NODE_ENV === "production",

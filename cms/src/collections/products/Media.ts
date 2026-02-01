@@ -4,12 +4,12 @@ export const ProductsMedia: CollectionConfig = {
   slug: "products-media",
   labels: {
     singular: {
-      en: "Product Media",
-      es: "Elemento de Producto",
+      en: "Media",
+      es: "Elemento",
     },
     plural: {
-      en: "Products Media",
-      es: "Galería de Productos",
+      en: "Media",
+      es: "Galería",
     },
   },
   access: {
@@ -102,7 +102,11 @@ export const ProductsMedia: CollectionConfig = {
     },
   ],
   admin: {
-    hidden: true,
+    group: {
+      en: "My products",
+      es: "Mis productos",
+    },
+    // hidden: true,
     hideAPIURL: true,
   },
   upload: {

@@ -144,6 +144,13 @@ export const Business: CollectionConfig = {
     },
   },
   admin: {
+    // preview: (doc, { req, locale, token }) =>
+    //   `${req.protocol}//${req.host}/${doc.slug}`,
+    group: {
+      en: "My businesses",
+      es: "Mis negocios",
+    },
+    enableRichTextLink: true,
     defaultColumns: [
       "name",
       "assistantName",
@@ -160,7 +167,8 @@ export const Business: CollectionConfig = {
     ? undefined
     : {
         afterChange: [
-          async ({ doc }) => {
+          async ({ doc, operation }) => {
+            if (operation !== "update") return doc;
             if (!doc?.id) return doc;
             try {
               if (!redisClient) {

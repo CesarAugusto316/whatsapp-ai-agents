@@ -4,12 +4,12 @@ export const ProductOrder: CollectionConfig = {
   slug: "product-order",
   labels: {
     singular: {
-      en: "Product Order",
-      es: "Orden de Producto",
+      en: "Order",
+      es: "Orden",
     },
     plural: {
-      en: "Product Orders",
-      es: "Ordenes de Producto",
+      en: "Orders",
+      es: "Ordenes",
     },
   },
   access: {
@@ -111,7 +111,11 @@ export const ProductOrder: CollectionConfig = {
     },
   ],
   admin: {
-    hidden: true,
+    group: {
+      en: "My products",
+      es: "Mis productos",
+    },
+    // hidden: true,
     hideAPIURL: true,
   },
 };

@@ -129,8 +129,13 @@ export const Products: CollectionConfig = {
       },
     },
   ],
+
   admin: {
-    hidden: true,
+    group: {
+      en: "My products",
+      es: "Mis productos",
+    },
+    // hidden: true,
     hideAPIURL: true,
   },
 };

@@ -47,7 +47,6 @@ export default buildConfig({
   },
   admin: {
     dateFormat: "d MMM yyy HH:mm", // Formato de 24 horas
-    // timeFormat: "HH:mm", // Formato de 24 horas para el selector de hora
     meta: {
       keywords: "AI agents, business intelligence, chatbots, whatsapp",
       title: "Dashboard",
@@ -86,6 +85,39 @@ export default buildConfig({
     },
   },
   maxDepth: 2,
+  /**
+   *
+   * @link https://payloadcms.com/docs/jobs-queue/overview
+   */
+  jobs: {
+    tasks: [
+      {
+        label: "RAG for businesses",
+        slug: "rag business",
+        retries: 3,
+        inputSchema: [
+          {
+            name: "doc",
+            type: "json",
+            required: true,
+          },
+        ],
+        handler: async ({ input, req }) => {
+          // Send email using your email service
+          await req.payload.sendEmail({
+            to: input.userEmail,
+            subject: "Welcome!",
+            text: `Hi ${input.userName}, welcome to our platform!`,
+          });
+          return {
+            output: {
+              emailSent: true,
+            },
+          };
+        },
+      },
+    ],
+  },
   collections: [
     Users,
     ThirdPartyAccess,

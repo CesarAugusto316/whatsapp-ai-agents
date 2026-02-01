@@ -4,12 +4,12 @@ export const ProductCarts: CollectionConfig = {
   slug: "product-cart",
   labels: {
     singular: {
-      en: "Product Cart",
-      es: "Carrito de Producto",
+      en: "Cart",
+      es: "Carrito",
     },
     plural: {
-      en: "Products Cart",
-      es: "Carrito de Productos",
+      en: "Cart",
+      es: "Carrito",
     },
   },
   access: {
@@ -74,6 +74,10 @@ export const ProductCarts: CollectionConfig = {
     },
   ],
   admin: {
+    group: {
+      en: "My products",
+      es: "Mis productos",
+    },
     hidden: true,
     hideAPIURL: true,
   },
