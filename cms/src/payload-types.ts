@@ -117,7 +117,7 @@ export interface Config {
       });
   jobs: {
     tasks: {
-      'rag business': TaskRagBusiness;
+      semanticSync: TaskSemanticSync;
       inline: {
         input: unknown;
         output: unknown;
@@ -488,7 +488,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'rag business';
+        taskSlug: 'inline' | 'semanticSync';
         taskID: string;
         input?:
           | {
@@ -521,7 +521,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'rag business') | null;
+  taskSlug?: ('inline' | 'semanticSync') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -940,9 +940,9 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskRag business".
+ * via the `definition` "TaskSemanticSync".
  */
-export interface TaskRagBusiness {
+export interface TaskSemanticSync {
   input: {
     doc:
       | {
@@ -953,6 +953,9 @@ export interface TaskRagBusiness {
       | number
       | boolean
       | null;
+    collection: string;
+    businessId: string;
+    operation: string;
   };
   output?: unknown;
 }

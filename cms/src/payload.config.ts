@@ -8,6 +8,8 @@ import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 import { s3Storage } from "@payloadcms/storage-s3";
 import { migrations } from "./migrations";
+import { RedisClient } from "bun";
+import { Business as IBusiness } from "@/payload-types";
 
 // collections
 import { Appointments } from "./collections/appointments/Appointments";
@@ -22,14 +24,8 @@ import { ProductCarts } from "./collections/products/ProductCart";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
+let redisClient!: unknown;
 
-/**
- *
- * @description custom components
- * @link https://recharts.github.io/en-US/examples/TimelineExample/
- * @link https://payloadcms.com/docs/custom-components/overview#building-custom-components
- * @link https://payloadcms.com/docs/custom-components/root-components
- */
 export default buildConfig({
   bin: [
     {
@@ -49,7 +45,7 @@ export default buildConfig({
     dateFormat: "d MMM yyy HH:mm", // Formato de 24 horas
     meta: {
       keywords: "AI agents, business intelligence, chatbots, whatsapp",
-      title: "Dashboard",
+      title: "Dashboard", // for home page
       titleSuffix: "Nexoti",
       applicationName: "Nexoti",
       description: "Strategic AI Agents",
@@ -65,6 +61,12 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    /**
+     *
+     * @description custom components
+     * @link https://payloadcms.com/docs/custom-components/overview#building-custom-components
+     * @link https://payloadcms.com/docs/custom-components/root-components
+     */
     components: {
       beforeNavLinks: [{ path: "./components/Home.tsx" }],
       // Nav: {
@@ -90,30 +92,104 @@ export default buildConfig({
    * @link https://payloadcms.com/docs/jobs-queue/overview
    */
   jobs: {
+    autoRun: [
+      {
+        // cron: "* * * * *",
+        cron: "* 0/5 * * * *",
+        limit: 500, // limit jobs to process each run
+        queue: "fiveMinutes", // name of the queue
+      },
+      {
+        cron: "* 0 * * * *", // every hour at minute 0
+        limit: 500, // limit jobs to process each run
+        queue: "hourly", // name of the queue
+      },
+      {
+        cron: "* 0 0 * * *", // every day at midnight
+        limit: 500,
+        queue: "nightly",
+      },
+      // add as many cron jobs as you want
+    ],
+    jobsCollectionOverrides: ({ defaultJobsCollection }) => {
+      if (!defaultJobsCollection.admin) {
+        defaultJobsCollection.admin = {};
+      }
+
+      defaultJobsCollection.admin.hidden =
+        process.env.NODE_ENV === "development" ? false : true;
+      return defaultJobsCollection;
+    },
     tasks: [
       {
-        label: "RAG for businesses",
-        slug: "rag business",
+        label: "ingestion",
+        slug: "semanticSync",
         retries: 3,
         inputSchema: [
           {
-            name: "doc",
+            name: "doc", // collection doc content
             type: "json",
             required: true,
           },
+          {
+            name: "collection", // type: "businesses" | "customer" | "appointment" | "product"
+            type: "text",
+            required: true,
+          },
+          {
+            name: "businessId",
+            type: "text",
+            required: true,
+          },
+          {
+            name: "operation", // create | update | delete
+            type: "text",
+            required: true,
+          },
         ],
-        handler: async ({ input, req }) => {
-          // Send email using your email service
-          await req.payload.sendEmail({
-            to: input.userEmail,
-            subject: "Welcome!",
-            text: `Hi ${input.userName}, welcome to our platform!`,
-          });
-          return {
-            output: {
-              emailSent: true,
-            },
-          };
+        handler: async ({ input }) => {
+          const { operation, doc, collection } = input;
+          try {
+            if (operation === "update" && collection === Business.slug) {
+              if (!redisClient) {
+                const { RedisClient } = await import("bun");
+                redisClient = new RedisClient(process.env.REDIS_URL);
+              }
+              const key = `business:${doc.id}`;
+              const clean = structuredClone({
+                id: doc.id,
+                country: doc.country,
+                currency: doc.currency,
+                taxes: doc.taxes,
+                assistantName: doc.assistantName,
+                general: doc.general,
+                name: doc.name,
+                schedule: doc.schedule,
+              } satisfies Partial<IBusiness>);
+
+              await (redisClient as RedisClient).set(
+                key,
+                JSON.stringify(clean),
+                "EX",
+                60 * 60 * 24 * 7, // 7 days
+              );
+            }
+
+            await fetch(
+              `${process.env.AGENT_URL}/semantic-ingestion/${input.businessId}`,
+              {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  authorization: `Bearer ${process.env.AGENT_SECRET}`,
+                },
+                body: JSON.stringify(input),
+              },
+            );
+          } catch (error) {
+            console.error("Error setting business data in Redis:", error);
+          }
+          return { output: { ok: true } };
         },
       },
     ],
@@ -141,19 +217,23 @@ export default buildConfig({
   }),
   // database-adapter-config-start
   db: postgresAdapter({
-    // MORE INFO ABOUT PRODUCTION MIGRATIONS:
-    // https://payloadcms.com/docs/database/migrations#running-migrations-in-production
-    // push: process.env.NODE_ENV === "development",
+    /**
+     * @description MORE INFO ABOUT PRODUCTION MIGRATIONS:
+     * @link https://payloadcms.com/docs/database/migrations#running-migrations-in-production
+     */
     push: false,
-    idType: "uuid",
     prodMigrations: migrations, // runs migrations on production on initialization
+    idType: "uuid",
     pool: {
       connectionString: process.env.DATABASE_URI!,
     },
   }),
   plugins: [
-    // https://bridger.to/payload-r2
-    // https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
+    /**
+     *
+     * @link https://payloadcms.com/posts/guides/how-to-configure-file-storage-in-payload-with-vercel-blob-r2-and-uploadthing
+     * @link https://bridger.to/payload-r2
+     */
     s3Storage({
       disableLocalStorage: true,
       collections: {

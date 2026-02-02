@@ -1,9 +1,6 @@
 import { CollectionConfig, Field } from "payload";
 import { Users } from "../Users";
-import { RedisClient } from "bun";
-import { Business as IBusiness } from "@/payload-types";
 
-let redisClient!: unknown;
 // ===== TIME DOMAIN =====
 
 // Un día abstracto
@@ -167,35 +164,22 @@ export const Business: CollectionConfig = {
     ? undefined
     : {
         afterChange: [
-          async ({ doc, operation }) => {
-            if (operation !== "update") return doc;
-            if (!doc?.id) return doc;
-            try {
-              if (!redisClient) {
-                const { RedisClient } = await import("bun");
-                redisClient = new RedisClient(process.env.REDIS_URL);
-              }
-              const key = `business:${doc.id}`;
-              const clean = structuredClone({
-                id: doc.id,
-                country: doc.country,
-                currency: doc.currency,
-                taxes: doc.taxes,
-                assistantName: doc.assistantName,
-                general: doc.general,
-                name: doc.name,
-                schedule: doc.schedule,
-              } satisfies Partial<IBusiness>);
-
-              await (redisClient as RedisClient).set(
-                key,
-                JSON.stringify(clean),
-                "EX",
-                60 * 60 * 24 * 7, // 7 days
-              );
-            } catch (error) {
-              console.error("Error setting business data in Redis:", error);
-            }
+          async ({ doc, operation, req }) => {
+            await req.payload.jobs.queue({
+              task: "semanticSync",
+              input: {
+                doc,
+                collection: "businesses",
+                businessId: doc.id,
+                operation: operation, // create | update
+              },
+              // Schedule the job to run in the future
+              // waitUntil: new Date(Date.now() + 60 * 60 * 1_000), // 1 hours from now
+              queue:
+                process.env.NODE_ENV === "development"
+                  ? "fiveMinutes"
+                  : "hourly", // nightly
+            });
             return doc;
           },
         ],

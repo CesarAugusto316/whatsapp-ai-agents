@@ -122,6 +122,7 @@ export const getSlotsByDayService = async (
     business,
     open: availabilityRanges.at(0)?.open,
     close: availabilityRanges.at(1)?.close || availabilityRanges.at(0)?.close,
+    showAllStatus: true,
   });
 
   const maxCapacityPerHour = business.general.maxCapacity || 20;
@@ -202,6 +203,7 @@ type GenerateSlots = {
   close: string;
   startDate?: Date;
   endDate?: Date;
+  showAllStatus?: boolean;
 };
 
 async function generateSlots({
@@ -210,6 +212,7 @@ async function generateSlots({
   close,
   startDate,
   endDate,
+  showAllStatus = false,
 }: GenerateSlots) {
   //
   const payload = await getPayload({ config });
@@ -220,9 +223,11 @@ async function generateSlots({
       sort: "startDateTime",
       where: {
         business: { equals: business.id },
-        status: {
-          in: ["confirmed", "pending"],
-        },
+        status: showAllStatus
+          ? undefined // { in: ["pending", "confirmed", "cancelled", "completed"] }
+          : {
+              in: ["confirmed", "pending"],
+            },
         startDateTime: {
           less_than: close,
           // greater_than_equal: utcOpenTime,
