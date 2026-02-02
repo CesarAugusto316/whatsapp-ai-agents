@@ -55,7 +55,7 @@ export const ProductCarts: CollectionConfig = {
     {
       name: "order",
       type: "relationship",
-      relationTo: "product-order",
+      relationTo: "product-orders",
       label: {
         en: "Order",
         es: "Orden",

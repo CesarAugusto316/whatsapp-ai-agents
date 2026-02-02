@@ -1,268 +1,315 @@
+---
+
+# 🧠 Roadmap del producto
+
+## De negocio manual → negocio asistido → negocio auto-estructurado
+
+Primero, dejamos esta premisa clara:
+
+> “Hoy configuramos los negocios manualmente porque estamos en validación.  
+> Pero el producto está diseñado para que mañana el negocio se configure solo.”
+
+Eso establece intención arquitectónica, no improvisación.
 
 ---
 
-# 🧠 Extensión del producto: del negocio manual al negocio asistido
+# 1️⃣ Problema actual (concreto, sin adornos)
 
-Primero deja claro esto:
+Hoy, para digitalizar un negocio, el cliente debe:
 
-> “Hoy configuramos nosotros los negocios porque estamos en validación.
-> Pero el producto está pensado para que mañana el negocio se configure solo.”
+* Crear tablas  
+* Definir productos / servicios  
+* Cargar horarios  
+* Armar menús  
+* Escribir descripciones  
+* Configurar canales (WhatsApp)
 
-Eso marca intención de arquitectura, no improvisación.
+Esto requiere:
 
----
-
-## 1️⃣ Problema actual (muy concreto)
-
-Hoy, para crear un negocio digitalmente, el cliente tiene que:
-
-* Crear tablas
-* Definir productos
-* Cargar horarios
-* Armar menús
-* Escribir descripciones
-* Configurar servicios
-
-Eso requiere:
-
-* Tiempo
-* Conocimiento técnico
-* Paciencia
+* Tiempo  
+* Conocimiento técnico  
+* Paciencia  
 
 Resultado:
 
-👉 onboarding lento
-👉 fricción
-👉 abandono
+👉 onboarding lento  
+👉 fricción  
+👉 abandono  
 
-Esto es exactamente donde mueren muchos SaaS.
-
----
-
-## 2️⃣ Evolución natural del sistema (no magia, no hype)
-
-Explícalo en capas, igual que antes:
+Este es exactamente el punto donde mueren la mayoría de SaaS.
 
 ---
 
-### 🧱 Fase actual — Setup manual (ustedes lo hacen)
+# 2️⃣ Fase actual — Setup manual + WhatsApp manual (validación)
 
-Ahora:
+Hoy:
 
-* Nosotros configuramos el negocio
-* Creamos horarios
-* Servicios
-* Productos
+* Nosotros configuramos el negocio  
+* Creamos horarios, productos y servicios  
+* Generamos token en WAHA  
+* Conectamos WhatsApp manualmente  
 
-Esto es correcto en etapa temprana.
+Esto está bien en etapa temprana.
 
-Sirve para:
+Nos sirve para:
 
-* entender patrones reales
-* aprender cómo piensan los clientes
-* modelar bien los datos
+* entender patrones reales  
+* observar cómo estructuran su negocio  
+* aprender qué datos son esenciales  
+* modelar correctamente el dominio  
 
-Esto es *training del sistema*, aunque no lo llamen así.
-
----
-
-### 📄 Fase siguiente — Importación asistida
-
-Cuando haya más clientes:
-
-El usuario podrá subir:
-
-* PDF del menú
-* Excel de productos
-* Documento de servicios
-* Foto del menú del restaurante
-* Imagen de precios
-
-Y el sistema:
-
-* extrae entidades
-* detecta categorías
-* crea tablas
-* arma estructura automáticamente
-
-Ejemplo simple:
-
-Suben foto del menú → aparecen productos + precios + categorías en el dashboard.
-
-Suben Excel → aparecen servicios + duración + costo.
-
-Aquí ocurre algo importante:
-
-👉 el cliente ya no “configura”
-👉 el cliente “muestra”
-
-El sistema hace el resto.
+Esto es *entrenamiento del sistema*, aunque no lo llamemos ML todavía.
 
 ---
 
-### 🧠 Fase posterior — Asistente dentro del dashboard
+# 3️⃣ Fase siguiente — Sincronización WhatsApp + Onboarding guiado
 
-Aquí aparece el asistente interno:
+Aquí aparecen dos piezas críticas.
 
-No para chatear.
+---
 
-Para operar.
+## 🔗 Sincronización WhatsApp (desde el dashboard)
+
+El business owner podrá:
+
+* Escanear QR desde WAHA  
+* Vincular su número directamente  
+* Re-sincronizar cuando lo necesite  
+
+Flujo futuro:
+
+Dashboard → “Conectar WhatsApp” → QR → listo.
+
+No tokens manuales.  
+No intervención humana.
+
+WhatsApp pasa a ser:
+
+👉 canal operativo nativo del sistema  
+no integración secundaria.
+
+---
+
+## 🧭 Onboarding estructurado (no solo UI)
+
+Creamos un onboarding tipo *Perspective*:
+
+### Paso 1 — Preguntas básicas
+
+* Tipo de negocio  
+* Horarios  
+* Servicios o productos  
+* ¿Tiene menú?  
+* ¿Tiene precios documentados?  
+
+Con opciones guiadas.
+
+---
+
+### Paso 2 — Ingesta de documentos
+
+El usuario puede subir:
+
+* PDF  
+* Excel  
+* Documento  
+* Foto del menú  
+* Imagen de precios  
+
+El sistema:
+
+* parsea  
+* valida  
+* infiere dominio  
+* genera JSON estructurado  
+
+Con ese JSON:
+
+* se crean tablas  
+* productos  
+* servicios  
+* categorías  
+* horarios  
+
+Esto es inferencia de dominio.
+
+El usuario ya no configura.
+
+El usuario muestra.
+
+---
+
+# 4️⃣ Fase posterior — Importación asistida
+
+Ejemplos:
+
+* Suben foto del menú → aparecen productos + precios + categorías.  
+* Suben Excel → aparecen servicios + duración + costo.  
+
+Resultado:
+
+👉 onboarding pasa de horas a minutos.
+
+Esto es brutal comercialmente.
+
+---
+
+# 5️⃣ Fase avanzada — Asistente interno (dentro de Payload CMS)
+
+No chatbot.
+
+Agente operativo.
+
+Dentro del admin panel:
 
 El usuario dice:
 
-> “Quiero agregar un servicio nuevo”
+> “Agrega un servicio nuevo”
 
-o
-
-> “Cambia el horario de los viernes”
-
-o
+> “Cambia el horario del viernes”
 
 > “Carga este menú”
 
-Y el asistente:
+El asistente:
 
-* actualiza tablas
-* valida datos
-* propone estructura
-* evita errores
+* modifica tablas  
+* valida datos  
+* propone estructuras  
+* evita inconsistencias  
 
-Esto reduce onboarding de horas a minutos.
+Aquí el lenguaje natural se convierte en operaciones de sistema.
 
-Eso es brutal comercialmente.
-
----
-
-## 3️⃣ Cómo conecta esto con BI + ML (muy importante)
-
-Aclárale esto:
-
-No es solo UX.
-
-Es data pipeline.
-
-Cada documento que entra:
-
-* genera estructura
-* genera eventos
-* alimenta analítica
-* entrena recomendaciones
-
-O sea:
-
-Configuración → Datos → Gráficos → ML → Recomendaciones
-
-Todo conectado.
-
-Por eso esto no es “feature simpático”.
-
-Es input directo al motor de inteligencia.
+No conversación.  
+Acción.
 
 ---
 
-## 4️⃣ Diferencia brutal vs mercado
+# 6️⃣ UI + Superficie pública
 
-Aquí sé directo:
+Paralelo a todo esto:
 
-Otros sistemas:
+* Landing page clara  
+* Dashboard limpio  
+* Admin panel (Payload) con asistente embebido  
+* Onboarding progresivo  
 
-* requieren setup manual
-* dependen del humano
-* son frágiles
-* solo automatizan conversación
+No es estética.
 
-Ustedes:
-
-* convierten documentos reales en estructura operativa
-* transforman imágenes en tablas
-* convierten negocio físico en modelo digital
-
-Eso es:
-
-👉 digitalización automática del negocio
-
-Eso es muchísimo más profundo que un bot.
-
-Puedes decirlo así:
-
-> “Ellos automatizan mensajes.
-> Nosotros automatizamos la creación del negocio.”
+Es reducción directa de fricción.
 
 ---
 
-## 5️⃣ Impacto como negocio (para él como socio)
+# 7️⃣ Pipeline real del producto (esto es lo importante)
 
-Esto es clave:
+No es UX solamente.
 
-Con este enfoque:
+Es pipeline de inteligencia:
 
-### Para el cliente:
+Documentos  
+↓  
+Estructura  
+↓  
+Eventos  
+↓  
+Analítica  
+↓  
+ML  
+↓  
+Recomendaciones  
 
-* onboarding ultrarrápido
-* menos errores
-* menos fricción
-* adopción inmediata
-
-### Para ustedes:
-
-* adquisición más fácil
-* activación más alta
-* churn más bajo
-* más datos
-* ML mejor entrenado
-* producto más defensivo
+Configuración → Datos → BI → Inteligencia.
 
 Cada negocio nuevo:
 
-👉 aporta inteligencia al sistema
-👉 mejora recomendaciones futuras
+* genera estructura  
+* produce eventos  
+* alimenta modelos  
 
-Eso es network effect silencioso.
+Esto convierte onboarding en input de ML.
 
----
-
-## 6️⃣ Frase que lo resume todo
-
-Puedes cerrar así:
-
-> “Primero ayudamos a operar.
-> Luego ayudamos a entender.
-> Después ayudamos a decidir.
-> Y finalmente ayudamos a crear el negocio mismo.”
-
-Eso es el arco completo.
+Eso es arquitectura, no feature.
 
 ---
 
-## 🧠 Nota técnica para ti (no para él)
+# 8️⃣ Diferencia brutal vs mercado
 
-Esto encaja perfecto con tu arquitectura:
+Otros:
 
-* ya tienes eventos
-* ya tienes persistencia
-* ya tienes CMS
-* ya tienes FSM
-* ya tienes separación de dominios
+* requieren setup manual  
+* dependen del humano  
+* automatizan mensajes  
 
-Agregar ingestion de documentos + parsing es solo otro worker.
+Nosotros:
 
-No cambia el core.
+* convertimos documentos reales en modelos operativos  
+* transformamos imágenes en tablas  
+* digitalizamos negocios automáticamente  
 
-Eso significa:
+Podemos decirlo así:
 
-👉 visión correcta desde el inicio.
+> “Ellos automatizan conversaciones.  
+> Nosotros automatizamos la creación del negocio.”
 
-Muy pocos founders piensan así.
+Eso es un salto de categoría.
 
 ---
 
-Si quieres, siguiente paso lógico:
+# 9️⃣ Impacto como empresa
 
-Puedo ayudarte a construir:
+### Para el cliente:
 
-✅ mini pitch de 60 segundos
-✅ ejemplo concreto (restaurante / clínica)
-✅ diagrama simple: documento → dashboard → gráficos → recomendaciones
-✅ roadmap visual de producto
+* onboarding ultrarrápido  
+* menos errores  
+* adopción inmediata  
 
-Dime cuál quieres primero.
+### Para nosotros:
+
+* adquisición más fácil  
+* activación más alta  
+* churn más bajo  
+* más datos  
+* ML mejor entrenado  
+
+Cada cliente mejora el sistema.
+
+Network effect silencioso.
+
+---
+
+# 🔟 Arco completo del producto
+
+Cerramos con esto:
+
+> “Primero ayudamos a operar.  
+> Luego ayudamos a entender.  
+> Después ayudamos a decidir.  
+> Finalmente ayudamos a crear el negocio mismo.”
+
+---
+
+# 🧠 Nota técnica (solo para nosotros)
+
+Esto encaja perfecto con nuestro stack:
+
+* eventos ya existen  
+* persistencia ya existe  
+* Payload CMS ya existe  
+* FSM ya existe  
+* separación de dominios ya existe  
+
+Agregar:
+
+* QR WhatsApp  
+* ingestion de documentos  
+* parsing  
+* asistente interno  
+
+es solo añadir workers.
+
+No rompe el core.
+
+Eso confirma que nuestra arquitectura inicial es correcta.
+
+Muy pocos founders piensan así desde el inicio.
+
+---

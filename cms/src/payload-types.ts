@@ -76,8 +76,8 @@ export interface Config {
     'businesses-media': BusinessesMedia;
     products: Product;
     'products-media': ProductsMedia;
-    'product-order': ProductOrder;
-    'product-cart': ProductCart;
+    'product-orders': ProductOrder;
+    'product-carts': ProductCart;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -94,8 +94,8 @@ export interface Config {
     'businesses-media': BusinessesMediaSelect<false> | BusinessesMediaSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     'products-media': ProductsMediaSelect<false> | ProductsMediaSelect<true>;
-    'product-order': ProductOrderSelect<false> | ProductOrderSelect<true>;
-    'product-cart': ProductCartSelect<false> | ProductCartSelect<true>;
+    'product-orders': ProductOrdersSelect<false> | ProductOrdersSelect<true>;
+    'product-carts': ProductCartsSelect<false> | ProductCartsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -397,7 +397,7 @@ export interface ProductsMedia {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product-order".
+ * via the `definition` "product-orders".
  */
 export interface ProductOrder {
   id: string;
@@ -409,7 +409,7 @@ export interface ProductOrder {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product-cart".
+ * via the `definition` "product-carts".
  */
 export interface ProductCart {
   id: string;
@@ -568,11 +568,11 @@ export interface PayloadLockedDocument {
         value: string | ProductsMedia;
       } | null)
     | ({
-        relationTo: 'product-order';
+        relationTo: 'product-orders';
         value: string | ProductOrder;
       } | null)
     | ({
-        relationTo: 'product-cart';
+        relationTo: 'product-carts';
         value: string | ProductCart;
       } | null);
   globalSlug?: string | null;
@@ -847,9 +847,9 @@ export interface ProductsMediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product-order_select".
+ * via the `definition` "product-orders_select".
  */
-export interface ProductOrderSelect<T extends boolean = true> {
+export interface ProductOrdersSelect<T extends boolean = true> {
   description?: T;
   business?: T;
   customer?: T;
@@ -858,9 +858,9 @@ export interface ProductOrderSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product-cart_select".
+ * via the `definition` "product-carts_select".
  */
-export interface ProductCartSelect<T extends boolean = true> {
+export interface ProductCartsSelect<T extends boolean = true> {
   quantity?: T;
   product?: T;
   order?: T;

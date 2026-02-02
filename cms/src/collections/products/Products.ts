@@ -25,7 +25,6 @@ export const Products: CollectionConfig = {
                 businessId: doc.business,
                 operation: operation, // create | update
               },
-              // waitUntil: new Date(Date.now() + 60 * 60 * 1_000), // 1 hours from now
               queue: "oneMinute",
             });
             return doc;
@@ -39,9 +38,8 @@ export const Products: CollectionConfig = {
                 docId: doc.id,
                 collection: "products",
                 businessId: doc.business,
-                operation: "delete", // create | update
+                operation: "delete",
               },
-              // waitUntil: new Date(Date.now() + 60 * 60 * 1_000), // 1 hours from now
               queue: "oneMinute",
             });
             return doc;
