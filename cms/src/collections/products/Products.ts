@@ -12,6 +12,42 @@ export const Products: CollectionConfig = {
       es: "Productos",
     },
   },
+  hooks: process.env.IS_CLI
+    ? undefined
+    : {
+        afterChange: [
+          async ({ doc, operation, req }) => {
+            await req.payload.jobs.queue({
+              task: "semanticSync",
+              input: {
+                docId: doc.id,
+                collection: "products",
+                businessId: doc.business,
+                operation: operation, // create | update
+              },
+              // waitUntil: new Date(Date.now() + 60 * 60 * 1_000), // 1 hours from now
+              queue: "oneMinute",
+            });
+            return doc;
+          },
+        ],
+        afterDelete: [
+          async ({ doc, req }) => {
+            await req.payload.jobs.queue({
+              task: "semanticSync",
+              input: {
+                docId: doc.id,
+                collection: "products",
+                businessId: doc.business,
+                operation: "delete", // create | update
+              },
+              // waitUntil: new Date(Date.now() + 60 * 60 * 1_000), // 1 hours from now
+              queue: "oneMinute",
+            });
+            return doc;
+          },
+        ],
+      },
   access: {
     // Función read corregida:
     read: async ({ req }) => {

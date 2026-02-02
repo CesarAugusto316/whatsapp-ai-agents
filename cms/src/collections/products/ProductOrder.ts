@@ -1,7 +1,7 @@
 import type { CollectionConfig } from "payload";
 
 export const ProductOrder: CollectionConfig = {
-  slug: "product-order",
+  slug: "product-orders",
   labels: {
     singular: {
       en: "Order",

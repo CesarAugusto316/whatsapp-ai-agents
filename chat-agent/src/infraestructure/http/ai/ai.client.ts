@@ -114,6 +114,11 @@ class AiClient {
     }, resilientConfig);
   }
 
+  /**
+   * @link https://platform.openai.com/docs/api-reference/embeddings
+   * @param payload
+   * @returns
+   */
   async embedding(payload: EmbeddingRequest) {
     return resilientQuery(async () => {
       const response = await fetch(`${this.config.url}/embeddings`, {

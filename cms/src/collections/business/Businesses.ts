@@ -178,6 +178,22 @@ export const Business: CollectionConfig = {
             return doc;
           },
         ],
+        afterDelete: [
+          async ({ doc, req }) => {
+            await req.payload.jobs.queue({
+              task: "semanticSync",
+              input: {
+                docId: doc.id,
+                collection: "businesses",
+                businessId: doc.id,
+                operation: "delete", // create | update
+              },
+              // waitUntil: new Date(Date.now() + 60 * 60 * 1_000), // 1 hours from now
+              queue: "oneMinute",
+            });
+            return doc;
+          },
+        ],
       },
   fields: [
     {

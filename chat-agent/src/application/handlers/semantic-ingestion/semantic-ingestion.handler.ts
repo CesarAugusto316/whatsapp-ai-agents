@@ -3,6 +3,8 @@ import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
 import { SemanticIngestionRequest } from "./semantic.types";
 import { cmsClient } from "@/infraestructure/http/cms";
+import { vectorDB } from "@/infraestructure/db/qdrant";
+import { aiClient } from "@/infraestructure/http/ai";
 
 /**
  *
@@ -19,13 +21,40 @@ export const semanticIngestionHandler: Handler<
   }
   const data: SemanticIngestionRequest = await c.req.json();
 
-  let isStale = false;
-  if (data.collection === "businesses" && data.operation === "update") {
-    isStale = true;
+  if (data.collection === "businesses") {
+    let isStale = false;
+    if (data.operation === "update") {
+      isStale = true;
+    }
+    const res = await cmsClient.getBusinessById(data.businessId, isStale);
+    console.log(res);
+
+    const chunks = res?.general.description ?? "";
+
+    // dividir el contenido en chunks (segun comprendo)
+    const embeddingRes: number[][] = await aiClient.embedding({
+      documents: chunks,
+    });
+
+    console.log({ embeddingRes });
+
+    await vectorDB.upsert("business", {
+      wait: true,
+      // batch
+      points: [
+        {
+          id: crypto.randomUUID(),
+          vector: embeddingRes,
+          payload: { businessId, chunks },
+        },
+      ],
+    });
   }
 
-  const res = await cmsClient.getBusinessById(data.businessId, isStale);
-  console.log(res);
+  if (data.collection === "products") {
+    // fetch products
+  }
+
   return c.json({
     message: "Vector ingestion successful",
     data,

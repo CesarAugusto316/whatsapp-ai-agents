@@ -133,7 +133,7 @@ export default buildConfig({
             required: true,
           },
           {
-            name: "collection", // type: "businesses" | "customer" | "appointment" | "product"
+            name: "collection", // type: "businesses" | "appointments" | "products"
             type: "text",
             required: true,
           },
