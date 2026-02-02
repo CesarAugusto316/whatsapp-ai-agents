@@ -8,8 +8,6 @@ import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 import { s3Storage } from "@payloadcms/storage-s3";
 import { migrations } from "./migrations";
-import { Business as IBusiness } from "@/payload-types";
-import { initializeRedis } from "./config/redis.config";
 
 // collections
 import { Appointments } from "./collections/appointments/Appointments";
@@ -130,8 +128,8 @@ export default buildConfig({
         retries: 3,
         inputSchema: [
           {
-            name: "doc", // collection doc content
-            type: "json",
+            name: "docId", // collection doc content
+            type: "text",
             required: true,
           },
           {
@@ -151,29 +149,7 @@ export default buildConfig({
           },
         ],
         handler: async ({ input }) => {
-          const { operation, doc, collection } = input;
           try {
-            if (operation === "update" && collection === Business.slug) {
-              const redis = await initializeRedis();
-              const key = `business:${doc.id}`;
-              const clean = structuredClone({
-                id: doc.id,
-                country: doc.country,
-                currency: doc.currency,
-                taxes: doc.taxes,
-                assistantName: doc.assistantName,
-                general: doc.general,
-                name: doc.name,
-                schedule: doc.schedule,
-              } satisfies Partial<IBusiness>);
-
-              await redis.set(
-                key,
-                JSON.stringify(clean),
-                "EX",
-                60 * 60 * 24 * 7, // 7 days
-              );
-            }
             const controller = new AbortController();
             setTimeout(() => controller.abort(), 20_000); // 20 segundos
 
@@ -186,16 +162,11 @@ export default buildConfig({
                   "content-type": "application/json",
                   authorization: `Bearer ${process.env.AGENT_SECRET}`,
                 },
-                body: JSON.stringify({
-                  docId: doc.id,
-                  operation: input.operation,
-                  collection: input.collection,
-                  businessId: input.businessId,
-                }),
+                body: JSON.stringify(input),
               },
             );
           } catch (error) {
-            console.error("An error occurred:", error);
+            console.error("An error occurred in the task semanticSync:", error);
             throw error;
           }
           return { output: { ok: true } };

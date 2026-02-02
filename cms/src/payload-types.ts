@@ -944,15 +944,7 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface TaskSemanticSync {
   input: {
-    doc:
-      | {
-          [k: string]: unknown;
-        }
-      | unknown[]
-      | string
-      | number
-      | boolean
-      | null;
+    docId: string;
     collection: string;
     businessId: string;
     operation: string;

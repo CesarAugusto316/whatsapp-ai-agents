@@ -167,7 +167,7 @@ export const Business: CollectionConfig = {
             await req.payload.jobs.queue({
               task: "semanticSync",
               input: {
-                doc,
+                docId: doc.id,
                 collection: "businesses",
                 businessId: doc.id,
                 operation: operation, // create | update
