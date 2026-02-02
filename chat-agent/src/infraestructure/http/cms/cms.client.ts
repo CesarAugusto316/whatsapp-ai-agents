@@ -5,6 +5,7 @@ import {
   CreateAppointment,
   CreateCustomer,
   Customer,
+  Product,
 } from "./cms-types";
 import { redisClient } from "@/infraestructure/cache/redis.client";
 import { AvailabilityResponse } from "./chek-availability.types";
@@ -283,6 +284,21 @@ class CMSClient {
       method: "DELETE",
       headers: this.headers,
     });
+  }
+
+  public getProductById(productId: string, isStale = false) {
+    const url = generateUrl(`products/${productId}`, { depth: 0 });
+
+    return resilientQuery(async () => {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: this.headers,
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch product: ${res.status}`);
+      }
+      return res.json() as Promise<Product>;
+    }, resilientConfig);
   }
 }
 

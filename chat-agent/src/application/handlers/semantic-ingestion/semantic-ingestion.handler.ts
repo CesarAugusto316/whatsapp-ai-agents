@@ -3,8 +3,10 @@ import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
 import { SemanticIngestionRequest } from "./semantic.types";
 import { cmsClient } from "@/infraestructure/http/cms";
-import { vectorDB } from "@/infraestructure/db/qdrant";
 import { aiClient } from "@/infraestructure/http/ai";
+import { Product } from "@/infraestructure/http/cms/cms-types";
+import { logger } from "@/infraestructure/logging";
+import { ragService } from "@/infraestructure/db/qdrant";
 
 /**
  *
@@ -27,32 +29,13 @@ export const semanticIngestionHandler: Handler<
       isStale = true;
     }
     const res = await cmsClient.getBusinessById(data.businessId, isStale);
-    console.log(res);
-
-    const chunks = res?.general.description ?? "";
-
-    // dividir el contenido en chunks (segun comprendo)
-    const embeddingRes: number[][] = await aiClient.embedding({
-      documents: chunks,
-    });
-
-    console.log({ embeddingRes });
-
-    await vectorDB.upsert("business", {
-      wait: true,
-      // batch
-      points: [
-        {
-          id: crypto.randomUUID(),
-          vector: embeddingRes,
-          payload: { businessId, chunks },
-        },
-      ],
-    });
+    logger.info("Business update triggered 🔄", res);
   }
-
-  if (data.collection === "products") {
-    // fetch products
+  //
+  else if (data.collection === "products") {
+    const product = await cmsClient.getProductById(data.docId);
+    const vector = await ragService.upsertProduct(product);
+    console.log({ vector });
   }
 
   return c.json({
