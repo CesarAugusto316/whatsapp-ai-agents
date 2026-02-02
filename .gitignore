@@ -44,6 +44,8 @@ whatsapp-api/node_modules/
 
 # deps
 */node_modules/
+*/dist/
+*/qdrant_data/
 **/*.wrangler
 
 # env

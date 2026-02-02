@@ -1,6 +1,5 @@
 import { CollectionConfig, Field } from "payload";
 import { Users } from "../Users";
-
 // ===== TIME DOMAIN =====
 
 // Un día abstracto
@@ -173,12 +172,8 @@ export const Business: CollectionConfig = {
                 businessId: doc.id,
                 operation: operation, // create | update
               },
-              // Schedule the job to run in the future
               // waitUntil: new Date(Date.now() + 60 * 60 * 1_000), // 1 hours from now
-              queue:
-                process.env.NODE_ENV === "development"
-                  ? "fiveMinutes"
-                  : "hourly", // nightly
+              queue: "oneMinute",
             });
             return doc;
           },

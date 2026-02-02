@@ -8,8 +8,8 @@ import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 import { s3Storage } from "@payloadcms/storage-s3";
 import { migrations } from "./migrations";
-import { RedisClient } from "bun";
 import { Business as IBusiness } from "@/payload-types";
+import { initializeRedis } from "./config/redis.config";
 
 // collections
 import { Appointments } from "./collections/appointments/Appointments";
@@ -24,7 +24,6 @@ import { ProductCarts } from "./collections/products/ProductCart";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
-let redisClient!: unknown;
 
 export default buildConfig({
   bin: [
@@ -57,7 +56,7 @@ export default buildConfig({
         },
       ],
     },
-    user: Users.slug,
+    user: Users.slug, // The slug of a Collection to be used to log in to the Admin dashboard.
     importMap: {
       baseDir: path.resolve(dirname),
     },
@@ -94,18 +93,22 @@ export default buildConfig({
   jobs: {
     autoRun: [
       {
-        // cron: "* * * * *",
-        cron: "* 0/5 * * * *",
-        limit: 500, // limit jobs to process each run
-        queue: "fiveMinutes", // name of the queue
+        cron: "0 * * * * *", // Cada minuto en el segundo 0
+        limit: 500,
+        queue: "oneMinute",
       },
       {
-        cron: "* 0 * * * *", // every hour at minute 0
-        limit: 500, // limit jobs to process each run
-        queue: "hourly", // name of the queue
+        cron: "0 */5 * * * *", // Cada 5 minutos en el segundo 0
+        limit: 500,
+        queue: "fiveMinutes",
       },
       {
-        cron: "* 0 0 * * *", // every day at midnight
+        cron: "0 0 * * * *", // Cada hora en minuto 0, segundo 0
+        limit: 500,
+        queue: "hourly",
+      },
+      {
+        cron: "0 0 0 * * *", // Cada día a medianoche (00:00:00)
         limit: 500,
         queue: "nightly",
       },
@@ -117,7 +120,7 @@ export default buildConfig({
       }
 
       defaultJobsCollection.admin.hidden =
-        process.env.NODE_ENV === "development" ? false : true;
+        process.env.NODE_ENV === "production";
       return defaultJobsCollection;
     },
     tasks: [
@@ -151,10 +154,7 @@ export default buildConfig({
           const { operation, doc, collection } = input;
           try {
             if (operation === "update" && collection === Business.slug) {
-              if (!redisClient) {
-                const { RedisClient } = await import("bun");
-                redisClient = new RedisClient(process.env.REDIS_URL);
-              }
+              const redis = await initializeRedis();
               const key = `business:${doc.id}`;
               const clean = structuredClone({
                 id: doc.id,
@@ -167,27 +167,36 @@ export default buildConfig({
                 schedule: doc.schedule,
               } satisfies Partial<IBusiness>);
 
-              await (redisClient as RedisClient).set(
+              await redis.set(
                 key,
                 JSON.stringify(clean),
                 "EX",
                 60 * 60 * 24 * 7, // 7 days
               );
             }
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 20_000); // 20 segundos
 
             await fetch(
               `${process.env.AGENT_URL}/semantic-ingestion/${input.businessId}`,
               {
                 method: "POST",
+                signal: controller.signal,
                 headers: {
                   "content-type": "application/json",
                   authorization: `Bearer ${process.env.AGENT_SECRET}`,
                 },
-                body: JSON.stringify(input),
+                body: JSON.stringify({
+                  docId: doc.id,
+                  operation: input.operation,
+                  collection: input.collection,
+                  businessId: input.businessId,
+                }),
               },
             );
           } catch (error) {
-            console.error("Error setting business data in Redis:", error);
+            console.error("An error occurred:", error);
+            throw error;
           }
           return { output: { ok: true } };
         },
@@ -221,7 +230,7 @@ export default buildConfig({
      * @description MORE INFO ABOUT PRODUCTION MIGRATIONS:
      * @link https://payloadcms.com/docs/database/migrations#running-migrations-in-production
      */
-    push: false,
+    push: process.env.NODE_ENV === "development",
     prodMigrations: migrations, // runs migrations on production on initialization
     idType: "uuid",
     pool: {
