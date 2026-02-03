@@ -1,7 +1,8 @@
 import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
-import { Business, Product } from "../http/cms/cms-types";
+import { Product } from "../http/cms/cms-types";
 import { aiClient } from "../http/ai";
 import { redisClient } from "../cache/redis.client";
+import { SemanticIntent } from "@/domain/semantic/booking";
 
 /**
  *
@@ -10,6 +11,7 @@ import { redisClient } from "../cache/redis.client";
  */
 class RagService {
   private EMBED_VERSION = "qwen3-0.6b";
+  private DIMENSION = 1024;
   private vectorDB = new QdrantClient({ url: Bun.env.QDRANT_URL });
   static initialized = false;
 
@@ -25,6 +27,12 @@ class RagService {
     return hasher.digest(encoding);
   }
 
+  private sha256ToUUID(input: string) {
+    const hash = this.sha256(input, "hex"); // 64 chars
+    // Tomamos los primeros 32 chars para formar UUID
+    return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+  }
+
   private normalizeText(text?: string) {
     if (!text) return "";
     return text.replace(/\s+/g, " ").trim();
@@ -37,7 +45,7 @@ class RagService {
     if (!existing.has("businesses")) {
       await this.vectorDB.createCollection("businesses", {
         vectors: {
-          size: 1024, // qwen3-embedding
+          size: this.DIMENSION, // qwen3-embedding
           distance: "Cosine",
         },
       });
@@ -46,7 +54,7 @@ class RagService {
     if (!existing.has("intents")) {
       await this.vectorDB.createCollection("intents", {
         vectors: {
-          size: 1024, // qwen3-embedding
+          size: this.DIMENSION, // qwen3-embedding
           distance: "Cosine",
         },
       });
@@ -58,7 +66,7 @@ class RagService {
           /**
            * @link https://ollama.com/library/qwen3-embedding:0.6b
            */
-          size: 1024,
+          size: this.DIMENSION,
           distance: "Cosine",
         },
         /**
@@ -227,29 +235,42 @@ class RagService {
     });
   }
 
-  async upsertIntent(business: Business) {
-    const input = [business.name, business.general.description ?? ""]
-      .map(this.normalizeText)
-      .filter(Boolean)
-      .join(". ");
+  async upsertIntents(intents: SemanticIntent[]) {
+    const prepared = intents
+      .map((intent) => ({
+        intent,
+        text: intent.examples
+          .map(this.normalizeText)
+          .filter(Boolean)
+          .join(". "),
+      }))
+      .filter((i) => i.text.length);
 
-    const data = await aiClient.embedding({
-      input,
+    if (!prepared.length) throw new Error("No valid intents provided");
+
+    const embeddings = (
+      (await aiClient.embedding({
+        input: prepared.map((p) => p.text),
+        dimensions: this.DIMENSION,
+      })) || []
+    )?.filter(({ embedding }) => embedding.length === this.DIMENSION);
+
+    const points = embeddings.map(({ embedding }, i) => {
+      const { intent, domain, language } = prepared[i].intent;
+      return {
+        id: this.sha256ToUUID(`${domain}:${language}:${intent}`),
+        vector: embedding,
+        payload: {
+          domain,
+          language,
+          intent,
+        },
+      };
     });
 
     return this.vectorDB.upsert("intents", {
       wait: true,
-      points: [
-        {
-          id: crypto.randomUUID(),
-          vector: data[0].embedding,
-          payload: {
-            name: business.name,
-            description: business.general.description,
-            businessId: business.id,
-          } as Partial<Business>,
-        },
-      ],
+      points,
     });
   }
 }

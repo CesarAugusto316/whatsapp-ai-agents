@@ -11,14 +11,16 @@ export type BookingIntentKey =
   | "greeting"
   | "goodbye";
 
-export interface BookingIntent {
-  intent: BookingIntentKey;
-  domain: "bookings";
+export type Domain = "bookings" | "ecommerce";
+
+export interface SemanticIntent {
+  intent: BookingIntentKey; // BookingIntentKey | EcommerceKey
+  domain: Domain;
   language: "es" | "en";
   examples: string[];
 }
 
-export const bookingIntents: BookingIntent[] = [
+export const bookingIntents: SemanticIntent[] = [
   {
     intent: "create_booking",
     domain: "bookings",
