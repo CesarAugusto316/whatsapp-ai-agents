@@ -24,7 +24,6 @@ export const semanticIngestionHandler: Handler<
   if (data.collection === "businesses") {
     if (data.operation === "delete") {
       await ragService.deleteAllProducts(businessId);
-      await ragService.deleteBusinsessById(businessId);
     } else {
       const isStale = true;
       // const business =

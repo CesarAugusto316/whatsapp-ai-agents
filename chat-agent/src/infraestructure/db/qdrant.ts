@@ -186,49 +186,17 @@ class RagService {
     });
   }
 
-  async deleteBusinsessById(id: string) {
-    return this.vectorDB.delete("businesses", {
-      wait: true,
-      points: [id],
-    });
-  }
-
-  async upsertBusiness(business: Business) {
-    const input = [business.name, business.general.description ?? ""]
-      .map(this.normalizeText)
-      .filter(Boolean)
-      .join(". ");
-
-    const data = await aiClient.embedding({
-      input,
-    });
-
-    return this.vectorDB.upsert("businesses", {
-      wait: true,
-      points: [
-        {
-          id: crypto.randomUUID(),
-          vector: data[0].embedding,
-          payload: {
-            name: business.name,
-            description: business.general.description,
-            businessId: business.id,
-          } as Partial<Business>,
-        },
-      ],
-    });
-  }
-
   async classifyIntent(
     query: string,
     businessDomain: string,
+    ontologyVersion: "1.0",
     limit = 3,
     lang = "es",
   ): Promise<Schemas["QueryResponse"]> {
     //
     const normalized = this.normalizeText(query);
     const hash = this.sha256(
-      `${businessDomain}:${lang}:${this.EMBED_VERSION}:${normalized}`,
+      `${ontologyVersion}:${businessDomain}:${lang}:${this.EMBED_VERSION}:${normalized}`,
     );
     const cachedEmbedding = await redisClient.get(hash);
 
@@ -253,7 +221,7 @@ class RagService {
     return this.vectorDB.query("intents", {
       query: data[0].embedding,
       filter: {
-        must: [{ key: "business", match: { value: businessDomain } }],
+        must: [{ key: "businessDomain", match: { value: businessDomain } }],
       },
       limit,
     });
