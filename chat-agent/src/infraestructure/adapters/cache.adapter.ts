@@ -1,6 +1,6 @@
 import { redisClient } from "../cache/redis.client";
 
-const EXPIRATION_TIME = 60 * 60 * 1; // 1 hora
+const EXPIRATION_TIME = 60 * 60 * 2; // 2 horas
 
 class Cache {
   /**

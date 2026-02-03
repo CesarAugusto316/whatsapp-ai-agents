@@ -1,7 +1,7 @@
-import { env } from "bun";
-import { QdrantClient } from "@qdrant/js-client-rest";
+import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
 import { Product } from "../http/cms/cms-types";
 import { aiClient } from "../http/ai";
+import { redisClient } from "../cache/redis.client";
 
 /**
  *
@@ -9,13 +9,20 @@ import { aiClient } from "../http/ai";
  * @link dashboard: env.QDRANT_URL/dashboard = http://localhost:6333/dashboard
  */
 class RagService {
-  vectorDB = new QdrantClient({ url: env.QDRANT_URL });
+  private EMBED_VERSION = "qwen3-0.6b";
+  private vectorDB = new QdrantClient({ url: Bun.env.QDRANT_URL });
   static initialized = false;
 
   constructor() {
     if (RagService.initialized) return;
     RagService.initialized = true;
     this.init().catch(console.error);
+  }
+
+  private sha256(input: string, encoding: "hex" | "base64" = "hex") {
+    const hasher = new Bun.CryptoHasher("sha256");
+    hasher.update(input);
+    return hasher.digest(encoding);
   }
 
   private normalizeText(text?: string) {
@@ -126,10 +133,36 @@ class RagService {
    * @param limit
    * @returns
    */
-  async searchProducts(query: string, businessId: string, limit = 3) {
+  async searchProducts(
+    query: string,
+    businessId: string,
+    limit = 3,
+  ): Promise<Schemas["QueryResponse"]> {
+    //
+    const normalized = this.normalizeText(query);
+    const hash = this.sha256(`${this.EMBED_VERSION}:${normalized}`);
+    const cachedEmbedding = await redisClient.get(hash);
+
+    if (cachedEmbedding) {
+      return this.vectorDB.query("products", {
+        query: JSON.parse(cachedEmbedding) satisfies number[],
+        filter: {
+          must: [
+            { key: "business", match: { value: businessId } },
+            { key: "enabled", match: { value: true } },
+          ],
+        },
+        limit,
+      });
+    }
+
     const data = await aiClient.embedding({
       input: this.normalizeText(query),
     });
+
+    await redisClient.set(hash, JSON.stringify(data[0].embedding));
+    await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 days
+
     return this.vectorDB.query("products", {
       query: data[0].embedding,
       filter: {

@@ -19,7 +19,7 @@ export const semanticIngestionHandler: Handler<
   if (!businessId) {
     return c.json({ error: "Business ID not received" }, 400);
   }
-  const data: SemanticIngestionRequest = await c.req.json();
+  const data = await c.req.json<SemanticIngestionRequest>();
 
   if (data.collection === "businesses") {
     let isStale = false;
