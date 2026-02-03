@@ -27,11 +27,9 @@ export const semanticIngestionHandler: Handler<
       await ragService.deleteBusinsessById(businessId);
     } else {
       const isStale = true;
-      const business = await cmsClient.getBusinessById(
-        data.businessId,
-        isStale,
-      );
-      await ragService.upsertBusiness(business);
+      // const business =
+      await cmsClient.getBusinessById(data.businessId, isStale);
+      // await ragService.upsertBusiness(business);
     }
     logger.info("Business update triggered 🔄");
   }

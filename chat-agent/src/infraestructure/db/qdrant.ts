@@ -43,6 +43,15 @@ class RagService {
       });
     }
 
+    if (!existing.has("intents")) {
+      await this.vectorDB.createCollection("intents", {
+        vectors: {
+          size: 1024, // qwen3-embedding
+          distance: "Cosine",
+        },
+      });
+    }
+
     if (!existing.has("products")) {
       await this.vectorDB.createCollection("products", {
         vectors: {
@@ -137,10 +146,11 @@ class RagService {
     query: string,
     businessId: string,
     limit = 3,
+    lang = "es",
   ): Promise<Schemas["QueryResponse"]> {
     //
     const normalized = this.normalizeText(query);
-    const hash = this.sha256(`${this.EMBED_VERSION}:${normalized}`);
+    const hash = this.sha256(`${lang}:${this.EMBED_VERSION}:${normalized}`);
     const cachedEmbedding = await redisClient.get(hash);
 
     // we cache semantic intention, result is strcitly separated by businessId
@@ -176,40 +186,10 @@ class RagService {
     });
   }
 
-  async classifyIntent(
-    query: string,
-    businessId: string,
-    limit = 3,
-  ): Promise<Schemas["QueryResponse"]> {
-    //
-    const normalized = this.normalizeText(query);
-    const hash = this.sha256(`${this.EMBED_VERSION}:${normalized}`);
-    const cachedEmbedding = await redisClient.get(hash);
-
-    // we cache semantic intention, result is strcitly separated by businessId
-    if (cachedEmbedding) {
-      return this.vectorDB.query("businesses", {
-        query: JSON.parse(cachedEmbedding) satisfies number[],
-        filter: {
-          must: [{ key: "business", match: { value: businessId } }],
-        },
-        limit,
-      });
-    }
-
-    const data = await aiClient.embedding({
-      input: this.normalizeText(query),
-    });
-
-    await redisClient.set(hash, JSON.stringify(data[0].embedding));
-    await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 days
-
-    return this.vectorDB.query("businesses", {
-      query: data[0].embedding,
-      filter: {
-        must: [{ key: "business", match: { value: businessId } }],
-      },
-      limit,
+  async deleteBusinsessById(id: string) {
+    return this.vectorDB.delete("businesses", {
+      wait: true,
+      points: [id],
     });
   }
 
@@ -227,21 +207,81 @@ class RagService {
       wait: true,
       points: [
         {
-          id: business.id,
+          id: crypto.randomUUID(),
           vector: data[0].embedding,
           payload: {
             name: business.name,
             description: business.general.description,
+            businessId: business.id,
           } as Partial<Business>,
         },
       ],
     });
   }
 
-  async deleteBusinsessById(id: string) {
-    return this.vectorDB.delete("businesses", {
+  async classifyIntent(
+    query: string,
+    businessDomain: string,
+    limit = 3,
+    lang = "es",
+  ): Promise<Schemas["QueryResponse"]> {
+    //
+    const normalized = this.normalizeText(query);
+    const hash = this.sha256(
+      `${businessDomain}:${lang}:${this.EMBED_VERSION}:${normalized}`,
+    );
+    const cachedEmbedding = await redisClient.get(hash);
+
+    // we cache semantic intention, result is strcitly separated by businessId
+    if (cachedEmbedding) {
+      return this.vectorDB.query("intents", {
+        query: JSON.parse(cachedEmbedding) satisfies number[],
+        filter: {
+          must: [{ key: "businessDomain", match: { value: businessDomain } }],
+        },
+        limit,
+      });
+    }
+
+    const data = await aiClient.embedding({
+      input: this.normalizeText(query),
+    });
+
+    await redisClient.set(hash, JSON.stringify(data[0].embedding));
+    await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 days
+
+    return this.vectorDB.query("intents", {
+      query: data[0].embedding,
+      filter: {
+        must: [{ key: "business", match: { value: businessDomain } }],
+      },
+      limit,
+    });
+  }
+
+  async upsertIntent(business: Business) {
+    const input = [business.name, business.general.description ?? ""]
+      .map(this.normalizeText)
+      .filter(Boolean)
+      .join(". ");
+
+    const data = await aiClient.embedding({
+      input,
+    });
+
+    return this.vectorDB.upsert("intents", {
       wait: true,
-      points: [id],
+      points: [
+        {
+          id: crypto.randomUUID(),
+          vector: data[0].embedding,
+          payload: {
+            name: business.name,
+            description: business.general.description,
+            businessId: business.id,
+          } as Partial<Business>,
+        },
+      ],
     });
   }
 }
