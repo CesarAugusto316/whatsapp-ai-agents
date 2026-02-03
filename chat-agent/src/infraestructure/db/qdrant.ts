@@ -1,3 +1,4 @@
+import { env } from "bun";
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { Product } from "../http/cms/cms-types";
 import { aiClient } from "../http/ai";
@@ -5,11 +6,15 @@ import { aiClient } from "../http/ai";
 /**
  *
  * @link https://qdrant.tech/documentation/quickstart/
+ * @link dashboard: env.QDRANT_URL/dashboard = http://localhost:6333/dashboard
  */
 class RagService {
-  vectorDB = new QdrantClient({ host: "localhost", port: 6333 });
+  vectorDB = new QdrantClient({ url: env.QDRANT_URL });
+  static initialized = false;
 
   constructor() {
+    if (RagService.initialized) return;
+    RagService.initialized = true;
     this.init().catch(console.error);
   }
 
@@ -40,12 +45,20 @@ class RagService {
           size: 1024,
           distance: "Cosine",
         },
+        /**
+         * @link https://qdrant.tech/documentation/guides/multitenancy/
+         */
         hnsw_config: {
           payload_m: 16,
           m: 0,
         },
       });
 
+      /**
+       *
+       * @description products from diferent businesses MUST BE excluded from the search results
+       * products from business A must not appeared in business B
+       */
       await this.vectorDB.createPayloadIndex("products", {
         field_name: "business",
         field_schema: {
@@ -60,22 +73,21 @@ class RagService {
   }
 
   async upsertProduct(product: Product) {
-    const text = [product.name, product.description]
+    const input = [product.name, product.description]
       .map(this.normalizeText)
       .filter(Boolean)
       .join(". ");
 
-    const embedding = await aiClient.embedding({
-      text,
+    const data = await aiClient.embedding({
+      input,
     });
 
-    console.log({ embedding });
     return this.vectorDB.upsert("products", {
       wait: true,
       points: [
         {
           id: product.id,
-          vector: embedding[0],
+          vector: data[0].embedding,
           payload: {
             name: product.name,
             description: product.description,
@@ -92,6 +104,21 @@ class RagService {
     });
   }
 
+  async deleteProductById(productId: string) {
+    return this.vectorDB.delete("products", {
+      wait: true,
+      points: [productId],
+    });
+  }
+
+  async deleteAllProducts(businessId: string) {
+    return await this.vectorDB.delete("products", {
+      filter: {
+        must: [{ key: "business", match: { value: businessId } }],
+      },
+    });
+  }
+
   /**
    *
    * @param query tiene camisas blancas manga larga?
@@ -100,11 +127,11 @@ class RagService {
    * @returns
    */
   async searchProducts(query: string, businessId: string, limit = 3) {
-    const embedding = await aiClient.embedding({
-      text: this.normalizeText(query),
+    const data = await aiClient.embedding({
+      input: this.normalizeText(query),
     });
     return this.vectorDB.query("products", {
-      query: embedding[0],
+      query: data[0].embedding,
       filter: {
         must: [
           { key: "business", match: { value: businessId } },

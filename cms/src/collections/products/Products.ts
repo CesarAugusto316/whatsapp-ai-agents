@@ -22,7 +22,10 @@ export const Products: CollectionConfig = {
               input: {
                 docId: doc.id,
                 collection: "products",
-                businessId: doc.business,
+                businessId:
+                  typeof doc.business === "string"
+                    ? doc.business
+                    : doc.business.id,
                 operation: operation, // create | update
               },
               queue: "oneMinute",
@@ -37,7 +40,10 @@ export const Products: CollectionConfig = {
               input: {
                 docId: doc.id,
                 collection: "products",
-                businessId: doc.business,
+                businessId:
+                  typeof doc.business === "string"
+                    ? doc.business
+                    : doc.business?.id,
                 operation: "delete",
               },
               queue: "oneMinute",

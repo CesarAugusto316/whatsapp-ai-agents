@@ -125,7 +125,7 @@ class AiClient {
         method: "POST",
         headers: this.config.headers,
         body: JSON.stringify({
-          model: this.config.embedding,
+          model: payload.model || this.config.embedding,
           ...payload,
         }),
       });

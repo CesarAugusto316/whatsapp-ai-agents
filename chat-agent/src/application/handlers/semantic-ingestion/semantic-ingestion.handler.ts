@@ -3,8 +3,6 @@ import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
 import { SemanticIngestionRequest } from "./semantic.types";
 import { cmsClient } from "@/infraestructure/http/cms";
-import { aiClient } from "@/infraestructure/http/ai";
-import { Product } from "@/infraestructure/http/cms/cms-types";
 import { logger } from "@/infraestructure/logging";
 import { ragService } from "@/infraestructure/db/qdrant";
 
@@ -33,9 +31,12 @@ export const semanticIngestionHandler: Handler<
   }
   //
   else if (data.collection === "products") {
-    const product = await cmsClient.getProductById(data.docId);
-    const vector = await ragService.upsertProduct(product);
-    console.log({ vector });
+    if (data.operation === "delete") {
+      await ragService.deleteProductById(data.docId);
+    } else {
+      const product = await cmsClient.getProductById(data.docId);
+      await ragService.upsertProduct(product);
+    }
   }
 
   return c.json({
