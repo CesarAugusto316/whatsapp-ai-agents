@@ -22,12 +22,18 @@ export const semanticIngestionHandler: Handler<
   const data = await c.req.json<SemanticIngestionRequest>();
 
   if (data.collection === "businesses") {
-    let isStale = false;
-    if (data.operation === "update") {
-      isStale = true;
+    if (data.operation === "delete") {
+      await ragService.deleteAllProducts(businessId);
+      await ragService.deleteBusinsessById(businessId);
+    } else {
+      const isStale = true;
+      const business = await cmsClient.getBusinessById(
+        data.businessId,
+        isStale,
+      );
+      await ragService.upsertBusiness(business);
     }
-    const res = await cmsClient.getBusinessById(data.businessId, isStale);
-    logger.info("Business update triggered 🔄", res);
+    logger.info("Business update triggered 🔄");
   }
   //
   else if (data.collection === "products") {
@@ -37,6 +43,7 @@ export const semanticIngestionHandler: Handler<
       const product = await cmsClient.getProductById(data.docId);
       await ragService.upsertProduct(product);
     }
+    logger.info("Product update triggered 🔄");
   }
 
   return c.json({

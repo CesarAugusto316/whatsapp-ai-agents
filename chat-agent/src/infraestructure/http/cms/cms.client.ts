@@ -93,10 +93,7 @@ class CMSClient {
    * more info: https://waha.devlike.pro/docs/how-to/send-messages/
    * @description Send a seen message to the chat always before sending a message
    */
-  public async getBusinessById(
-    id: string,
-    isStale = false,
-  ): Promise<Business | undefined> {
+  public async getBusinessById(id: string, isStale = false): Promise<Business> {
     return resilientQuery<Business>(async () => {
       const url = generateUrl(`businesses/${id}`, { depth: 0 });
       const key = `business:${id}`;
