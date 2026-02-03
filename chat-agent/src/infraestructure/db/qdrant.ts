@@ -2,7 +2,8 @@ import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
 import { Product } from "../http/cms/cms-types";
 import { aiClient } from "../http/ai";
 import { redisClient } from "../cache/redis.client";
-import { SemanticIntent } from "@/domain/semantic/booking";
+import { GlobalSemanticIntent } from "@/domain/semantic/universal-intents";
+import { SpecializedSemanticIntent } from "@/domain/semantic/specialized-intents";
 
 /**
  *
@@ -10,8 +11,11 @@ import { SemanticIntent } from "@/domain/semantic/booking";
  * @link dashboard: env.QDRANT_URL/dashboard = http://localhost:6333/dashboard
  */
 class RagService {
-  private EMBED_VERSION = "qwen3-0.6b";
-  private DIMENSION = 1024;
+  private readonly EMBED_VERSION = "qwen3-0.6b";
+  private readonly business = "business";
+  private readonly intents = "intents";
+  private readonly products = "products";
+  private readonly DIMENSION = 1024;
   private vectorDB = new QdrantClient({ url: Bun.env.QDRANT_URL });
   static initialized = false;
 
@@ -42,8 +46,8 @@ class RagService {
     const collections = await this.vectorDB.getCollections();
     const existing = new Set(collections.collections.map((c) => c.name));
 
-    if (!existing.has("businesses")) {
-      await this.vectorDB.createCollection("businesses", {
+    if (!existing.has(this.business)) {
+      await this.vectorDB.createCollection(this.business, {
         vectors: {
           size: this.DIMENSION, // qwen3-embedding
           distance: "Cosine",
@@ -52,7 +56,7 @@ class RagService {
     }
 
     if (!existing.has("intents")) {
-      await this.vectorDB.createCollection("intents", {
+      await this.vectorDB.createCollection(this.intents, {
         vectors: {
           size: this.DIMENSION, // qwen3-embedding
           distance: "Cosine",
@@ -60,8 +64,8 @@ class RagService {
       });
     }
 
-    if (!existing.has("products")) {
-      await this.vectorDB.createCollection("products", {
+    if (!existing.has(this.products)) {
+      await this.vectorDB.createCollection(this.products, {
         vectors: {
           /**
            * @link https://ollama.com/library/qwen3-embedding:0.6b
@@ -83,7 +87,7 @@ class RagService {
        * @description products from diferent businesses MUST BE excluded from the search results
        * products from business A must not appeared in business B
        */
-      await this.vectorDB.createPayloadIndex("products", {
+      await this.vectorDB.createPayloadIndex(this.products, {
         field_name: "business",
         field_schema: {
           type: "keyword",
@@ -106,7 +110,7 @@ class RagService {
       input,
     });
 
-    return this.vectorDB.upsert("products", {
+    return this.vectorDB.upsert(this.products, {
       wait: true,
       points: [
         {
@@ -129,14 +133,14 @@ class RagService {
   }
 
   async deleteProductById(productId: string) {
-    return this.vectorDB.delete("products", {
+    return this.vectorDB.delete(this.products, {
       wait: true,
       points: [productId],
     });
   }
 
   async deleteAllProducts(businessId: string) {
-    return await this.vectorDB.delete("products", {
+    return await this.vectorDB.delete(this.products, {
       filter: {
         must: [{ key: "business", match: { value: businessId } }],
       },
@@ -163,7 +167,7 @@ class RagService {
 
     // we cache semantic intention, result is strcitly separated by businessId
     if (cachedEmbedding) {
-      return this.vectorDB.query("products", {
+      return this.vectorDB.query(this.products, {
         query: JSON.parse(cachedEmbedding) satisfies number[],
         filter: {
           must: [
@@ -182,7 +186,7 @@ class RagService {
     await redisClient.set(hash, JSON.stringify(data[0].embedding));
     await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 days
 
-    return this.vectorDB.query("products", {
+    return this.vectorDB.query(this.products, {
       query: data[0].embedding,
       filter: {
         must: [
@@ -196,7 +200,7 @@ class RagService {
 
   async classifyIntent(
     query: string,
-    businessDomain: string,
+    domains: string[], // business domains a business can have one or more core domains
     ontologyVersion: "1.0",
     limit = 3,
     lang = "es",
@@ -204,16 +208,26 @@ class RagService {
     //
     const normalized = this.normalizeText(query);
     const hash = this.sha256(
-      `${ontologyVersion}:${businessDomain}:${lang}:${this.EMBED_VERSION}:${normalized}`,
+      `${ontologyVersion}:${domains.map((domain) => domain).join(":")}:${lang}:${this.EMBED_VERSION}:${normalized}`,
     );
     const cachedEmbedding = await redisClient.get(hash);
 
     // we cache semantic intention, result is strcitly separated by businessId
     if (cachedEmbedding) {
-      return this.vectorDB.query("intents", {
+      return this.vectorDB.query(this.intents, {
         query: JSON.parse(cachedEmbedding) satisfies number[],
         filter: {
-          must: [{ key: "businessDomain", match: { value: businessDomain } }],
+          // must=and
+          must: [
+            {
+              // should=or
+              should: domains.map((domain) => ({
+                key: "domain",
+                match: { value: domain },
+              })),
+            },
+            { key: "lang", match: { value: lang } },
+          ],
         },
         limit,
       });
@@ -226,25 +240,36 @@ class RagService {
     await redisClient.set(hash, JSON.stringify(data[0].embedding));
     await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 days
 
-    return this.vectorDB.query("intents", {
+    return this.vectorDB.query(this.intents, {
       query: data[0].embedding,
       filter: {
-        must: [{ key: "businessDomain", match: { value: businessDomain } }],
+        // must=and
+        must: [
+          {
+            // should=or
+            should: domains.map((domain) => ({
+              key: "domain",
+              match: { value: domain },
+            })),
+          },
+          { key: "lang", match: { value: lang } },
+        ],
       },
       limit,
     });
   }
 
-  async upsertIntents(intents: SemanticIntent[]) {
-    const prepared = intents
-      .map((intent) => ({
+  async upsertIntents(
+    intents: GlobalSemanticIntent[] | SpecializedSemanticIntent[],
+  ) {
+    const prepared = intents.flatMap(({ intent, domain, examples, lang }) =>
+      examples.map((ex) => ({
+        text: this.normalizeText(ex),
         intent,
-        text: intent.examples
-          .map(this.normalizeText)
-          .filter(Boolean)
-          .join(". "),
-      }))
-      .filter((i) => i.text.length);
+        domain,
+        lang,
+      })),
+    );
 
     if (!prepared.length) throw new Error("No valid intents provided");
 
@@ -256,19 +281,19 @@ class RagService {
     )?.filter(({ embedding }) => embedding.length === this.DIMENSION);
 
     const points = embeddings.map(({ embedding }, i) => {
-      const { intent, domain, language } = prepared[i].intent;
+      const { intent, domain, lang } = prepared[i];
       return {
-        id: this.sha256ToUUID(`${domain}:${language}:${intent}`),
+        id: this.sha256ToUUID(`${domain}:${lang}:${intent}`),
         vector: embedding,
         payload: {
           domain,
-          language,
+          lang,
           intent,
         },
       };
     });
 
-    return this.vectorDB.upsert("intents", {
+    return this.vectorDB.upsert(this.intents, {
       wait: true,
       points,
     });

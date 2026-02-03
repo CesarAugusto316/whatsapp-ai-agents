@@ -1,2 +1,2 @@
 export { semanticIngestionHandler } from "./semantic-ingestion.handler";
-export { semanticIntentHandler } from "./semantic-intent.handler";
+export { semanticIntent } from "./semantic-intent.handler";

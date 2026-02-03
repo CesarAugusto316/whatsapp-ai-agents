@@ -4,9 +4,16 @@ import { DomainCtx } from "@/domain/context.types";
 import { ragService } from "@/infraestructure/db/qdrant";
 import {
   bookingIntents,
-  Domain,
-  SemanticIntent,
-} from "@/domain/semantic/booking";
+  deliveryIntents,
+  globalIntents,
+} from "@/domain/semantic/universal-intents";
+import { logger } from "@/infraestructure/logging";
+import {
+  eroticIntents,
+  restaurantIntents,
+  SpecializedSemanticIntent,
+  SpeciliazedDomain,
+} from "@/domain/semantic/specialized-intents";
 
 /**
  *
@@ -14,31 +21,56 @@ import {
  * @param next
  * @returns
  */
-export const semanticIntentHandler: Handler<DomainCtx<RestaurantCtx>> = async (
-  c,
-) => {
-  const domain = c.req.query("domain") as Domain;
+const coreDomainsHandler: Handler<DomainCtx<RestaurantCtx>> = async (c) => {
+  const filteredIntents = globalIntents
+    .concat(bookingIntents)
+    .concat(deliveryIntents);
 
-  const intents = new Map<Domain, SemanticIntent[]>([
-    ["bookings", bookingIntents],
-  ]);
-
-  if (!intents.has(domain)) {
-    return c.json(
-      {
-        message: "Domain not found",
-      },
-      404,
-    );
-  }
   try {
-    const data = await ragService.upsertIntents(intents.get(domain) || []);
+    const data = await ragService.upsertIntents(filteredIntents);
     return c.json({
-      message: "Vector intent successful",
+      message: "Core Domain intents successfully created",
       data,
     });
   } catch (error) {
-    console.error(JSON.stringify(error));
+    logger.error(JSON.stringify(error));
     throw error;
   }
+};
+
+/**
+ *
+ * @param c
+ * @param next
+ * @returns
+ */
+const subDomainsHandler: Handler<DomainCtx<RestaurantCtx>> = async (c) => {
+  const subdomain = c.req.query("subdomain") as SpeciliazedDomain;
+
+  if (!subdomain) {
+    throw new Error("Domain is required");
+  }
+
+  const intentsMap = new Map<SpeciliazedDomain, SpecializedSemanticIntent[]>([
+    ["restaurant", restaurantIntents],
+    ["erotic", eroticIntents],
+  ]);
+
+  try {
+    const data = await ragService.upsertIntents(
+      intentsMap.get(subdomain) ?? [],
+    );
+    return c.json({
+      message: "Specialized Domain intents successfully created",
+      data,
+    });
+  } catch (error) {
+    logger.error(JSON.stringify(error));
+    throw error;
+  }
+};
+
+export const semanticIntent = {
+  coreDomainsHandler,
+  subDomainsHandler,
 };

@@ -16,7 +16,7 @@ import {
 } from "@/application/handlers/restaurant";
 import {
   semanticIngestionHandler,
-  semanticIntentHandler,
+  semanticIntent,
 } from "./application/handlers/semantic";
 
 const app = new Hono<DomainCtx<RestaurantCtx>>();
@@ -61,7 +61,9 @@ app.post("/test-ai/:businessId", bootstrapMiddleware(), testReservationHandler);
 
 app.post("/semantic-ingestion/:businessId", semanticIngestionHandler);
 
-app.post("/semantic-intents", semanticIntentHandler);
+app.post("/semantic-intents/core-domains", semanticIntent.coreDomainsHandler);
+
+app.post("/semantic-intents/sub-domains", semanticIntent.subDomainsHandler);
 
 app.get("/test-sentry-async-error", async (c) => {
   await Promise.reject(new Error("Second error"));
