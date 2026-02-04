@@ -1,7 +1,6 @@
 import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
-import { ragAdapter } from "@/infraestructure/adapters/rag";
 import {
   bookingIntents,
   deliveryIntents,
@@ -14,6 +13,7 @@ import {
   SpecializedSemanticIntent,
   SpecializedDomain,
 } from "@/domain/semantic/specialized-intents";
+import { ragService } from "@/application/services/rag";
 
 /**
  *
@@ -29,7 +29,8 @@ const coreDomainsHandler: Handler<DomainCtx<RestaurantCtx>> = async (c) => {
   ];
 
   try {
-    const data = await ragAdapter.upsertIntents(filteredIntents);
+    await ragService.init();
+    const data = await ragService.upsertIntents(filteredIntents);
     return c.json({
       message: "Core Domain intents successfully created",
       data,
@@ -59,7 +60,8 @@ const subDomainsHandler: Handler<DomainCtx<RestaurantCtx>> = async (c) => {
   ]);
 
   try {
-    const data = await ragAdapter.upsertIntents(
+    await ragService.init();
+    const data = await ragService.upsertIntents(
       intentsMap.get(subdomain) ?? [],
     );
     return c.json({

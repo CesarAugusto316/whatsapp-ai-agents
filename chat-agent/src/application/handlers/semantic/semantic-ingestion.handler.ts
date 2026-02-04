@@ -1,10 +1,12 @@
 import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
-import { SemanticIngestionRequest } from "./semantic.types";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
+import {
+  ragService,
+  SemanticIngestionRequest,
+} from "@/application/services/rag";
 import { logger } from "@/infraestructure/logging";
-import { ragAdapter } from "@/infraestructure/adapters/rag";
 
 /**
  *
@@ -19,11 +21,12 @@ export const semanticIngestionHandler: Handler<
   if (!businessId) {
     return c.json({ error: "Business ID not received" }, 400);
   }
+  await ragService.init();
   const data = await c.req.json<SemanticIngestionRequest>();
 
   if (data.collection === "businesses") {
     if (data.operation === "delete") {
-      await ragAdapter.deleteAllProducts(businessId);
+      await ragService.deleteAllProducts(businessId);
     } else {
       const isStale = true;
       await cmsAdapter.getBusinessById(data.businessId, isStale);
@@ -33,10 +36,10 @@ export const semanticIngestionHandler: Handler<
   //
   else if (data.collection === "products") {
     if (data.operation === "delete") {
-      await ragAdapter.deleteProductById(data.docId);
+      await ragService.deleteProductById(data.docId);
     } else {
       const product = await cmsAdapter.getProductById(data.docId);
-      await ragAdapter.upsertProduct(product);
+      await ragService.upsertProduct(product);
     }
     logger.info("Product update triggered 🔄");
   }
