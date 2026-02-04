@@ -14,10 +14,7 @@ import {
   whatsappReservationHandler,
   testReservationHandler,
 } from "@/application/handlers/restaurant";
-import {
-  semanticIngestionHandler,
-  semanticIntent,
-} from "./application/handlers/semantic";
+import { contentSyncStateHandler } from "./application/handlers/content-sync";
 
 const app = new Hono<DomainCtx<RestaurantCtx>>();
 
@@ -59,11 +56,7 @@ app.post(
 
 app.post("/test-ai/:businessId", bootstrapMiddleware(), testReservationHandler);
 
-app.post("/semantic-ingestion/:businessId", semanticIngestionHandler);
-
-app.post("/semantic-intents/core-domains", semanticIntent.coreDomainsHandler);
-
-app.post("/semantic-intents/sub-domains", semanticIntent.subDomainsHandler);
+app.post("/content/sync-state/:businessId", contentSyncStateHandler);
 
 app.get("/test-sentry-async-error", async (c) => {
   await Promise.reject(new Error("Second error"));

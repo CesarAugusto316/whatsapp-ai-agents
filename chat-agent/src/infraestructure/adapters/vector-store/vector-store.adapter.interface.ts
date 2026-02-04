@@ -1,7 +1,7 @@
 import type { Schemas } from "@qdrant/js-client-rest";
 import type { Product } from "../cms";
 
-export interface IVectorAdapter {
+export interface IVectorStoreAdapter {
   ensureCollections(): Promise<void>;
   dimension: number;
 

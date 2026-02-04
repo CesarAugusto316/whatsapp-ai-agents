@@ -2,9 +2,9 @@
 import { aiAdapter, IAiAdapter } from "@/infraestructure/adapters/ai";
 import { cacheAdapter, ICacheAdapter } from "@/infraestructure/adapters/cache";
 import {
-  IVectorAdapter,
-  VectorAdapter,
-} from "@/infraestructure/adapters/vector";
+  IVectorStoreAdapter,
+  VectorStoreAdapter,
+} from "@/infraestructure/adapters/vector-store";
 import { Schemas } from "@qdrant/js-client-rest";
 import { SemanticIntent } from "./rag.types";
 import { Product } from "@/infraestructure/adapters/cms";
@@ -19,7 +19,7 @@ class RagService {
   private readonly CACHE_TTL = 60 * 60 * 24 * 40; // 40 días
 
   constructor(
-    private vectorAdapter: IVectorAdapter,
+    private vectorAdapter: IVectorStoreAdapter,
     private aiAdapter: IAiAdapter,
     private cacheAdapter: ICacheAdapter,
   ) {}
@@ -257,7 +257,7 @@ class RagService {
 }
 
 export const ragService = new RagService(
-  new VectorAdapter(),
+  new VectorStoreAdapter(),
   aiAdapter,
   cacheAdapter,
 );

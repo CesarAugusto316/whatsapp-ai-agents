@@ -1,8 +1,8 @@
 import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
 import { Product } from "../cms";
-import { IVectorAdapter } from "./vector.adapter.interface";
+import { IVectorStoreAdapter } from "./vector-store.adapter.interface";
 
-export class VectorAdapter implements IVectorAdapter {
+export class VectorStoreAdapter implements IVectorStoreAdapter {
   private client = new QdrantClient({ url: Bun.env.QDRANT_URL });
 
   constructor(public dimension = 1024) {}

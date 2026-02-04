@@ -2,10 +2,7 @@ import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import {
-  ragService,
-  SemanticIngestionRequest,
-} from "@/application/services/rag";
+import { ragService, SyncStateRequest } from "@/application/services/rag";
 import { logger } from "@/infraestructure/logging";
 
 /**
@@ -14,7 +11,7 @@ import { logger } from "@/infraestructure/logging";
  * @param next
  * @returns
  */
-export const semanticIngestionHandler: Handler<
+export const contentSyncStateHandler: Handler<
   DomainCtx<RestaurantCtx>
 > = async (c) => {
   const businessId = c.req.param("businessId") ?? "";
@@ -22,7 +19,7 @@ export const semanticIngestionHandler: Handler<
     return c.json({ error: "Business ID not received" }, 400);
   }
   await ragService.init();
-  const data = await c.req.json<SemanticIngestionRequest>();
+  const data = await c.req.json<SyncStateRequest>();
 
   if (data.collection === "businesses") {
     if (data.operation === "delete") {

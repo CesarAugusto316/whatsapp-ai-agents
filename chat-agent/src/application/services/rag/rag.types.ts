@@ -5,7 +5,7 @@ export interface SemanticIntent<Intent extends string, Domain extends string> {
   examples: string[];
 }
 
-export type SemanticIngestionRequest = {
+export type SyncStateRequest = {
   docId: string;
   collection:
     | "businesses"
