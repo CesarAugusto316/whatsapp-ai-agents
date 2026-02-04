@@ -28,11 +28,11 @@ export type DeliveryIntentKey =
   | "select_delivery_type"
   | "report_delivery_issue";
 
-export type Domain = "bookings" | "delivery" | "global";
+export type CoreDomain = "bookings" | "delivery" | "global";
 
 export type GlobalSemanticIntent = SemanticIntent<
   UniversalIntentKey | BookingIntentKey | DeliveryIntentKey,
-  Domain
+  CoreDomain
 >;
 
 /**

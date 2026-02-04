@@ -1,19 +1,17 @@
 import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
+import { logger } from "@/infraestructure/logging";
 import {
   bookingIntents,
   deliveryIntents,
   globalIntents,
-} from "@/domain/semantic/universal-intents";
-import { logger } from "@/infraestructure/logging";
-import {
   eroticIntents,
   restaurantIntents,
   SpecializedSemanticIntent,
   SpecializedDomain,
-} from "@/domain/semantic/specialized-intents";
-import { ragService } from "@/application/services/rag";
+  ragService,
+} from "@/application/services/rag";
 
 /**
  *
