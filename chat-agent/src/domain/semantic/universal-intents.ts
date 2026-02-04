@@ -1,3 +1,5 @@
+import { SemanticIntent } from "@/infraestructure/rag";
+
 export type UniversalIntentKey =
   | "ask_location"
   | "ask_pricing"
@@ -28,12 +30,10 @@ export type DeliveryIntentKey =
 
 export type Domain = "bookings" | "delivery" | "global";
 
-export interface GlobalSemanticIntent {
-  intent: UniversalIntentKey | BookingIntentKey | DeliveryIntentKey;
-  domain: Domain;
-  lang: "es" | "en";
-  examples: string[];
-}
+export type GlobalSemanticIntent = SemanticIntent<
+  UniversalIntentKey | BookingIntentKey | DeliveryIntentKey,
+  Domain
+>;
 
 /**
  * Intents globales, vectorizados una sola vez.

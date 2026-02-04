@@ -1,7 +1,7 @@
 import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
-import { ragService } from "@/infraestructure/db/qdrant";
+import { ragService } from "@/infraestructure/rag/raga.service";
 import {
   bookingIntents,
   deliveryIntents,
@@ -22,9 +22,11 @@ import {
  * @returns
  */
 const coreDomainsHandler: Handler<DomainCtx<RestaurantCtx>> = async (c) => {
-  const filteredIntents = globalIntents
-    .concat(bookingIntents)
-    .concat(deliveryIntents);
+  const filteredIntents = [
+    ...globalIntents,
+    ...bookingIntents,
+    ...deliveryIntents,
+  ];
 
   try {
     const data = await ragService.upsertIntents(filteredIntents);

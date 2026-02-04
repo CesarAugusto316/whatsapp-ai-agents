@@ -1,12 +1,8 @@
 import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
-import { Product } from "../http/cms/cms-types";
+import { Product } from "../http/cms";
 import { aiClient } from "../http/ai";
 import { redisClient } from "../cache/redis.client";
-import { GlobalSemanticIntent } from "@/domain/semantic/universal-intents";
-import {
-  SpecializedSemanticIntent,
-  SpecializedDomain,
-} from "@/domain/semantic/specialized-intents";
+import { SemanticIntent } from "./rag.types";
 
 /**
  *
@@ -16,10 +12,10 @@ import {
 class RagService {
   private readonly EMBED_VERSION = "qwen3-0.6b";
   private readonly THRESHOLD = 0.7;
+  private readonly DIMENSION = 1024;
   private readonly business = "business";
   private readonly intents = "intents";
   private readonly products = "products";
-  private readonly DIMENSION = 1024;
   private vectorDB = new QdrantClient({ url: Bun.env.QDRANT_URL });
   static initialized = false;
 
@@ -59,7 +55,7 @@ class RagService {
       });
     }
 
-    if (!existing.has("intents")) {
+    if (!existing.has(this.intents)) {
       await this.vectorDB.createCollection(this.intents, {
         vectors: {
           size: this.DIMENSION, // qwen3-embedding
@@ -209,8 +205,8 @@ class RagService {
    * @param intents
    * @returns
    */
-  async upsertIntents(
-    intents: GlobalSemanticIntent[] | SpecializedSemanticIntent[],
+  async upsertIntents<I extends string, D extends string>(
+    intents: SemanticIntent<I, D>[],
   ) {
     const prepared = intents.flatMap(({ intent, domain, examples, lang }) =>
       examples.map((ex) => ({
@@ -231,11 +227,12 @@ class RagService {
     )?.filter(({ embedding }) => embedding.length === this.DIMENSION);
 
     const points = embeddings.map(({ embedding }, i) => {
-      const { intent, domain, lang } = prepared[i];
+      const { intent, domain, lang, text } = prepared[i];
       return {
-        id: this.sha256ToUUID(`${domain}:${lang}:${intent}`),
+        id: this.sha256ToUUID(`${domain}:${lang}:${text}`),
         vector: embedding,
         payload: {
+          text,
           domain,
           lang,
           intent,
@@ -301,7 +298,7 @@ class RagService {
    *    "es"
    * );
    * @param query
-   * @param ontologyVersion
+   * @param version
    * @param activeDomains
    * @param limit
    * @param lang
@@ -309,7 +306,7 @@ class RagService {
    */
   async classifyIntent(
     query: string,
-    ontologyVersion: "1.0",
+    version: "1.0",
     activeDomains: string[], // Array con TODOS los dominios activos
     limit = 3,
     lang = "es",
@@ -325,7 +322,7 @@ class RagService {
 
     const embedding = await this.getEmbedding(
       query,
-      ontologyVersion,
+      version,
       activeDomains,
       lang,
     );

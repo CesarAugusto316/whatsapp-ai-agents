@@ -4,7 +4,7 @@ import { DomainCtx } from "@/domain/context.types";
 import { SemanticIngestionRequest } from "./semantic.types";
 import { cmsClient } from "@/infraestructure/http/cms";
 import { logger } from "@/infraestructure/logging";
-import { ragService } from "@/infraestructure/db/qdrant";
+import { ragService } from "@/infraestructure/rag/raga.service";
 
 /**
  *

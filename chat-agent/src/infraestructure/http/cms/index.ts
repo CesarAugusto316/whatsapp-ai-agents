@@ -4,6 +4,11 @@ export { WEEK_DAYS } from "./cms-types";
 export type {
   Appointment,
   Business,
+  Product,
+  ProductCart,
+  BusinessesMedia,
+  ProductOrder,
+  ProductsMedia,
   CreateAppointment,
   CreateCustomer,
   Customer,

@@ -1,5 +1,6 @@
-export type SpecializedDomain = "restaurant" | "real-state" | "erotic";
+import { SemanticIntent } from "@/infraestructure/rag";
 
+export type SpecializedDomain = "restaurant" | "real-state" | "erotic";
 export type EcommerceIntentKey =
   | "browse_products"
   | "search_products"
@@ -17,12 +18,10 @@ export type EcommerceIntentKey =
   | "ask_inventory"
   | "compare_products";
 
-export interface SpecializedSemanticIntent {
-  intent: EcommerceIntentKey;
-  domain: SpecializedDomain;
-  lang: "es" | "en";
-  examples: string[];
-}
+export type SpecializedSemanticIntent = SemanticIntent<
+  EcommerceIntentKey,
+  SpecializedDomain
+>;
 
 export const restaurantIntents: SpecializedSemanticIntent[] = [
   {
