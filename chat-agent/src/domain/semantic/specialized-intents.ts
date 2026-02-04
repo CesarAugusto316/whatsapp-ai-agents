@@ -1,4 +1,4 @@
-export type SpeciliazedDomain = "restaurant" | "real-state" | "erotic";
+export type SpecializedDomain = "restaurant" | "real-state" | "erotic";
 
 export type EcommerceIntentKey =
   | "browse_products"
@@ -19,7 +19,7 @@ export type EcommerceIntentKey =
 
 export interface SpecializedSemanticIntent {
   intent: EcommerceIntentKey;
-  domain: SpeciliazedDomain;
+  domain: SpecializedDomain;
   lang: "es" | "en";
   examples: string[];
 }

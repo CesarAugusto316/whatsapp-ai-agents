@@ -3,7 +3,10 @@ import { Product } from "../http/cms/cms-types";
 import { aiClient } from "../http/ai";
 import { redisClient } from "../cache/redis.client";
 import { GlobalSemanticIntent } from "@/domain/semantic/universal-intents";
-import { SpecializedSemanticIntent } from "@/domain/semantic/specialized-intents";
+import {
+  SpecializedSemanticIntent,
+  SpecializedDomain,
+} from "@/domain/semantic/specialized-intents";
 
 /**
  *
@@ -12,6 +15,7 @@ import { SpecializedSemanticIntent } from "@/domain/semantic/specialized-intents
  */
 class RagService {
   private readonly EMBED_VERSION = "qwen3-0.6b";
+  private readonly THRESHOLD = 0.7;
   private readonly business = "business";
   private readonly intents = "intents";
   private readonly products = "products";
@@ -169,6 +173,7 @@ class RagService {
     if (cachedEmbedding) {
       return this.vectorDB.query(this.products, {
         query: JSON.parse(cachedEmbedding) satisfies number[],
+        score_threshold: this.THRESHOLD,
         filter: {
           must: [
             { key: "business", match: { value: businessId } },
@@ -188,6 +193,7 @@ class RagService {
 
     return this.vectorDB.query(this.products, {
       query: data[0].embedding,
+      score_threshold: this.THRESHOLD,
       filter: {
         must: [
           { key: "business", match: { value: businessId } },
@@ -198,67 +204,11 @@ class RagService {
     });
   }
 
-  async classifyIntent(
-    query: string,
-    domains: string[], // business domains a business can have one or more core domains
-    ontologyVersion: "1.0",
-    limit = 3,
-    lang = "es",
-  ): Promise<Schemas["QueryResponse"]> {
-    //
-    const normalized = this.normalizeText(query);
-    const hash = this.sha256(
-      `${ontologyVersion}:${domains.map((domain) => domain).join(":")}:${lang}:${this.EMBED_VERSION}:${normalized}`,
-    );
-    const cachedEmbedding = await redisClient.get(hash);
-
-    // we cache semantic intention, result is strcitly separated by businessId
-    if (cachedEmbedding) {
-      return this.vectorDB.query(this.intents, {
-        query: JSON.parse(cachedEmbedding) satisfies number[],
-        filter: {
-          // must=and
-          must: [
-            {
-              // should=or
-              should: domains.map((domain) => ({
-                key: "domain",
-                match: { value: domain },
-              })),
-            },
-            { key: "lang", match: { value: lang } },
-          ],
-        },
-        limit,
-      });
-    }
-
-    const data = await aiClient.embedding({
-      input: this.normalizeText(query),
-    });
-
-    await redisClient.set(hash, JSON.stringify(data[0].embedding));
-    await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 days
-
-    return this.vectorDB.query(this.intents, {
-      query: data[0].embedding,
-      filter: {
-        // must=and
-        must: [
-          {
-            // should=or
-            should: domains.map((domain) => ({
-              key: "domain",
-              match: { value: domain },
-            })),
-          },
-          { key: "lang", match: { value: lang } },
-        ],
-      },
-      limit,
-    });
-  }
-
+  /**
+   *
+   * @param intents
+   * @returns
+   */
   async upsertIntents(
     intents: GlobalSemanticIntent[] | SpecializedSemanticIntent[],
   ) {
@@ -296,6 +246,89 @@ class RagService {
     return this.vectorDB.upsert(this.intents, {
       wait: true,
       points,
+    });
+  }
+
+  // Primero, extraemos la lógica común de embedding a un método privado
+  private async getEmbedding(
+    query: string,
+    ontologyVersion: string,
+    domain?: SpecializedDomain,
+    lang: string = "es",
+  ): Promise<number[]> {
+    const normalized = this.normalizeText(query);
+    const hash = this.sha256(
+      `${ontologyVersion}:${domain ? `${domain}:` : ""}${lang}:${this.EMBED_VERSION}:${normalized}`,
+    );
+
+    const cachedEmbedding = await redisClient.get(hash);
+    if (cachedEmbedding) {
+      return JSON.parse(cachedEmbedding) satisfies number[];
+    }
+
+    const data = await aiClient.embedding({
+      input: normalized,
+    });
+
+    const embedding = data[0].embedding;
+    await redisClient.set(hash, JSON.stringify(embedding));
+    await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 días
+
+    return embedding;
+  }
+
+  // Función para intenciones globales (sin dominio específico)
+  async classifyGlobalIntent(
+    query: string,
+    ontologyVersion: "1.0",
+    limit = 3,
+    lang = "es",
+  ): Promise<Schemas["QueryResponse"]> {
+    const embedding = await this.getEmbedding(
+      query,
+      ontologyVersion,
+      undefined, // No domain
+      lang,
+    );
+
+    return this.vectorDB.query(this.intents, {
+      query: embedding,
+      score_threshold: this.THRESHOLD,
+      filter: {
+        must: [{ key: "lang", match: { value: lang } }],
+        must_not: [
+          { key: "domain", exists: true }, // Excluye cualquier documento con dominio
+        ],
+      },
+      limit,
+    });
+  }
+
+  // Función para intenciones especializadas (con dominio específico)
+  async classifySpecializedIntent(
+    query: string,
+    ontologyVersion: "1.0",
+    domain: SpecializedDomain, // Obligatorio para intenciones especializadas
+    limit = 3,
+    lang = "es",
+  ): Promise<Schemas["QueryResponse"]> {
+    const embedding = await this.getEmbedding(
+      query,
+      ontologyVersion,
+      domain, // Domain especializado
+      lang,
+    );
+
+    return this.vectorDB.query(this.intents, {
+      query: embedding,
+      score_threshold: this.THRESHOLD,
+      filter: {
+        must: [
+          { key: "lang", match: { value: lang } },
+          { key: "domain", match: { value: domain } }, // Filtro estricto por dominio
+        ],
+      },
+      limit,
     });
   }
 }

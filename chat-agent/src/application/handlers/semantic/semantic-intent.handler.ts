@@ -12,7 +12,7 @@ import {
   eroticIntents,
   restaurantIntents,
   SpecializedSemanticIntent,
-  SpeciliazedDomain,
+  SpecializedDomain,
 } from "@/domain/semantic/specialized-intents";
 
 /**
@@ -45,13 +45,13 @@ const coreDomainsHandler: Handler<DomainCtx<RestaurantCtx>> = async (c) => {
  * @returns
  */
 const subDomainsHandler: Handler<DomainCtx<RestaurantCtx>> = async (c) => {
-  const subdomain = c.req.query("subdomain") as SpeciliazedDomain;
+  const subdomain = c.req.query("subdomain") as SpecializedDomain;
 
   if (!subdomain) {
     throw new Error("Domain is required");
   }
 
-  const intentsMap = new Map<SpeciliazedDomain, SpecializedSemanticIntent[]>([
+  const intentsMap = new Map<SpecializedDomain, SpecializedSemanticIntent[]>([
     ["restaurant", restaurantIntents],
     ["erotic", eroticIntents],
   ]);
