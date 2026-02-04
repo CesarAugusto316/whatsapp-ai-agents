@@ -249,16 +249,18 @@ class RagService {
     });
   }
 
-  // Primero, extraemos la lógica común de embedding a un método privado
   private async getEmbedding(
     query: string,
     ontologyVersion: string,
-    domain?: SpecializedDomain,
+    domains: string[], // Ahora recibe array de dominios
     lang: string = "es",
   ): Promise<number[]> {
     const normalized = this.normalizeText(query);
+
+    // Ordenamos los dominios para que el hash sea consistente (mismos dominios en diferente orden = mismo hash)
+    const domainsKey = domains.sort().join(",");
     const hash = this.sha256(
-      `${ontologyVersion}:${domain ? `${domain}:` : ""}${lang}:${this.EMBED_VERSION}:${normalized}`,
+      `${ontologyVersion}:${domainsKey}:${lang}:${this.EMBED_VERSION}:${normalized}`,
     );
 
     const cachedEmbedding = await redisClient.get(hash);
@@ -277,47 +279,62 @@ class RagService {
     return embedding;
   }
 
-  // Función para intenciones globales (sin dominio específico)
-  async classifyGlobalIntent(
+  /**
+   *
+   * @description Función principal que clasifica en TODO el universo semántico del negocio
+   * @example
+   *  Para un restaurante con booking habilitado
+   *  const restaurantWithBooking = await classifyIntent(
+   *  "¿Puedo reservar una mesa para 4 personas el viernes?",
+   *  "1.0",
+   *  ["restaurant", "global", "booking"], // Dominios activos
+   *  3,
+   *  "es"
+   * );
+   *
+   *  Para una farmacia con delivery habilitado
+   *  const pharmacyWithDelivery = await classifyIntent(
+   *   "¿Pueden entregar este medicamento a domicilio?",
+   *   "1.0",
+   *   ["pharmacy", "global", "delivery"], // Dominios activos
+   *   3,
+   *    "es"
+   * );
+   * @param query
+   * @param ontologyVersion
+   * @param activeDomains
+   * @param limit
+   * @param lang
+   * @returns
+   */
+  async classifyIntent(
     query: string,
     ontologyVersion: "1.0",
+    activeDomains: string[], // Array con TODOS los dominios activos
     limit = 3,
     lang = "es",
   ): Promise<Schemas["QueryResponse"]> {
+    // Validación: siempre debe incluir al menos el dominio especializado y "global"
+    if (!activeDomains.includes("global")) {
+      throw new Error('El dominio "global" siempre debe estar activo');
+    }
+
+    if (activeDomains.length <= 2) {
+      throw new Error("Debe haber al menos 2 dominios activos");
+    }
+
     const embedding = await this.getEmbedding(
       query,
       ontologyVersion,
-      undefined, // No domain
+      activeDomains,
       lang,
     );
 
-    return this.vectorDB.query(this.intents, {
-      query: embedding,
-      score_threshold: this.THRESHOLD,
-      filter: {
-        must: [{ key: "lang", match: { value: lang } }],
-        must_not: [
-          { key: "domain", exists: true }, // Excluye cualquier documento con dominio
-        ],
-      },
-      limit,
-    });
-  }
-
-  // Función para intenciones especializadas (con dominio específico)
-  async classifySpecializedIntent(
-    query: string,
-    ontologyVersion: "1.0",
-    domain: SpecializedDomain, // Obligatorio para intenciones especializadas
-    limit = 3,
-    lang = "es",
-  ): Promise<Schemas["QueryResponse"]> {
-    const embedding = await this.getEmbedding(
-      query,
-      ontologyVersion,
-      domain, // Domain especializado
-      lang,
-    );
+    // Construimos el filtro que busca en TODOS los dominios activos
+    const domainFilters = activeDomains.map((domain) => ({
+      key: "domain" as const,
+      match: { value: domain } as const,
+    }));
 
     return this.vectorDB.query(this.intents, {
       query: embedding,
@@ -325,7 +342,10 @@ class RagService {
       filter: {
         must: [
           { key: "lang", match: { value: lang } },
-          { key: "domain", match: { value: domain } }, // Filtro estricto por dominio
+          {
+            // Buscamos en cualquiera de los dominios activos
+            should: domainFilters,
+          },
         ],
       },
       limit,
