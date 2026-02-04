@@ -3,7 +3,7 @@ import {
   FlowOptions,
   ReservationState,
 } from "@/domain/restaurant/reservations";
-import { cacheAdapter } from "@/infraestructure/adapters";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { Business, cmsClient, Customer } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";
 import { humanizerAgent } from "@/application/agents/restaurant";

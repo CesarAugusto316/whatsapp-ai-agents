@@ -1,6 +1,6 @@
 import { ReservationSchema } from "./schemas";
 import { Business } from "@/infraestructure/http/cms";
-import { ChatMessage } from "@/infraestructure/http/ai";
+import { ChatMessage } from "@/infraestructure/adapters/ai";
 
 export const BOOL = {
   YES: true,

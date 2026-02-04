@@ -1,5 +1,6 @@
-import aiClient from "./ai.client";
-export { aiClient };
+import aiAdapter from "./ai.adapter";
+export { aiAdapter };
+export type { IAiAdapter } from "./ai.adapter.interface";
 export type {
   ChatCompletionChoice,
   ChatCompletionChunk,

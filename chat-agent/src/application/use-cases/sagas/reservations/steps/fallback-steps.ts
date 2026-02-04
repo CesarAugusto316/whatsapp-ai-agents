@@ -5,8 +5,8 @@ import {
   buildInfo,
   buildHowToProceed,
 } from "@/domain/restaurant/reservations/prompts";
-import { chatHistoryAdapter } from "@/infraestructure/adapters";
-import { aiClient, ChatMessage } from "@/infraestructure/http/ai";
+import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
+import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { ReservationResult } from "../reservation-saga";
 import { attachProcessReminder } from "@/application/patterns";
 
@@ -39,7 +39,7 @@ export async function conversationalWorkflow(
   // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS
   if (customerIntent === CUSTOMER_INTENT.HOW) {
     // choice 4 again
-    const assistantResponse = await aiClient.userMsg(
+    const assistantResponse = await aiAdapter.userMsg(
       { messages },
       buildHowToProceed(business),
     );
@@ -62,7 +62,7 @@ export async function conversationalWorkflow(
   }
 
   // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
-  const assistantResponse = await aiClient.userMsg(
+  const assistantResponse = await aiAdapter.userMsg(
     { messages },
     buildInfo(business),
   );

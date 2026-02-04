@@ -5,11 +5,11 @@ import {
   ReservationSchema,
   reservationSchemas,
 } from "@/domain/restaurant/reservations/schemas";
-import { aiClient } from "@/infraestructure/http/ai";
+import { aiAdapter } from "@/infraestructure/adapters/ai";
 import type { Business } from "@/infraestructure/http/cms";
 import { logger } from "@/infraestructure/logging";
 import { mergeReservationData } from "@/application/use-cases/sagas/reservations/helpers/merge-state";
-import { ChatMessage } from "@/infraestructure/http/ai";
+import { ChatMessage } from "@/infraestructure/adapters/ai";
 
 export const validatorAgent = {
   /**
@@ -25,7 +25,7 @@ export const validatorAgent = {
     const messages: ChatMessage[] = [
       { role: "user", content: customerMessage },
     ];
-    const aiValidator: string = await aiClient.userMsg(
+    const aiValidator: string = await aiAdapter.userMsg(
       { messages },
       PARSER_PROMPT,
     );
@@ -72,7 +72,7 @@ export const validatorAgent = {
       return "No se detectaron errores específicos para corregir.";
     }
 
-    return aiClient.userMsg(
+    return aiAdapter.userMsg(
       {
         messages: [
           {

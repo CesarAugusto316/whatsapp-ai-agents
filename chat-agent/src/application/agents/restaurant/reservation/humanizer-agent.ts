@@ -1,8 +1,8 @@
 import { humanizerPrompt } from "@/domain/restaurant/reservations/prompts";
-import { aiClient } from "@/infraestructure/http/ai";
+import { aiAdapter } from "@/infraestructure/adapters/ai";
 
 export async function humanizerAgent(message: string, temp = 0) {
-  const content = await aiClient.systemMsg(humanizerPrompt(message), temp);
+  const content = await aiAdapter.systemMsg(humanizerPrompt(message), temp);
   if (!content) {
     throw new Error("No se recibió respuesta del humanizer agent");
   }

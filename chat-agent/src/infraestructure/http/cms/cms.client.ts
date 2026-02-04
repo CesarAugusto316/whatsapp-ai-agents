@@ -7,7 +7,7 @@ import {
   Customer,
   Product,
 } from "./cms-types";
-import { redisClient } from "@/infraestructure/cache/redis.client";
+import { redisClient } from "@/infraestructure/adapters/cache/redis.client";
 import { AvailabilityResponse } from "./chek-availability.types";
 import {
   CircuitBreaker,
@@ -29,14 +29,13 @@ export interface CMSQueryParams {
 
   // APPOINTMENT
   "where[numberOfPeople][equals]"?: number; // businessId,
-  "where[startDateTime][equals]"?: string; // 2024-03-15
-  "where[endDateTime][equals]"?: string; // 2024-03-15
-  "where[status][equals]"?: Appointment["status"]; // 2024-03-15
+  "where[startDateTime][equals]"?: string; // 2024-03-15T00:00:00Z
+  "where[endDateTime][equals]"?: string; // 2024-03-15T00:00:00Z
+  "where[status][equals]"?: Appointment["status"];
 
   // COSTUMER:
-  "where[phoneNumber][like]"?: string; // 2024-03-15
-  // "where[name][equals]"?: string | Date; // 2024-03-15
-  // "where[business][equals]"?: string; // businessId,
+  "where[phoneNumber][like]"?: string;
+  "where[name][equals]"?: string | Date;
 }
 
 const defaultQueryParams = {
@@ -61,19 +60,17 @@ const generateUrl = (
   return url;
 };
 
-// Configuración específica para LLMs
-const circuitBreaker = new CircuitBreaker(
-  {
-    failureThreshold: 3, // 3 fallos seguidos abren el circuito
-    resetTimeout: 60_000, // 30 segundos en OPEN
-    halfOpenSuccessThreshold: 2, // 2 éxitos para cerrar
-  },
-  "cms-client",
-);
-
+// resilient query + circuit breaker
 const resilientConfig = {
   timeoutMs: 60_000,
-  circuitBraker: circuitBreaker,
+  circuitBraker: new CircuitBreaker(
+    {
+      failureThreshold: 3, // 3 fallos seguidos abren el circuito
+      resetTimeout: 60_000, // 30 segundos en OPEN
+      halfOpenSuccessThreshold: 2, // 2 éxitos para cerrar
+    },
+    "cms-client",
+  ),
   retryConfig: {
     backoffRate: 2,
     maxAttempts: 3,
@@ -81,6 +78,10 @@ const resilientConfig = {
   },
 } satisfies ResilientQueryOptions;
 
+/**
+ *
+ * @description Payload CMS
+ */
 class CMSClient {
   private headers = {
     Accept: "application/json",

@@ -2,7 +2,7 @@ import { MiddlewareHandler } from "hono/types";
 import { DomainCtx } from "@/domain";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { WahaRecievedEvent } from "@/infraestructure/http/whatsapp";
-import { cacheAdapter } from "@/infraestructure/adapters";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsClient } from "@/infraestructure/http/cms";
 
 /**
@@ -24,7 +24,7 @@ export const bootstrapMiddleware = (): MiddlewareHandler<
     const chatKey = `chat:${businessId}:${customerPhone}`;
     const reservationKey = `reservation:${businessId}:${customerPhone}`;
     const currentReservation =
-      await cacheAdapter.get<RestaurantCtx>(reservationKey);
+      await cacheAdapter.getObj<RestaurantCtx>(reservationKey);
     ctx.set("session", session);
     ctx.set("chatKey", chatKey);
     ctx.set("whatsappEvent", event);

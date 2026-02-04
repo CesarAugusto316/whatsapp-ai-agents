@@ -6,20 +6,19 @@ import {
   ResilientQueryOptions,
 } from "@/application/patterns";
 import { EmbeddingRequest, EmbeddingResponse } from "./embeddings.types";
+import { IAiAdapter } from "./ai.adapter.interface";
 
-// Configuración específica para LLMs
-const circuitBreaker = new CircuitBreaker(
-  {
-    failureThreshold: 3, // 3 fallos seguidos abren el circuito
-    resetTimeout: 60_000, // 30 segundos en OPEN
-    halfOpenSuccessThreshold: 2, // 2 éxitos para cerrar
-  },
-  "ai-client",
-);
-
-const resilientConfig = {
-  timeoutMs: 60_000,
-  circuitBraker: circuitBreaker,
+// resilient query + circuit breaker
+const chatConfig = {
+  timeoutMs: 40_000,
+  circuitBraker: new CircuitBreaker(
+    {
+      failureThreshold: 3, // 3 fallos seguidos abren el circuito
+      resetTimeout: 40_000, // 30 segundos en OPEN
+      halfOpenSuccessThreshold: 2, // 2 éxitos para cerrar
+    },
+    "ai-chat",
+  ),
   retryConfig: {
     backoffRate: 2,
     maxAttempts: 3,
@@ -27,7 +26,29 @@ const resilientConfig = {
   },
 } satisfies ResilientQueryOptions;
 
-class AiClient {
+// resilient query + circuit breaker
+const embeddingConfig = {
+  timeoutMs: 40_000,
+  circuitBraker: new CircuitBreaker(
+    {
+      failureThreshold: 3, // 3 fallos seguidos abren el circuito
+      resetTimeout: 40_000, // 30 segundos en OPEN
+      halfOpenSuccessThreshold: 2, // 2 éxitos para cerrar
+    },
+    "ai-embedding",
+  ),
+  retryConfig: {
+    backoffRate: 2,
+    maxAttempts: 3,
+    intervalSeconds: 2,
+  },
+} satisfies ResilientQueryOptions;
+
+/**
+ *
+ * @description ai adapter
+ */
+class AiAdapter implements IAiAdapter {
   private config =
     env.NODE_ENV === "test"
       ? {
@@ -88,7 +109,7 @@ class AiClient {
         throw new Error("No se recibió respuesta de la AI");
       }
       return content;
-    }, resilientConfig);
+    }, chatConfig);
   }
 
   async systemMsg(message: string, temperature = 0) {
@@ -111,7 +132,7 @@ class AiClient {
         throw new Error("No se recibió respuesta de la AI");
       }
       return content;
-    }, resilientConfig);
+    }, chatConfig);
   }
 
   /**
@@ -138,8 +159,8 @@ class AiClient {
         throw new Error("No embeddings returned");
       }
       return result.data;
-    }, resilientConfig);
+    }, embeddingConfig);
   }
 }
 
-export default new AiClient();
+export default new AiAdapter();

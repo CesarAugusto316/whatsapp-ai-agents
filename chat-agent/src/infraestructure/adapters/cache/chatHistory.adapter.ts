@@ -1,5 +1,5 @@
-import { redisClient } from "../cache/redis.client";
-import { ChatMessage } from "../http/ai";
+import { redisClient } from "./redis.client";
+import type { ChatMessage } from "../ai";
 
 // COMMANDS REDDIS
 // KEYS chat:*

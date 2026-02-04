@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, beforeAll } from "bun:test";
-import { redisClient } from "@/infraestructure/cache/redis.client";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { env } from "bun";
 
 // Constants from the logs
@@ -56,8 +56,8 @@ describe("Real conversation flow integration test", () => {
     // Clean up Redis keys for this business and customer before each test
     const chatKey = `chat:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
     const reservationKey = `reservation:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
-    await redisClient.del(chatKey);
-    await redisClient.del(reservationKey);
+    await cacheAdapter.delete(chatKey);
+    await cacheAdapter.delete(reservationKey);
   });
 
   test(
@@ -161,12 +161,13 @@ describe("Real conversation flow integration test", () => {
 
       // Additional verification: check that Redis state is cleared or updated
       const reservationKey = `reservation:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
-      const state = await redisClient.get(reservationKey);
+      const state = await cacheAdapter.getObj<{ status: string }>(
+        reservationKey,
+      );
       // After confirmation, reservation state might be cleared or contain final state
       // This depends on the implementation. We'll just ensure it's not in a partial state.
       if (state) {
-        const parsed = JSON.parse(state as string);
-        expect(parsed.status).not.toBe("MAKE_STARTED");
+        expect(state.status).not.toBe("MAKE_STARTED");
       }
 
       console.log("All conversation steps completed successfully!");

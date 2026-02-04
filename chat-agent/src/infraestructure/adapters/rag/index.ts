@@ -1,2 +1,2 @@
 export { SemanticIntent } from "./rag.types";
-export { ragService } from "./raga.service";
+export { ragAdapter } from "./rag.adapter";

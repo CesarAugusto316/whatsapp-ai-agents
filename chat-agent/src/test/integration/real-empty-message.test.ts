@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, beforeAll } from "bun:test";
-import { redisClient } from "@/infraestructure/cache/redis.client";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 
 // Constants from the logs
 const BUSINESS_ID = "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c";
@@ -14,8 +14,8 @@ describe("Real integration: Empty message error", () => {
     // Clean up Redis keys for this business and customer before each test
     const chatKey = `chat:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
     const reservationKey = `reservation:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
-    await redisClient.del(chatKey);
-    await redisClient.del(reservationKey);
+    await cacheAdapter.delete(chatKey);
+    await cacheAdapter.delete(reservationKey);
   });
 
   test(

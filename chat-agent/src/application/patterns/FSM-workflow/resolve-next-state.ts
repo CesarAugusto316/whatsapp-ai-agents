@@ -5,7 +5,7 @@ import {
   FMStatus,
   ReservationStatuses,
 } from "@/domain/restaurant/reservations";
-import { ChatMessage } from "@/infraestructure/http/ai";
+import { ChatMessage } from "@/infraestructure/adapters/ai";
 
 // Mapa de mensajes para el usuario por estado
 const STATE_MESSAGES: Partial<Record<FMStatus, string>> = {

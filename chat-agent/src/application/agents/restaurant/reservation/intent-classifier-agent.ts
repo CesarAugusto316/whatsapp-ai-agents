@@ -7,7 +7,7 @@ import {
   customerIntentSchema,
   inputIntentSchema,
 } from "@/domain/restaurant/reservations/schemas";
-import { aiClient } from "@/infraestructure/http/ai";
+import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { logger } from "@/infraestructure/logging";
 
 export const intentClassifierAgent = {
@@ -19,7 +19,7 @@ export const intentClassifierAgent = {
    */
   async howOrWhat(message: string): Promise<CUSTOMER_INTENT> {
     try {
-      const raw = await aiClient.userMsg(
+      const raw = await aiAdapter.userMsg(
         { messages: [{ role: "user", content: message }] },
         CLASSIFIER_PROMPT,
       ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
@@ -44,7 +44,7 @@ export const intentClassifierAgent = {
    */
   async inputIntent(message: string): Promise<InputIntent> {
     try {
-      const raw = await aiClient.userMsg(
+      const raw = await aiAdapter.userMsg(
         { messages: [{ role: "user", content: message }] },
         validationPrompts.intentClassifier(),
       ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system

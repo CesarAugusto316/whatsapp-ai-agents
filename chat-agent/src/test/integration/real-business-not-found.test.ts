@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, beforeAll } from "bun:test";
-import { redisClient } from "@/infraestructure/cache/redis.client";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 
 describe("Real integration: Business not found error", () => {
   beforeAll(() => {
@@ -12,8 +12,8 @@ describe("Real integration: Business not found error", () => {
     const businessId = "non-existent-business-id-12345";
     const chatKey = `chat:${businessId}:${customerPhone}`;
     const reservationKey = `reservation:${businessId}:${customerPhone}`;
-    await redisClient.del(chatKey);
-    await redisClient.del(reservationKey);
+    await cacheAdapter.delete(chatKey);
+    await cacheAdapter.delete(reservationKey);
   });
 
   test(

@@ -1,27 +1,31 @@
 import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
-import { Product } from "../http/cms";
-import { aiClient } from "../http/ai";
-import { redisClient } from "../cache/redis.client";
+import { Product } from "../../http/cms";
 import { SemanticIntent } from "./rag.types";
+import { IAiAdapter, aiAdapter } from "../ai";
+import { cacheAdapter, ICacheAdapter } from "../cache";
 
 /**
  *
  * @link https://qdrant.tech/documentation/quickstart/
  * @link dashboard: env.QDRANT_URL/dashboard = http://localhost:6333/dashboard
  */
-class RagService {
+class RagAdapter {
   private readonly EMBED_VERSION = "qwen3-0.6b";
   private readonly THRESHOLD = 0.7;
   private readonly DIMENSION = 1024;
+  private readonly CACHE_TTL = 60 * 60 * 24 * 40; // 40 days
   private readonly business = "business";
   private readonly intents = "intents";
   private readonly products = "products";
   private vectorDB = new QdrantClient({ url: Bun.env.QDRANT_URL });
   static initialized = false;
 
-  constructor() {
-    if (RagService.initialized) return;
-    RagService.initialized = true;
+  constructor(
+    private ai: IAiAdapter,
+    private cache: ICacheAdapter,
+  ) {
+    if (RagAdapter.initialized) return;
+    RagAdapter.initialized = true;
     this.init().catch(console.error);
   }
 
@@ -106,7 +110,7 @@ class RagService {
       .filter(Boolean)
       .join(". ");
 
-    const data = await aiClient.embedding({
+    const data = await this.ai.embedding({
       input,
     });
 
@@ -163,12 +167,12 @@ class RagService {
     //
     const normalized = this.normalizeText(query);
     const hash = this.sha256(`${lang}:${this.EMBED_VERSION}:${normalized}`);
-    const cachedEmbedding = await redisClient.get(hash);
+    const cachedEmbedding = await this.cache.getObj<number[]>(hash);
 
     // we cache semantic intention, result is strcitly separated by businessId
     if (cachedEmbedding) {
       return this.vectorDB.query(this.products, {
-        query: JSON.parse(cachedEmbedding) satisfies number[],
+        query: cachedEmbedding,
         score_threshold: this.THRESHOLD,
         filter: {
           must: [
@@ -179,13 +183,10 @@ class RagService {
         limit,
       });
     }
-
-    const data = await aiClient.embedding({
+    const data = await this.ai.embedding({
       input: this.normalizeText(query),
     });
-
-    await redisClient.set(hash, JSON.stringify(data[0].embedding));
-    await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 days
+    await this.cache.save(hash, data[0].embedding, this.CACHE_TTL);
 
     return this.vectorDB.query(this.products, {
       query: data[0].embedding,
@@ -220,7 +221,7 @@ class RagService {
     if (!prepared.length) throw new Error("No valid intents provided");
 
     const embeddings = (
-      (await aiClient.embedding({
+      (await this.ai.embedding({
         input: prepared.map((p) => p.text),
         dimensions: this.DIMENSION,
       })) || []
@@ -260,19 +261,15 @@ class RagService {
       `${ontologyVersion}:${domainsKey}:${lang}:${this.EMBED_VERSION}:${normalized}`,
     );
 
-    const cachedEmbedding = await redisClient.get(hash);
-    if (cachedEmbedding) {
-      return JSON.parse(cachedEmbedding) satisfies number[];
-    }
+    const cachedEmbedding = await this.cache.getObj<number[]>(hash);
+    if (cachedEmbedding) return cachedEmbedding;
 
-    const data = await aiClient.embedding({
+    const data = await this.ai.embedding({
       input: normalized,
     });
 
     const embedding = data[0].embedding;
-    await redisClient.set(hash, JSON.stringify(embedding));
-    await redisClient.expire(hash, 60 * 60 * 24 * 40); // 40 días
-
+    await this.cache.save(hash, embedding, this.CACHE_TTL);
     return embedding;
   }
 
@@ -350,4 +347,4 @@ class RagService {
   }
 }
 
-export const ragService = new RagService();
+export const ragAdapter = new RagAdapter(aiAdapter, cacheAdapter);

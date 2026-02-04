@@ -4,7 +4,7 @@ import { DomainCtx } from "@/domain/context.types";
 import { SemanticIngestionRequest } from "./semantic.types";
 import { cmsClient } from "@/infraestructure/http/cms";
 import { logger } from "@/infraestructure/logging";
-import { ragService } from "@/infraestructure/rag/raga.service";
+import { ragAdapter } from "@/infraestructure/adapters/rag/rag.adapter";
 
 /**
  *
@@ -23,7 +23,7 @@ export const semanticIngestionHandler: Handler<
 
   if (data.collection === "businesses") {
     if (data.operation === "delete") {
-      await ragService.deleteAllProducts(businessId);
+      await ragAdapter.deleteAllProducts(businessId);
     } else {
       const isStale = true;
       await cmsClient.getBusinessById(data.businessId, isStale);
@@ -33,10 +33,10 @@ export const semanticIngestionHandler: Handler<
   //
   else if (data.collection === "products") {
     if (data.operation === "delete") {
-      await ragService.deleteProductById(data.docId);
+      await ragAdapter.deleteProductById(data.docId);
     } else {
       const product = await cmsClient.getProductById(data.docId);
-      await ragService.upsertProduct(product);
+      await ragAdapter.upsertProduct(product);
     }
     logger.info("Product update triggered 🔄");
   }

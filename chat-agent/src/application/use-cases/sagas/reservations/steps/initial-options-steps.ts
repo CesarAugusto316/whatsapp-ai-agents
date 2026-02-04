@@ -6,8 +6,11 @@ import {
   buildHowToProceed,
   systemMessages,
 } from "@/domain/restaurant/reservations/prompts";
-import { cacheAdapter, chatHistoryAdapter } from "@/infraestructure/adapters";
-import { aiClient, ChatMessage } from "@/infraestructure/http/ai";
+import {
+  cacheAdapter,
+  chatHistoryAdapter,
+} from "@/infraestructure/adapters/cache";
+import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { initReservationChangeSteps } from "./initial-change-steps";
 import { ReservationResult } from "../reservation-saga";
 
@@ -37,7 +40,7 @@ export async function initialOptionsWorkflow(
         ),
       },
     ];
-    const assistantResponse = await aiClient.userMsg(
+    const assistantResponse = await aiAdapter.userMsg(
       { messages },
       buildHowToProceed(business),
     );

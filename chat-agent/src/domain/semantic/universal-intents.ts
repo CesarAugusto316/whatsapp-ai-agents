@@ -1,4 +1,4 @@
-import { SemanticIntent } from "@/infraestructure/rag";
+import { SemanticIntent } from "@/infraestructure/adapters/rag";
 
 export type UniversalIntentKey =
   | "ask_location"

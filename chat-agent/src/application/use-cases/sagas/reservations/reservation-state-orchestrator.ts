@@ -1,7 +1,7 @@
 import { FMStatus, InputIntent } from "@/domain/restaurant/reservations";
 import { ReservationResult, reservationSaga } from "./reservation-saga";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { chatHistoryAdapter } from "@/infraestructure/adapters";
+import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import {
   conversationalWorkflow,
   initialOptionsWorkflow,

@@ -8,7 +8,7 @@ import {
   ReservationState,
   ReservationStatuses,
 } from "@/domain/restaurant/reservations";
-import { cacheAdapter } from "@/infraestructure/adapters";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { cmsClient } from "@/infraestructure/http/cms";
 import { resolveNextState } from "@/application/patterns";

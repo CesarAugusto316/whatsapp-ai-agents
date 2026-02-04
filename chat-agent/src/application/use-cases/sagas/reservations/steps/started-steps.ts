@@ -10,7 +10,7 @@ import {
   isWithinHolydayRange,
   ReservationState,
 } from "@/domain/restaurant/reservations";
-import { cacheAdapter } from "@/infraestructure/adapters";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
 import { cmsClient } from "@/infraestructure/http/cms";
