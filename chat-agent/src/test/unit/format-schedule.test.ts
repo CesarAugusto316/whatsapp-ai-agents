@@ -1,5 +1,5 @@
 import { formatSchedule } from "@/domain/utilities";
-import { WeekDay } from "@/infraestructure/http/cms";
+import { WeekDay } from "@/infraestructure/adapters/cms";
 import { describe, test, expect } from "bun:test";
 
 describe("formatSchedule", () => {

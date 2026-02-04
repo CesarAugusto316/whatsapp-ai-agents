@@ -10,7 +10,7 @@ import {
 } from "@/domain/restaurant/reservations";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
-import { cmsClient } from "@/infraestructure/http/cms";
+import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { resolveNextState } from "@/application/patterns";
 import { humanizerAgent } from "@/application/agents/restaurant";
 import {
@@ -25,7 +25,7 @@ import type {
   Appointment,
   CreateAppointment,
   Customer,
-} from "@/infraestructure/http/cms";
+} from "@/infraestructure/adapters/cms";
 import { toUTC } from "@/domain/utilities";
 
 export const ATTEMPTS = 4;
@@ -84,7 +84,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
     if (!customer && customerName) {
       newCustomer = (
         (await (
-          await cmsClient.createCostumer({
+          await cmsAdapter.createCostumer({
             business: business?.id || "",
             phoneNumber: customerPhone || "",
             name: customerName,
@@ -109,7 +109,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       } satisfies CreateAppointment;
 
       const reservation = (
-        (await (await cmsClient.createAppointment(payload)).json()) as {
+        (await (await cmsAdapter.createAppointment(payload)).json()) as {
           doc: Appointment;
         }
       ).doc;
@@ -130,7 +130,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       return { continue: true };
     }
     if (reservation && reservation?.id) {
-      await cmsClient.deleteAppointment(reservation?.id!);
+      await cmsAdapter.deleteAppointment(reservation?.id!);
       await cacheAdapter.delete(reservationKey);
       logger.error("Error deleting appointment"); // DBOS reintentará el flujo desde el último checkpoint
     }
@@ -177,7 +177,7 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
 
       const reservation = (
         (await (
-          await cmsClient.updateAppointment(RESERVATION_STATE?.id!, {
+          await cmsAdapter.updateAppointment(RESERVATION_STATE?.id!, {
             business: business?.id,
             customer: customer?.id,
             startDateTime,
@@ -344,7 +344,7 @@ const cancelConfirmed = (): ValidateFuncSagaStep => ({
     if (customerMessage.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
-    const res = await cmsClient.updateAppointment(RESERVATION_STATE.id!, {
+    const res = await cmsAdapter.updateAppointment(RESERVATION_STATE.id!, {
       status: "cancelled",
     });
     if (res.status !== 200) {

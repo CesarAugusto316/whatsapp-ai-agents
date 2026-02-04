@@ -1,4 +1,4 @@
-import { WEEK_DAYS, WeekDay } from "@/infraestructure/http/cms";
+import { WEEK_DAYS, WeekDay } from "@/infraestructure/adapters/cms";
 
 function formatMinutes(minutes: number): string {
   const h = Math.floor(minutes / 60);

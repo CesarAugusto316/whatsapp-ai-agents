@@ -13,7 +13,7 @@ import {
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
-import { cmsClient } from "@/infraestructure/http/cms";
+import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { resolveNextState } from "@/application/patterns";
 import {
   humanizerAgent,
@@ -227,7 +227,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           ...data,
         } satisfies Partial<ReservationState>);
 
-        const availability = await cmsClient.suggestSlots({
+        const availability = await cmsAdapter.suggestSlots({
           "where[business][equals]": business.id,
         });
         const titleMsg =
@@ -276,7 +276,7 @@ const checkAvailability = (mode: ReservationMode): StartedFuncSagaStep => ({
           },
         };
       }
-      const availability = await cmsClient.checkAvailability({
+      const availability = await cmsAdapter.checkAvailability({
         "where[business][equals]": reservation.businessId,
         "where[startDateTime][equals]": startDateTime,
         "where[endDateTime][equals]": endDateTime,

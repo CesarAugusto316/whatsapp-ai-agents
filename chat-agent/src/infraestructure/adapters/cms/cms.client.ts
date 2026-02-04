@@ -7,7 +7,7 @@ import {
   Customer,
   Product,
 } from "./cms-types";
-import { redisClient } from "@/infraestructure/adapters/cache/redis.client";
+import { cacheAdapter, ICacheAdapter } from "@/infraestructure/adapters/cache";
 import { AvailabilityResponse } from "./chek-availability.types";
 import {
   CircuitBreaker,
@@ -82,12 +82,15 @@ const resilientConfig = {
  *
  * @description Payload CMS
  */
-class CMSClient {
+class CMSAdapter {
+  private CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
   private headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
     Authorization: `${slug} API-Key ${apiKey}`,
   };
+
+  constructor(private cache: ICacheAdapter) {}
 
   /**
    *
@@ -100,12 +103,11 @@ class CMSClient {
       const key = `business:${id}`;
 
       if (isStale) {
-        await redisClient.del(key);
+        await this.cache.delete(key);
       }
-
-      const cache = await redisClient.get(key);
-      if (cache && !isStale) {
-        return JSON.parse(cache) satisfies Business;
+      const cachedBusiness = await this.cache.getObj<Business>(key);
+      if (cachedBusiness && !isStale) {
+        return cachedBusiness;
       }
       const res = await fetch(url, {
         method: "GET",
@@ -115,9 +117,8 @@ class CMSClient {
         throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
       const business = (await res.json()) as Business;
-
       if (business) {
-        redisClient.set(key, JSON.stringify(business), "EX", 60 * 60 * 24 * 7); // 7 days
+        await this.cache.save(key, business, this.CACHE_TTL); // 7 days
       }
       return business;
     }, resilientConfig);
@@ -175,18 +176,15 @@ class CMSClient {
     >,
   ): Promise<Customer | undefined> {
     //
-    return resilientQuery<Customer>(async () => {
+    return resilientQuery<Customer | undefined>(async () => {
       const {
         "where[business][equals]": businessId,
         "where[phoneNumber][like]": phoneNumber,
       } = queryParams;
 
       const key = `customer:business:${businessId}:phoneNumber:${phoneNumber}`;
-      const cache = await redisClient.get(key);
-
-      if (cache) {
-        return JSON.parse(cache) satisfies Customer;
-      }
+      const cache = await this.cache.getObj<Customer>(key);
+      if (cache) return cache;
       const url = generateUrl(`customers`, {
         depth: 0,
         limit: 1,
@@ -201,12 +199,7 @@ class CMSClient {
       }
       const customer = ((await res.json()) as { docs: Customer[] }).docs.at(0);
       if (customer) {
-        await redisClient.set(
-          key,
-          JSON.stringify(customer),
-          "EX",
-          60 * 60 * 24 * 30,
-        ); // 30 days
+        await this.cache.save(key, customer, this.CACHE_TTL);
       }
       return customer;
     }, resilientConfig);
@@ -300,4 +293,4 @@ class CMSClient {
   }
 }
 
-export default new CMSClient();
+export default new CMSAdapter(cacheAdapter);

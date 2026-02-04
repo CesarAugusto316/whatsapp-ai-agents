@@ -3,7 +3,7 @@ import { DomainCtx } from "@/domain";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { WahaRecievedEvent } from "@/infraestructure/http/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
-import { cmsClient } from "@/infraestructure/http/cms";
+import { cmsAdapter } from "@/infraestructure/adapters/cms";
 
 /**
  *
@@ -49,11 +49,11 @@ export const bootstrapMiddleware = (): MiddlewareHandler<
     ctx.set("customerMessage", customerMessage);
     ctx.set("customerPhone", customerPhone);
 
-    const customer = await cmsClient.getCostumerByPhone({
+    const customer = await cmsAdapter.getCostumerByPhone({
       "where[business][equals]": businessId,
       "where[phoneNumber][like]": customerPhone,
     });
-    const business = await cmsClient.getBusinessById(businessId);
+    const business = await cmsAdapter.getBusinessById(businessId);
 
     if (!business) {
       return ctx.json({ error: "Business not found" }, 404);

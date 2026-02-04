@@ -1,4 +1,4 @@
-import { WeekDay } from "@/infraestructure/http/cms";
+import { WeekDay } from "@/infraestructure/adapters/cms";
 import { logger } from "@/infraestructure/logging";
 
 /**

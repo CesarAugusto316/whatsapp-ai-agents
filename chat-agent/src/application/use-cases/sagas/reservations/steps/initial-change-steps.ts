@@ -4,7 +4,7 @@ import {
   ReservationState,
 } from "@/domain/restaurant/reservations";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
-import { Business, cmsClient, Customer } from "@/infraestructure/http/cms";
+import { Business, cmsAdapter, Customer } from "@/infraestructure/adapters/cms";
 import { resolveNextState } from "@/application/patterns";
 import { humanizerAgent } from "@/application/agents/restaurant";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
@@ -35,7 +35,7 @@ export const initReservationChangeSteps = async ({
   if (!customer) {
     return humanizerAgent("Por favor, Crea una reserva para poder continuar");
   }
-  const lastRes = await cmsClient.getAppointmentsByParams({
+  const lastRes = await cmsAdapter.getAppointmentsByParams({
     "where[business][equals]": business.id,
     "where[customer][equals]": customer.id,
     "where[status][equals]": "confirmed",

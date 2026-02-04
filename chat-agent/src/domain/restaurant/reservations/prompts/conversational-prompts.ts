@@ -1,4 +1,4 @@
-import { Business } from "@/infraestructure/http/cms/cms-types";
+import { Business } from "@/infraestructure/adapters/cms/cms-types";
 import { FlowOptions, FMStatus } from "../reservation.types";
 import { resolveNextState } from "@/application/patterns";
 import { formatSchedule } from "@/domain/utilities";

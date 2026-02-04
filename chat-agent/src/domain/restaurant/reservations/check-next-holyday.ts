@@ -1,5 +1,5 @@
 import { checkUtcDateInRange, toLocalDateTime } from "@/domain/utilities";
-import { Business } from "@/infraestructure/http/cms";
+import { Business } from "@/infraestructure/adapters/cms";
 
 // Formatear para mostrar
 const formatDate = (dateString: string) => {

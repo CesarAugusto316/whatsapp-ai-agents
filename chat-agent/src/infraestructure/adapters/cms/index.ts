@@ -1,5 +1,5 @@
-import cmsClient from "./cms.client";
-export { cmsClient };
+import cmsAdapter from "./cms.client";
+export { cmsAdapter as cmsAdapter };
 export { WEEK_DAYS } from "./cms-types";
 export type {
   Appointment,

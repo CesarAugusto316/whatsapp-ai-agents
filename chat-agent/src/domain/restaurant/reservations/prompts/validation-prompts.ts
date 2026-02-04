@@ -1,4 +1,4 @@
-import { Business } from "@/infraestructure/http/cms/cms-types";
+import { Business } from "@/infraestructure/adapters/cms/cms-types";
 import { InputIntent } from "../reservation.types";
 import { WRITING_STYLE } from "./conversational-prompts";
 

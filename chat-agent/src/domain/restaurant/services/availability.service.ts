@@ -1,4 +1,4 @@
-// import { Business } from "@/infraestructure/http/cms/cms-types";
+// import { Business } from "@/infraestructure/adapters/cms/cms-types";
 // import { ReservationState } from "../reservations/reservation.types";
 
 // // domain/reservation/services/reservation-availability.service.ts

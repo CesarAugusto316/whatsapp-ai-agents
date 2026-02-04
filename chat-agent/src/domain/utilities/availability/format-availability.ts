@@ -1,4 +1,4 @@
-import { TimeWindow } from "@/infraestructure/http/cms";
+import { TimeWindow } from "@/infraestructure/adapters/cms";
 
 /**
  * @example

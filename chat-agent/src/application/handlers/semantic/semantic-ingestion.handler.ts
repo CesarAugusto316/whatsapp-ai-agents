@@ -2,9 +2,9 @@ import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
 import { SemanticIngestionRequest } from "./semantic.types";
-import { cmsClient } from "@/infraestructure/http/cms";
+import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { logger } from "@/infraestructure/logging";
-import { ragAdapter } from "@/infraestructure/adapters/rag/rag.adapter";
+import { ragAdapter } from "@/infraestructure/adapters/rag";
 
 /**
  *
@@ -26,7 +26,7 @@ export const semanticIngestionHandler: Handler<
       await ragAdapter.deleteAllProducts(businessId);
     } else {
       const isStale = true;
-      await cmsClient.getBusinessById(data.businessId, isStale);
+      await cmsAdapter.getBusinessById(data.businessId, isStale);
     }
     logger.info("Business update triggered 🔄");
   }
@@ -35,7 +35,7 @@ export const semanticIngestionHandler: Handler<
     if (data.operation === "delete") {
       await ragAdapter.deleteProductById(data.docId);
     } else {
-      const product = await cmsClient.getProductById(data.docId);
+      const product = await cmsAdapter.getProductById(data.docId);
       await ragAdapter.upsertProduct(product);
     }
     logger.info("Product update triggered 🔄");

@@ -1,5 +1,5 @@
 import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
-import { Product } from "../../http/cms";
+import { Product } from "../cms";
 import { SemanticIntent } from "./rag.types";
 import { IAiAdapter, aiAdapter } from "../ai";
 import { cacheAdapter, ICacheAdapter } from "../cache";

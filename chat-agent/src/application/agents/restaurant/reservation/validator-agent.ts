@@ -6,7 +6,7 @@ import {
   reservationSchemas,
 } from "@/domain/restaurant/reservations/schemas";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
-import type { Business } from "@/infraestructure/http/cms";
+import type { Business } from "@/infraestructure/adapters/cms";
 import { logger } from "@/infraestructure/logging";
 import { mergeReservationData } from "@/application/use-cases/sagas/reservations/helpers/merge-state";
 import { ChatMessage } from "@/infraestructure/adapters/ai";

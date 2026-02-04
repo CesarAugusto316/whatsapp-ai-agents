@@ -1,7 +1,7 @@
 import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { DomainCtx } from "@/domain/context.types";
-import { ragAdapter } from "@/infraestructure/adapters/rag/rag.adapter";
+import { ragAdapter } from "@/infraestructure/adapters/rag";
 import {
   bookingIntents,
   deliveryIntents,
