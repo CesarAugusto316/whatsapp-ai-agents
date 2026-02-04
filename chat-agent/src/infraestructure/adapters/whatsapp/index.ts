@@ -9,5 +9,5 @@ export type {
   WahaReplyTo,
 } from "./whatsapp-types/received-event";
 export { formatForWhatsApp } from "./format-for-whatsapp";
-import whatsappClient from "./whatsapp.client";
-export { whatsappClient };
+import whatsappAdapter from "./whatsapp.adapter";
+export { whatsappAdapter };

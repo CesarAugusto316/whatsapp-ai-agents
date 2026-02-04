@@ -1,5 +1,5 @@
 import { RestaurantCtx } from "@/domain/restaurant";
-import { whatsappClient } from "@/infraestructure/http/whatsapp";
+import { whatsappAdapter } from "@/infraestructure/adapters/whatsapp";
 import {
   FuncSagaStep,
   ISagaStep,
@@ -56,7 +56,7 @@ const sendSeen: WhatsappSagaStep = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return whatsappClient.sendSeen(args);
+    return whatsappAdapter.sendSeen(args);
   },
 };
 
@@ -82,7 +82,7 @@ const sendStopTypingCompensate: FuncSagaStep<
     session: ctx.session,
     chatId: ctx.customerPhone,
   };
-  return whatsappClient.sendStopTyping(args);
+  return whatsappAdapter.sendStopTyping(args);
 };
 
 /**
@@ -108,7 +108,7 @@ const sendStartTyping: WhatsappSagaStep = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return whatsappClient.sendStartTyping(args);
+    return whatsappAdapter.sendStartTyping(args);
   },
   compensate: sendStopTypingCompensate,
 };
@@ -185,7 +185,7 @@ const sendMsgText: WhatsappSagaStep = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return whatsappClient.sendMsgText(args);
+    return whatsappAdapter.sendMsgText(args);
   },
 };
 

@@ -21,7 +21,7 @@ describe("Integration: /test-ai endpoint", () => {
     }));
 
     // Mock CMS client
-    mock.module("@/infraestructure/adapters/cms/cms.client", () => ({
+    mock.module("@/infraestructure/adapters/cms/cms.adapter", () => ({
       default: {
         getBusinessById: mock(async () => ({
           id: "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c",
@@ -240,7 +240,7 @@ describe("Integration: /test-ai endpoint", () => {
 
   test("should handle inactive business", async () => {
     // Override CMS client mock for inactive business
-    mock.module("@/infraestructure/adapters/cms/cms.client", () => ({
+    mock.module("@/infraestructure/adapters/cms/cms.adapter", () => ({
       default: {
         getBusinessById: mock(async () => ({
           id: "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c",
@@ -558,7 +558,7 @@ describe("Integration: /test-ai endpoint", () => {
 
   test("should handle customer not found (new customer)", async () => {
     // Override CMS client mock to return no customer
-    mock.module("@/infraestructure/adapters/cms/cms.client", () => ({
+    mock.module("@/infraestructure/adapters/cms/cms.adapter", () => ({
       default: {
         getBusinessById: mock(async () => ({
           id: "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c",

@@ -48,7 +48,7 @@ const resilientConfig = {
  * @description Waha API
  * more info: https://waha.devlike.pro/docs/how-to/send-messages/
  */
-class WhatsAppClient {
+class WhatsAppAdapter {
   private headers = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -178,4 +178,4 @@ class WhatsAppClient {
   }
 }
 
-export default new WhatsAppClient();
+export default new WhatsAppAdapter();
