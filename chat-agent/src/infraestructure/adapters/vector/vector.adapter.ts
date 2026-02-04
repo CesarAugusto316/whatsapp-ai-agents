@@ -12,7 +12,7 @@ export class VectorAdapter implements IVectorAdapter {
     const existing = new Set(collections.collections.map((c) => c.name));
 
     await this.ensure("business", existing);
-    await this.ensure("intents", existing);
+    await this.ensureIntents(existing);
     await this.ensureProducts(existing);
   }
 
@@ -21,6 +21,22 @@ export class VectorAdapter implements IVectorAdapter {
 
     await this.client.createCollection(name, {
       vectors: { size: this.dimension, distance: "Cosine" },
+    });
+  }
+
+  private async ensureIntents(existing: Set<string>) {
+    if (existing.has("intents")) return;
+
+    await this.client.createCollection("intents", {
+      vectors: { size: this.dimension, distance: "Cosine" },
+    });
+    await this.client.createPayloadIndex("intents", {
+      field_name: "lang",
+      field_schema: "keyword",
+    });
+    await this.client.createPayloadIndex("intents", {
+      field_name: "domain",
+      field_schema: "keyword",
     });
   }
 
@@ -34,13 +50,16 @@ export class VectorAdapter implements IVectorAdapter {
        */
       hnsw_config: { payload_m: 16, m: 0 },
     });
-
     await this.client.createPayloadIndex("products", {
       field_name: "business",
       field_schema: {
-        type: "keyword",
+        type: "uuid",
         is_tenant: true,
       },
+    });
+    await this.client.createPayloadIndex("products", {
+      field_name: "enabled",
+      field_schema: "bool",
     });
   }
 
@@ -116,6 +135,7 @@ export class VectorAdapter implements IVectorAdapter {
         must: [
           { key: "lang", match: { value: lang } },
           {
+            min_should: 1,
             should: domains.map((d) => ({
               key: "domain",
               match: { value: d },

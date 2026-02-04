@@ -156,11 +156,9 @@ class RagService {
     // 3. Preparar puntos para Qdrant
     const points = embeddings.map(({ embedding }, i) => {
       const { intent, domain, lang, text } = prepared[i];
-      // Generar ID determinístico
       const hash = this.sha256(`${domain}:${lang}:${text}`);
-      const id = this.hashToUUID(hash);
       return {
-        id,
+        id: this.hashToUUID(hash), // Generar ID determinístico
         vector: embedding,
         payload: {
           text,
@@ -176,7 +174,6 @@ class RagService {
   }
 
   // -------------------- BÚSQUEDA DE PRODUCTOS --------------------
-
   /**
    * Busca productos semánticamente similares
    */
