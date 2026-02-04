@@ -32,6 +32,24 @@ class RagService {
     return hasher.digest(encoding);
   }
 
+  private hashToUUID(hash: string): string {
+    if (hash.length < 32) {
+      throw new Error("Hash demasiado corto para generar UUID");
+    }
+    // Tomamos 128 bits (32 hex chars)
+    const hex = hash.slice(0, 32).toLowerCase();
+    // Convertimos a array mutable
+    const chars = hex.split("");
+    // Forzamos versión UUID = 4 (posición 12)
+    chars[12] = "4";
+    // Forzamos variant RFC 4122 (posición 16: 8,9,a,b)
+    const variant = parseInt(chars[16], 16);
+    chars[16] = ((variant & 0x3) | 0x8).toString(16);
+    const uuid = chars.join("");
+
+    return `${uuid.slice(0, 8)}-${uuid.slice(8, 12)}-${uuid.slice(12, 16)}-${uuid.slice(16, 20)}-${uuid.slice(20)}`;
+  }
+
   private normalizeText(text?: string): string {
     if (!text) return "";
     return text.replace(/\s+/g, " ").trim();
@@ -71,15 +89,6 @@ class RagService {
    *  ["restaurant", "global", "booking"], // Dominios activos
    *  3,
    *  "es"
-   * );
-   *
-   *  Para una farmacia con delivery habilitado
-   *  const pharmacyWithDelivery = await classifyIntent(
-   *   "¿Pueden entregar este medicamento a domicilio?",
-   *   "1.0",
-   *   ["pharmacy", "global", "delivery"], // Dominios activos
-   *   3,
-   *    "es"
    * );
    */
   async classifyIntent(
@@ -149,7 +158,7 @@ class RagService {
       const { intent, domain, lang, text } = prepared[i];
       // Generar ID determinístico
       const hash = this.sha256(`${domain}:${lang}:${text}`);
-      const id = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+      const id = this.hashToUUID(hash);
       return {
         id,
         vector: embedding,
