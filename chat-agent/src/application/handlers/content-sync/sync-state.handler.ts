@@ -25,7 +25,7 @@ export const contentSyncStateHandler: Handler<
     if (data.operation === "delete") {
       await ragService.deleteAllProducts(businessId);
     } else {
-      await cmsAdapter.syncBusiness(data.businessId);
+      await cmsAdapter.syncStaledBusiness(data.businessId);
     }
     logger.info("Business update triggered 🔄");
   }

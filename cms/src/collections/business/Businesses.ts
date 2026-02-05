@@ -234,6 +234,34 @@ export const Business: CollectionConfig = {
       ],
     },
     {
+      name: "address",
+      type: "text",
+      label: {
+        en: "Address",
+        es: "Dirección",
+      },
+      admin: {
+        placeholder: {
+          en: "Write your business address",
+          es: "Escribe tu dirección de negocio",
+        },
+      },
+    },
+    // {
+    //   name: "location",
+    //   type: "point", // install postgres gis extension
+    //   label: {
+    //     en: "Location",
+    //     es: "Ubicación",
+    //   },
+    //   admin: {
+    //     placeholder: {
+    //       en: "Write your business location",
+    //       es: "Escribe tu ubicación de negocio",
+    //     },
+    //   },
+    // },
+    {
       name: "taxes",
       type: "number",
       label: {

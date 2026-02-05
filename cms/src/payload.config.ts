@@ -201,7 +201,7 @@ export default buildConfig({
      * @description MORE INFO ABOUT PRODUCTION MIGRATIONS:
      * @link https://payloadcms.com/docs/database/migrations#running-migrations-in-production
      */
-    push: process.env.NODE_ENV === "development",
+    push: false,
     prodMigrations: migrations, // runs migrations on production on initialization
     idType: "uuid",
     pool: {

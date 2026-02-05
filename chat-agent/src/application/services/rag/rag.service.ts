@@ -209,6 +209,11 @@ class RagService {
   }
 
   /**
+   *
+   * @requires refactor
+   * @todo we use only name and description for embeding,
+   * if other fields changed, then just update the payload not the vector itself
+   *
    * Inserta o actualiza un producto con embedding semántico
    */
   async upsertProduct(product: Product) {
