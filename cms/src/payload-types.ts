@@ -262,6 +262,7 @@ export interface Business {
     country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
     address?: string | null;
     embedMap?: string | null;
+    shortUrlVirtual?: string | null;
     /**
      * @minItems 2
      * @maxItems 2
@@ -328,6 +329,9 @@ export interface Business {
       | null;
   };
   faq?: {
+    /**
+     * FAQ questions
+     */
     forFaq?:
       | {
           question?: string | null;
@@ -772,6 +776,7 @@ export interface BusinessesSelect<T extends boolean = true> {
         country?: T;
         address?: T;
         embedMap?: T;
+        shortUrlVirtual?: T;
         location?: T;
         nextHoliday?:
           | T

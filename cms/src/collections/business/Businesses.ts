@@ -1,5 +1,7 @@
 import { CollectionConfig, Field } from "payload";
 import { Users } from "../Users";
+import { extractPreciseCoordsFromGoogleLink } from "./geo-location";
+import { Business as IBusiness } from "@/payload-types";
 // ===== TIME DOMAIN =====
 
 // Un día abstracto
@@ -140,6 +142,9 @@ export const Business: CollectionConfig = {
     },
   },
   admin: {
+    // livePreview: {
+    //   url: "http://localhost:3001/admin/collections/businesses/f66f4929-72b0-4a49-8b48-7b19eb784aaa",
+    // },
     group: {
       en: "My businesses",
       es: "Mis negocios",
@@ -160,6 +165,27 @@ export const Business: CollectionConfig = {
   hooks: process.env.IS_CLI
     ? undefined
     : {
+        beforeChange: [
+          async ({ data, operation, originalDoc }) => {
+            // lets process coordinates here
+            if (operation === "update") {
+              const url =
+                data.general.shortUrlVirtual ||
+                originalDoc.general.shortUrlVirtual;
+              if (!url) return data;
+              const coords = await extractPreciseCoordsFromGoogleLink(url);
+              if (!coords) return data;
+              return {
+                ...data,
+                general: {
+                  ...data.general,
+                  location: [coords.longitude, coords.latitude],
+                },
+              } satisfies Partial<IBusiness>;
+            }
+            return data;
+          },
+        ],
         afterChange: [
           async ({ doc, operation, req }) => {
             await req.payload.jobs.queue({
@@ -462,6 +488,17 @@ export const Business: CollectionConfig = {
               },
             },
             {
+              virtual: true,
+              name: "shortUrlVirtual", // required
+              type: "text", // required
+              admin: {
+                placeholder: {
+                  en: "Paste your google map url",
+                  es: "Pega tu url de google maps aquí",
+                },
+              },
+            },
+            {
               // EXAMPLE TO USE IT
               // POST /api/sendLocation
               // {
@@ -478,6 +515,7 @@ export const Business: CollectionConfig = {
                 es: "Ubicación",
               },
               admin: {
+                readOnly: true,
                 placeholder: {
                   en: "Write your business location",
                   es: "Escribe tu ubicación de negocio",

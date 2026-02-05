@@ -14,11 +14,11 @@ import { Appointments } from "./collections/appointments/Appointments";
 import { BusinessMedia } from "./collections/business/Media";
 import { Users } from "./collections/Users";
 import { Customers } from "./collections/Costumers";
-import { Business } from "./collections/business/Businesses";
 import { Products } from "./collections/products/Products";
 import { ProductsMedia } from "./collections/products/Media";
 import { ProductOrder } from "./collections/products/ProductOrder";
 import { ProductCarts } from "./collections/products/ProductCart";
+import { Business } from "./collections/business/Businesses";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
