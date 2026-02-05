@@ -242,15 +242,8 @@ export interface Business {
   id: string;
   name: string;
   assistantName: string;
-  country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
-  address?: string | null;
-  /**
-   * @minItems 2
-   * @maxItems 2
-   */
-  location?: [number, number] | null;
+  currency?: ('USD' | 'EUR' | 'GBP' | 'JPY' | 'CAD' | 'MXN' | 'COL' | 'PEN') | null;
   taxes?: number | null;
-  currency?: ('USD' | 'MXN' | 'PEN' | 'EUR' | 'GBP') | null;
   general: {
     phoneNumber?: string | null;
     /**
@@ -266,6 +259,14 @@ export interface Business {
      * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
      */
     isActive?: boolean | null;
+    country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
+    address?: string | null;
+    embedMap?: string | null;
+    /**
+     * @minItems 2
+     * @maxItems 2
+     */
+    location?: [number, number] | null;
     nextHoliday?:
       | {
           startDate: string;
@@ -322,6 +323,41 @@ export interface Business {
       | {
           open: number;
           close: number;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  faq?: {
+    forFaq?:
+      | {
+          question?: string | null;
+          answer?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Questions that need to be reviewed by an admin
+   */
+  'questions-for-review'?: {
+    toReview?:
+      | {
+          /**
+           * The question asked by the customer
+           */
+          customerRealquestion?: string | null;
+          /**
+           * The answer provided by the agent
+           */
+          agentAnswer?: string | null;
+          /**
+           * The correct answer to the question
+           */
+          correctAnswer?: string | null;
+          /**
+           * Mark this question as approved. Upon saving, it will move to the FAQ tab.
+           */
+          approved?: boolean | null;
           id?: string | null;
         }[]
       | null;
@@ -720,11 +756,8 @@ export interface CustomersSelect<T extends boolean = true> {
 export interface BusinessesSelect<T extends boolean = true> {
   name?: T;
   assistantName?: T;
-  country?: T;
-  address?: T;
-  location?: T;
-  taxes?: T;
   currency?: T;
+  taxes?: T;
   general?:
     | T
     | {
@@ -736,6 +769,10 @@ export interface BusinessesSelect<T extends boolean = true> {
         user?: T;
         timezone?: T;
         isActive?: T;
+        country?: T;
+        address?: T;
+        embedMap?: T;
+        location?: T;
         nextHoliday?:
           | T
           | {
@@ -795,6 +832,30 @@ export interface BusinessesSelect<T extends boolean = true> {
           | {
               open?: T;
               close?: T;
+              id?: T;
+            };
+      };
+  faq?:
+    | T
+    | {
+        forFaq?:
+          | T
+          | {
+              question?: T;
+              answer?: T;
+              id?: T;
+            };
+      };
+  'questions-for-review'?:
+    | T
+    | {
+        toReview?:
+          | T
+          | {
+              customerRealquestion?: T;
+              agentAnswer?: T;
+              correctAnswer?: T;
+              approved?: T;
               id?: T;
             };
       };

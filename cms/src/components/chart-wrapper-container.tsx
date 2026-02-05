@@ -3,7 +3,7 @@ import { I18n } from "@payloadcms/translations";
 import { User } from "@/payload-types";
 import Charts from "./chart-wrapper";
 
-interface ChartsContainerProps {
+interface Props {
   payload: Payload;
   locale: Locale;
   i18n: I18n;
@@ -12,10 +12,7 @@ interface ChartsContainerProps {
   user: User;
 }
 
-export default async function ChartsContainer({
-  payload,
-  user,
-}: ChartsContainerProps) {
+export default async function ChartsContainer({ payload, user }: Props) {
   // Obtener los negocios del usuario desde el servidor
   const businesses = await payload.find({
     collection: "businesses",

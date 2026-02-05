@@ -1,5 +1,5 @@
 {
-  "id": "e27cf3d4-fa86-492d-bbae-99eed7e77939",
+  "id": "6b147798-791c-40ed-a64f-afd808ae2c23",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1535,6 +1535,195 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.businesses_faq_for_faq": {
+      "name": "businesses_faq_for_faq",
+      "schema": "",
+      "columns": {
+        "_order": {
+          "name": "_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "_parent_id": {
+          "name": "_parent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "question": {
+          "name": "question",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answer": {
+          "name": "answer",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "businesses_faq_for_faq_order_idx": {
+          "name": "businesses_faq_for_faq_order_idx",
+          "columns": [
+            {
+              "expression": "_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "businesses_faq_for_faq_parent_id_idx": {
+          "name": "businesses_faq_for_faq_parent_id_idx",
+          "columns": [
+            {
+              "expression": "_parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "businesses_faq_for_faq_parent_id_fk": {
+          "name": "businesses_faq_for_faq_parent_id_fk",
+          "tableFrom": "businesses_faq_for_faq",
+          "tableTo": "businesses",
+          "columnsFrom": [
+            "_parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.businesses_questions_for_review_to_review": {
+      "name": "businesses_questions_for_review_to_review",
+      "schema": "",
+      "columns": {
+        "_order": {
+          "name": "_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "_parent_id": {
+          "name": "_parent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "varchar",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "customer_realquestion": {
+          "name": "customer_realquestion",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_answer": {
+          "name": "agent_answer",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "correct_answer": {
+          "name": "correct_answer",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved": {
+          "name": "approved",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        }
+      },
+      "indexes": {
+        "businesses_questions_for_review_to_review_order_idx": {
+          "name": "businesses_questions_for_review_to_review_order_idx",
+          "columns": [
+            {
+              "expression": "_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "businesses_questions_for_review_to_review_parent_id_idx": {
+          "name": "businesses_questions_for_review_to_review_parent_id_idx",
+          "columns": [
+            {
+              "expression": "_parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "businesses_questions_for_review_to_review_parent_id_fk": {
+          "name": "businesses_questions_for_review_to_review_parent_id_fk",
+          "tableFrom": "businesses_questions_for_review_to_review",
+          "tableTo": "businesses",
+          "columnsFrom": [
+            "_parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.businesses": {
       "name": "businesses",
       "schema": "",
@@ -1558,35 +1747,16 @@
           "primaryKey": false,
           "notNull": true
         },
-        "country": {
-          "name": "country",
-          "type": "enum_businesses_country",
+        "currency": {
+          "name": "currency",
+          "type": "enum_businesses_currency",
           "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "address": {
-          "name": "address",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "location": {
-          "name": "location",
-          "type": "geometry(Point)",
           "primaryKey": false,
           "notNull": false
         },
         "taxes": {
           "name": "taxes",
           "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "currency": {
-          "name": "currency",
-          "type": "enum_businesses_currency",
-          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -1645,6 +1815,31 @@
           "primaryKey": false,
           "notNull": false,
           "default": true
+        },
+        "general_country": {
+          "name": "general_country",
+          "type": "enum_businesses_general_country",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "general_address": {
+          "name": "general_address",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "general_embed_map": {
+          "name": "general_embed_map",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "general_location": {
+          "name": "general_location",
+          "type": "geometry(Point)",
+          "primaryKey": false,
+          "notNull": false
         },
         "schedule_average_time": {
           "name": "schedule_average_time",
@@ -3808,28 +4003,18 @@
         "completed"
       ]
     },
-    "public.enum_businesses_country": {
-      "name": "enum_businesses_country",
-      "schema": "public",
-      "values": [
-        "ES",
-        "COL",
-        "MEX",
-        "PE",
-        "EC",
-        "US",
-        "CA"
-      ]
-    },
     "public.enum_businesses_currency": {
       "name": "enum_businesses_currency",
       "schema": "public",
       "values": [
         "USD",
-        "MXN",
-        "PEN",
         "EUR",
-        "GBP"
+        "GBP",
+        "JPY",
+        "CAD",
+        "MXN",
+        "COL",
+        "PEN"
       ]
     },
     "public.enum_businesses_general_business_type": {
@@ -3852,6 +4037,19 @@
         "America/Lima",
         "America/New_York",
         "Asia/Tokyo"
+      ]
+    },
+    "public.enum_businesses_general_country": {
+      "name": "enum_businesses_general_country",
+      "schema": "public",
+      "values": [
+        "ES",
+        "COL",
+        "MEX",
+        "PE",
+        "EC",
+        "US",
+        "CA"
       ]
     },
     "public.enum_products_type": {

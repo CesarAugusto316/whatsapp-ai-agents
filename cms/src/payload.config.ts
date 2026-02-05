@@ -7,7 +7,7 @@ import { postgresAdapter } from "@payloadcms/db-postgres";
 import { resendAdapter } from "@payloadcms/email-resend";
 import { ThirdPartyAccess } from "./collections/ThirdPartyAcces";
 import { s3Storage } from "@payloadcms/storage-s3";
-// import { migrations } from "./migrations";
+import { migrations } from "./migrations";
 
 // collections
 import { Appointments } from "./collections/appointments/Appointments";
@@ -117,8 +117,8 @@ export default buildConfig({
         defaultJobsCollection.admin = {};
       }
 
-      defaultJobsCollection.admin.hidden =
-        process.env.NODE_ENV === "production";
+      defaultJobsCollection.admin.hidden = true;
+      // process.env.NODE_ENV === "production";
       return defaultJobsCollection;
     },
     tasks: [
@@ -202,7 +202,7 @@ export default buildConfig({
      * @link https://payloadcms.com/docs/database/migrations#running-migrations-in-production
      */
     push: false,
-    // prodMigrations: migrations, // runs migrations on production on initialization
+    prodMigrations: migrations, // runs migrations on production on initialization
     idType: "uuid",
     pool: {
       connectionString: process.env.DATABASE_URI!,

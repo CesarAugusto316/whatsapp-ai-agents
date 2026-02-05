@@ -140,8 +140,6 @@ export const Business: CollectionConfig = {
     },
   },
   admin: {
-    // preview: (doc, { req, locale, token }) =>
-    //   `${req.protocol}//${req.host}/${doc.slug}`,
     group: {
       en: "My businesses",
       es: "Mis negocios",
@@ -212,87 +210,39 @@ export const Business: CollectionConfig = {
         },
       },
     },
-    /**
-     *
-     * @todo PARA VENDER PORDUCTOS O SERVICIOS, SE DEBE AGREGAR LA MONEDA Y PAIS MINIMO
-     */
+
     {
-      name: "country",
-      type: "select",
-      label: {
-        en: "Country",
-        es: "País",
-      },
-      options: [
-        { label: "España", value: "ES" },
-        { label: "Colombia", value: "COL" },
-        { label: "México", value: "MEX" },
-        { label: "Perú", value: "PE" },
-        { label: "Ecuador", value: "EC" },
-        { label: "EEUU", value: "US" },
-        { label: "Canada", value: "CA" },
+      type: "row",
+      fields: [
+        {
+          name: "currency",
+          type: "select",
+          options: [
+            { label: "USD", value: "USD" },
+            { label: "EUR", value: "EUR" },
+            { label: "GBP", value: "GBP" },
+            { label: "JPY", value: "JPY" },
+            { label: "CAD", value: "CAD" },
+            { label: "MXN", value: "MXN" },
+            { label: "COL", value: "COL" },
+            { label: "PEN", value: "PEN" },
+          ],
+          label: {
+            en: "Currency",
+            es: "Moneda",
+          },
+        },
+        {
+          name: "taxes",
+          type: "number",
+          label: {
+            en: "Taxes",
+            es: "Impuestos/IVA",
+          },
+        },
       ],
     },
-    {
-      name: "address",
-      type: "text",
-      label: {
-        en: "Address",
-        es: "Dirección",
-      },
-      admin: {
-        placeholder: {
-          en: "Write your business address",
-          es: "Escribe tu dirección de negocio",
-        },
-      },
-    },
-    // EXAMPLE TO USE IT
-    // POST /api/sendLocation
-    // {
-    //   "chatId": "11111111111@c.us",
-    //   "latitude": 38.8937255,
-    //   "longitude": -77.0969763,
-    //   "title": "Our office",
-    //   "session": "default"
-    // }
-    {
-      name: "location",
-      type: "point", // install postgres gis extension
-      label: {
-        en: "Location",
-        es: "Ubicación",
-      },
-      admin: {
-        placeholder: {
-          en: "Write your business location",
-          es: "Escribe tu ubicación de negocio",
-        },
-      },
-    },
-    {
-      name: "taxes",
-      type: "number",
-      label: {
-        en: "Taxes",
-        es: "Impuestos",
-      },
-    },
-    {
-      name: "currency",
-      type: "select",
-      options: [
-        { label: "USD", value: "USD" },
-        { label: "MXN", value: "MXN" },
-        { label: "PEN", value: "PEN" },
-        { label: "EUR", value: "EUR" },
-        { label: "GBP", value: "GBP" },
-      ],
-      label: {
-        en: "Currency",
-        es: "Moneda",
-      },
-    },
+
     {
       type: "tabs",
       tabs: [
@@ -448,6 +398,92 @@ export const Business: CollectionConfig = {
                 },
               },
             },
+
+            /**
+             *
+             * @todo PARA VENDER PORDUCTOS O SERVICIOS, SE DEBE AGREGAR LA MONEDA Y PAIS MINIMO
+             */
+            {
+              name: "country",
+              type: "select",
+              admin: {
+                hidden: true,
+              },
+              label: {
+                en: "Country",
+                es: "País",
+              },
+              options: [
+                { label: "España", value: "ES" },
+                { label: "Colombia", value: "COL" },
+                { label: "México", value: "MEX" },
+                { label: "Perú", value: "PE" },
+                { label: "Ecuador", value: "EC" },
+                { label: "EEUU", value: "US" },
+                { label: "Canada", value: "CA" },
+              ],
+            },
+            {
+              name: "address",
+              type: "text",
+              label: {
+                en: "Address",
+                es: "Dirección",
+              },
+              admin: {
+                placeholder: {
+                  en: "Write your business address",
+                  es: "Escribe tu dirección de negocio",
+                },
+              },
+            },
+            {
+              name: "embedMap",
+              type: "text",
+              label: {
+                en: "Embed Google Map",
+                es: "Mapa de Google embebido",
+              },
+              admin: {
+                placeholder: {
+                  en: "Write your embed map code",
+                  es: "Pega tu código de google maps aquí",
+                },
+              },
+            },
+            {
+              name: "map", // required
+              type: "ui", // required
+              admin: {
+                components: {
+                  Field: "./components/map.tsx",
+                  // Cell: "/path/to/MyCustomUICell", how is rendered in the table
+                },
+              },
+            },
+            {
+              // EXAMPLE TO USE IT
+              // POST /api/sendLocation
+              // {
+              //   "chatId": "11111111111@c.us",
+              //   "latitude": 38.8937255,
+              //   "longitude": -77.0969763,
+              //   "title": "Our office",
+              //   "session": "default"
+              // }
+              name: "location",
+              type: "point", // need to install postgres gis extension
+              label: {
+                en: "Location",
+                es: "Ubicación",
+              },
+              admin: {
+                placeholder: {
+                  en: "Write your business location",
+                  es: "Escribe tu ubicación de negocio",
+                },
+              },
+            },
             {
               type: "array",
               name: "nextHoliday",
@@ -553,6 +589,111 @@ export const Business: CollectionConfig = {
                   SATURDAY_BLOCK,
                 ]),
                 workDay("sunday", { en: "Sunday", es: "Domingo" }),
+              ],
+            },
+          ],
+        },
+        {
+          name: "faq",
+          label: {
+            en: "FAQ",
+            es: "Preguntas Frecuentes",
+          },
+          fields: [
+            {
+              name: "forFaq",
+              label: { en: "Add Question", es: "Agregar Pregunta" },
+              type: "array",
+              admin: {
+                description: {
+                  en: "FAQ questions",
+                  es: "Preguntas frecuentes",
+                },
+              },
+              fields: [
+                {
+                  name: "question",
+                  label: { en: "Question", es: "Pregunta" },
+                  type: "text",
+                },
+                {
+                  name: "answer",
+                  label: { en: "Answer", es: "Respuesta" },
+                  type: "text",
+                },
+              ],
+            },
+          ],
+        },
+        // questions-for-review
+        {
+          name: "questions-for-review",
+          admin: {
+            description: {
+              en: "Questions that need to be reviewed by an admin",
+              es: "Preguntas que necesitan ser revisadas por un administrador",
+            },
+          },
+          label: {
+            en: "Questions for Review",
+            es: "Preguntas para Revisión",
+          },
+          fields: [
+            {
+              name: "toReview",
+              label: { en: "Question", es: "Pregunta" },
+              type: "array",
+              fields: [
+                {
+                  name: "customerRealquestion",
+                  label: {
+                    en: "Question from Customer",
+                    es: "Pregunta del cliente",
+                  },
+                  type: "text",
+                  admin: {
+                    description: {
+                      en: "The question asked by the customer",
+                      es: "La pregunta realizada por el cliente",
+                    },
+                    readOnly: true,
+                  },
+                },
+                {
+                  name: "agentAnswer",
+                  label: { en: "Agent Answer", es: "Respuesta del agente" },
+                  type: "text",
+                  admin: {
+                    description: {
+                      en: "The answer provided by the agent",
+                      es: "La respuesta proporcionada por el agente",
+                    },
+                    readOnly: true,
+                  },
+                },
+                {
+                  name: "correctAnswer",
+                  label: { en: "Correct Answer", es: "Respuesta correcta" },
+                  type: "text",
+                  admin: {
+                    description: {
+                      en: "The correct answer to the question",
+                      es: "La respuesta correcta a la pregunta",
+                    },
+                  },
+                },
+                {
+                  name: "approved",
+                  label: { en: "Approved", es: "Aprobada" },
+                  type: "checkbox",
+                  defaultValue: false,
+                  admin: {
+                    description: {
+                      en: "Mark this question as approved. Upon saving, it will move to the FAQ tab.",
+                      es: "Marca esta pregunta como aprobada. Al guardar, se moverá a la pestaña FAQ.",
+                    },
+                  },
+                },
               ],
             },
           ],

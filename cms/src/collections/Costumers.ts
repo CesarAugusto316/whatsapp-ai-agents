@@ -13,6 +13,10 @@ export const Customers: CollectionConfig = {
     },
   },
   admin: {
+    group: {
+      en: "My businesses",
+      es: "Mis negocios",
+    },
     hideAPIURL: true,
     useAsTitle: "name", // header title is taken from "name" field
   },

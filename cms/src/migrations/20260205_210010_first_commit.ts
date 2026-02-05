@@ -4,10 +4,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
    CREATE TYPE "public"."enum_users_role" AS ENUM('admin', 'business');
   CREATE TYPE "public"."enum_appointments_status" AS ENUM('pending', 'confirmed', 'cancelled', 'completed');
-  CREATE TYPE "public"."enum_businesses_country" AS ENUM('ES', 'COL', 'MEX', 'PE', 'EC', 'US', 'CA');
-  CREATE TYPE "public"."enum_businesses_currency" AS ENUM('USD', 'MXN', 'PEN', 'EUR', 'GBP');
+  CREATE TYPE "public"."enum_businesses_currency" AS ENUM('USD', 'EUR', 'GBP', 'JPY', 'CAD', 'MXN', 'COL', 'PEN');
   CREATE TYPE "public"."enum_businesses_general_business_type" AS ENUM('restaurant', 'medical', 'legal', 'real_estate');
   CREATE TYPE "public"."enum_businesses_general_timezone" AS ENUM('Europe/Madrid', 'Europe/Paris', 'Europe/London', 'America/Lima', 'America/New_York', 'Asia/Tokyo');
+  CREATE TYPE "public"."enum_businesses_general_country" AS ENUM('ES', 'COL', 'MEX', 'PE', 'EC', 'US', 'CA');
   CREATE TYPE "public"."enum_products_type" AS ENUM('physical', 'digital');
   CREATE TYPE "public"."enum_payload_jobs_log_task_slug" AS ENUM('inline', 'semanticSync');
   CREATE TYPE "public"."enum_payload_jobs_log_state" AS ENUM('failed', 'succeeded');
@@ -150,15 +150,30 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"close" numeric NOT NULL
   );
   
+  CREATE TABLE "businesses_faq_for_faq" (
+  	"_order" integer NOT NULL,
+  	"_parent_id" uuid NOT NULL,
+  	"id" varchar PRIMARY KEY NOT NULL,
+  	"question" varchar,
+  	"answer" varchar
+  );
+  
+  CREATE TABLE "businesses_questions_for_review_to_review" (
+  	"_order" integer NOT NULL,
+  	"_parent_id" uuid NOT NULL,
+  	"id" varchar PRIMARY KEY NOT NULL,
+  	"customer_realquestion" varchar,
+  	"agent_answer" varchar,
+  	"correct_answer" varchar,
+  	"approved" boolean DEFAULT false
+  );
+  
   CREATE TABLE "businesses" (
   	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   	"name" varchar NOT NULL,
   	"assistant_name" varchar NOT NULL,
-  	"country" "enum_businesses_country",
-  	"address" varchar,
-  	"location" geometry(Point),
-  	"taxes" numeric,
   	"currency" "enum_businesses_currency",
+  	"taxes" numeric,
   	"general_phone_number" varchar DEFAULT '+34',
   	"general_require_appointment_approval" boolean DEFAULT true,
   	"general_business_type" "enum_businesses_general_business_type" DEFAULT 'restaurant' NOT NULL,
@@ -167,6 +182,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"general_user_id" uuid NOT NULL,
   	"general_timezone" "enum_businesses_general_timezone" DEFAULT 'Europe/Madrid' NOT NULL,
   	"general_is_active" boolean DEFAULT true,
+  	"general_country" "enum_businesses_general_country",
+  	"general_address" varchar,
+  	"general_embed_map" varchar,
+  	"general_location" geometry(Point),
   	"schedule_average_time" numeric DEFAULT 60 NOT NULL,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -333,6 +352,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "businesses_schedule_friday" ADD CONSTRAINT "businesses_schedule_friday_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."businesses"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "businesses_schedule_saturday" ADD CONSTRAINT "businesses_schedule_saturday_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."businesses"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "businesses_schedule_sunday" ADD CONSTRAINT "businesses_schedule_sunday_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."businesses"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "businesses_faq_for_faq" ADD CONSTRAINT "businesses_faq_for_faq_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."businesses"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "businesses_questions_for_review_to_review" ADD CONSTRAINT "businesses_questions_for_review_to_review_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."businesses"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "businesses" ADD CONSTRAINT "businesses_general_user_id_users_id_fk" FOREIGN KEY ("general_user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "businesses_media" ADD CONSTRAINT "businesses_media_business_id_businesses_id_fk" FOREIGN KEY ("business_id") REFERENCES "public"."businesses"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "products" ADD CONSTRAINT "products_business_id_businesses_id_fk" FOREIGN KEY ("business_id") REFERENCES "public"."businesses"("id") ON DELETE set null ON UPDATE no action;
@@ -394,6 +415,10 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "businesses_schedule_saturday_parent_id_idx" ON "businesses_schedule_saturday" USING btree ("_parent_id");
   CREATE INDEX "businesses_schedule_sunday_order_idx" ON "businesses_schedule_sunday" USING btree ("_order");
   CREATE INDEX "businesses_schedule_sunday_parent_id_idx" ON "businesses_schedule_sunday" USING btree ("_parent_id");
+  CREATE INDEX "businesses_faq_for_faq_order_idx" ON "businesses_faq_for_faq" USING btree ("_order");
+  CREATE INDEX "businesses_faq_for_faq_parent_id_idx" ON "businesses_faq_for_faq" USING btree ("_parent_id");
+  CREATE INDEX "businesses_questions_for_review_to_review_order_idx" ON "businesses_questions_for_review_to_review" USING btree ("_order");
+  CREATE INDEX "businesses_questions_for_review_to_review_parent_id_idx" ON "businesses_questions_for_review_to_review" USING btree ("_parent_id");
   CREATE INDEX "businesses_general_general_user_idx" ON "businesses" USING btree ("general_user_id");
   CREATE INDEX "businesses_updated_at_idx" ON "businesses" USING btree ("updated_at");
   CREATE INDEX "businesses_created_at_idx" ON "businesses" USING btree ("created_at");
@@ -473,6 +498,8 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "businesses_schedule_friday" CASCADE;
   DROP TABLE "businesses_schedule_saturday" CASCADE;
   DROP TABLE "businesses_schedule_sunday" CASCADE;
+  DROP TABLE "businesses_faq_for_faq" CASCADE;
+  DROP TABLE "businesses_questions_for_review_to_review" CASCADE;
   DROP TABLE "businesses" CASCADE;
   DROP TABLE "businesses_media" CASCADE;
   DROP TABLE "products" CASCADE;
@@ -489,10 +516,10 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "payload_migrations" CASCADE;
   DROP TYPE "public"."enum_users_role";
   DROP TYPE "public"."enum_appointments_status";
-  DROP TYPE "public"."enum_businesses_country";
   DROP TYPE "public"."enum_businesses_currency";
   DROP TYPE "public"."enum_businesses_general_business_type";
   DROP TYPE "public"."enum_businesses_general_timezone";
+  DROP TYPE "public"."enum_businesses_general_country";
   DROP TYPE "public"."enum_products_type";
   DROP TYPE "public"."enum_payload_jobs_log_task_slug";
   DROP TYPE "public"."enum_payload_jobs_log_state";

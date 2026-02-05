@@ -20,10 +20,10 @@ export const Appointments: CollectionConfig = {
     },
   },
   admin: {
-    // group: {
-    //   en: "My Reservations",
-    //   es: "Mis reservaciones",
-    // },
+    group: {
+      en: "My businesses",
+      es: "Mis negocios",
+    },
     hideAPIURL: true,
     defaultColumns: [
       "customerName",

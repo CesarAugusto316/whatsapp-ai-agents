@@ -86,32 +86,9 @@ export const script = async (config: SanitizedConfig) => {
           phoneNumber: `+3411111111${i}`,
           businessType: "restaurant",
           description: `
-            MENÚ DE PIZZAS
-            Pizzas Clásicas (Masa tradicional, 8 porciones):
-            Margherita: Tomate, muzzarella, albahaca, aceite de oliva - $12,500
-            Napolitana: Tomate, muzzarella, ajo, orégano, aceite - $13,200
-            Fugazza: Cebolla caramelizada, muzzarella, orégano - $13,800 (Vegetariana. Opción con provolone +$1,500)
-            Calabresa: Muzzarella, longaniza calabresa, cebolla - $15,500 (Picante leve)
-            Pizzas Gourmet (Masa madre, 8 porciones):
-            Prosciutto e Rúcula: Muzzarella, jamón crudo, rúcula, tomates cherry, parmesano - $18,900
-            Champiñones Trufados: Muzzarella, champiñones portobello, crema de trufa, nueces - $19,500
-            BBQ Pulled Pork: Muzzarella, pulled pork, salsa BBQ casera, cebolla morada - $17,800
-            Pizzas Veganas (Masa sin queso animal, queso vegano):
-            Vegana Clásica: Tomate, queso vegano, albahaca, champiñones - $14,500
-            Vegana Picante: Queso vegano, tomate, cebolla, jalapeños, maíz - $15,200
-            PERSONALIZACIÓN:
-            Tipos de masa: Tradicional, Madre, Sin gluten
-            Tamaños: Chica (4p), Mediana (6p), Grande (8p), Familiar (12p)
-            Bordes: Normal, Relleno de queso (+$3,000), Relleno de provolone (+$4,000)
-            Extra queso: +$2,500
-            Ingredientes extra: $1,500 c/u (Opciones: jamón, morrones, aceitunas, pimiento, anchoas, bacon)
-            TIEMPOS Y COSTOS DE DELIVERY:
-            Standard: 45-60 minutos
-            Express (+$3,000): 25-35 minutos (solo zonas cercanas)
-            Pickup (Retiro): 20 minutos
-            Pedido mínimo delivery: $10,000
-            Recargo delivery: $2,000 (fijo en toda CABA)
-            Delivery GRATIS en pedidos >$25,000
+            Ristorante Bella Forno nació hace más de 25 años en el corazón de la ciudad, inspirado en la tradición culinaria italiana que atraviesa generaciones. Desde sus primeros días, su fundador, Luca Romano, un apasionado chef de Nápoles, buscó traer los auténticos sabores de Italia a cada plato, combinando recetas clásicas con un toque de creatividad contemporánea.
+
+            Cada pizza es elaborada con masa fresca, fermentada lentamente para lograr una textura crujiente por fuera y suave por dentro. Los ingredientes son seleccionados cuidadosamente: tomates San Marzano, mozzarella de búfala, aceite de oliva virgen extra, hierbas aromáticas frescas y embutidos artesanales. La combinación de estos elementos garantiza un sabor auténtico, lleno de aromas que transportan directamente a las trattorias italianas.
           `,
           timezone: "Europe/Madrid",
           isActive: true,
