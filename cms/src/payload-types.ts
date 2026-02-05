@@ -244,6 +244,11 @@ export interface Business {
   assistantName: string;
   country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
   address?: string | null;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  location?: [number, number] | null;
   taxes?: number | null;
   currency?: ('USD' | 'MXN' | 'PEN' | 'EUR' | 'GBP') | null;
   general: {
@@ -717,6 +722,7 @@ export interface BusinessesSelect<T extends boolean = true> {
   assistantName?: T;
   country?: T;
   address?: T;
+  location?: T;
   taxes?: T;
   currency?: T;
   general?:

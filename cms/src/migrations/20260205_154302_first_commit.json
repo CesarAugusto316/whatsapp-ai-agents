@@ -1,5 +1,5 @@
 {
-  "id": "20eac34d-05cb-4626-93c2-617329f60901",
+  "id": "e27cf3d4-fa86-492d-bbae-99eed7e77939",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1565,6 +1565,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "address": {
+          "name": "address",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "geometry(Point)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "taxes": {
           "name": "taxes",
           "type": "numeric",
@@ -2236,8 +2248,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.product_order": {
-      "name": "product_order",
+    "public.product_orders": {
+      "name": "product_orders",
       "schema": "",
       "columns": {
         "id": {
@@ -2281,8 +2293,8 @@
         }
       },
       "indexes": {
-        "product_order_business_idx": {
-          "name": "product_order_business_idx",
+        "product_orders_business_idx": {
+          "name": "product_orders_business_idx",
           "columns": [
             {
               "expression": "business_id",
@@ -2296,8 +2308,8 @@
           "method": "btree",
           "with": {}
         },
-        "product_order_customer_idx": {
-          "name": "product_order_customer_idx",
+        "product_orders_customer_idx": {
+          "name": "product_orders_customer_idx",
           "columns": [
             {
               "expression": "customer_id",
@@ -2311,8 +2323,8 @@
           "method": "btree",
           "with": {}
         },
-        "product_order_updated_at_idx": {
-          "name": "product_order_updated_at_idx",
+        "product_orders_updated_at_idx": {
+          "name": "product_orders_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -2326,8 +2338,8 @@
           "method": "btree",
           "with": {}
         },
-        "product_order_created_at_idx": {
-          "name": "product_order_created_at_idx",
+        "product_orders_created_at_idx": {
+          "name": "product_orders_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -2343,9 +2355,9 @@
         }
       },
       "foreignKeys": {
-        "product_order_business_id_businesses_id_fk": {
-          "name": "product_order_business_id_businesses_id_fk",
-          "tableFrom": "product_order",
+        "product_orders_business_id_businesses_id_fk": {
+          "name": "product_orders_business_id_businesses_id_fk",
+          "tableFrom": "product_orders",
           "tableTo": "businesses",
           "columnsFrom": [
             "business_id"
@@ -2356,9 +2368,9 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "product_order_customer_id_customers_id_fk": {
-          "name": "product_order_customer_id_customers_id_fk",
-          "tableFrom": "product_order",
+        "product_orders_customer_id_customers_id_fk": {
+          "name": "product_orders_customer_id_customers_id_fk",
+          "tableFrom": "product_orders",
           "tableTo": "customers",
           "columnsFrom": [
             "customer_id"
@@ -2376,8 +2388,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.product_cart": {
-      "name": "product_cart",
+    "public.product_carts": {
+      "name": "product_carts",
       "schema": "",
       "columns": {
         "id": {
@@ -2421,8 +2433,8 @@
         }
       },
       "indexes": {
-        "product_cart_product_idx": {
-          "name": "product_cart_product_idx",
+        "product_carts_product_idx": {
+          "name": "product_carts_product_idx",
           "columns": [
             {
               "expression": "product_id",
@@ -2436,8 +2448,8 @@
           "method": "btree",
           "with": {}
         },
-        "product_cart_order_idx": {
-          "name": "product_cart_order_idx",
+        "product_carts_order_idx": {
+          "name": "product_carts_order_idx",
           "columns": [
             {
               "expression": "order_id",
@@ -2451,8 +2463,8 @@
           "method": "btree",
           "with": {}
         },
-        "product_cart_updated_at_idx": {
-          "name": "product_cart_updated_at_idx",
+        "product_carts_updated_at_idx": {
+          "name": "product_carts_updated_at_idx",
           "columns": [
             {
               "expression": "updated_at",
@@ -2466,8 +2478,8 @@
           "method": "btree",
           "with": {}
         },
-        "product_cart_created_at_idx": {
-          "name": "product_cart_created_at_idx",
+        "product_carts_created_at_idx": {
+          "name": "product_carts_created_at_idx",
           "columns": [
             {
               "expression": "created_at",
@@ -2483,9 +2495,9 @@
         }
       },
       "foreignKeys": {
-        "product_cart_product_id_products_id_fk": {
-          "name": "product_cart_product_id_products_id_fk",
-          "tableFrom": "product_cart",
+        "product_carts_product_id_products_id_fk": {
+          "name": "product_carts_product_id_products_id_fk",
+          "tableFrom": "product_carts",
           "tableTo": "products",
           "columnsFrom": [
             "product_id"
@@ -2496,10 +2508,10 @@
           "onDelete": "set null",
           "onUpdate": "no action"
         },
-        "product_cart_order_id_product_order_id_fk": {
-          "name": "product_cart_order_id_product_order_id_fk",
-          "tableFrom": "product_cart",
-          "tableTo": "product_order",
+        "product_carts_order_id_product_orders_id_fk": {
+          "name": "product_carts_order_id_product_orders_id_fk",
+          "tableFrom": "product_carts",
+          "tableTo": "product_orders",
           "columnsFrom": [
             "order_id"
           ],
@@ -3081,14 +3093,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "product_order_id": {
-          "name": "product_order_id",
+        "product_orders_id": {
+          "name": "product_orders_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
-        "product_cart_id": {
-          "name": "product_cart_id",
+        "product_carts_id": {
+          "name": "product_carts_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -3260,11 +3272,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_product_order_id_idx": {
-          "name": "payload_locked_documents_rels_product_order_id_idx",
+        "payload_locked_documents_rels_product_orders_id_idx": {
+          "name": "payload_locked_documents_rels_product_orders_id_idx",
           "columns": [
             {
-              "expression": "product_order_id",
+              "expression": "product_orders_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3275,11 +3287,11 @@
           "method": "btree",
           "with": {}
         },
-        "payload_locked_documents_rels_product_cart_id_idx": {
-          "name": "payload_locked_documents_rels_product_cart_id_idx",
+        "payload_locked_documents_rels_product_carts_id_idx": {
+          "name": "payload_locked_documents_rels_product_carts_id_idx",
           "columns": [
             {
-              "expression": "product_cart_id",
+              "expression": "product_carts_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3409,12 +3421,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_product_order_fk": {
-          "name": "payload_locked_documents_rels_product_order_fk",
+        "payload_locked_documents_rels_product_orders_fk": {
+          "name": "payload_locked_documents_rels_product_orders_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "product_order",
+          "tableTo": "product_orders",
           "columnsFrom": [
-            "product_order_id"
+            "product_orders_id"
           ],
           "columnsTo": [
             "id"
@@ -3422,12 +3434,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_product_cart_fk": {
-          "name": "payload_locked_documents_rels_product_cart_fk",
+        "payload_locked_documents_rels_product_carts_fk": {
+          "name": "payload_locked_documents_rels_product_carts_fk",
           "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "product_cart",
+          "tableTo": "product_carts",
           "columnsFrom": [
-            "product_cart_id"
+            "product_carts_id"
           ],
           "columnsTo": [
             "id"
@@ -3855,7 +3867,7 @@
       "schema": "public",
       "values": [
         "inline",
-        "rag business"
+        "semanticSync"
       ]
     },
     "public.enum_payload_jobs_log_state": {
@@ -3871,7 +3883,7 @@
       "schema": "public",
       "values": [
         "inline",
-        "rag business"
+        "semanticSync"
       ]
     }
   },

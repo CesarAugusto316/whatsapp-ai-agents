@@ -1,6 +1,10 @@
 import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
 import { Product } from "../cms";
-import { IVectorStoreAdapter } from "./vector-store.adapter.interface";
+import {
+  IntentPayload,
+  IVectorStoreAdapter,
+  QuadrantPoint,
+} from "./vector-store.adapter.interface";
 
 export class VectorStoreAdapter implements IVectorStoreAdapter {
   private client = new QdrantClient({ url: Bun.env.QDRANT_URL });
@@ -112,7 +116,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
     points: {
       id: string;
       vector: number[] | number[][];
-      payload: Record<string, unknown>;
+      payload: IntentPayload;
     }[],
   ) {
     return this.client.upsert("intents", {
@@ -127,7 +131,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
     lang: string,
     limit: number,
     threshold: number,
-  ): Promise<Schemas["QueryResponse"]> {
+  ) {
     return this.client.query("intents", {
       query: vector,
       score_threshold: threshold,
@@ -145,7 +149,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
         ],
       },
       limit,
-    });
+    }) as Promise<{ points: QuadrantPoint<IntentPayload>[] }>;
   }
 
   deleteIntents() {

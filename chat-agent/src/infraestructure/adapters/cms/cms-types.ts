@@ -221,3 +221,11 @@ export interface ProductCart {
   updatedAt: string;
   createdAt: string;
 }
+
+export interface QuestionsForReview {
+  customerMessage: string;
+  inferredIntent?: string;
+  business: string;
+  customer?: string;
+  context?: Record<string, any>;
+}

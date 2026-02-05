@@ -247,20 +247,29 @@ export const Business: CollectionConfig = {
         },
       },
     },
+    // EXAMPLE TO USE IT
+    // POST /api/sendLocation
     // {
-    //   name: "location",
-    //   type: "point", // install postgres gis extension
-    //   label: {
-    //     en: "Location",
-    //     es: "Ubicación",
-    //   },
-    //   admin: {
-    //     placeholder: {
-    //       en: "Write your business location",
-    //       es: "Escribe tu ubicación de negocio",
-    //     },
-    //   },
-    // },
+    //   "chatId": "11111111111@c.us",
+    //   "latitude": 38.8937255,
+    //   "longitude": -77.0969763,
+    //   "title": "Our office",
+    //   "session": "default"
+    // }
+    {
+      name: "location",
+      type: "point", // install postgres gis extension
+      label: {
+        en: "Location",
+        es: "Ubicación",
+      },
+      admin: {
+        placeholder: {
+          en: "Write your business location",
+          es: "Escribe tu ubicación de negocio",
+        },
+      },
+    },
     {
       name: "taxes",
       type: "number",

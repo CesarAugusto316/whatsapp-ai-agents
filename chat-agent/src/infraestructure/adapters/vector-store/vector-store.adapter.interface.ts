@@ -1,6 +1,23 @@
 import type { Schemas } from "@qdrant/js-client-rest";
 import type { Product } from "../cms";
 
+export type IntentPayload = {
+  text: string;
+  domain: string;
+  lang: string;
+  intent: string;
+};
+
+export interface QuadrantPoint<T> {
+  id: string | number;
+  version: number;
+  score: number;
+  payload?: T;
+  vector?: Schemas["VectorStructOutput"] | (Record<string, unknown> | null);
+  shard_key?: Schemas["ShardKey"] | (Record<string, unknown> | null);
+  order_value?: Schemas["OrderValue"] | (Record<string, unknown> | null);
+}
+
 export interface IVectorStoreAdapter {
   ensureCollections(): Promise<void>;
   dimension: number;
@@ -28,7 +45,13 @@ export interface IVectorStoreAdapter {
 
   // -------- Intents --------
 
-  upsertIntents(points: any[]): Promise<Schemas["UpdateResult"]>;
+  upsertIntents(
+    points: {
+      id: string;
+      vector: number[] | number[][];
+      payload: IntentPayload;
+    }[],
+  ): Promise<Schemas["UpdateResult"]>;
 
   queryIntents(
     vector: number[],
@@ -36,7 +59,7 @@ export interface IVectorStoreAdapter {
     lang: string,
     limit: number,
     threshold: number,
-  ): Promise<Schemas["QueryResponse"]>;
+  ): Promise<{ points: QuadrantPoint<IntentPayload>[] }>;
 
   deleteIntents(): Promise<boolean>;
 

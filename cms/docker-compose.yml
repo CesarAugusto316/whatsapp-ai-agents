@@ -1,7 +1,9 @@
 services:
   postgres:
-    image: postgres:18-alpine # light & fast
-    container_name: pg17
+    # https://hub.docker.com/r/postgis/postgis
+    # image: postgis/postgis:17-3.5-alpine # for any other server
+    image: imresamu/postgis:17-3.5-alpine # for mac
+    container_name: pg18
     restart: unless-stopped
     environment:
       POSTGRES_USER: root
@@ -10,6 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      # - pgdata:/var/lib/postgresql # for version 18
       - pgdata:/var/lib/postgresql/data # named volume
 
 #   app:

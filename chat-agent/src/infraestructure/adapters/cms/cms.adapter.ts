@@ -6,6 +6,7 @@ import {
   CreateCustomer,
   Customer,
   Product,
+  QuestionsForReview,
 } from "./cms-types";
 import { cacheAdapter, ICacheAdapter } from "@/infraestructure/adapters/cache";
 import { AvailabilityResponse } from "./chek-availability.types";
@@ -295,6 +296,37 @@ class CMSAdapter {
       }
       return res.json() as Promise<Product>;
     }, resilientConfig);
+  }
+
+  /**
+   * Envía la pregunta fallida al CMS vía HTTP POST
+   */
+  async sendQuestionForReview(data: QuestionsForReview) {
+    try {
+      const url = generateUrl(`questions-for-review`, { depth: 0 });
+      const response = await fetch(url, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify({
+          customerMessage: data.customerMessage,
+          inferredIntent: data.inferredIntent || null,
+          business: data.business,
+          customer: data.customer || null,
+          context: data.context || null,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error(
+          "Error registrando pregunta para revisión:",
+          response.statusText,
+        );
+      } else {
+        console.log("Pregunta enviada a Questions for Review correctamente");
+      }
+    } catch (err) {
+      console.error("Error enviando pregunta para revisión:", err);
+    }
   }
 }
 

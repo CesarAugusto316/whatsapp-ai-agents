@@ -5,11 +5,7 @@ export {
   eroticIntents,
   restaurantIntents,
 } from "./intents/specialized-intents";
-export {
-  bookingIntents,
-  deliveryIntents,
-  globalIntents,
-} from "./intents/universal-intents";
+export { bookingIntents, globalIntents } from "./intents/transversal-intents";
 
 // types
 export type {
@@ -18,10 +14,9 @@ export type {
   SpecializedSemanticIntent,
 } from "./intents/specialized-intents";
 export type {
-  UniversalIntentKey,
+  TransversalIntentKey,
   BookingIntentKey,
-  DeliveryIntentKey,
   GlobalSemanticIntent,
   CoreDomain,
-} from "./intents/universal-intents";
+} from "./intents/transversal-intents";
 export type { SemanticIntent, SyncStateRequest } from "./rag.types";

@@ -1,7 +1,9 @@
 import { aiAdapter, IAiAdapter } from "@/infraestructure/adapters/ai";
 import { cacheAdapter, ICacheAdapter } from "@/infraestructure/adapters/cache";
 import {
+  IntentPayload,
   IVectorStoreAdapter,
+  QuadrantPoint,
   VectorStoreAdapter,
 } from "@/infraestructure/adapters/vector-store";
 import { Schemas } from "@qdrant/js-client-rest";
@@ -9,7 +11,6 @@ import { SemanticIntent } from "./rag.types";
 import { Product } from "@/infraestructure/adapters/cms";
 import {
   bookingIntents,
-  deliveryIntents,
   globalIntents,
   eroticIntents,
   restaurantIntents,
@@ -106,7 +107,7 @@ class RagService {
     limit = 3,
     lang = "es",
     version = "1.0",
-  ): Promise<Schemas["QueryResponse"]> {
+  ) {
     // VALIDACIONES DE DOMINIO (lógica de aplicación)
     if (!activeDomains.includes("global")) {
       throw new Error('El dominio "global" siempre debe estar activo');
@@ -133,7 +134,7 @@ class RagService {
       lang,
       limit,
       this.THRESHOLD,
-    );
+    ) as Promise<{ points: QuadrantPoint<IntentPayload>[] }>;
   }
 
   /**
@@ -277,7 +278,6 @@ class RagService {
       // core intents
       ...globalIntents,
       ...bookingIntents,
-      ...deliveryIntents,
 
       // specialized intents
       ...restaurantIntents,

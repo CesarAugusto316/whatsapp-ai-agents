@@ -18,7 +18,7 @@ export const WRITING_STYLE = `
 `;
 
 type Args = {
-  intent: string;
+  intent?: string;
   flowStatus?: FMStatus;
   retrievedChunks?: string[];
   business: Business;
