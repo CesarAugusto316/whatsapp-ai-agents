@@ -10,7 +10,7 @@ async function main() {
   switch (target) {
     case "reset":
       await ragService.deleteCollections();
-      console.log("✅ All collections deleted");
+      console.log("✅ All collections reset");
       break;
 
     case "seed":

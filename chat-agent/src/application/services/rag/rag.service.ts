@@ -263,7 +263,6 @@ class RagService {
   async seedIntents() {
     try {
       await this.init();
-      await this.vectorAdapter.deleteIntents();
     } catch (error) {
       console.error("Error seeding intents:", error);
     }
@@ -277,7 +276,6 @@ class RagService {
       ...restaurantIntents,
       ...eroticIntents,
     ];
-
     return this.upsertIntents(coreIntents);
   }
 
@@ -287,7 +285,8 @@ class RagService {
    * @description deletes all collections in the vector DB
    */
   async deleteCollections() {
-    this.vectorAdapter.deleteCollections();
+    await this.init();
+    await this.vectorAdapter.deleteCollections();
   }
 
   /**

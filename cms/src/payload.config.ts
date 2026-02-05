@@ -154,7 +154,7 @@ export default buildConfig({
             setTimeout(() => controller.abort(), 20_000); // 20 segundos
 
             await fetch(
-              `${process.env.AGENT_URL}/semantic-ingestion/${input.businessId}`,
+              `${process.env.AGENT_URL}/content/sync-state/${input.businessId}`,
               {
                 method: "POST",
                 signal: controller.signal,
