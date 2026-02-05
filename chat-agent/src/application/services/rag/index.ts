@@ -25,4 +25,3 @@ export type {
   CoreDomain,
 } from "./intents/universal-intents";
 export type { SemanticIntent, SyncStateRequest } from "./rag.types";
-export { seedIntents } from "./intents/seed-intents";

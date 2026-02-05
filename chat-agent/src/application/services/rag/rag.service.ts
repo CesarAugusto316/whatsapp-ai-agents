@@ -1,4 +1,3 @@
-// application/services/semantic.service.ts
 import { aiAdapter, IAiAdapter } from "@/infraestructure/adapters/ai";
 import { cacheAdapter, ICacheAdapter } from "@/infraestructure/adapters/cache";
 import {
@@ -8,8 +7,16 @@ import {
 import { Schemas } from "@qdrant/js-client-rest";
 import { SemanticIntent } from "./rag.types";
 import { Product } from "@/infraestructure/adapters/cms";
+import {
+  bookingIntents,
+  deliveryIntents,
+  globalIntents,
+  eroticIntents,
+  restaurantIntents,
+} from "@/application/services/rag";
 
 /**
+ *
  * Servicio de aplicación para operaciones semánticas
  * Coordina embeddings, caché y búsqueda vectorial
  */
@@ -246,6 +253,41 @@ class RagService {
 
   async deleteAllProducts(businessId: string) {
     return this.vectorAdapter.deleteProductsByBusiness(businessId);
+  }
+
+  /**
+   *
+   * @fires from the comand-line
+   * @description seeds the vector DB
+   */
+  async seedIntents() {
+    try {
+      await this.init();
+      await this.vectorAdapter.deleteIntents();
+    } catch (error) {
+      console.error("Error seeding intents:", error);
+    }
+    const coreIntents = [
+      // core intents
+      ...globalIntents,
+      ...bookingIntents,
+      ...deliveryIntents,
+
+      // specialized intents
+      ...restaurantIntents,
+      ...eroticIntents,
+    ];
+
+    return this.upsertIntents(coreIntents);
+  }
+
+  /**
+   *
+   * @fires from the comand-line
+   * @description deletes all collections in the vector DB
+   */
+  async deleteCollections() {
+    this.vectorAdapter.deleteCollections();
   }
 
   /**

@@ -8,8 +8,8 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
   constructor(public dimension = 1024) {}
 
   async ensureCollections() {
-    const collections = await this.client.getCollections();
-    const existing = new Set(collections.collections.map((c) => c.name));
+    const { collections = [] } = await this.client.getCollections();
+    const existing = new Set(collections.map((c) => c.name));
 
     await this.ensure("business", existing);
     await this.ensureIntents(existing);
@@ -145,5 +145,18 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
       },
       limit,
     });
+  }
+
+  deleteIntents() {
+    return this.client.deleteCollection("intents");
+  }
+
+  async deleteCollections() {
+    const { collections = [] } = await this.client.getCollections();
+    await Promise.all(
+      collections.map((collection) =>
+        this.client.deleteCollection(collection.name),
+      ),
+    );
   }
 }

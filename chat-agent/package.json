@@ -15,7 +15,8 @@
     "dbos:reset": "npx dbos reset",
     "dbos:list": "npx dbos workflow list",
     "dbos:resume": "npx dbos workflow resume",
-    "seed:intents": "bun src/application/scripts/seed-intents.ts all"
+    "vector:seed": "bun src/application/scripts/seed-intents.ts seed",
+    "vector:reset": "bun src/application/scripts/seed-intents.ts reset"
   },
   "dependencies": {
     "@dbos-inc/dbos-sdk": "^4.6.11",

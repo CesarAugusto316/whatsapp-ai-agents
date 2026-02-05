@@ -37,4 +37,8 @@ export interface IVectorStoreAdapter {
     limit: number,
     threshold: number,
   ): Promise<Schemas["QueryResponse"]>;
+
+  deleteIntents(): Promise<boolean>;
+
+  deleteCollections(): Promise<void>;
 }

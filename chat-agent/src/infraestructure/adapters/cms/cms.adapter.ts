@@ -124,6 +124,11 @@ class CMSAdapter {
     }, resilientConfig);
   }
 
+  public async syncBusiness(id: string) {
+    const isStaled = true; // business has been updated and we need to sync it
+    return this.getBusinessById(id, isStaled);
+  }
+
   public async checkAvailability(
     queryParams: Pick<
       CMSQueryParams,

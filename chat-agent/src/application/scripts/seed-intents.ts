@@ -1,4 +1,4 @@
-import { seedIntents } from "../services/rag";
+import { ragService } from "../services/rag";
 
 const target = process.argv[2];
 
@@ -8,19 +8,13 @@ async function main() {
   }
 
   switch (target) {
-    case "core":
-      await seedIntents.coreDomain();
-      console.log("✅ Core intents seeded");
+    case "reset":
+      await ragService.deleteCollections();
+      console.log("✅ All collections deleted");
       break;
 
-    case "sub":
-      await seedIntents.subDomains();
-      console.log("✅ Subdomain intents seeded");
-      break;
-
-    case "all":
-      await seedIntents.coreDomain();
-      await seedIntents.subDomains();
+    case "seed":
+      await ragService.seedIntents();
       console.log("✅ All intents seeded");
       break;
 
