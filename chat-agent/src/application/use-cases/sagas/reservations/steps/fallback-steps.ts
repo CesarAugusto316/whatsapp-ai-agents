@@ -1,14 +1,13 @@
-import { intentClassifierAgent } from "@/application/agents/restaurant";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { CUSTOMER_INTENT } from "@/domain/restaurant/reservations";
-import {
-  buildInfo,
-  buildHowToProceed,
-} from "@/domain/restaurant/reservations/prompts";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { ReservationResult } from "../reservation-saga";
 import { attachProcessReminder } from "@/application/patterns";
+import {
+  conversationalPrompt,
+  systemMessages,
+} from "@/domain/restaurant/reservations/prompts";
+import { ragService } from "@/application/services/rag";
 
 /**
  *
@@ -19,42 +18,44 @@ import { attachProcessReminder } from "@/application/patterns";
 export async function conversationalWorkflow(
   ctx: RestaurantCtx,
 ): Promise<ReservationResult> {
-  const { RESERVATION_STATE, customerMessage, business, chatKey } =
+  const { RESERVATION_STATE, customerMessage, business, chatKey, customer } =
     Object.freeze(structuredClone(ctx));
 
   const status = RESERVATION_STATE?.status;
-
   const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
-  const messages: ChatMessage[] = [
-    ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
-    {
-      role: "user",
-      content: customerMessage,
-    },
-  ];
 
-  // 2. INTENT HANDLING WHEN CUSTOMER ASKS THE HOW OF SOMETHING
-  const customerIntent = await intentClassifierAgent.howOrWhat(customerMessage);
+  // 1. INTENT SEARCH
+  const { points: intentPoints } = await ragService.classifyIntent(
+    customerMessage,
+    ["global", "bookings", "restaurant"],
+  );
 
-  // 3. AI EXPLANATION OF HOW THE SYSTEM WORKS
-  if (customerIntent === CUSTOMER_INTENT.HOW) {
-    // choice 4 again
+  console.log({ intentPoints: JSON.stringify(intentPoints) });
+
+  // 2. FLOW SELECTION & INITIALIZATION (pre-FSM)
+  const isFirstMessage = chatHistoryCache.length === 0;
+  if (isFirstMessage) {
+    const messages: ChatMessage[] = [
+      {
+        role: "user",
+        content: systemMessages.initialGreeting(
+          customerMessage,
+          customer?.name,
+        ),
+      },
+    ];
     const assistantResponse = await aiAdapter.userMsg(
       { messages },
-      buildHowToProceed(business),
+      conversationalPrompt({ business, intent: "greeting" }),
     );
-    const reminderMSG = status
-      ? attachProcessReminder(assistantResponse, status, messages)
-      : assistantResponse;
-
     return {
       bag: {},
       lastStepResult: {
         execute: {
-          result: reminderMSG,
+          result: assistantResponse,
           metadata: {
-            description: "HOW_SYSTEM_WORKS, option selected",
-            internal: `intent=${CUSTOMER_INTENT.HOW}`,
+            description: "INITIALIZATION, chatHistoryCache.length = 0",
+            internal: `isFirstMessage=${isFirstMessage}`,
           },
         },
       },
@@ -62,9 +63,16 @@ export async function conversationalWorkflow(
   }
 
   // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
+  const messages: ChatMessage[] = [
+    ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
+    {
+      role: "user",
+      content: customerMessage,
+    },
+  ];
   const assistantResponse = await aiAdapter.userMsg(
     { messages },
-    buildInfo(business),
+    conversationalPrompt({ business, intent: "" }),
   );
   const reminderMSG = status
     ? attachProcessReminder(assistantResponse, status, messages)
@@ -76,8 +84,8 @@ export async function conversationalWorkflow(
       execute: {
         result: reminderMSG,
         metadata: {
-          description: "WHAT_IS_THE_SYSTEM, option selected",
-          internal: `intent=${CUSTOMER_INTENT.WHAT}`,
+          description: "",
+          internal: ``,
         },
       },
     },

@@ -13,6 +13,8 @@ import {
   globalIntents,
   eroticIntents,
   restaurantIntents,
+  CoreDomain,
+  SpecializedDomain,
 } from "@/application/services/rag";
 
 /**
@@ -100,10 +102,10 @@ class RagService {
    */
   async classifyIntent(
     query: string,
-    version: "1.0",
-    activeDomains: string[],
+    activeDomains: (CoreDomain | SpecializedDomain)[],
     limit = 3,
     lang = "es",
+    version = "1.0",
   ): Promise<Schemas["QueryResponse"]> {
     // VALIDACIONES DE DOMINIO (lógica de aplicación)
     if (!activeDomains.includes("global")) {

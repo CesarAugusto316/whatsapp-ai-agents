@@ -131,11 +131,12 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
     return this.client.query("intents", {
       query: vector,
       score_threshold: threshold,
+      with_payload: true,
       filter: {
         must: [
           { key: "lang", match: { value: lang } },
           {
-            min_should: 1,
+            // min_should: 1,
             should: domains.map((d) => ({
               key: "domain",
               match: { value: d },

@@ -83,7 +83,7 @@ class AiAdapter implements IAiAdapter {
        */
       temperature,
       response_format,
-      max_tokens = 1024,
+      max_tokens = 512,
     }: MessagesBasedRequest,
     prompt: string,
   ): Promise<string> {
@@ -120,6 +120,7 @@ class AiAdapter implements IAiAdapter {
         body: JSON.stringify({
           model: this.config.model,
           temperature,
+          max_tokens: 512,
           messages: [{ role: "system", content: message }],
         }),
       });

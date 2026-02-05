@@ -2,15 +2,8 @@ import { humanizerAgent } from "@/application/agents/restaurant";
 import { resolveNextState } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { FlowOptions } from "@/domain/restaurant/reservations";
-import {
-  buildHowToProceed,
-  systemMessages,
-} from "@/domain/restaurant/reservations/prompts";
-import {
-  cacheAdapter,
-  chatHistoryAdapter,
-} from "@/infraestructure/adapters/cache";
-import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
+import { systemMessages } from "@/domain/restaurant/reservations/prompts";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initReservationChangeSteps } from "./initial-change-steps";
 import { ReservationResult } from "../reservation-saga";
 
@@ -23,40 +16,9 @@ import { ReservationResult } from "../reservation-saga";
 export async function initialOptionsWorkflow(
   ctx: RestaurantCtx,
 ): Promise<ReservationResult | undefined> {
-  const { customerMessage, reservationKey, customer, business, chatKey } =
-    Object.freeze(structuredClone(ctx));
-
-  // 1. FLOW SELECTION & INITIALIZATION (pre-FSM, no authoritative)
-  const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
-  const isFirstMessage = chatHistoryCache.length === 0;
-
-  if (isFirstMessage) {
-    const messages: ChatMessage[] = [
-      {
-        role: "user",
-        content: systemMessages.initialGreeting(
-          customerMessage,
-          customer?.name,
-        ),
-      },
-    ];
-    const assistantResponse = await aiAdapter.userMsg(
-      { messages },
-      buildHowToProceed(business),
-    );
-    return {
-      bag: {},
-      lastStepResult: {
-        execute: {
-          result: assistantResponse,
-          metadata: {
-            description: "INITIALIZATION, chatHistoryCache.length = 0",
-            internal: `isFirstMessage=${isFirstMessage}`,
-          },
-        },
-      },
-    };
-  }
+  const { customerMessage, reservationKey, customer, business } = Object.freeze(
+    structuredClone(ctx),
+  );
 
   if (customerMessage === FlowOptions.MAKE_RESERVATION) {
     // choice 2

@@ -150,7 +150,7 @@ export const loggerMiddleware = (): MiddlewareHandler<
         durationHuman: `${Math.round(elapsed)}ms`,
         ip,
         traceId,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? JSON.stringify(error) : "Unknown error",
       };
 
       if (env.NODE_ENV === "production") {
