@@ -413,7 +413,6 @@ export interface Product {
   id: string;
   name: string;
   price: number;
-  type: 'physical' | 'digital';
   inventory?: number | null;
   enabled: boolean;
   description: string;
@@ -892,7 +891,6 @@ export interface BusinessesMediaSelect<T extends boolean = true> {
 export interface ProductsSelect<T extends boolean = true> {
   name?: T;
   price?: T;
-  type?: T;
   inventory?: T;
   enabled?: T;
   description?: T;

@@ -109,19 +109,6 @@ export const Products: CollectionConfig = {
       required: true,
     },
     {
-      name: "type",
-      type: "select",
-      options: [
-        { label: "Physical", value: "physical" },
-        { label: "Digital", value: "digital" },
-      ],
-      label: {
-        en: "Type",
-        es: "Tipo",
-      },
-      required: true,
-    },
-    {
       name: "inventory",
       type: "number",
       label: {
