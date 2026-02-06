@@ -9,7 +9,6 @@ export { bookingIntents, globalIntents } from "./intents/transversal-intents";
 
 // types
 export type {
-  EcommerceIntentKey,
   SpecializedDomain,
   SpecializedSemanticIntent,
 } from "./intents/specialized-intents";

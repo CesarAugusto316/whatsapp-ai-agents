@@ -8,7 +8,6 @@ import {
   systemMessages,
 } from "@/domain/restaurant/reservations/prompts";
 import { ragService } from "@/application/services/rag";
-import { cmsAdapter } from "@/infraestructure/adapters/cms";
 
 /**
  *
@@ -33,22 +32,11 @@ export async function conversationalWorkflow(
 
   /**
    * @todo notify CMS about unhandled intent
+   * Si no se detectó un intent confiable
+   *
+   * @example
+   * cmsAdapter.sendQuestionForReview(businessId, payload)
    */
-  // Si no se detectó un intent confiable
-  if (false) {
-    await cmsAdapter.sendQuestionForReview({
-      customerMessage,
-      inferredIntent: "",
-      business: business.id,
-      customer: customer?.id,
-      context: {
-        chatKey,
-        historyLength: chatHistoryCache.length,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
   console.log({ intentPoints: JSON.stringify(intentPoints) });
 
   // 2. FLOW SELECTION & INITIALIZATION (pre-FSM)

@@ -6,7 +6,7 @@ import {
   CreateCustomer,
   Customer,
   Product,
-  QuestionsForReview,
+  QuestionsToReview,
 } from "./cms-types";
 import { cacheAdapter, ICacheAdapter } from "@/infraestructure/adapters/cache";
 import { AvailabilityResponse } from "./chek-availability.types";
@@ -301,19 +301,26 @@ class CMSAdapter {
   /**
    * Envía la pregunta fallida al CMS vía HTTP POST
    */
-  async sendQuestionForReview(data: QuestionsForReview) {
+  async sendQuestionForReview(
+    queryParams: Pick<CMSQueryParams, "where[business][equals]">,
+    data: QuestionsToReview,
+  ) {
     try {
-      const url = generateUrl(`questions-for-review`, { depth: 0 });
+      const url = generateUrl(`businesses`, { ...queryParams, depth: 0 });
       const response = await fetch(url, {
-        method: "POST",
+        method: "PATCH",
         headers: this.headers,
         body: JSON.stringify({
-          customerMessage: data.customerMessage,
-          inferredIntent: data.inferredIntent || null,
-          business: data.business,
-          customer: data.customer || null,
-          context: data.context || null,
-        }),
+          "questions-for-review": {
+            toReview: [
+              {
+                // ...rest
+                agentAnswer: data.agentAnswer,
+                customerRealquestion: data.customerRealquestion,
+              },
+            ],
+          },
+        } satisfies Partial<Business>),
       });
 
       if (!response.ok) {

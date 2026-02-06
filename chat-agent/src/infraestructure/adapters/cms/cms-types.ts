@@ -64,6 +64,26 @@ export type Day = {
   id?: string | null;
 };
 
+export type QuestionsToReview = {
+  /**
+   * The question asked by the customer
+   */
+  customerRealquestion?: string | null;
+  /**
+   * The answer provided by the agent
+   */
+  agentAnswer?: string | null;
+  /**
+   * The correct answer to the question
+   */
+  correctAnswer?: string | null;
+  /**
+   * Mark this question as approved. Upon saving, it will move to the FAQ tab.
+   */
+  approved?: boolean | null;
+  id?: string | null;
+};
+
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "businesses".
@@ -72,11 +92,12 @@ export interface Business {
   id: string;
   name: string;
   assistantName: string;
-  country?: ("ES" | "COL" | "MEX" | "PE" | "EC" | "US" | "CA") | null;
+  currency?:
+    | ("USD" | "EUR" | "GBP" | "JPY" | "CAD" | "MXN" | "COL" | "PEN")
+    | null;
   taxes?: number | null;
-  currency?: ("USD" | "MXN" | "PEN" | "EUR" | "GBP") | null;
   general: {
-    phoneNumber: string;
+    phoneNumber?: string | null;
     /**
      * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
      */
@@ -96,6 +117,14 @@ export interface Business {
      * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
      */
     isActive?: boolean | null;
+    country?: ("ES" | "COL" | "MEX" | "PE" | "EC" | "US" | "CA") | null;
+    address?: string | null;
+    embedMap?: string | null;
+    /**
+     * @minItems 2
+     * @maxItems 2
+     */
+    location?: [number, number] | null;
     nextHoliday?:
       | {
           startDate: string;
@@ -113,6 +142,24 @@ export interface Business {
     friday?: Day[] | null;
     saturday?: Day[] | null;
     sunday?: Day[] | null;
+  };
+  faq?: {
+    /**
+     * FAQ questions
+     */
+    forFaq?:
+      | {
+          question?: string | null;
+          answer?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Questions that need to be reviewed by an admin
+   */
+  "questions-for-review"?: {
+    toReview?: QuestionsToReview[] | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -166,7 +213,6 @@ export interface Product {
   id: string;
   name: string;
   price: number;
-  type: "physical" | "digital";
   inventory?: number | null;
   enabled: boolean;
   description: string;
@@ -220,12 +266,4 @@ export interface ProductCart {
   order: string | ProductOrder;
   updatedAt: string;
   createdAt: string;
-}
-
-export interface QuestionsForReview {
-  customerMessage: string;
-  inferredIntent?: string;
-  business: string;
-  customer?: string;
-  context?: Record<string, any>;
 }

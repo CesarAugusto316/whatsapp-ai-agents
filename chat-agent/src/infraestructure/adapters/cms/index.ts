@@ -15,6 +15,7 @@ export type {
   Day,
   User,
   WeekDay,
+  QuestionsToReview,
 } from "./cms-types";
 
 export type {

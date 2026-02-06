@@ -1,7 +1,7 @@
 import { MiddlewareHandler } from "hono/types";
 import { DomainCtx } from "@/domain";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { WahaRecievedEvent } from "@/infraestructure/http/whatsapp";
+import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
 
