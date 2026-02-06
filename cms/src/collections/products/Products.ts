@@ -106,6 +106,16 @@ export const Products: CollectionConfig = {
         {
           name: "name",
           type: "text",
+          admin: {
+            description: {
+              en: "The name of the product",
+              es: "El nombre del producto",
+            },
+            placeholder: {
+              en: "e.g. Margherita Pizza",
+              es: "ej. Pizza Margarita",
+            },
+          },
           label: {
             en: "Name",
             es: "Nombre",
@@ -115,6 +125,16 @@ export const Products: CollectionConfig = {
         {
           name: "price",
           type: "number",
+          admin: {
+            description: {
+              en: "The price of the product",
+              es: "El precio del producto",
+            },
+            placeholder: {
+              en: "e.g. 10.99",
+              es: "ej. 10.99",
+            },
+          },
           label: {
             en: "Price",
             es: "Precio",
@@ -129,6 +149,16 @@ export const Products: CollectionConfig = {
         {
           name: "inventory",
           type: "number",
+          admin: {
+            description: {
+              en: "The inventory of the product",
+              es: "El inventario del producto",
+            },
+            placeholder: {
+              en: "e.g. 10",
+              es: "ej. 10",
+            },
+          },
           label: {
             en: "Inventory",
             es: "Inventario",
@@ -140,6 +170,12 @@ export const Products: CollectionConfig = {
           label: {
             en: "Business",
             es: "Negocio",
+          },
+          admin: {
+            description: {
+              en: "The business that owns the product",
+              es: "El negocio que posee el producto",
+            },
           },
           required: true,
           relationTo: "businesses",
@@ -159,6 +195,16 @@ export const Products: CollectionConfig = {
     {
       name: "description",
       type: "textarea",
+      admin: {
+        description: {
+          en: "The description of the product",
+          es: "La descripción del producto",
+        },
+        placeholder: {
+          en: "e.g. This is a great product",
+          es: "ej. Este es un gran producto",
+        },
+      },
       label: {
         en: "Description",
         es: "Descripción",
@@ -185,16 +231,35 @@ export const Products: CollectionConfig = {
             {
               name: "min",
               type: "number",
-              required: true,
+              admin: {
+                description: {
+                  en: "The minimum estimated processing time",
+                  es: "El tiempo mínimo estimado de procesamiento",
+                },
+                placeholder: {
+                  en: "e.g. 10",
+                  es: "ej. 10",
+                },
+              },
             },
             {
               name: "max",
               type: "number",
-              required: true,
+              admin: {
+                description: {
+                  en: "The maximum estimated processing time",
+                  es: "El tiempo máximo estimado de procesamiento",
+                },
+                placeholder: {
+                  en: "e.g. 30",
+                  es: "ej. 30",
+                },
+              },
             },
             {
               name: "unit",
               type: "select",
+
               defaultValue: "minutes",
               label: {
                 en: "Unit",

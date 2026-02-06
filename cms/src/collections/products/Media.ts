@@ -57,6 +57,16 @@ export const ProductsMedia: CollectionConfig = {
         en: "Alternative Text",
         es: "Texto Alternativo",
       },
+      admin: {
+        description: {
+          en: "Alternative text for the image or video",
+          es: "Texto alternativo para la imagen o video",
+        },
+        placeholder: {
+          en: "Enter alternative text",
+          es: "Ingrese texto alternativo",
+        },
+      },
       required: true,
     },
     {
@@ -65,6 +75,12 @@ export const ProductsMedia: CollectionConfig = {
       label: {
         en: "Product",
         es: "Producto",
+      },
+      admin: {
+        description: {
+          en: "The product that owns the media",
+          es: "El producto que posee la foto o video",
+        },
       },
       required: true,
       relationTo: "products",
@@ -102,6 +118,10 @@ export const ProductsMedia: CollectionConfig = {
     },
   ],
   admin: {
+    description: {
+      en: "Photo or video gallery of products",
+      es: "Galería de fotos o videos de productos",
+    },
     group: {
       en: "My products",
       es: "Mis productos",

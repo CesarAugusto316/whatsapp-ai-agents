@@ -57,6 +57,16 @@ export const BusinessMedia: CollectionConfig = {
         en: "Alternative Text",
         es: "Texto Alternativo",
       },
+      admin: {
+        description: {
+          en: "Alternative text for the image or video",
+          es: "Texto alternativo para la imagen o video",
+        },
+        placeholder: {
+          en: "Enter alternative text",
+          es: "Ingrese texto alternativo",
+        },
+      },
       required: true,
     },
     {
@@ -66,6 +76,12 @@ export const BusinessMedia: CollectionConfig = {
       label: {
         en: "Business",
         es: "Negocio",
+      },
+      admin: {
+        description: {
+          en: "Business associated with the media",
+          es: "Negocio asociado con la foto o video",
+        },
       },
       required: true,
       relationTo: "businesses",
@@ -84,6 +100,10 @@ export const BusinessMedia: CollectionConfig = {
   admin: {
     // preview: (doc, { req, locale, token }) =>
     //   `${req.protocol}//${req.host}/${doc.slug}`,
+    description: {
+      en: "Photo or video gallery of businesses",
+      es: "Galería de fotos o videos de negocios",
+    },
     hideAPIURL: true,
     group: {
       en: "My businesses",

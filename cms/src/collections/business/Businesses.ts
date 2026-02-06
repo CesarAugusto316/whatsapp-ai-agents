@@ -145,6 +145,10 @@ export const Business: CollectionConfig = {
     // livePreview: {
     //   url: "http://localhost:3001/admin/collections/businesses/f66f4929-72b0-4a49-8b48-7b19eb784aaa",
     // },
+    description: {
+      en: "Manage your businesses here",
+      es: "Administra aquí tus negocios",
+    },
     group: {
       en: "My businesses",
       es: "Mis negocios",
@@ -214,22 +218,44 @@ export const Business: CollectionConfig = {
       },
   fields: [
     {
-      name: "name",
-      type: "text",
-      required: true,
-      label: { en: "Business Name", es: "Nombre del Negocio" },
-    },
-    {
-      name: "assistantName",
-      type: "text",
-      required: true,
-      label: { en: "AI Assistant's Name", es: "Nombre del Asistente de IA" },
-      admin: {
-        placeholder: {
-          en: "Enter AI Assistant's Name",
-          es: "Ingrese el nombre del Asistente de IA",
+      type: "row",
+      fields: [
+        {
+          name: "name",
+          type: "text",
+          required: true,
+          admin: {
+            placeholder: {
+              en: "Enter Business Name",
+              es: "Ingrese el nombre del Negocio",
+            },
+            description: {
+              en: "The name of the business",
+              es: "El nombre del negocio",
+            },
+          },
+          label: { en: "Business Name", es: "Nombre del Negocio" },
         },
-      },
+        {
+          name: "assistantName",
+          type: "text",
+          required: true,
+          label: {
+            en: "AI Assistant's Name",
+            es: "Nombre del Asistente de IA",
+          },
+          admin: {
+            placeholder: {
+              en: "Enter AI Assistant's Name",
+              es: "Ingrese el nombre del Asistente de IA",
+            },
+            description: {
+              en: "The name of the AI assistant",
+              es: "El nombre del asistente de IA",
+            },
+          },
+        },
+      ],
     },
 
     {
@@ -260,6 +286,16 @@ export const Business: CollectionConfig = {
             en: "Taxes",
             es: "Impuestos/IVA",
           },
+          admin: {
+            placeholder: {
+              en: "Enter Taxes",
+              es: "Ingrese los impuestos/IVA",
+            },
+            description: {
+              en: "The taxes/IVA percentage",
+              es: "El porcentaje de impuestos/IVA",
+            },
+          },
         },
       ],
     },
@@ -275,66 +311,123 @@ export const Business: CollectionConfig = {
           },
           fields: [
             {
-              name: "phoneNumber",
-              type: "text",
-              defaultValue: "+34",
-              minLength: 7,
-              maxLength: 20,
-              label: {
-                en: "Phone Number",
-                es: "Número de teléfono",
-              },
-            },
-            {
-              type: "checkbox",
-              name: "requireAppointmentApproval",
-              label: {
-                en: "Require Appointment Approval",
-                es: "Requiere Aprobación de Citas",
-              },
-              defaultValue: true,
-              admin: {
-                description: {
-                  en: "Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.",
-                  es: "Usa este campo para indicar si el negocio requiere aprobación de citas o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente.",
-                },
-              },
-            },
-            {
-              name: "businessType",
-              type: "select",
-              required: true,
-              label: { en: "Business Type", es: "Tipo de Negocio" },
-              defaultValue: "restaurant",
-              options: [
+              type: "row",
+              fields: [
                 {
-                  label: { en: "Restaurant", es: "Restaurante" },
-                  value: "restaurant",
+                  type: "checkbox",
+                  name: "isActive",
+                  label: { en: "Active", es: "Activo" },
+                  defaultValue: true,
+                  admin: {
+                    description: {
+                      en: "Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here.",
+                      es: "Indica si el negocio está activo o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente.",
+                    },
+                  },
                 },
-                { label: { en: "Medical", es: "Médico" }, value: "medical" },
-                { label: { en: "Legal", es: "Legal" }, value: "legal" },
                 {
-                  label: { en: "Real Estate", es: "Bienes Raíces" },
-                  value: "real_estate",
+                  type: "checkbox",
+                  name: "requireAppointmentApproval",
+                  label: {
+                    en: "Require Appointment Approval",
+                    es: "Requiere Aprobación de Citas",
+                  },
+                  defaultValue: true,
+                  admin: {
+                    description: {
+                      en: "Use this field to indicate whether the business requires appointment approval or not.",
+                      es: "Usa este campo para indicar si el negocio requiere aprobación de citas o no.",
+                    },
+                  },
                 },
               ],
             },
             {
-              type: "number",
-              name: "maxCapacity",
-              defaultValue: 10,
-              required: true,
-              admin: {
-                condition: (data) =>
-                  data?.general?.businessType === "restaurant",
-              },
-              label: {
-                en: "Maximum capacity",
-                es: "Capacidad máxima de asistentes",
-              },
-              min: 1,
-              max: 500,
+              type: "row",
+              fields: [
+                {
+                  name: "phoneNumber",
+                  type: "text",
+                  defaultValue: "+34",
+                  minLength: 7,
+                  maxLength: 20,
+                  label: {
+                    en: "Phone Number",
+                    es: "Número de teléfono",
+                  },
+                },
+                {
+                  name: "businessType",
+                  type: "select",
+                  required: true,
+                  label: { en: "Business Type", es: "Tipo de Negocio" },
+                  defaultValue: "restaurant",
+                  options: [
+                    {
+                      label: { en: "Restaurant", es: "Restaurante" },
+                      value: "restaurant",
+                    },
+                    {
+                      label: { en: "Medical", es: "Médico" },
+                      value: "medical",
+                    },
+                    { label: { en: "Legal", es: "Legal" }, value: "legal" },
+                    {
+                      label: { en: "Real Estate", es: "Bienes Raíces" },
+                      value: "real_estate",
+                    },
+                  ],
+                },
+              ],
             },
+            {
+              type: "row",
+              fields: [
+                {
+                  type: "number",
+                  name: "maxCapacity",
+                  defaultValue: 10,
+                  required: true,
+                  admin: {
+                    condition: (data) =>
+                      data?.general?.businessType === "restaurant",
+                  },
+                  label: {
+                    en: "Maximum capacity",
+                    es: "Capacidad máxima de asistentes",
+                  },
+                  min: 1,
+                  max: 500,
+                },
+                {
+                  name: "user",
+                  type: "relationship",
+                  label: {
+                    en: "Owner",
+                    es: "Propietario",
+                  },
+                  relationTo: "users",
+                  filterOptions: ({ relationTo }) => {
+                    if (relationTo === Users.slug) {
+                      return {
+                        role: {
+                          equals: "business", // only users with role "business" are allowed
+                        },
+                      };
+                    }
+                  },
+                  admin: {
+                    allowEdit: false,
+                    allowCreate: true,
+                  },
+                  access: {
+                    update: () => false,
+                  },
+                  required: true,
+                },
+              ],
+            },
+
             {
               type: "textarea",
               name: "description",
@@ -347,77 +440,6 @@ export const Business: CollectionConfig = {
               },
               minLength: 0,
               maxLength: 5000,
-            },
-            {
-              name: "user",
-              type: "relationship",
-              label: {
-                en: "Owner",
-                es: "Propietario",
-              },
-              relationTo: "users",
-              filterOptions: ({ relationTo }) => {
-                if (relationTo === Users.slug) {
-                  return {
-                    role: {
-                      equals: "business", // only users with role "business" are allowed
-                    },
-                  };
-                }
-              },
-              admin: {
-                allowEdit: false,
-                allowCreate: true,
-              },
-              access: {
-                update: () => false,
-              },
-              required: true,
-            },
-            {
-              name: "timezone",
-              type: "select",
-              required: true,
-              label: { en: "Timezone", es: "Zona Horaria" },
-              defaultValue: "Europe/Madrid",
-              options: [
-                {
-                  label: { en: "Madrid (UTC+1)", es: "Madrid (UTC+1)" },
-                  value: "Europe/Madrid",
-                },
-                {
-                  label: { en: "Paris (UTC+1)", es: "París (UTC+1)" },
-                  value: "Europe/Paris",
-                },
-                {
-                  label: { en: "London (UTC+0)", es: "Londres (UTC+0)" },
-                  value: "Europe/London",
-                },
-                {
-                  label: { en: "Lima (UTC-5)", es: "Lima (UTC-5)" },
-                  value: "America/Lima",
-                },
-                {
-                  label: { en: "New York (UTC-5)", es: "Nueva York (UTC-5)" },
-                  value: "America/New_York",
-                },
-                {
-                  label: { en: "Tokyo (UTC+9)", es: "Tokio (UTC+9)" },
-                  value: "Asia/Tokyo",
-                },
-              ],
-            },
-            {
-              type: "checkbox",
-              name: "isActive",
-              label: { en: "Active", es: "Activo" },
-              defaultValue: true,
-              admin: {
-                description: {
-                  en: "Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.",
-                  es: "Indica si el negocio está activo o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente. Usalo para vaciones de ultimo minuto, etc.",
-                },
-              },
             },
 
             /**
@@ -458,37 +480,64 @@ export const Business: CollectionConfig = {
                 },
               },
             },
-            {
-              name: "embedMap",
-              type: "text",
-              label: {
-                en: "Embed Google Map",
-                es: "Mapa de Google embebido",
-              },
-              admin: {
-                hidden: true,
-                placeholder: {
-                  en: "Write your embed map code",
-                  es: "Pega tu código de google maps aquí",
-                },
-              },
-            },
 
             {
-              virtual: true,
-              name: "shortUrlVirtual", // required
-              type: "text", // required
-              label: {
-                en: "Short URL from Google Maps",
-                es: "URL de Google Maps",
-              },
-              admin: {
-                placeholder: {
-                  en: "Paste your google map url to generate coordinates",
-                  es: "Pega tu url de google maps aquí para generar coordenadas",
+              type: "row",
+              fields: [
+                {
+                  virtual: true,
+                  name: "shortUrlVirtual", // required
+                  type: "text", // required
+                  label: {
+                    en: "Short URL from Google Maps",
+                    es: "URL de Google Maps",
+                  },
+                  admin: {
+                    placeholder: {
+                      en: "Paste your google map url to generate coordinates",
+                      es: "Pega tu url de google maps aquí para generar coordenadas",
+                    },
+                  },
                 },
-              },
+                {
+                  name: "timezone",
+                  type: "select",
+                  required: true,
+                  label: { en: "Timezone", es: "Zona Horaria" },
+                  defaultValue: "Europe/Madrid",
+                  options: [
+                    {
+                      label: { en: "Madrid (UTC+1)", es: "Madrid (UTC+1)" },
+                      value: "Europe/Madrid",
+                    },
+                    {
+                      label: { en: "Paris (UTC+1)", es: "París (UTC+1)" },
+                      value: "Europe/Paris",
+                    },
+                    {
+                      label: { en: "London (UTC+0)", es: "Londres (UTC+0)" },
+                      value: "Europe/London",
+                    },
+                    {
+                      label: { en: "Lima (UTC-5)", es: "Lima (UTC-5)" },
+                      value: "America/Lima",
+                    },
+                    {
+                      label: {
+                        en: "New York (UTC-5)",
+                        es: "Nueva York (UTC-5)",
+                      },
+                      value: "America/New_York",
+                    },
+                    {
+                      label: { en: "Tokyo (UTC+9)", es: "Tokio (UTC+9)" },
+                      value: "Asia/Tokyo",
+                    },
+                  ],
+                },
+              ],
             },
+
             {
               // EXAMPLE TO USE IT
               // POST /api/sendLocation

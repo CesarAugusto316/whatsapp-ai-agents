@@ -235,34 +235,44 @@ export interface Appointment {
   createdAt: string;
 }
 /**
+ * Manage your businesses here
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "businesses".
  */
 export interface Business {
   id: string;
+  /**
+   * The name of the business
+   */
   name: string;
+  /**
+   * The name of the AI assistant
+   */
   assistantName: string;
   currency?: ('USD' | 'EUR' | 'GBP' | 'JPY' | 'CAD' | 'MXN' | 'COL' | 'PEN') | null;
+  /**
+   * The taxes/IVA percentage
+   */
   taxes?: number | null;
   general: {
-    phoneNumber?: string | null;
     /**
-     * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
-     */
-    requireAppointmentApproval?: boolean | null;
-    businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
-    maxCapacity?: number | null;
-    description?: string | null;
-    user: string | User;
-    timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
-    /**
-     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
+     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here.
      */
     isActive?: boolean | null;
+    /**
+     * Use this field to indicate whether the business requires appointment approval or not.
+     */
+    requireAppointmentApproval?: boolean | null;
+    phoneNumber?: string | null;
+    businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
+    maxCapacity?: number | null;
+    user: string | User;
+    description?: string | null;
     country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
     address?: string | null;
-    embedMap?: string | null;
     shortUrlVirtual?: string | null;
+    timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
     /**
      * @minItems 2
      * @maxItems 2
@@ -387,12 +397,20 @@ export interface Customer {
   createdAt: string;
 }
 /**
+ * Photo or video gallery of businesses
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "businesses-media".
  */
 export interface BusinessesMedia {
   id: string;
+  /**
+   * Alternative text for the image or video
+   */
   alt: string;
+  /**
+   * Business associated with the media
+   */
   business: string | Business;
   prefix?: string | null;
   updatedAt: string;
@@ -411,30 +429,59 @@ export interface BusinessesMedia {
  */
 export interface Product {
   id: string;
-  name: string;
-  price: number;
-  inventory?: number | null;
   enabled: boolean;
+  /**
+   * The name of the product
+   */
+  name: string;
+  /**
+   * The price of the product
+   */
+  price: number;
+  /**
+   * The inventory of the product
+   */
+  inventory?: number | null;
+  /**
+   * The business that owns the product
+   */
+  business: string | Business;
+  /**
+   * The description of the product
+   */
   description: string;
   /**
    * Approximate time range needed to process this item before it is ready. This is informational only.
    */
-  estimatedProcessingTime: {
-    min: number;
-    max: number;
+  estimatedProcessingTime?: {
+    /**
+     * The minimum estimated processing time
+     */
+    min?: number | null;
+    /**
+     * The maximum estimated processing time
+     */
+    max?: number | null;
     unit?: ('minutes' | 'hours' | 'days') | null;
   };
-  business: string | Business;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Photo or video gallery of products
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products-media".
  */
 export interface ProductsMedia {
   id: string;
+  /**
+   * Alternative text for the image or video
+   */
   alt: string;
+  /**
+   * The product that owns the media
+   */
   product: string | Product;
   business: string | Business;
   prefix?: string | null;
@@ -772,18 +819,17 @@ export interface BusinessesSelect<T extends boolean = true> {
   general?:
     | T
     | {
-        phoneNumber?: T;
+        isActive?: T;
         requireAppointmentApproval?: T;
+        phoneNumber?: T;
         businessType?: T;
         maxCapacity?: T;
-        description?: T;
         user?: T;
-        timezone?: T;
-        isActive?: T;
+        description?: T;
         country?: T;
         address?: T;
-        embedMap?: T;
         shortUrlVirtual?: T;
+        timezone?: T;
         location?: T;
         nextHoliday?:
           | T
@@ -897,10 +943,11 @@ export interface BusinessesMediaSelect<T extends boolean = true> {
  * via the `definition` "products_select".
  */
 export interface ProductsSelect<T extends boolean = true> {
+  enabled?: T;
   name?: T;
   price?: T;
   inventory?: T;
-  enabled?: T;
+  business?: T;
   description?: T;
   estimatedProcessingTime?:
     | T
@@ -909,7 +956,6 @@ export interface ProductsSelect<T extends boolean = true> {
         max?: T;
         unit?: T;
       };
-  business?: T;
   updatedAt?: T;
   createdAt?: T;
 }

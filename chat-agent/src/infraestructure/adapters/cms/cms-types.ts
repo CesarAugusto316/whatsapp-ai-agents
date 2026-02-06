@@ -217,6 +217,11 @@ export interface Product {
   enabled: boolean;
   description: string;
   business: string | Business;
+  estimatedProcessingTime: {
+    min: number;
+    max: number;
+    unit?: ("minutes" | "hours" | "days") | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
