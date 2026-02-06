@@ -1,6 +1,5 @@
 import { Handler } from "hono/types";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { DomainCtx } from "@/domain/context.types";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { ragService, SyncStateRequest } from "@/application/services/rag";
 import { logger } from "@/infraestructure/logging";
@@ -11,9 +10,7 @@ import { logger } from "@/infraestructure/logging";
  * @param next
  * @returns
  */
-export const contentSyncStateHandler: Handler<
-  DomainCtx<RestaurantCtx>
-> = async (c) => {
+export const contentSyncStateHandler: Handler<RestaurantCtx> = async (c) => {
   const businessId = c.req.param("businessId") ?? "";
   if (!businessId) {
     return c.json({ error: "Business ID not received" }, 400);

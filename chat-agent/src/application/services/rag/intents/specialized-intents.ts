@@ -2,9 +2,9 @@ import { SemanticIntent } from "@/application/services/rag";
 
 export type SpecializedDomain =
   | "restaurant"
-  | "real-state"
+  | "booking"
   | "erotic"
-  | "booking";
+  | "real-state";
 
 export type SharedIntentKey =
   | "request_menu"

@@ -241,6 +241,7 @@ class RagService {
           : product.business.id,
       enabled: product.enabled,
       price: product.price,
+      estimatedProcessingTime: product.estimatedProcessingTime,
     } as Partial<Product>;
 
     // 4. Insertar en vector DB
@@ -275,9 +276,9 @@ class RagService {
     const coreIntents = [
       // core intents
       ...transversalIntents,
-      ...bookingIntents,
 
       // specialized intents
+      ...bookingIntents,
       ...restaurantIntents,
       ...eroticIntents,
     ];

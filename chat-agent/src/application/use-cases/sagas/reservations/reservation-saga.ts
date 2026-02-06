@@ -1,5 +1,5 @@
 import { SagaOrchestrator, SagaResult } from "@/application/patterns";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { RestaurantProps } from "@/domain/restaurant";
 import {
   StartedFuncSagaResult,
   StartedSagaResult,
@@ -12,11 +12,11 @@ import {
 } from "./steps";
 
 // started reservation (make | update)
-const makeStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
+const makeStarted: StartedFuncSagaResult = (ctx: RestaurantProps) => {
   const status = ctx.RESERVATION_STATE?.status;
   if (!status) throw new Error("Status is undefined");
 
-  return new SagaOrchestrator<RestaurantCtx, StartedSagaResult, StartedSteps>({
+  return new SagaOrchestrator<RestaurantProps, StartedSagaResult, StartedSteps>({
     ctx,
   })
     .addStep(startedSteps.earlyConditions("create"))
@@ -25,11 +25,11 @@ const makeStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
     .start();
 };
 
-const updateStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
+const updateStarted: StartedFuncSagaResult = (ctx: RestaurantProps) => {
   const status = ctx.RESERVATION_STATE?.status;
   if (!status) throw new Error("Status is undefined");
 
-  return new SagaOrchestrator<RestaurantCtx, StartedSagaResult, StartedSteps>({
+  return new SagaOrchestrator<RestaurantProps, StartedSagaResult, StartedSteps>({
     ctx,
   })
     .addStep(startedSteps.earlyConditions("update"))
@@ -39,12 +39,12 @@ const updateStarted: StartedFuncSagaResult = (ctx: RestaurantCtx) => {
 };
 
 // validated reservation (make | update | cancel)
-const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
+const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantProps) => {
   const status = ctx.RESERVATION_STATE?.status;
   if (!status) throw new Error("Status is undefined");
 
   return new SagaOrchestrator<
-    RestaurantCtx,
+    RestaurantProps,
     ValidateSagaResult,
     ValidateSagaSteps
   >({
@@ -57,12 +57,12 @@ const makeValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     .start();
 };
 
-const updateValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
+const updateValidated: ValidateFuncSagaResult = (ctx: RestaurantProps) => {
   const status = ctx.RESERVATION_STATE?.status;
   if (!status) throw new Error("Status is undefined");
 
   return new SagaOrchestrator<
-    RestaurantCtx,
+    RestaurantProps,
     ValidateSagaResult,
     ValidateSagaSteps
   >({
@@ -75,12 +75,12 @@ const updateValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
     .start();
 };
 
-const cancelValidated: ValidateFuncSagaResult = (ctx: RestaurantCtx) => {
+const cancelValidated: ValidateFuncSagaResult = (ctx: RestaurantProps) => {
   const status = ctx.RESERVATION_STATE?.status;
   if (!status) throw new Error("Status is undefined");
 
   return new SagaOrchestrator<
-    RestaurantCtx,
+    RestaurantProps,
     ValidateSagaResult,
     ValidateSagaSteps
   >({

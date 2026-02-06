@@ -19,7 +19,7 @@ import {
   SagaResult,
   stepConfig,
 } from "@/application/patterns";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { RestaurantProps } from "@/domain/restaurant";
 import { ReservationSchema } from "@/domain/restaurant/reservations/schemas";
 import type {
   Appointment,
@@ -41,11 +41,11 @@ export type ValidateSagaSteps =
   | "CONFIRM:SEND_MESSAGE";
 
 export type ValidateFuncSagaResult = (
-  ctx: RestaurantCtx,
+  ctx: RestaurantProps,
 ) => Promise<SagaResult<ValidateSagaResult, ValidateSagaSteps>>;
 
 type ValidateFuncSagaStep = ISagaStep<
-  RestaurantCtx,
+  RestaurantProps,
   ValidateSagaResult,
   ValidateSagaSteps
 >;

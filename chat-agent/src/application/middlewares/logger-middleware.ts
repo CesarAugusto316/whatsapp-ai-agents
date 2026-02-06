@@ -1,6 +1,5 @@
 import { MiddlewareHandler } from "hono";
 import { env } from "bun";
-import { DomainCtx } from "@/domain";
 import { ReservationState } from "@/domain/restaurant/reservations";
 import { RestaurantCtx } from "@/domain/restaurant";
 
@@ -28,9 +27,7 @@ type LogData = {
   response?: unknown;
 };
 
-export const loggerMiddleware = (): MiddlewareHandler<
-  DomainCtx<RestaurantCtx>
-> => {
+export const loggerMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
   return async (c, next) => {
     const start = performance.now(); // Más preciso que Date.now()
     const method = c.req.method;

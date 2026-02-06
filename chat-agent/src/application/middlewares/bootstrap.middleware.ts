@@ -1,9 +1,9 @@
 import { MiddlewareHandler } from "hono/types";
-import { DomainCtx } from "@/domain";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
+import { ReservationState } from "@/domain/restaurant/reservations";
 
 /**
  *
@@ -11,9 +11,7 @@ import { cmsAdapter } from "@/infraestructure/adapters/cms";
  * @param next
  * @returns
  */
-export const bootstrapMiddleware = (): MiddlewareHandler<
-  DomainCtx<RestaurantCtx>
-> => {
+export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
   return async (ctx, next) => {
     const custumerRecievedEvent = await ctx.req.json<WahaRecievedEvent>();
     const businessId = ctx.req.param("businessId") ?? "";
@@ -24,7 +22,7 @@ export const bootstrapMiddleware = (): MiddlewareHandler<
     const chatKey = `chat:${businessId}:${customerPhone}`;
     const reservationKey = `reservation:${businessId}:${customerPhone}`;
     const currentReservation =
-      await cacheAdapter.getObj<RestaurantCtx>(reservationKey);
+      await cacheAdapter.getObj<ReservationState>(reservationKey);
     ctx.set("session", session);
     ctx.set("chatKey", chatKey);
     ctx.set("whatsappEvent", event);

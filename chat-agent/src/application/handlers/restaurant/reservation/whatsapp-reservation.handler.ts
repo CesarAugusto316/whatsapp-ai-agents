@@ -1,11 +1,8 @@
 import { Handler } from "hono/types";
-import { DomainCtx } from "@/domain/context.types";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { RestaurantCtx, RestaurantProps } from "@/domain/restaurant";
 import { whatsappSagaOrchestrator } from "@/application/use-cases/sagas";
 
-export const whatsappReservationHandler: Handler<
-  DomainCtx<RestaurantCtx>
-> = async (c) => {
+export const whatsappReservationHandler: Handler<RestaurantCtx> = async (c) => {
   const ctx = {
     session: c.get("session"),
     whatsappEvent: c.get("whatsappEvent"),
@@ -17,7 +14,9 @@ export const whatsappReservationHandler: Handler<
     businessId: c.get("businessId"),
     chatKey: c.get("chatKey"),
     reservationKey: c.get("reservationKey"),
-  } satisfies RestaurantCtx;
+    INTENT: c.get("INTENT"),
+    intentKey: c.get("intentKey"),
+  } satisfies RestaurantProps;
 
   if (ctx.whatsappEvent !== "message") {
     return c.json({ message: "Invalid event" });

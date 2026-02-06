@@ -4,8 +4,6 @@ import { env } from "bun";
 import { rateLimiter } from "hono-rate-limiter";
 import * as Sentry from "@sentry/bun";
 import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
-import { DomainCtx } from "@/domain";
-import { RestaurantCtx } from "@/domain/restaurant";
 import {
   loggerMiddleware,
   bootstrapMiddleware,
@@ -16,7 +14,7 @@ import {
 } from "@/application/handlers/restaurant";
 import { contentSyncStateHandler } from "./application/handlers/content-sync";
 
-const app = new Hono<DomainCtx<RestaurantCtx>>();
+const app = new Hono();
 
 Sentry.init({
   dsn: env?.SENTRY_DSN,

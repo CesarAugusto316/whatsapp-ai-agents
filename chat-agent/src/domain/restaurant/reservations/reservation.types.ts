@@ -48,7 +48,6 @@ export type ReservationStatus = keyof typeof ReservationStatuses;
 export interface ReservationState extends ReservationSchema {
   id: string;
   status: FMStatus;
-  customerIntent: string;
   customerId: string;
   businessId: string;
   attempts: number;

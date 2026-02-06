@@ -1,6 +1,6 @@
 import { humanizerAgent } from "@/application/agents/restaurant";
 import { resolveNextState } from "@/application/patterns";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { RestaurantProps } from "@/domain/restaurant";
 import { FlowOptions } from "@/domain/restaurant/reservations";
 import { systemMessages } from "@/domain/restaurant/reservations/prompts";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
@@ -10,14 +10,14 @@ import { ReservationResult } from "../reservation-saga";
 /**
  *
  * @description use when status is undefined
- * @param ctx
+ * @param props
  * @returns
  */
 export async function initialOptionsWorkflow(
-  ctx: RestaurantCtx,
+  props: RestaurantProps,
 ): Promise<ReservationResult | undefined> {
   const { customerMessage, reservationKey, customer, business } = Object.freeze(
-    structuredClone(ctx),
+    structuredClone(props),
   );
 
   if (customerMessage === FlowOptions.MAKE_RESERVATION) {
