@@ -91,32 +91,6 @@ export const Products: CollectionConfig = {
   timestamps: true,
   fields: [
     {
-      name: "name",
-      type: "text",
-      label: {
-        en: "Name",
-        es: "Nombre",
-      },
-      required: true,
-    },
-    {
-      name: "price",
-      type: "number",
-      label: {
-        en: "Price",
-        es: "Precio",
-      },
-      required: true,
-    },
-    {
-      name: "inventory",
-      type: "number",
-      label: {
-        en: "Inventory",
-        es: "Inventario",
-      },
-    },
-    {
       name: "enabled",
       type: "checkbox",
       label: {
@@ -125,6 +99,62 @@ export const Products: CollectionConfig = {
       },
       required: true,
       defaultValue: true,
+    },
+    {
+      type: "row",
+      fields: [
+        {
+          name: "name",
+          type: "text",
+          label: {
+            en: "Name",
+            es: "Nombre",
+          },
+          required: true,
+        },
+        {
+          name: "price",
+          type: "number",
+          label: {
+            en: "Price",
+            es: "Precio",
+          },
+          required: true,
+        },
+      ],
+    },
+    {
+      type: "row",
+      fields: [
+        {
+          name: "inventory",
+          type: "number",
+          label: {
+            en: "Inventory",
+            es: "Inventario",
+          },
+        },
+        {
+          name: "business",
+          type: "relationship",
+          label: {
+            en: "Business",
+            es: "Negocio",
+          },
+          required: true,
+          relationTo: "businesses",
+          access: {
+            update: ({ req }) => {
+              if (req?.user?.collection === "third-party-access") {
+                return true;
+              }
+              return (
+                req?.user?.collection === "users" && req?.user?.role === "admin"
+              );
+            },
+          },
+        },
+      ],
     },
     {
       name: "description",
@@ -136,24 +166,49 @@ export const Products: CollectionConfig = {
       required: true,
     },
     {
-      name: "business",
-      type: "relationship",
-      label: {
-        en: "Business",
-        es: "Negocio",
-      },
-      required: true,
-      relationTo: "businesses",
-      access: {
-        update: ({ req }) => {
-          if (req?.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
-          );
+      name: "estimatedProcessingTime",
+      type: "group",
+      admin: {
+        description: {
+          en: "Approximate time range needed to process this item before it is ready. This is informational only.",
+          es: "Rango aproximado de tiempo necesario para procesar este producto antes de que esté listo. Solo con fines informativos.",
         },
       },
+      label: {
+        en: "Estimated Processing Time",
+        es: "Tiempo estimado de procesamiento",
+      },
+      fields: [
+        {
+          type: "row",
+          fields: [
+            {
+              name: "min",
+              type: "number",
+              required: true,
+            },
+            {
+              name: "max",
+              type: "number",
+              required: true,
+            },
+            {
+              name: "unit",
+              type: "select",
+              defaultValue: "minutes",
+              label: {
+                en: "Unit",
+                es: "Unidad",
+              },
+              options: [
+                { label: { en: "Minutes", es: "Minutos" }, value: "minutes" },
+                { label: { en: "Hours", es: "Horas" }, value: "hours" },
+                { label: { en: "Days", es: "Días" }, value: "days" },
+              ],
+            },
+          ],
+        },
+      ],
     },
   ],
 

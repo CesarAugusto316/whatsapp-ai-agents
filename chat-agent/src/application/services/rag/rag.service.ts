@@ -11,10 +11,9 @@ import { SemanticIntent } from "./rag.types";
 import { Product } from "@/infraestructure/adapters/cms";
 import {
   bookingIntents,
-  globalIntents,
+  transversalIntents,
   eroticIntents,
   restaurantIntents,
-  CoreDomain,
   SpecializedDomain,
 } from "@/application/services/rag";
 
@@ -103,13 +102,13 @@ class RagService {
    */
   async classifyIntent(
     query: string,
-    activeDomains: (CoreDomain | SpecializedDomain)[],
+    activeDomains: ("transversal" | SpecializedDomain)[],
     limit = 3,
     lang = "es",
     version = "1.0",
   ) {
     // VALIDACIONES DE DOMINIO (lógica de aplicación)
-    if (!activeDomains.includes("global")) {
+    if (!activeDomains.includes("transversal")) {
       throw new Error('El dominio "global" siempre debe estar activo');
     }
 
@@ -242,7 +241,6 @@ class RagService {
           : product.business.id,
       enabled: product.enabled,
       price: product.price,
-      type: product.type,
     } as Partial<Product>;
 
     // 4. Insertar en vector DB
@@ -276,7 +274,7 @@ class RagService {
     }
     const coreIntents = [
       // core intents
-      ...globalIntents,
+      ...transversalIntents,
       ...bookingIntents,
 
       // specialized intents

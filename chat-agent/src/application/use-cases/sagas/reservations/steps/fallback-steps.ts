@@ -27,7 +27,7 @@ export async function conversationalWorkflow(
   // 1. INTENT SEARCH
   const { points: intentPoints } = await ragService.classifyIntent(
     customerMessage,
-    ["global", "bookings", "restaurant"],
+    ["transversal", "booking", "restaurant"],
   );
 
   /**

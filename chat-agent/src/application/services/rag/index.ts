@@ -4,18 +4,19 @@ export { ragService } from "./rag.service";
 export {
   eroticIntents,
   restaurantIntents,
+  bookingIntents,
 } from "./intents/specialized-intents";
-export { bookingIntents, globalIntents } from "./intents/transversal-intents";
+export { transversalIntents } from "./intents/transversal-intents";
 
 // types
 export type {
   SpecializedDomain,
   SpecializedSemanticIntent,
 } from "./intents/specialized-intents";
+
 export type {
   TransversalIntentKey,
-  BookingIntentKey,
-  GlobalSemanticIntent,
-  CoreDomain,
+  CoreSemanticIntent,
 } from "./intents/transversal-intents";
+
 export type { SemanticIntent, SyncStateRequest } from "./rag.types";

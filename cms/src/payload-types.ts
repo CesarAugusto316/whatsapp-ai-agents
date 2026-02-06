@@ -416,6 +416,14 @@ export interface Product {
   inventory?: number | null;
   enabled: boolean;
   description: string;
+  /**
+   * Approximate time range needed to process this item before it is ready. This is informational only.
+   */
+  estimatedProcessingTime: {
+    min: number;
+    max: number;
+    unit?: ('minutes' | 'hours' | 'days') | null;
+  };
   business: string | Business;
   updatedAt: string;
   createdAt: string;
@@ -894,6 +902,13 @@ export interface ProductsSelect<T extends boolean = true> {
   inventory?: T;
   enabled?: T;
   description?: T;
+  estimatedProcessingTime?:
+    | T
+    | {
+        min?: T;
+        max?: T;
+        unit?: T;
+      };
   business?: T;
   updatedAt?: T;
   createdAt?: T;
