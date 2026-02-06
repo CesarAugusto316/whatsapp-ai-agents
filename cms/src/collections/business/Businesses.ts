@@ -166,24 +166,19 @@ export const Business: CollectionConfig = {
     ? undefined
     : {
         beforeChange: [
-          async ({ data, operation, originalDoc }) => {
+          async ({ data }) => {
             // lets process coordinates here
-            if (operation === "update") {
-              const url =
-                data.general.shortUrlVirtual ||
-                originalDoc.general.shortUrlVirtual;
-              if (!url) return data;
-              const coords = await extractPreciseCoordsFromGoogleLink(url);
-              if (!coords) return data;
-              return {
-                ...data,
-                general: {
-                  ...data.general,
-                  location: [coords.longitude, coords.latitude],
-                },
-              } satisfies Partial<IBusiness>;
-            }
-            return data;
+            const url = data.general.shortUrlVirtual;
+            if (!url) return data;
+            const coords = await extractPreciseCoordsFromGoogleLink(url);
+            if (!coords) return data;
+            return {
+              ...data,
+              general: {
+                ...data.general,
+                location: [coords.longitude, coords.latitude],
+              },
+            } satisfies Partial<IBusiness>;
           },
         ],
         afterChange: [
@@ -471,30 +466,26 @@ export const Business: CollectionConfig = {
                 es: "Mapa de Google embebido",
               },
               admin: {
+                hidden: true,
                 placeholder: {
                   en: "Write your embed map code",
                   es: "Pega tu código de google maps aquí",
                 },
               },
             },
-            {
-              name: "map", // required
-              type: "ui", // required
-              admin: {
-                components: {
-                  Field: "./components/map.tsx",
-                  // Cell: "/path/to/MyCustomUICell", how is rendered in the table
-                },
-              },
-            },
+
             {
               virtual: true,
               name: "shortUrlVirtual", // required
               type: "text", // required
+              label: {
+                en: "Short URL from Google Maps",
+                es: "URL de Google Maps",
+              },
               admin: {
                 placeholder: {
-                  en: "Paste your google map url",
-                  es: "Pega tu url de google maps aquí",
+                  en: "Paste your google map url to generate coordinates",
+                  es: "Pega tu url de google maps aquí para generar coordenadas",
                 },
               },
             },
@@ -522,6 +513,17 @@ export const Business: CollectionConfig = {
                 },
               },
             },
+            {
+              name: "map", // required
+              type: "ui", // required
+              admin: {
+                components: {
+                  Field: "./components/map.tsx",
+                  // Cell: "/path/to/MyCustomUICell", how is rendered in the table
+                },
+              },
+            },
+
             {
               type: "array",
               name: "nextHoliday",
