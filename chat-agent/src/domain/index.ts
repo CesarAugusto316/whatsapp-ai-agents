@@ -1,1 +1,1 @@
-export type { DomainCtx, DomainPropsCtx } from "./context.types";
+export type { DomainProps } from "./context.types";

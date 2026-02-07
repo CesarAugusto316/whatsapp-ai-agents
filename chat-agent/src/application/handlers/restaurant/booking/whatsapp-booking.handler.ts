@@ -12,11 +12,15 @@ export const whatsappBookingHandler: Handler<RestaurantCtx> = async (c) => {
     customer: c.get("customer"),
     businessId: c.get("businessId"),
     chatKey: c.get("chatKey"),
-    reservationKey: c.get("reservationKey"),
-    bookingState: c.get("bookingState"),
+
+    // domain driven
+    activeDomains: c.get("activeDomains"),
     intentState: c.get("intentState"),
     intentKey: c.get("intentKey"),
-    activeDomains: c.get("activeDomains"),
+    bookingKey: c.get("bookingKey"),
+    bookingState: c.get("bookingState"),
+    productOrderKey: c.get("productOrderKey"),
+    productOrderState: c.get("productOrderState"),
   } satisfies RestaurantProps;
 
   if (ctx.whatsappEvent !== "message") {

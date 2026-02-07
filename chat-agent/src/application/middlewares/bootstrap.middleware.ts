@@ -4,6 +4,7 @@ import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { BookingState } from "@/domain/restaurant/booking";
+import { DomainKinds } from "../services/rag";
 
 /**
  *
@@ -20,20 +21,18 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
     const customerMessage = (custumerRecievedEvent.payload.body || "").trim();
     const customerPhone = custumerRecievedEvent.payload.from;
     const chatKey = `chat:${businessId}:${customerPhone}`;
-    const reservationKey = `reservation:${businessId}:${customerPhone}`;
+    const bookingKey = `booking:${businessId}:${customerPhone}`;
     const intentKey = `intent:${businessId}:${customerPhone}`;
-    const currentReservation =
-      await cacheAdapter.getObj<BookingState>(reservationKey);
-    const currentIntent =
-      await cacheAdapter.getObj<RestaurantIntent>(intentKey);
+    const bookingState = await cacheAdapter.getObj<BookingState>(bookingKey);
+    const intentState = await cacheAdapter.getObj<RestaurantIntent>(intentKey);
 
     ctx.set("session", session);
-    ctx.set("chatKey", chatKey);
-    ctx.set("reservationKey", reservationKey);
-    ctx.set("intentKey", intentKey);
     ctx.set("whatsappEvent", event);
-    ctx.set("bookingState", currentReservation);
-    ctx.set("intentState", currentIntent);
+    ctx.set("chatKey", chatKey);
+    ctx.set("intentKey", intentKey);
+    ctx.set("intentState", intentState);
+    ctx.set("bookingKey", bookingKey);
+    ctx.set("bookingState", bookingState);
 
     if (!businessId) {
       return ctx.json({ error: "Business ID not received" }, 400);
@@ -62,15 +61,19 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
     if (!business) {
       return ctx.json({ error: "Business not found" }, 404);
     }
+
+    const activeDomains: DomainKinds[] = ["booking", "transversal"];
+
     if (business.general.businessType === "restaurant") {
-      ctx.set("activeDomains", ["restaurant", "booking", "transversal"]);
+      ctx.set("activeDomains", activeDomains.concat(["restaurant"]));
     }
     if (business.general.businessType === "real_estate") {
-      ctx.set("activeDomains", ["real-state", "booking", "transversal"]);
+      ctx.set("activeDomains", activeDomains.concat(["real-state"]));
     }
     if (business.general.businessType === "erotic") {
-      ctx.set("activeDomains", ["erotic", "booking", "transversal"]);
+      ctx.set("activeDomains", activeDomains.concat(["erotic"]));
     }
+
     ctx.set("customer", customer); // can be undefined
     ctx.set("business", business);
 

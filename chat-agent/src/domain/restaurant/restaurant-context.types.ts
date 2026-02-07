@@ -1,10 +1,11 @@
 import { BookingState } from "./booking/booking.types";
-import { DomainCtx, DomainPropsCtx } from "../context.types";
+import { DomainProps } from "../context.types";
 import {
   RestaurantIntentKey,
   BookingIntentKey,
   TransversalIntentKey,
 } from "@/application/services/rag";
+import { Context } from "hono";
 
 export type RestaurantIntentType =
   | TransversalIntentKey
@@ -16,9 +17,12 @@ export type RestaurantIntent = {
   isConfirmed: boolean;
 };
 
-export type RestaurantCtx = DomainCtx<BookingState, RestaurantIntentType>;
-
-export type RestaurantProps = DomainPropsCtx<
+export type RestaurantProps = DomainProps<
   BookingState,
+  {}, // Ecommerce for restaura
   RestaurantIntentType
 >;
+
+export interface RestaurantCtx extends Context {
+  Variables: RestaurantProps;
+}

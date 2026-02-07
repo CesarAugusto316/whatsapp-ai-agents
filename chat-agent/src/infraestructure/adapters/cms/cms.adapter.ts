@@ -1,8 +1,8 @@
 import { env, fetch } from "bun";
 import {
-  Appointment,
+  Booking,
   Business,
-  CreateAppointment,
+  CreateBooking,
   CreateCustomer,
   Customer,
   Product,
@@ -32,7 +32,7 @@ export interface CMSQueryParams {
   "where[numberOfPeople][equals]"?: number; // businessId,
   "where[startDateTime][equals]"?: string; // 2024-03-15T00:00:00Z
   "where[endDateTime][equals]"?: string; // 2024-03-15T00:00:00Z
-  "where[status][equals]"?: Appointment["status"];
+  "where[status][equals]"?: Booking["status"];
 
   // COSTUMER:
   "where[phoneNumber][like]"?: string;
@@ -232,7 +232,7 @@ class CMSAdapter {
     });
   }
 
-  public getAppointmentById(appointmentId: string) {
+  public getBookingById(appointmentId: string) {
     const url = generateUrl(`appointments/${appointmentId}`, { depth: 0 });
     return fetch(url, {
       method: "GET",
@@ -240,8 +240,8 @@ class CMSAdapter {
     });
   }
 
-  public getAppointmentsByParams(queryParams: CMSQueryParams) {
-    return resilientQuery<{ docs: Appointment[] }>(async () => {
+  public getBookingByParams(queryParams: CMSQueryParams) {
+    return resilientQuery<{ docs: Booking[] }>(async () => {
       const url = generateUrl(`appointments`, { depth: 0, ...queryParams });
       const res = await fetch(url, {
         method: "GET",
@@ -250,11 +250,11 @@ class CMSAdapter {
       if (!res.ok) {
         throw new Error(`Failed to fetch appointments: ${res.status}`);
       }
-      return res.json() as Promise<{ docs: Appointment[] }>;
+      return res.json() as Promise<{ docs: Booking[] }>;
     }, resilientConfig);
   }
 
-  public createAppointment(appointmentBody: CreateAppointment) {
+  public createBooking(appointmentBody: CreateBooking) {
     const url = generateUrl("appointments", { depth: 0 });
     return fetch(url, {
       method: "POST",
@@ -264,9 +264,9 @@ class CMSAdapter {
   }
 
   // UPDATE, to cancel or change the date
-  public updateAppointment(
+  public updateBooking(
     appointmentId: string,
-    appointmentBody: Partial<CreateAppointment>,
+    appointmentBody: Partial<CreateBooking>,
   ) {
     const url = generateUrl(`appointments/${appointmentId}`, { depth: 0 });
     return fetch(url, {
@@ -276,7 +276,7 @@ class CMSAdapter {
     });
   }
 
-  public deleteAppointment(appointmentId: string) {
+  public deleteBooking(appointmentId: string) {
     return fetch(`${apiUrl}/appointments/${appointmentId}`, {
       method: "DELETE",
       headers: this.headers,

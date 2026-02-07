@@ -22,8 +22,8 @@ import {
 import { RestaurantProps } from "@/domain/restaurant";
 import { BookingSchema } from "@/domain/restaurant/booking/schemas";
 import type {
-  Appointment,
-  CreateAppointment,
+  Booking,
+  CreateBooking,
   Customer,
 } from "@/infraestructure/adapters/cms";
 import { toUTC } from "@/domain/utilities";
@@ -32,7 +32,7 @@ export const ATTEMPTS = 4;
 
 export interface ValidateSagaResult extends SagaBag {
   data?: BookingSchema;
-  reservation?: Appointment;
+  reservation?: Booking;
 }
 
 export type ValidateSagaSteps =
@@ -101,11 +101,11 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
         numberOfPeople,
         status: "confirmed",
         timezone: business.general.timezone,
-      } satisfies CreateAppointment;
+      } satisfies CreateBooking;
 
       const reservation = (
-        (await (await cmsAdapter.createAppointment(payload)).json()) as {
-          doc: Appointment;
+        (await (await cmsAdapter.createBooking(payload)).json()) as {
+          doc: Booking;
         }
       ).doc;
 
@@ -118,15 +118,15 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
     };
   },
   compensate: async ({ ctx, getStepResult }) => {
-    const { customerMessage, reservationKey } = ctx;
+    const { customerMessage, bookingKey } = ctx;
     const reservation = getStepResult("execute:CONFIRM")?.reservation;
 
     if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
     if (reservation && reservation?.id) {
-      await cmsAdapter.deleteAppointment(reservation?.id!);
-      await cacheAdapter.delete(reservationKey);
+      await cmsAdapter.deleteBooking(reservation?.id!);
+      await cacheAdapter.delete(bookingKey);
       logger.error("Error deleting appointment"); // DBOS reintentará el flujo desde el último checkpoint
     }
     return {
@@ -172,7 +172,7 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
 
       const reservation = (
         (await (
-          await cmsAdapter.updateAppointment(bookingState?.id!, {
+          await cmsAdapter.updateBooking(bookingState?.id!, {
             business: business?.id,
             customer: customer?.id,
             startDateTime,
@@ -181,7 +181,7 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
             customerName: customerName || customer?.name || "",
             status: "confirmed",
           })
-        ).json()) as { doc: Appointment }
+        ).json()) as { doc: Booking }
       ).doc;
 
       return { reservation, continue: true };
@@ -189,9 +189,9 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
     return { continue: true };
   },
   compensate: async ({ ctx }) => {
-    const { reservationKey } = ctx;
+    const { bookingKey } = ctx;
     try {
-      await cacheAdapter.delete(reservationKey ?? "");
+      await cacheAdapter.delete(bookingKey ?? "");
     } catch (cacheError) {
       logger.error(
         "Failed to clean cache after update error",
@@ -210,13 +210,8 @@ const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
     execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
   },
   execute: async ({ ctx, getStepResult }) => {
-    const {
-      customerMessage,
-      bookingState,
-      reservationKey,
-      customer,
-      business,
-    } = ctx;
+    const { customerMessage, bookingState, bookingKey, customer, business } =
+      ctx;
     const {
       customerName = "",
       datetime,
@@ -243,7 +238,7 @@ const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
       mode,
       business.general.timezone,
     );
-    await cacheAdapter.delete(reservationKey);
+    await cacheAdapter.delete(bookingKey);
     logger.info("Customer selected an option", {
       customerAction: CustomerActions.CONFIRM,
       customerMessage,
@@ -259,12 +254,12 @@ const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
 const exit = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "EXIT", ...stepConfig } },
   execute: async ({ ctx }) => {
-    const { customerMessage, reservationKey } = ctx;
+    const { customerMessage, bookingKey } = ctx;
 
     if (customerMessage?.toUpperCase() !== CustomerActions.EXIT) {
       return { continue: true };
     }
-    await cacheAdapter.delete(reservationKey);
+    await cacheAdapter.delete(bookingKey);
     const assistantMsg = systemMessages.getExitMsg();
     logger.info("Customer selected an option", {
       customerAction: CustomerActions.EXIT,
@@ -277,13 +272,8 @@ const restart = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "RESTART", ...stepConfig } },
   execute: async ({ ctx }) => {
     //
-    const {
-      customerMessage,
-      reservationKey,
-      business,
-      bookingState,
-      customer,
-    } = ctx;
+    const { customerMessage, bookingKey, business, bookingState, customer } =
+      ctx;
     const reservation = bookingState as BookingState;
 
     if (customerMessage?.toUpperCase() !== CustomerActions.RESTART) {
@@ -297,7 +287,7 @@ const restart = (): ValidateFuncSagaStep => ({
       reservation.status,
       CustomerActions.RESTART,
     );
-    await cacheAdapter.save(reservationKey ?? "", {
+    await cacheAdapter.save(bookingKey ?? "", {
       ...reservation,
       businessId: business?.id,
       customerId: customer?.id,
@@ -316,7 +306,7 @@ const cancelConfirmed = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "CONFIRM", ...stepConfig } },
   execute: async ({ ctx }) => {
     //
-    const { bookingState, customerMessage, reservationKey, customer } = ctx;
+    const { bookingState, customerMessage, bookingKey, customer } = ctx;
 
     if (!bookingState?.id) {
       return {
@@ -338,24 +328,24 @@ const cancelConfirmed = (): ValidateFuncSagaStep => ({
     if (customerMessage.toUpperCase() !== CustomerActions.CONFIRM) {
       return { continue: true };
     }
-    const res = await cmsAdapter.updateAppointment(bookingState.id!, {
+    const res = await cmsAdapter.updateBooking(bookingState.id!, {
       status: "cancelled",
     });
     if (res.status !== 200) {
       throw new Error("Error al cancelar la reserva");
     }
     const assistantResponse = `Hemos cancelado tu reserva  ${bookingState.id} exitosamente ✅. Gracias por preferirnos`;
-    await cacheAdapter.delete(reservationKey);
+    await cacheAdapter.delete(bookingKey);
     logger.info(`Reservation ${bookingState.id} cancelled successfully`);
     const result = await humanizerAgent(assistantResponse);
     return { continue: false, result };
   },
   compensate: async ({ ctx }) => {
-    const reservationKey = ctx.reservationKey;
+    const bookingKey = ctx.bookingKey;
     const reservation = ctx.bookingState;
     if (reservation?.id) {
       const result = `No pudimos cancelar tu reserva ${reservation.id} debido a un error interno. Por favor, inténtalo de nuevo más tarde.`;
-      await cacheAdapter.delete(reservationKey);
+      await cacheAdapter.delete(bookingKey);
       return { result, continue: true };
     }
     return { continue: false };

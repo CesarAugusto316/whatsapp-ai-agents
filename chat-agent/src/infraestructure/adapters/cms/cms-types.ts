@@ -38,7 +38,7 @@ export interface User {
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "appointments".
  */
-export interface Appointment {
+export interface Booking {
   id: string;
   business: string | Business;
   customer: string | Customer;
@@ -53,10 +53,7 @@ export interface Appointment {
   createdAt: string;
 }
 
-export type CreateAppointment = Omit<
-  Appointment,
-  "id" | "updatedAt" | "createdAt"
->;
+export type CreateBooking = Omit<Booking, "id" | "updatedAt" | "createdAt">;
 
 export type Day = {
   open: number;

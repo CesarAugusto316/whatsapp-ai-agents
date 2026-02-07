@@ -1,7 +1,7 @@
-import { Appointment } from "./cms-types";
+import { Booking } from "./cms-types";
 
 type AppointmentSlot = Pick<
-  Appointment,
+  Booking,
   | "startDateTime"
   | "endDateTime"
   | "numberOfPeople"

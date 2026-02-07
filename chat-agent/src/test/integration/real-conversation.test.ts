@@ -55,9 +55,9 @@ describe("Real conversation flow integration test", () => {
   beforeEach(async () => {
     // Clean up Redis keys for this business and customer before each test
     const chatKey = `chat:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
-    const reservationKey = `reservation:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
+    const bookingKey = `booking:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
     await cacheAdapter.delete(chatKey);
-    await cacheAdapter.delete(reservationKey);
+    await cacheAdapter.delete(bookingKey);
   });
 
   test(
@@ -160,10 +160,8 @@ describe("Real conversation flow integration test", () => {
       expect(confirmBag.reservation.numberOfPeople).toBe(2);
 
       // Additional verification: check that Redis state is cleared or updated
-      const reservationKey = `reservation:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
-      const state = await cacheAdapter.getObj<{ status: string }>(
-        reservationKey,
-      );
+      const bookingKey = `booking:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
+      const state = await cacheAdapter.getObj<{ status: string }>(bookingKey);
       // After confirmation, reservation state might be cleared or contain final state
       // This depends on the implementation. We'll just ensure it's not in a partial state.
       if (state) {

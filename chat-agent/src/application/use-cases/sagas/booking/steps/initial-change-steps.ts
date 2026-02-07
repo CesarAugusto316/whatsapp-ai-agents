@@ -13,7 +13,7 @@ import { toLocalDateTime } from "@/domain/utilities";
 type Args = {
   customer?: Customer;
   business: Business;
-  reservationKey: string;
+  bookingKey: string;
   flowOption: WorkFlowOption;
   getMessage: (state: BookingSchema) => string;
 };
@@ -21,7 +21,7 @@ type Args = {
 export const initChangeSteps = async ({
   customer,
   business,
-  reservationKey,
+  bookingKey,
   flowOption,
   getMessage,
 }: Args) => {
@@ -35,7 +35,7 @@ export const initChangeSteps = async ({
   if (!customer) {
     return humanizerAgent("Por favor, Crea una reserva para poder continuar");
   }
-  const lastRes = await cmsAdapter.getAppointmentsByParams({
+  const lastRes = await cmsAdapter.getBookingByParams({
     "where[business][equals]": business.id,
     "where[customer][equals]": customer.id,
     "where[status][equals]": "confirmed",
@@ -67,6 +67,6 @@ export const initChangeSteps = async ({
     status: transition.nextState, // FlowOption
   } satisfies Partial<BookingState>;
 
-  await cacheAdapter.save(reservationKey, previousState);
+  await cacheAdapter.save(bookingKey, previousState);
   return humanizerAgent(getMessage(previousState));
 };

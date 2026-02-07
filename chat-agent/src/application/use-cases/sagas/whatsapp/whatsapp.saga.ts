@@ -125,7 +125,7 @@ const sendStartTyping: WhatsappSagaStep = {
  * Note: This step doesn't have direct WhatsApp API calls but produces
  * the text result that will be sent in the final step.
  */
-const reservationSagaStep: WhatsappSagaStep = {
+const bookingSagaStep: WhatsappSagaStep = {
   config: {
     execute: { name: "reservationFlow", ...stepConfig },
   },
@@ -200,7 +200,7 @@ export const whatsappSagaOrchestrator = async (ctx: RestaurantProps) => {
   })
     .addStep(sendSeen)
     .addStep(sendStartTyping)
-    .addStep(reservationSagaStep)
+    .addStep(bookingSagaStep)
     .addStep(sendStopTyping)
     .addStep(sendMsgText)
     .start();
@@ -212,5 +212,5 @@ export {
   sendStartTyping,
   sendStopTyping,
   sendMsgText,
-  reservationSagaStep,
+  bookingSagaStep,
 };

@@ -1,3 +1,7 @@
+/**
+ *
+ * @todo delete "transversal" in the future
+ */
 export type DomainKinds =
   | "restaurant"
   | "booking"

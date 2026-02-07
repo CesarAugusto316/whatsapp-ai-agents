@@ -381,7 +381,7 @@ describe("Integration: /test-ai endpoint", () => {
           "chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:+3455555555",
         );
         ctx.set(
-          "reservationKey",
+          "bookingKey",
           "reservation:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:+3455555555",
         );
 
@@ -521,7 +521,7 @@ describe("Integration: /test-ai endpoint", () => {
           `chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:${customerPhone}`,
         );
         ctx.set(
-          "reservationKey",
+          "bookingKey",
           `reservation:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:${customerPhone}`,
         );
 

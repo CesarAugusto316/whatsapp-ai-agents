@@ -5,7 +5,7 @@ import { WorkFlowOptions } from "@/domain/restaurant/booking";
 import { systemMessages } from "@/domain/restaurant/booking/prompts";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
-import { ReservationResult } from "../booking-saga";
+import { BookingResult } from "../booking-saga";
 
 /**
  *
@@ -15,15 +15,15 @@ import { ReservationResult } from "../booking-saga";
  */
 export async function initialOptionsWorkflow(
   props: RestaurantProps,
-): Promise<ReservationResult | undefined> {
-  const { customerMessage, reservationKey, customer, business } = Object.freeze(
+): Promise<BookingResult | undefined> {
+  const { customerMessage, bookingKey, customer, business } = Object.freeze(
     structuredClone(props),
   );
 
   if (customerMessage === WorkFlowOptions.MAKE_BOOKING) {
     // choice 2
     const transition = resolveNextState(WorkFlowOptions.MAKE_BOOKING);
-    await cacheAdapter.save(reservationKey, {
+    await cacheAdapter.save(bookingKey, {
       businessId: business?.id,
       customerId: customer?.id,
       customerName: customer?.name || "",
@@ -54,7 +54,7 @@ export async function initialOptionsWorkflow(
       flowOption: WorkFlowOptions.UPDATE_BOOKING,
       getMessage: (state) =>
         systemMessages.getUpdateMsg(state, business.general.timezone),
-      reservationKey,
+      bookingKey,
     });
     return {
       bag: {},
@@ -77,7 +77,7 @@ export async function initialOptionsWorkflow(
       flowOption: WorkFlowOptions.CANCEL_BOOKING,
       getMessage: (state) =>
         systemMessages.getCancelMsg(state, business.general.timezone),
-      reservationKey,
+      bookingKey,
     });
     return {
       bag: {},

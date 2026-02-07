@@ -54,11 +54,11 @@ type StartedFuncSagaStep = ISagaStep<
 const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
   config: { execute: { name: "early_conditions", ...stepConfig } },
   execute: async ({ ctx }) => {
-    const { customerMessage, bookingState, reservationKey } = ctx;
+    const { customerMessage, bookingState, bookingKey } = ctx;
     const reservation = bookingState as BookingState;
 
     if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
-      await cacheAdapter.delete(reservationKey);
+      await cacheAdapter.delete(bookingKey);
       const responseMsg = systemMessages.getExitMsg();
       logger.info("Customer asked a question", {
         customerAction: CustomerActions.EXIT,
@@ -75,7 +75,7 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
     }
     // OPTION: 2. REINICIAR FOR MAXIMUM ATTEMPTS REACHED
     if ((reservation?.attempts ?? 0) >= ATTEMPTS) {
-      await cacheAdapter.delete(reservationKey);
+      await cacheAdapter.delete(bookingKey);
       const action =
         mode === "create"
           ? WorkFlowOptions.MAKE_BOOKING
@@ -127,13 +127,8 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
 const collectAndValidate = (): StartedFuncSagaStep => ({
   config: { execute: { name: "collect_and_validate", ...stepConfig } },
   execute: async ({ ctx }) => {
-    const {
-      customerMessage,
-      bookingState,
-      reservationKey,
-      business,
-      customer,
-    } = ctx;
+    const { customerMessage, bookingState, bookingKey, business, customer } =
+      ctx;
     const reservation = bookingState as BookingState;
     const previousState = mergeReservationData(reservation, {
       customerName: customer?.name || "",
@@ -172,7 +167,7 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
         previousState,
         parsedData,
       });
-      await cacheAdapter.save(reservationKey, {
+      await cacheAdapter.save(bookingKey, {
         ...reservation,
         ...mergedData,
       } satisfies Partial<BookingState>);
@@ -202,7 +197,7 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
   execute: async ({ ctx, getStepResult }) => {
     //
     const previous = getStepResult("execute:collect_and_validate");
-    const { customerMessage, bookingState, reservationKey, business } = ctx;
+    const { customerMessage, bookingState, bookingKey, business } = ctx;
     const reservation = bookingState as BookingState;
 
     // if collect_and_validate OK
@@ -221,7 +216,7 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
           customerMessage,
           isWithinSchedule,
         });
-        await cacheAdapter.save(reservationKey, {
+        await cacheAdapter.save(bookingKey, {
           ...reservation,
           ...data,
         } satisfies Partial<BookingState>);
@@ -261,7 +256,7 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
           isWithinRange,
           customerMessage,
         });
-        await cacheAdapter.save(reservationKey, {
+        await cacheAdapter.save(bookingKey, {
           ...reservation,
           ...data,
         } satisfies Partial<BookingState>);
@@ -288,7 +283,7 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
           customerMessage,
         });
         const retries = (reservation?.attempts || 0) + 1;
-        await cacheAdapter.save(reservationKey, {
+        await cacheAdapter.save(bookingKey, {
           ...reservation,
           ...data,
           attempts: retries,
@@ -315,7 +310,7 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
 
       // FINAL: ✅ INPUT DATA VALIDATED
       const transition = resolveNextState(reservation.status);
-      await cacheAdapter.save(reservationKey, {
+      await cacheAdapter.save(bookingKey, {
         ...reservation,
         ...data,
         status: transition.nextState, // UPDATE_VALIDATED,

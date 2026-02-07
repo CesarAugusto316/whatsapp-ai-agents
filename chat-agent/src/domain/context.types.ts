@@ -1,8 +1,7 @@
-import { Context } from "hono";
 import { Business, Customer } from "@/infraestructure/adapters/cms";
 import { DomainKinds } from "@/application/services/rag";
 
-interface CommonProps {
+interface CommonProps<T> {
   session: string; // whatsapp sessionId
   whatsappEvent: string;
   businessId: string;
@@ -11,21 +10,23 @@ interface CommonProps {
   customerPhone: string;
   customerMessage: string;
   chatKey: string;
+  intentKey: string;
+  activeDomains: DomainKinds[];
+  // statefull object
+  intentState?: {
+    type: T;
+    isConfirmed: boolean;
+  };
 }
 
 // this changes for any domain
-export interface DomainPropsCtx<State, Intent> extends CommonProps {
-  intentKey: string;
-  reservationKey: string;
-  bookingState?: Partial<State>; // statefull object
-  intentState?: {
-    // statefull object
-    type: Intent;
-    isConfirmed: boolean;
-  };
-  activeDomains: DomainKinds[];
-}
-
-export interface DomainCtx<State, Intent> extends Context {
-  Variables: DomainPropsCtx<State, Intent>;
+export interface DomainProps<
+  BState,
+  EState,
+  Intent,
+> extends CommonProps<Intent> {
+  bookingKey: string;
+  bookingState?: Partial<BState>; // statefull object
+  productOrderKey: string;
+  productOrderState?: Partial<EState>; // statefull object
 }

@@ -109,7 +109,7 @@ export const reservationSaga = {
   cancelValidated,
 };
 
-export type ReservationResult = SagaResult<
+export type BookingResult = SagaResult<
   ValidateSagaResult & StartedSagaResult,
   StartedSteps & ValidateSagaSteps
 >;

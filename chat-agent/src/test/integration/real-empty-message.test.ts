@@ -13,9 +13,9 @@ describe("Real integration: Empty message error", () => {
   beforeEach(async () => {
     // Clean up Redis keys for this business and customer before each test
     const chatKey = `chat:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
-    const reservationKey = `reservation:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
+    const bookingKey = `booking:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
     await cacheAdapter.delete(chatKey);
-    await cacheAdapter.delete(reservationKey);
+    await cacheAdapter.delete(bookingKey);
   });
 
   test(

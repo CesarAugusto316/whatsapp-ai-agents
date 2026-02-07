@@ -1,7 +1,7 @@
 import { RestaurantProps } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
-import { ReservationResult } from "../booking-saga";
+import { BookingResult } from "../booking-saga";
 import { attachProcessReminder } from "@/application/patterns";
 import {
   conversationalPrompt,
@@ -17,7 +17,7 @@ import { ragService } from "@/application/services/rag";
  */
 export async function conversationalWorkflow(
   ctx: RestaurantProps,
-): Promise<ReservationResult> {
+): Promise<BookingResult> {
   const { bookingState, customerMessage, business, chatKey, customer } =
     Object.freeze(structuredClone(ctx));
 

@@ -11,9 +11,9 @@ describe("Real integration: Business not found error", () => {
     const customerPhone = "+3455555555";
     const businessId = "non-existent-business-id-12345";
     const chatKey = `chat:${businessId}:${customerPhone}`;
-    const reservationKey = `reservation:${businessId}:${customerPhone}`;
+    const bookingKey = `booking:${businessId}:${customerPhone}`;
     await cacheAdapter.delete(chatKey);
-    await cacheAdapter.delete(reservationKey);
+    await cacheAdapter.delete(bookingKey);
   });
 
   test(
