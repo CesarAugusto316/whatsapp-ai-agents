@@ -14,7 +14,7 @@ import {
   transversalIntents,
   eroticIntents,
   restaurantIntents,
-  SpecializedDomain,
+  DomainKinds,
 } from "@/application/services/rag";
 
 /**
@@ -102,7 +102,7 @@ class RagService {
    */
   async classifyIntent(
     query: string,
-    activeDomains: ("transversal" | SpecializedDomain)[],
+    activeDomains: DomainKinds[],
     limit = 3,
     lang = "es",
     version = "1.0",
@@ -139,9 +139,7 @@ class RagService {
   /**
    * Inserta o actualiza intenciones en el sistema
    */
-  async upsertIntents<I extends string, D extends string>(
-    intents: SemanticIntent<I, D>[],
-  ) {
+  async upsertIntents<I extends string>(intents: SemanticIntent<I>[]) {
     // 1. Preparar datos para embedding en lote
     const prepared = intents.flatMap(({ intent, domain, examples, lang }) =>
       examples.map((ex) => ({

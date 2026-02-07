@@ -375,7 +375,7 @@ describe("Integration: /test-ai endpoint", () => {
           phoneNumber: "+3455555555",
           business: "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c",
         });
-        ctx.set("RESERVATION_STATE", undefined);
+        ctx.set("bookingState", undefined);
         ctx.set(
           "chatKey",
           "chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:+3455555555",
@@ -434,7 +434,7 @@ describe("Integration: /test-ai endpoint", () => {
     // Mock reservation saga orchestrator to handle started state
     mock.module("@/application/use-cases/sagas", () => ({
       reservationStateOrchestrator: mock(async (ctx: any) => {
-        if (ctx.RESERVATION_STATE?.status === "MAKE_STARTED") {
+        if (ctx.bookingState?.status === "MAKE_STARTED") {
           return {
             bag: {},
             lastStepResult: {
@@ -515,7 +515,7 @@ describe("Integration: /test-ai endpoint", () => {
           phoneNumber: customerPhone,
           business: "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c",
         });
-        ctx.set("RESERVATION_STATE", undefined);
+        ctx.set("bookingState", undefined);
         ctx.set(
           "chatKey",
           `chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:${customerPhone}`,

@@ -1,6 +1,6 @@
 import { MiddlewareHandler } from "hono";
 import { env } from "bun";
-import { ReservationState } from "@/domain/restaurant/reservations";
+import { BookingState } from "@/domain/restaurant/booking";
 import { RestaurantCtx } from "@/domain/restaurant";
 
 // Tipos para diferentes niveles de log
@@ -23,7 +23,7 @@ type LogData = {
   userAgent?: string;
   error?: string;
   traceId?: string;
-  state?: Partial<ReservationState>;
+  state?: Partial<BookingState>;
   response?: unknown;
 };
 
@@ -77,7 +77,7 @@ export const loggerMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
             ? userAgent.substring(0, 50) + (userAgent.length > 50 ? "..." : "")
             : undefined,
         traceId,
-        state: c.get("RESERVATION_STATE"),
+        state: c.get("bookingState"),
         response: await c.res.clone().json(),
       };
 

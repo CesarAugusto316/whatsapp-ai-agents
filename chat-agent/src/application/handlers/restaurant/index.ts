@@ -1,2 +1,2 @@
-export { testReservationHandler } from "./reservation/test-reservation.handler";
-export { whatsappReservationHandler } from "./reservation/whatsapp-reservation.handler";
+export { testBookingHandler } from "./booking/test-booking.handler";
+export { whatsappBookingHandler } from "./booking/whatsapp-booking.handler";

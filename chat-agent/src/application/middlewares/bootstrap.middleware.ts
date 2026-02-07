@@ -1,9 +1,9 @@
 import { MiddlewareHandler } from "hono/types";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { RestaurantCtx, RestaurantIntent } from "@/domain/restaurant";
 import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import { ReservationState } from "@/domain/restaurant/reservations";
+import { BookingState } from "@/domain/restaurant/booking";
 
 /**
  *
@@ -21,13 +21,19 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
     const customerPhone = custumerRecievedEvent.payload.from;
     const chatKey = `chat:${businessId}:${customerPhone}`;
     const reservationKey = `reservation:${businessId}:${customerPhone}`;
+    const intentKey = `intent:${businessId}:${customerPhone}`;
     const currentReservation =
-      await cacheAdapter.getObj<ReservationState>(reservationKey);
+      await cacheAdapter.getObj<BookingState>(reservationKey);
+    const currentIntent =
+      await cacheAdapter.getObj<RestaurantIntent>(intentKey);
+
     ctx.set("session", session);
     ctx.set("chatKey", chatKey);
-    ctx.set("whatsappEvent", event);
     ctx.set("reservationKey", reservationKey);
-    ctx.set("RESERVATION_STATE", currentReservation);
+    ctx.set("intentKey", intentKey);
+    ctx.set("whatsappEvent", event);
+    ctx.set("bookingState", currentReservation);
+    ctx.set("intentState", currentIntent);
 
     if (!businessId) {
       return ctx.json({ error: "Business ID not received" }, 400);
@@ -55,6 +61,15 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
 
     if (!business) {
       return ctx.json({ error: "Business not found" }, 404);
+    }
+    if (business.general.businessType === "restaurant") {
+      ctx.set("activeDomains", ["restaurant", "booking", "transversal"]);
+    }
+    if (business.general.businessType === "real_estate") {
+      ctx.set("activeDomains", ["real-state", "booking", "transversal"]);
+    }
+    if (business.general.businessType === "erotic") {
+      ctx.set("activeDomains", ["erotic", "booking", "transversal"]);
     }
     ctx.set("customer", customer); // can be undefined
     ctx.set("business", business);

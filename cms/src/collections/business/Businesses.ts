@@ -376,6 +376,10 @@ export const Business: CollectionConfig = {
                       label: { en: "Real Estate", es: "Bienes Raíces" },
                       value: "real_estate",
                     },
+                    {
+                      label: { en: "Adult", es: "Bienes Adultos" },
+                      value: "erotic",
+                    },
                   ],
                 },
               ],

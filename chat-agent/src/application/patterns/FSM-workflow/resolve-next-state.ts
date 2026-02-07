@@ -1,37 +1,37 @@
 import {
   CustomerActionValue,
   CustomerActions,
-  FlowOptions,
+  WorkFlowOptions,
   FMStatus,
-  ReservationStatuses,
-} from "@/domain/restaurant/reservations";
+  BookingStatuses,
+} from "@/domain/restaurant/booking";
 import { ChatMessage } from "@/infraestructure/adapters/ai";
 
 // Mapa de mensajes para el usuario por estado
 const STATE_MESSAGES: Partial<Record<FMStatus, string>> = {
   // Estados de CREACIÓN
-  [ReservationStatuses.MAKE_STARTED]:
+  [BookingStatuses.MAKE_STARTED]:
     "📝 *Tienes una reserva en curso.*\nContinúa proporcionando los datos necesarios.",
-  [ReservationStatuses.MAKE_RESTARTED]:
+  [BookingStatuses.MAKE_RESTARTED]:
     "🔄 *Has reiniciado tu reserva.*\nVuelve a ingresar tus datos",
-  [ReservationStatuses.MAKE_VALIDATED]:
+  [BookingStatuses.MAKE_VALIDATED]:
     "✅ *Datos validados correctamente.*\n¿Quieres confirmar la reserva?",
-  [ReservationStatuses.MAKE_CONFIRMED]: "🎉 *¡Reserva confirmada!*",
+  [BookingStatuses.MAKE_CONFIRMED]: "🎉 *¡Reserva confirmada!*",
 
   // Estados de ACTUALIZACIÓN
-  [ReservationStatuses.UPDATE_STARTED]:
+  [BookingStatuses.UPDATE_STARTED]:
     "✏️ *Tienes una modificación en curso.*\nProporciona los nuevos datos para actualizar.",
-  [ReservationStatuses.UPDATE_RESTARTED]:
+  [BookingStatuses.UPDATE_RESTARTED]:
     "🔄 *Has reiniciado la modificación.*\nVuelve a ingresar tus datos",
-  [ReservationStatuses.UPDATE_VALIDATED]:
+  [BookingStatuses.UPDATE_VALIDATED]:
     "✅ *Cambios validados correctamente.*\n¿Quieres confirmar la modificación?",
-  [ReservationStatuses.UPDATE_CONFIRMED]: "🔄 *¡Modificación confirmada!*",
+  [BookingStatuses.UPDATE_CONFIRMED]: "🔄 *¡Modificación confirmada!*",
 
   // Estados de CANCELACIÓN
-  [ReservationStatuses.CANCEL_STARTED]: "🗑️ *Has iniciado una cancelación.*",
-  [ReservationStatuses.CANCEL_VALIDATED]:
+  [BookingStatuses.CANCEL_STARTED]: "🗑️ *Has iniciado una cancelación.*",
+  [BookingStatuses.CANCEL_VALIDATED]:
     "⚠️ *¿Estás seguro de cancelar la reserva?*\nConfirma para proceder con la cancelación.",
-  [ReservationStatuses.CANCEL_CONFIRMED]: "❌ *¡Reserva cancelada!*",
+  [BookingStatuses.CANCEL_CONFIRMED]: "❌ *¡Reserva cancelada!*",
 } as const;
 
 export interface StateTransition {
@@ -56,25 +56,25 @@ export function resolveNextState(
 
   switch (condition) {
     // CREATE
-    case FlowOptions.MAKE_RESERVATION:
+    case WorkFlowOptions.MAKE_BOOKING:
       return {
-        nextState: ReservationStatuses.MAKE_STARTED,
+        nextState: BookingStatuses.MAKE_STARTED,
         suggestedActions: [],
         messageHint: "",
         userMessage: STATE_MESSAGES[condition],
       };
-    case ReservationStatuses.MAKE_STARTED:
+    case BookingStatuses.MAKE_STARTED:
       return {
         userMessage: STATE_MESSAGES[condition],
-        nextState: ReservationStatuses.MAKE_VALIDATED,
+        nextState: BookingStatuses.MAKE_VALIDATED,
         suggestedActions: [CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
       };
-    case ReservationStatuses.MAKE_VALIDATED:
+    case BookingStatuses.MAKE_VALIDATED:
       return {
         userMessage: STATE_MESSAGES[condition],
-        nextState: ReservationStatuses.MAKE_CONFIRMED,
+        nextState: BookingStatuses.MAKE_CONFIRMED,
         suggestedActions: [
           CustomerActions.CONFIRM,
           CustomerActions.RESTART,
@@ -83,33 +83,33 @@ export function resolveNextState(
         messageHint:
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
       };
-    case ReservationStatuses.MAKE_VALIDATED + CustomerActions.RESTART:
+    case BookingStatuses.MAKE_VALIDATED + CustomerActions.RESTART:
       return {
-        nextState: ReservationStatuses.MAKE_STARTED,
+        nextState: BookingStatuses.MAKE_STARTED,
         suggestedActions: [],
         messageHint: "",
       };
 
     // UPDATE
-    case FlowOptions.UPDATE_RESERVATION:
+    case WorkFlowOptions.UPDATE_BOOKING:
       return {
         userMessage: STATE_MESSAGES[condition],
-        nextState: ReservationStatuses.UPDATE_STARTED,
+        nextState: BookingStatuses.UPDATE_STARTED,
         suggestedActions: [],
         messageHint: "",
       };
-    case ReservationStatuses.UPDATE_STARTED:
+    case BookingStatuses.UPDATE_STARTED:
       return {
         userMessage: STATE_MESSAGES[condition],
-        nextState: ReservationStatuses.UPDATE_VALIDATED,
+        nextState: BookingStatuses.UPDATE_VALIDATED,
         suggestedActions: [CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation is in progress and they can continue providing data or exit.",
       };
-    case ReservationStatuses.UPDATE_VALIDATED:
+    case BookingStatuses.UPDATE_VALIDATED:
       return {
         userMessage: STATE_MESSAGES[condition],
-        nextState: ReservationStatuses.UPDATE_CONFIRMED,
+        nextState: BookingStatuses.UPDATE_CONFIRMED,
         suggestedActions: [
           CustomerActions.CONFIRM,
           CustomerActions.RESTART,
@@ -118,25 +118,25 @@ export function resolveNextState(
         messageHint:
           "If relevant, remind the user that the reservation data is complete and they may confirm, restart, or cancel.",
       };
-    case ReservationStatuses.UPDATE_VALIDATED + CustomerActions.RESTART:
+    case BookingStatuses.UPDATE_VALIDATED + CustomerActions.RESTART:
       return {
-        nextState: ReservationStatuses.UPDATE_STARTED,
+        nextState: BookingStatuses.UPDATE_STARTED,
         suggestedActions: [],
         messageHint: "",
       };
 
     // CANCEL
-    case FlowOptions.CANCEL_RESERVATION:
+    case WorkFlowOptions.CANCEL_BOOKING:
       return {
         userMessage: STATE_MESSAGES[condition],
-        nextState: ReservationStatuses.CANCEL_VALIDATED,
+        nextState: BookingStatuses.CANCEL_VALIDATED,
         suggestedActions: [],
         messageHint: "",
       };
-    case ReservationStatuses.CANCEL_VALIDATED:
+    case BookingStatuses.CANCEL_VALIDATED:
       return {
         userMessage: STATE_MESSAGES[condition],
-        nextState: ReservationStatuses.CANCEL_CONFIRMED,
+        nextState: BookingStatuses.CANCEL_CONFIRMED,
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
         messageHint:
           "If relevant, remind the user that a reservation cancellation is in progress and they can confirm or exit.",

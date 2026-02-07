@@ -1,10 +1,24 @@
-import { ReservationState } from "./reservations/reservation.types";
+import { BookingState } from "./booking/booking.types";
 import { DomainCtx, DomainPropsCtx } from "../context.types";
-import { SpecializedSemanticIntent } from "@/application/services/rag";
+import {
+  RestaurantIntentKey,
+  BookingIntentKey,
+  TransversalIntentKey,
+} from "@/application/services/rag";
 
-export interface IntentProp {
-  type: SpecializedSemanticIntent;
+export type RestaurantIntentType =
+  | TransversalIntentKey
+  | RestaurantIntentKey
+  | BookingIntentKey;
+
+export type RestaurantIntent = {
+  type: RestaurantIntentType;
   isConfirmed: boolean;
-}
-export type RestaurantCtx = DomainCtx<ReservationState, "">;
-export type RestaurantProps = DomainPropsCtx<ReservationState, "">;
+};
+
+export type RestaurantCtx = DomainCtx<BookingState, RestaurantIntentType>;
+
+export type RestaurantProps = DomainPropsCtx<
+  BookingState,
+  RestaurantIntentType
+>;

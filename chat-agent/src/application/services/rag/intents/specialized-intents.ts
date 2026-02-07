@@ -1,16 +1,15 @@
 import { SemanticIntent } from "@/application/services/rag";
 
-export type SpecializedDomain =
-  | "restaurant"
-  | "booking"
-  | "erotic"
-  | "real-state";
-
-export type SharedIntentKey =
+export type RestaurantIntentKey =
   | "request_menu"
   | "start_order"
+  | "ask_information";
+// | "confirm_order";
+
+export type EroticIntentKey =
+  | "start_order"
   | "ask_information"
-  | "confirm_order"
+  // | "confirm_order"
   | "request_media";
 
 export type BookingIntentKey =
@@ -19,12 +18,7 @@ export type BookingIntentKey =
   | "cancel_booking"
   | "ask_for_availability";
 
-export type SpecializedSemanticIntent = SemanticIntent<
-  SharedIntentKey | BookingIntentKey,
-  SpecializedDomain
->;
-
-export const bookingIntents: SpecializedSemanticIntent[] = [
+export const bookingIntents: SemanticIntent<BookingIntentKey>[] = [
   {
     intent: "create_booking",
     domain: "booking",
@@ -118,7 +112,7 @@ export const bookingIntents: SpecializedSemanticIntent[] = [
   },
 ];
 
-export const restaurantIntents: SpecializedSemanticIntent[] = [
+export const restaurantIntents: SemanticIntent<RestaurantIntentKey>[] = [
   {
     intent: "request_menu",
     domain: "restaurant",
@@ -199,31 +193,31 @@ export const restaurantIntents: SpecializedSemanticIntent[] = [
     ],
   },
 
-  {
-    intent: "confirm_order",
-    domain: "restaurant",
-    lang: "es",
-    examples: [
-      "confirmo",
-      "está bien así",
-      "ok confirmado",
-      "dale",
-      "sí, adelante",
-      "todo bien",
-      "perfecto",
-      "listo",
-      "así está bien",
-      "puedes proceder",
-      "haz el pedido",
-      "confirmado",
-      "sí, envíalo",
-      "continuemos",
-      "ok",
-    ],
-  },
+  // {
+  //   intent: "confirm_order",
+  //   domain: "restaurant",
+  //   lang: "es",
+  //   examples: [
+  //     "confirmo",
+  //     "está bien así",
+  //     "ok confirmado",
+  //     "dale",
+  //     "sí, adelante",
+  //     "todo bien",
+  //     "perfecto",
+  //     "listo",
+  //     "así está bien",
+  //     "puedes proceder",
+  //     "haz el pedido",
+  //     "confirmado",
+  //     "sí, envíalo",
+  //     "continuemos",
+  //     "ok",
+  //   ],
+  // },
 ];
 
-export const eroticIntents: SpecializedSemanticIntent[] = [
+export const eroticIntents: SemanticIntent<EroticIntentKey>[] = [
   {
     intent: "request_media",
     domain: "erotic",
@@ -272,21 +266,21 @@ export const eroticIntents: SpecializedSemanticIntent[] = [
       "tienes promociones",
     ],
   },
-  {
-    intent: "confirm_order",
-    domain: "erotic",
-    lang: "es",
-    examples: [
-      "confirmo",
-      "está bien así",
-      "ok confirmado",
-      "dale",
-      "sí, adelante",
-      "perfecto",
-      "listo",
-      "puedes proceder",
-      "sí, envíalo",
-      "continuemos",
-    ],
-  },
+  // {
+  //   intent: "confirm_order",
+  //   domain: "erotic",
+  //   lang: "es",
+  //   examples: [
+  //     "confirmo",
+  //     "está bien así",
+  //     "ok confirmado",
+  //     "dale",
+  //     "sí, adelante",
+  //     "perfecto",
+  //     "listo",
+  //     "puedes proceder",
+  //     "sí, envíalo",
+  //     "continuemos",
+  //   ],
+  // },
 ];

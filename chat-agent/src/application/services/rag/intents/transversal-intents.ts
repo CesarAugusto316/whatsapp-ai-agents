@@ -9,16 +9,11 @@ export type TransversalIntentKey =
   | "reject"
   | "goodbye";
 
-export type CoreSemanticIntent = SemanticIntent<
-  TransversalIntentKey,
-  "transversal"
->;
-
 /**
  * Intents globales, vectorizados una sola vez.
  * Todos los dominios pueden reutilizarlos.
  */
-export const transversalIntents: CoreSemanticIntent[] = [
+export const transversalIntents: SemanticIntent<TransversalIntentKey>[] = [
   {
     intent: "greeting",
     domain: "transversal",

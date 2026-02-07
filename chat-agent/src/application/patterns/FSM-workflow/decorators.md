@@ -152,7 +152,7 @@ export const withTransitionStep = (step, getNextState) => ({
 const withFSMTransition = (step) => 
   withTransitionStep(step, (ctx, result) => {
     const action = determineActionFromResult(result);
-    return resolveNextState(ctx.RESERVATION_STATE?.status, action);
+    return resolveNextState(ctx.bookingState?.status, action);
   });
 ```
 
@@ -173,7 +173,7 @@ const withFSMTransition = (step, fsm: ReservationFSM) => ({
   execute: async (params) => {
     const result = await step.execute(params);
     const nextState = fsm.transition(
-      params.ctx.RESERVATION_STATE?.status,
+      params.ctx.bookingState?.status,
       result.suggestedAction
     );
     // ...

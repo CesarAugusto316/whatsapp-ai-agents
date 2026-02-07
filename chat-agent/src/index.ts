@@ -9,8 +9,8 @@ import {
   bootstrapMiddleware,
 } from "@/application/middlewares";
 import {
-  whatsappReservationHandler,
-  testReservationHandler,
+  whatsappBookingHandler,
+  testBookingHandler,
 } from "@/application/handlers/restaurant";
 import { contentSyncStateHandler } from "./application/handlers/content-sync";
 
@@ -49,10 +49,10 @@ app.use(
 app.post(
   "/received-messages/:businessId",
   bootstrapMiddleware(),
-  whatsappReservationHandler,
+  whatsappBookingHandler,
 );
 
-app.post("/test-ai/:businessId", bootstrapMiddleware(), testReservationHandler);
+app.post("/test-ai/:businessId", bootstrapMiddleware(), testBookingHandler);
 
 app.post("/content/sync-state/:businessId", contentSyncStateHandler);
 

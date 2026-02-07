@@ -6,4 +6,4 @@ export {
   sendMsgText,
   whatsappSagaOrchestrator,
 } from "./whatsapp/whatsapp.saga";
-export { reservationStateOrchestrator } from "./reservations/reservation-state-orchestrator";
+export { bookingStateOrchestrator as reservationStateOrchestrator } from "./booking/booking-state-orchestrator";

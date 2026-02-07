@@ -1,0 +1,72 @@
+import {
+  WorkFlowOption,
+  WorkFlowOptions,
+  BookingState,
+} from "@/domain/restaurant/booking";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
+import { Business, cmsAdapter, Customer } from "@/infraestructure/adapters/cms";
+import { resolveNextState } from "@/application/patterns";
+import { humanizerAgent } from "@/application/agents/restaurant";
+import { BookingSchema } from "@/domain/restaurant/booking/schemas";
+import { toLocalDateTime } from "@/domain/utilities";
+
+type Args = {
+  customer?: Customer;
+  business: Business;
+  reservationKey: string;
+  flowOption: WorkFlowOption;
+  getMessage: (state: BookingSchema) => string;
+};
+
+export const initChangeSteps = async ({
+  customer,
+  business,
+  reservationKey,
+  flowOption,
+  getMessage,
+}: Args) => {
+  // Validación del flowOption
+  if (
+    flowOption !== WorkFlowOptions.UPDATE_BOOKING &&
+    flowOption !== WorkFlowOptions.CANCEL_BOOKING
+  ) {
+    throw new Error(`FlowOption no soportado: ${flowOption}`);
+  }
+  if (!customer) {
+    return humanizerAgent("Por favor, Crea una reserva para poder continuar");
+  }
+  const lastRes = await cmsAdapter.getAppointmentsByParams({
+    "where[business][equals]": business.id,
+    "where[customer][equals]": customer.id,
+    "where[status][equals]": "confirmed",
+    sort: "-updatedAt", // the last reservation
+    limit: 1, // only one reservation
+  });
+
+  const reservation = lastRes.docs.at(0);
+
+  if (!reservation) {
+    return humanizerAgent(
+      "Reserva no encontrada. Seguro que ya has creado una reserva?",
+    );
+  }
+  const timezone = business.general.timezone;
+  const transition = resolveNextState(flowOption);
+  const start = toLocalDateTime(reservation.startDateTime, timezone);
+  const end = toLocalDateTime(reservation?.endDateTime ?? "", timezone);
+  const previousState = {
+    id: reservation.id,
+    customerName: reservation.customerName || customer?.name || "",
+    datetime: {
+      start,
+      end,
+    },
+    numberOfPeople: reservation.numberOfPeople || 0,
+    businessId: business.id,
+    customerId: customer.id,
+    status: transition.nextState, // FlowOption
+  } satisfies Partial<BookingState>;
+
+  await cacheAdapter.save(reservationKey, previousState);
+  return humanizerAgent(getMessage(previousState));
+};

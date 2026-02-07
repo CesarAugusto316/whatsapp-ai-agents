@@ -10,13 +10,15 @@ export { transversalIntents } from "./intents/transversal-intents";
 
 // types
 export type {
-  SpecializedDomain,
-  SpecializedSemanticIntent,
+  BookingIntentKey,
+  RestaurantIntentKey,
+  EroticIntentKey,
 } from "./intents/specialized-intents";
 
-export type {
-  TransversalIntentKey,
-  CoreSemanticIntent,
-} from "./intents/transversal-intents";
+export type { TransversalIntentKey } from "./intents/transversal-intents";
 
-export type { SemanticIntent, SyncStateRequest } from "./rag.types";
+export type {
+  SemanticIntent,
+  SyncStateRequest,
+  DomainKinds,
+} from "./rag.types";
