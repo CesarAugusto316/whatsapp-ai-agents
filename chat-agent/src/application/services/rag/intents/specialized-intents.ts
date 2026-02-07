@@ -4,12 +4,10 @@ export type RestaurantIntentKey =
   | "request_menu"
   | "start_order"
   | "ask_information";
-// | "confirm_order";
 
 export type EroticIntentKey =
   | "start_order"
   | "ask_information"
-  // | "confirm_order"
   | "request_media";
 
 export type BookingIntentKey =
@@ -192,29 +190,6 @@ export const restaurantIntents: SemanticIntent<RestaurantIntentKey>[] = [
       "una pregunta, cuánto demora",
     ],
   },
-
-  // {
-  //   intent: "confirm_order",
-  //   domain: "restaurant",
-  //   lang: "es",
-  //   examples: [
-  //     "confirmo",
-  //     "está bien así",
-  //     "ok confirmado",
-  //     "dale",
-  //     "sí, adelante",
-  //     "todo bien",
-  //     "perfecto",
-  //     "listo",
-  //     "así está bien",
-  //     "puedes proceder",
-  //     "haz el pedido",
-  //     "confirmado",
-  //     "sí, envíalo",
-  //     "continuemos",
-  //     "ok",
-  //   ],
-  // },
 ];
 
 export const eroticIntents: SemanticIntent<EroticIntentKey>[] = [
@@ -266,21 +241,4 @@ export const eroticIntents: SemanticIntent<EroticIntentKey>[] = [
       "tienes promociones",
     ],
   },
-  // {
-  //   intent: "confirm_order",
-  //   domain: "erotic",
-  //   lang: "es",
-  //   examples: [
-  //     "confirmo",
-  //     "está bien así",
-  //     "ok confirmado",
-  //     "dale",
-  //     "sí, adelante",
-  //     "perfecto",
-  //     "listo",
-  //     "puedes proceder",
-  //     "sí, envíalo",
-  //     "continuemos",
-  //   ],
-  // },
 ];

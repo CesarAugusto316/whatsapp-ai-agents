@@ -4,7 +4,7 @@ import {
 } from "@/domain/restaurant/booking/prompts";
 import {
   CustomerActions,
-  WorkFlowOptions,
+  BookingOptions,
   InputIntent,
   isWithinBusinessHours,
   isWithinHolydayRange,
@@ -78,8 +78,8 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
       await cacheAdapter.delete(bookingKey);
       const action =
         mode === "create"
-          ? WorkFlowOptions.MAKE_BOOKING
-          : WorkFlowOptions.UPDATE_BOOKING;
+          ? BookingOptions.MAKE_BOOKING
+          : BookingOptions.UPDATE_BOOKING;
       const verb = mode === "create" ? "iniciar" : "actualizar";
       const res = await humanizerAgent(`
         Has llegado al límite de *intentos fallidos* al checkear disponibilidad.

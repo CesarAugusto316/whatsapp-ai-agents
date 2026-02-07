@@ -1,5 +1,5 @@
 import { Business } from "@/infraestructure/adapters/cms/cms-types";
-import { WorkFlowOptions, FMStatus } from "../booking.types";
+import { BookingOptions, FMStatus } from "../booking.types";
 import { formatSchedule } from "@/domain/utilities";
 
 export const WRITING_STYLE = `

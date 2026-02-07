@@ -1,4 +1,4 @@
-import { CustomerActions, WorkFlowOptions } from "../booking.types";
+import { CustomerActions, BookingOptions } from "../booking.types";
 import { WRITING_STYLE } from "./conversational-prompts";
 
 export function humanizerPrompt(originalMessage: string) {
@@ -17,7 +17,7 @@ export function humanizerPrompt(originalMessage: string) {
        ${Object.values(CustomerActions)
          .map((action) => `*${action}*`)
          .join(", ")},
-       ${Object.values(WorkFlowOptions)
+       ${Object.values(BookingOptions)
          .map((option) => `*${option}*`)
          .join(", ")}.
     3. Do NOT add new instructions, requirements, or data requests.

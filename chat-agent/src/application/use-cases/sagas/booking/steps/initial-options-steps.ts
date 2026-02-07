@@ -1,7 +1,7 @@
 import { humanizerAgent } from "@/application/agents/restaurant";
 import { resolveNextState } from "@/application/patterns";
 import { RestaurantProps } from "@/domain/restaurant";
-import { WorkFlowOptions } from "@/domain/restaurant/booking";
+import { BookingOptions } from "@/domain/restaurant/booking";
 import { systemMessages } from "@/domain/restaurant/booking/prompts";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
@@ -20,9 +20,9 @@ export async function initialOptionsWorkflow(
     structuredClone(props),
   );
 
-  if (customerMessage === WorkFlowOptions.MAKE_BOOKING) {
+  if (customerMessage === BookingOptions.MAKE_BOOKING) {
     // choice 2
-    const transition = resolveNextState(WorkFlowOptions.MAKE_BOOKING);
+    const transition = resolveNextState(BookingOptions.MAKE_BOOKING);
     await cacheAdapter.save(bookingKey, {
       businessId: business?.id,
       customerId: customer?.id,
@@ -40,18 +40,18 @@ export async function initialOptionsWorkflow(
           result: humanizedResponse,
           metadata: {
             description: "MAKE_RESERVATION, option selected",
-            internal: `customerMessage=${WorkFlowOptions.MAKE_BOOKING}`,
+            internal: `customerMessage=${BookingOptions.MAKE_BOOKING}`,
           },
         },
       },
     };
   }
 
-  if (customerMessage === WorkFlowOptions.UPDATE_BOOKING) {
+  if (customerMessage === BookingOptions.UPDATE_BOOKING) {
     const msg = await initChangeSteps({
       business,
       customer,
-      flowOption: WorkFlowOptions.UPDATE_BOOKING,
+      flowOption: BookingOptions.UPDATE_BOOKING,
       getMessage: (state) =>
         systemMessages.getUpdateMsg(state, business.general.timezone),
       bookingKey,
@@ -63,18 +63,18 @@ export async function initialOptionsWorkflow(
           result: msg,
           metadata: {
             description: "UPDATE_RESERVATION, option selected",
-            internal: `customerMessage=${WorkFlowOptions.UPDATE_BOOKING}`,
+            internal: `customerMessage=${BookingOptions.UPDATE_BOOKING}`,
           },
         },
       },
     };
   }
 
-  if (customerMessage === WorkFlowOptions.CANCEL_BOOKING) {
+  if (customerMessage === BookingOptions.CANCEL_BOOKING) {
     const msg = await initChangeSteps({
       business,
       customer,
-      flowOption: WorkFlowOptions.CANCEL_BOOKING,
+      flowOption: BookingOptions.CANCEL_BOOKING,
       getMessage: (state) =>
         systemMessages.getCancelMsg(state, business.general.timezone),
       bookingKey,
@@ -86,7 +86,7 @@ export async function initialOptionsWorkflow(
           result: msg,
           metadata: {
             description: "CANCEL_RESERVATION, option selected",
-            internal: `customerMessage=${WorkFlowOptions.CANCEL_BOOKING}`,
+            internal: `customerMessage=${BookingOptions.CANCEL_BOOKING}`,
           },
         },
       },

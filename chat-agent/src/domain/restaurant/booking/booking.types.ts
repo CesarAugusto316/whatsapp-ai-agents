@@ -56,14 +56,27 @@ export interface BookingState extends BookingSchema {
   attempts: number;
 }
 
-export type WorkFlowOption = "1" | "2" | "3";
-export type FMStatus = BookingStatus | WorkFlowOption;
+export type BookingOption = "1" | "2" | "3";
+export type FMStatus = BookingStatus | BookingOption;
 
-export const WorkFlowOptions = {
+// PRE_BOOKING = CONVERSATIONAL + INTENTS
+export const BookingOptions = {
   MAKE_BOOKING: "1",
   UPDATE_BOOKING: "2",
   CANCEL_BOOKING: "3",
 } as const;
+// POST_BOOKING = CONVERSATIONAL + INTENTS
+
+/**
+ * @todo move this to other file
+ */
+// PRE_ORDER = CONVERSATIONAL + INTENTS
+export const ProductOrderOptions = {
+  MAKE_PRODUCT_ORDER: "4",
+  UPDATE_PRODUCT_ORDER: "5",
+  CANCEL_PRODUCT_ORDER: "6",
+} as const;
+// POST_ORDER = CONVERSATIONAL + INTENTS
 
 export const CustomerActions = {
   CONFIRM: "CONFIRMAR",

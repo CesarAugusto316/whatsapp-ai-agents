@@ -1,6 +1,6 @@
 import {
-  WorkFlowOption,
-  WorkFlowOptions,
+  BookingOption,
+  BookingOptions,
   BookingState,
 } from "@/domain/restaurant/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
@@ -14,7 +14,7 @@ type Args = {
   customer?: Customer;
   business: Business;
   bookingKey: string;
-  flowOption: WorkFlowOption;
+  flowOption: BookingOption;
   getMessage: (state: BookingSchema) => string;
 };
 
@@ -27,8 +27,8 @@ export const initChangeSteps = async ({
 }: Args) => {
   // Validación del flowOption
   if (
-    flowOption !== WorkFlowOptions.UPDATE_BOOKING &&
-    flowOption !== WorkFlowOptions.CANCEL_BOOKING
+    flowOption !== BookingOptions.UPDATE_BOOKING &&
+    flowOption !== BookingOptions.CANCEL_BOOKING
   ) {
     throw new Error(`FlowOption no soportado: ${flowOption}`);
   }

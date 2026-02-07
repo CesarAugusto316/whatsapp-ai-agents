@@ -1,7 +1,7 @@
 import {
   CustomerActionValue,
   CustomerActions,
-  WorkFlowOptions,
+  BookingOptions,
   FMStatus,
   BookingStatuses,
 } from "@/domain/restaurant/booking";
@@ -56,7 +56,7 @@ export function resolveNextState(
 
   switch (condition) {
     // CREATE
-    case WorkFlowOptions.MAKE_BOOKING:
+    case BookingOptions.MAKE_BOOKING:
       return {
         nextState: BookingStatuses.MAKE_STARTED,
         suggestedActions: [],
@@ -91,7 +91,7 @@ export function resolveNextState(
       };
 
     // UPDATE
-    case WorkFlowOptions.UPDATE_BOOKING:
+    case BookingOptions.UPDATE_BOOKING:
       return {
         userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.UPDATE_STARTED,
@@ -126,7 +126,7 @@ export function resolveNextState(
       };
 
     // CANCEL
-    case WorkFlowOptions.CANCEL_BOOKING:
+    case BookingOptions.CANCEL_BOOKING:
       return {
         userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.CANCEL_VALIDATED,

@@ -3,7 +3,7 @@ export { isWithinBusinessHours } from "./is-within-business-hours";
 export {
   BOOL,
   CustomerActions,
-  WorkFlowOptions,
+  BookingOptions,
   BookingStatuses,
   InputIntent,
   CUSTOMER_INTENT,
@@ -11,7 +11,7 @@ export {
 export type {
   AgentArgs,
   CustomerActionKey,
-  WorkFlowOption,
+  BookingOption,
   BookingStatus,
   BookingState,
   FMStatus,
