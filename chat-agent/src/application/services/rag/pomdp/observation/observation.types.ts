@@ -1,5 +1,5 @@
 import { ModuleKind } from "../../rag.types";
-import { IntentKey } from "../intents/intent.types";
+import { IntentExampleKey } from "../intents/intent.types";
 
 // ============================================
 // 1. OBSERVATION CON SIGNALS
@@ -10,7 +10,7 @@ export type Observation = {
 
   // Resultados RAG (intenciones detectadas)
   intentResults: Array<{
-    intent: IntentKey;
+    intent: IntentExampleKey;
     module: ModuleKind;
     score: number;
   }>;

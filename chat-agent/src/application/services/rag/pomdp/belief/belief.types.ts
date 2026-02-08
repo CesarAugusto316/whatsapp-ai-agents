@@ -1,10 +1,10 @@
-import { IntentKey } from "../intents/intent.types";
+import { IntentExampleKey } from "../intents/intent.types";
 
 // ============================================
 // 1. BELIEF STATE (Estado de Creencia)
 // ============================================
 export interface BeliefIntent {
-  key: IntentKey; // ej: "info:ask_price" | "restaurant:view_menu"
+  key: IntentExampleKey; // ej: "info:ask_price" | "restaurant:view_menu"
   probability: number; // 0.0 - 1.0
 
   evidence: number; // +1 cada vez que se confirma

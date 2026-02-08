@@ -25,7 +25,7 @@ export type EroticIntentKey =
   | "erotic:purchase_content"
   | "erotic:ask_services";
 
-export type IntentKey =
+export type IntentExampleKey =
   | InformationalIntentKey
   | RestaurantIntentKey
   | BookingIntentKey

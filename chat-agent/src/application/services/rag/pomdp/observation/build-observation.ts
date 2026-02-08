@@ -1,6 +1,6 @@
 import { ModuleKind } from "../../rag.types";
-import { IntentKey } from "../intents/intent.types";
-import { conversationalSignals } from "../intents/intents";
+import { IntentExampleKey } from "../intents/intent.types";
+import { conversationalSignals } from "../intents/intent-examples";
 import { Observation } from "./observation.types";
 
 // ============================================
@@ -8,7 +8,11 @@ import { Observation } from "./observation.types";
 // ============================================
 export function buildObservation(
   userMessage: string,
-  ragResults: Array<{ intent: IntentKey; module: ModuleKind; score: number }>,
+  ragResults: Array<{
+    intent: IntentExampleKey;
+    module: ModuleKind;
+    score: number;
+  }>,
   systemContext: {
     hasActiveBooking: boolean;
     hasOrderInProgress: boolean;

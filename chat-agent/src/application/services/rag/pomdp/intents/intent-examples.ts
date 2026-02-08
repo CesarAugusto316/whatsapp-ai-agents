@@ -1,4 +1,4 @@
-import { SemanticIntent } from "../../rag.types";
+import { IntentExample } from "../../rag.types";
 import type {
   BookingIntentKey,
   ConversationalSignal,
@@ -37,7 +37,7 @@ export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
 // 3. INTENTS MEJORADOS
 // ============================================
 
-export const bookingIntents: SemanticIntent<BookingIntentKey>[] = [
+const booking: IntentExample<BookingIntentKey>[] = [
   {
     intent: "booking:create",
     module: "booking",
@@ -101,7 +101,7 @@ export const bookingIntents: SemanticIntent<BookingIntentKey>[] = [
   },
 ];
 
-export const restaurantIntents: SemanticIntent<RestaurantIntentKey>[] = [
+const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:view_menu",
     module: "restaurant",
@@ -162,7 +162,7 @@ export const restaurantIntents: SemanticIntent<RestaurantIntentKey>[] = [
   },
 ];
 
-export const eroticIntents: SemanticIntent<EroticIntentKey>[] = [
+const erotic: IntentExample<EroticIntentKey>[] = [
   {
     intent: "erotic:view_content",
     module: "erotic",
@@ -207,7 +207,7 @@ export const eroticIntents: SemanticIntent<EroticIntentKey>[] = [
   },
 ];
 
-export const informationalIntents: SemanticIntent<InformationalIntentKey>[] = [
+const informational: IntentExample<InformationalIntentKey>[] = [
   {
     intent: "info:ask_price",
     module: "informational",
@@ -279,4 +279,11 @@ export const informationalIntents: SemanticIntent<InformationalIntentKey>[] = [
       "redes sociales",
     ],
   },
+];
+
+export const intentExamples = [
+  ...booking,
+  ...restaurant,
+  ...erotic,
+  ...informational,
 ];

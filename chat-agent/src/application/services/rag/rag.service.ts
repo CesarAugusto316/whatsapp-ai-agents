@@ -7,15 +7,9 @@ import {
   VectorStoreAdapter,
 } from "@/infraestructure/adapters/vector-store";
 import { Schemas } from "@qdrant/js-client-rest";
-import { SemanticIntent } from "./rag.types";
+import { IntentExample } from "./rag.types";
 import { Product } from "@/infraestructure/adapters/cms";
-import {
-  bookingIntents,
-  eroticIntents,
-  restaurantIntents,
-  informationalIntents,
-  ModuleKind,
-} from "@/application/services/rag";
+import { intentExamples, ModuleKind } from "@/application/services/rag";
 
 /**
  *
@@ -141,7 +135,7 @@ class RagService {
   /**
    * Inserta o actualiza intenciones en el sistema
    */
-  async upsertIntents<I extends string>(intents: SemanticIntent<I>[]) {
+  async upsertIntents<I extends string>(intents: IntentExample<I>[]) {
     // 1. Preparar datos para embedding en lote
     const prepared = intents.flatMap(({ intent, module, examples, lang }) =>
       examples.map((ex) => ({
@@ -273,16 +267,7 @@ class RagService {
     } catch (error) {
       console.error("Error seeding intents:", error);
     }
-    const coreIntents = [
-      // core intents
-      ...informationalIntents,
-
-      // specialized intents
-      ...bookingIntents,
-      ...restaurantIntents,
-      ...eroticIntents,
-    ];
-    return this.upsertIntents(coreIntents);
+    return this.upsertIntents(intentExamples);
   }
 
   /**

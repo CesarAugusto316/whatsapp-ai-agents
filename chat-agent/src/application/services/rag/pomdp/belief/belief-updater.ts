@@ -1,4 +1,4 @@
-import { IntentKey } from "../intents/intent.types";
+import { IntentExampleKey } from "../intents/intent.types";
 import { Observation } from "../observation/observation.types";
 import { BeliefIntent, BeliefState } from "./belief.types";
 
@@ -79,7 +79,7 @@ export class BeliefUpdater {
 
   private incorporateEvidence(
     intents: Record<string, BeliefIntent>,
-    vectorResults: Array<{ intent: IntentKey; score: number }>,
+    vectorResults: Array<{ intent: IntentExampleKey; score: number }>,
   ): Record<string, BeliefIntent> {
     const updated = { ...intents };
 

@@ -9,7 +9,7 @@ export type ModuleKind =
   | "real-state"
   | "informational";
 
-export interface SemanticIntent<I extends string> {
+export interface IntentExample<I extends string> {
   intent: I;
   module: ModuleKind;
   lang: "es" | "en";
