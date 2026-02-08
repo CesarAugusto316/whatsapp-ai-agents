@@ -10,6 +10,7 @@ export {
 export { BeliefUpdater } from "./pomdp/belief/belief-updater";
 export { buildObservation } from "./pomdp/observation/build-observation";
 export { PolicyEngine } from "./pomdp/policy/policy-engine";
+export { PomdpManager } from "./pomdp/pomdp-manager";
 
 // types
 export type {
@@ -18,6 +19,7 @@ export type {
   EroticIntentKey,
   ConversationalSignal,
   InformationalIntentKey,
+  IntentExampleKey,
 } from "./pomdp/intents/intent.types";
 export type { Observation } from "./pomdp/observation/observation.types";
 
