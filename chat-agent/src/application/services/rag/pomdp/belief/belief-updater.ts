@@ -24,7 +24,10 @@ export class BeliefUpdater {
     };
   }
 
-  update(currentBelief: BeliefState, observation: Observation): BeliefState {
+  public update(
+    currentBelief: BeliefState,
+    observation: Observation,
+  ): BeliefState {
     // 1. Decay de intenciones previas (olvido temporal)
     const decayedIntents = this.applyDecay(currentBelief.intents);
 

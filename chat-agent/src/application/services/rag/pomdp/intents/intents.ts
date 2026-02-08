@@ -13,16 +13,6 @@ export const socialProtocols = {
   thanks: /^(gracias|muchas gracias|graciass|thx|thanks)\s*[,.]?\s*$/i,
 };
 
-export const conversationalPatterns: Record<ConversationalSignal, RegExp> = {
-  affirmation:
-    /\b(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos|afirmativo)\b/i,
-  negation: /\b(no|nop|nope|nel|nanai|ya no|tampoco)\b/i,
-  uncertainty: /\b(no sé|tal vez|quizás|puede ser|no estoy seguro)\b/i,
-  request_help: /\b(ayuda|no entiendo|explica|cómo funciona)\b/i,
-  request_human: /\b(hablar con|persona|humano|operador|alguien)\b/i,
-  ...socialProtocols, // can be deleted these are less important
-};
-
 // Helper function
 export function detectSocialProtocol(msg: string): string | null {
   const trimmed = msg.trim();
@@ -33,6 +23,15 @@ export function detectSocialProtocol(msg: string): string | null {
 
   return null;
 }
+
+export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
+  affirmation:
+    /\b(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos|afirmativo)\b/i,
+  negation: /\b(no|nop|nope|nel|nanai|ya no|tampoco)\b/i,
+  uncertainty: /\b(no sé|tal vez|quizás|puede ser|no estoy seguro)\b/i,
+  request_help: /\b(ayuda|no entiendo|explica|cómo funciona)\b/i,
+  request_human: /\b(hablar con|persona|humano|operador|alguien)\b/i,
+};
 
 // ============================================
 // 3. INTENTS MEJORADOS
@@ -208,9 +207,6 @@ export const eroticIntents: SemanticIntent<EroticIntentKey>[] = [
   },
 ];
 
-// ============================================
-// 4. INFORMATIONAL INTENTS (sí vectorizar)
-// ============================================
 export const informationalIntents: SemanticIntent<InformationalIntentKey>[] = [
   {
     intent: "info:ask_price",

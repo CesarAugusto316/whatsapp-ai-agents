@@ -1,5 +1,7 @@
 import { RestaurantCtx } from "@/domain/restaurant";
 import { BeliefState } from "../belief/belief.types";
+import { BookingOptions } from "@/domain/restaurant/booking";
+import { ProductOrderOptions } from "@/domain/restaurant/booking/booking.types";
 
 // ============================================
 // 1. POLICY ENGINE (Decisiones)
@@ -11,7 +13,7 @@ type PolicyAction =
   | { type: "fallback"; reason: string };
 
 export class PolicyEngine {
-  decide(belief: BeliefState, context: RestaurantCtx): PolicyAction {
+  public decide(belief: BeliefState, context: RestaurantCtx): PolicyAction {
     // 1. Si está atascado → fallback a humano o resetear
     if (belief.isStuck) {
       return {
@@ -40,7 +42,7 @@ export class PolicyEngine {
       return {
         type: "execute",
         intent: belief.dominant,
-        saga: this.mapIntentToSaga(belief.dominant),
+        saga: this.mapIntentToWorkflow(belief.dominant),
       };
     }
 
@@ -72,12 +74,12 @@ export class PolicyEngine {
     };
   }
 
-  private mapIntentToSaga(intent: string): string {
+  private mapIntentToWorkflow(intent: string): string {
     const map: Record<string, string> = {
-      create_booking: "MAKE_STARTED",
-      modify_booking: "UPDATE_STARTED",
-      cancel_booking: "CANCEL_VALIDATED",
-      start_order: "ORDER_STARTED",
+      create_booking: BookingOptions.MAKE_BOOKING,
+      modify_booking: BookingOptions.UPDATE_BOOKING,
+      cancel_booking: BookingOptions.CANCEL_BOOKING,
+      start_order: ProductOrderOptions.MAKE_PRODUCT_ORDER,
     };
 
     return map[intent] || "CONVERSATIONAL";

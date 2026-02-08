@@ -1,6 +1,6 @@
 import { ModuleKind } from "../../rag.types";
 import { IntentKey } from "../intents/intent.types";
-import { conversationalPatterns } from "../intents/intents";
+import { conversationalSignals } from "../intents/intents";
 import { Observation } from "./observation.types";
 
 // ============================================
@@ -29,11 +29,11 @@ export function buildObservation(
     })),
 
     signals: {
-      isAffirmation: conversationalPatterns.affirmation.test(msg),
-      isNegation: conversationalPatterns.negation.test(msg),
-      isUncertain: conversationalPatterns.uncertainty.test(msg),
-      needsHelp: conversationalPatterns.request_help.test(msg),
-      wantsHuman: conversationalPatterns.request_human.test(msg),
+      isAffirmation: conversationalSignals.affirmation.test(msg),
+      isNegation: conversationalSignals.negation.test(msg),
+      isUncertain: conversationalSignals.uncertainty.test(msg),
+      needsHelp: conversationalSignals.request_help.test(msg),
+      wantsHuman: conversationalSignals.request_human.test(msg),
     },
 
     context: systemContext,

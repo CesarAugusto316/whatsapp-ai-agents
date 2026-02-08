@@ -1,5 +1,3 @@
-import { ModuleKind } from "../../rag.types";
-
 // ============================================
 // 1. NAMESPACE POR DOMINIO (sin colisiones)
 // ============================================
@@ -34,9 +32,8 @@ export type IntentKey =
   | EroticIntentKey;
 
 // ============================================
-// 3. CONVERSATIONAL SIGNALS (no son intents, do not need vectorize)
+// 2. CONVERSATIONAL SIGNALS (no son intents, do not need vectorize)
 // ============================================
-
 export type ConversationalSignal =
   | "affirmation" // sí, ok, dale
   | "negation" // no, no quiero

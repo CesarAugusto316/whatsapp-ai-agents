@@ -1,11 +1,11 @@
 export { ragService } from "./rag.service";
 
-// objects/classes
+// objects/classes/functions
 export {
   eroticIntents,
   restaurantIntents,
   bookingIntents,
-  conversationalPatterns,
+  conversationalSignals,
   informationalIntents,
   socialProtocols,
   detectSocialProtocol,
