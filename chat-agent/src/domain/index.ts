@@ -1,1 +1,1 @@
-export type { DomainProps } from "./context.types";
+export type { ContextProps } from "./context.types";

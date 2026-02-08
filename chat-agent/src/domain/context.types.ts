@@ -21,7 +21,7 @@ interface CommonProps {
 }
 
 // this changes for any domain
-export interface DomainProps<BState, EState> extends CommonProps {
+export interface ContextProps<BState, EState> extends CommonProps {
   bookingKey: string;
   bookingState?: Partial<BState>; // statefull object
   productOrderKey: string;

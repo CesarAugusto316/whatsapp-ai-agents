@@ -1,8 +1,7 @@
+import { ModuleKind } from "../../rag.types";
+
 // ============================================
 // 1. NAMESPACE POR DOMINIO (sin colisiones)
-
-import { ModuleKind } from "../rag.types";
-
 // ============================================
 export type InformationalIntentKey =
   | "info:ask_price"

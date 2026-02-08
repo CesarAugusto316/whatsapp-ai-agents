@@ -8,7 +8,7 @@ export {
   conversationalPatterns,
   informationalIntents,
   socialProtocols,
-} from "./intents/intents-refactored";
+} from "./pomdp/intents/intents";
 
 // types
 export type {
@@ -18,7 +18,7 @@ export type {
   ConversationalSignal,
   InformationalIntentKey,
   Observation,
-} from "./intents/intent.types";
-export type { BeliefIntent, BeliefState } from "./intents/intent.types";
+} from "./pomdp/intents/intent.types";
+export type { BeliefIntent, BeliefState } from "./pomdp/intents/intent.types";
 
 export type { SemanticIntent, SyncStateRequest, ModuleKind } from "./rag.types";

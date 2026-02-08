@@ -1,10 +1,10 @@
 import { MiddlewareHandler } from "hono/types";
-import { RestaurantCtx, RestaurantIntent } from "@/domain/restaurant";
+import { RestaurantCtx } from "@/domain/restaurant";
 import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { BookingState } from "@/domain/restaurant/booking";
-import { ModuleKind } from "../services/rag";
+import { BeliefState, ModuleKind } from "@/application/services/rag";
 
 /**
  *
@@ -22,15 +22,15 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
     const customerPhone = custumerRecievedEvent.payload.from;
     const chatKey = `chat:${businessId}:${customerPhone}`;
     const bookingKey = `booking:${businessId}:${customerPhone}`;
-    const beliefKey = `belief:${businessId}:${customerPhone}`;
     const bookingState = await cacheAdapter.getObj<BookingState>(bookingKey);
-    const intentState = await cacheAdapter.getObj<RestaurantIntent>(beliefKey);
+    const beliefKey = `belief:${businessId}:${customerPhone}`;
+    const beliefState = await cacheAdapter.getObj<BeliefState>(beliefKey);
 
     ctx.set("session", session);
     ctx.set("whatsappEvent", event);
     ctx.set("chatKey", chatKey);
     ctx.set("beliefKey", beliefKey);
-    ctx.set("beliefState", intentState);
+    ctx.set("beliefState", beliefState);
     ctx.set("bookingKey", bookingKey);
     ctx.set("bookingState", bookingState);
 

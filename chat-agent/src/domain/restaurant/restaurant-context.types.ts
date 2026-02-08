@@ -1,8 +1,8 @@
 import { BookingState } from "./booking/booking.types";
-import { DomainProps } from "../context.types";
+import { ContextProps } from "../context.types";
 import { Context } from "hono";
 
-export type RestaurantProps = DomainProps<
+export type RestaurantProps = ContextProps<
   BookingState,
   {} // ProductOrderState
 >;
