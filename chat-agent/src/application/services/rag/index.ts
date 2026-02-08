@@ -5,20 +5,20 @@ export {
   eroticIntents,
   restaurantIntents,
   bookingIntents,
-} from "./intents/specialized-intents";
-export { transversalIntents } from "./intents/transversal-intents";
+  conversationalPatterns,
+  informationalIntents,
+  socialProtocols,
+} from "./intents/intents-refactored";
 
 // types
 export type {
   BookingIntentKey,
   RestaurantIntentKey,
   EroticIntentKey,
-} from "./intents/specialized-intents";
+  ConversationalSignal,
+  InformationalIntentKey,
+  Observation,
+} from "./intents/intent.types";
+export type { BeliefIntent, BeliefState } from "./intents/intent.types";
 
-export type { TransversalIntentKey } from "./intents/transversal-intents";
-
-export type {
-  SemanticIntent,
-  SyncStateRequest,
-  DomainKinds,
-} from "./rag.types";
+export type { SemanticIntent, SyncStateRequest, ModuleKind } from "./rag.types";

@@ -14,9 +14,9 @@ export const whatsappBookingHandler: Handler<RestaurantCtx> = async (c) => {
     chatKey: c.get("chatKey"),
 
     // domain driven
-    activeDomains: c.get("activeDomains"),
-    intentState: c.get("intentState"),
-    intentKey: c.get("intentKey"),
+    activeModules: c.get("activeModules"),
+    beliefState: c.get("beliefState"),
+    beliefKey: c.get("beliefKey"),
     bookingKey: c.get("bookingKey"),
     bookingState: c.get("bookingState"),
     productOrderKey: c.get("productOrderKey"),

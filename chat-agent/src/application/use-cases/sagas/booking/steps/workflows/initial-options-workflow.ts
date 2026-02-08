@@ -5,7 +5,7 @@ import { BookingOptions } from "@/domain/restaurant/booking";
 import { systemMessages } from "@/domain/restaurant/booking/prompts";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
-import { BookingResult } from "../booking-saga";
+import { BookingResult } from "../../booking-saga";
 
 /**
  *

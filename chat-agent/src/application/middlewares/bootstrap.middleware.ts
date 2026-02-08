@@ -4,7 +4,7 @@ import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { BookingState } from "@/domain/restaurant/booking";
-import { DomainKinds } from "../services/rag";
+import { ModuleKind } from "../services/rag";
 
 /**
  *
@@ -22,15 +22,15 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
     const customerPhone = custumerRecievedEvent.payload.from;
     const chatKey = `chat:${businessId}:${customerPhone}`;
     const bookingKey = `booking:${businessId}:${customerPhone}`;
-    const intentKey = `intent:${businessId}:${customerPhone}`;
+    const beliefKey = `belief:${businessId}:${customerPhone}`;
     const bookingState = await cacheAdapter.getObj<BookingState>(bookingKey);
-    const intentState = await cacheAdapter.getObj<RestaurantIntent>(intentKey);
+    const intentState = await cacheAdapter.getObj<RestaurantIntent>(beliefKey);
 
     ctx.set("session", session);
     ctx.set("whatsappEvent", event);
     ctx.set("chatKey", chatKey);
-    ctx.set("intentKey", intentKey);
-    ctx.set("intentState", intentState);
+    ctx.set("beliefKey", beliefKey);
+    ctx.set("beliefState", intentState);
     ctx.set("bookingKey", bookingKey);
     ctx.set("bookingState", bookingState);
 
@@ -62,16 +62,16 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
       return ctx.json({ error: "Business not found" }, 404);
     }
 
-    const activeDomains: DomainKinds[] = ["booking", "transversal"];
+    const activeModules: ModuleKind[] = ["booking", "informational"];
 
     if (business.general.businessType === "restaurant") {
-      ctx.set("activeDomains", activeDomains.concat(["restaurant"]));
+      ctx.set("activeModules", activeModules.concat(["restaurant"]));
     }
     if (business.general.businessType === "real_estate") {
-      ctx.set("activeDomains", activeDomains.concat(["real-state"]));
+      ctx.set("activeModules", activeModules.concat(["real-state"]));
     }
     if (business.general.businessType === "erotic") {
-      ctx.set("activeDomains", activeDomains.concat(["erotic"]));
+      ctx.set("activeModules", activeModules.concat(["erotic"]));
     }
 
     ctx.set("customer", customer); // can be undefined

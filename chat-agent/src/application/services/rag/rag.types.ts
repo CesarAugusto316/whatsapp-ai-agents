@@ -2,16 +2,16 @@
  *
  * @todo delete "transversal" in the future
  */
-export type DomainKinds =
+export type ModuleKind =
   | "restaurant"
   | "booking"
   | "erotic"
   | "real-state"
-  | "transversal";
+  | "informational";
 
 export interface SemanticIntent<I extends string> {
   intent: I;
-  domain: DomainKinds;
+  module: ModuleKind;
   lang: "es" | "en";
   examples: string[];
 }

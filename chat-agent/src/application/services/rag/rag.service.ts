@@ -11,10 +11,10 @@ import { SemanticIntent } from "./rag.types";
 import { Product } from "@/infraestructure/adapters/cms";
 import {
   bookingIntents,
-  transversalIntents,
   eroticIntents,
   restaurantIntents,
-  DomainKinds,
+  informationalIntents,
+  ModuleKind,
 } from "@/application/services/rag";
 
 /**
@@ -102,22 +102,22 @@ class RagService {
    */
   async classifyIntent(
     query: string,
-    activeDomains: DomainKinds[],
+    activeModules: ModuleKind[],
     limit = 3,
     lang = "es",
     version = "1.0",
   ) {
     // VALIDACIONES DE DOMINIO (lógica de aplicación)
-    if (!activeDomains.includes("transversal")) {
+    if (!activeModules.includes("informational")) {
       throw new Error('El dominio "global" siempre debe estar activo');
     }
 
-    if (activeDomains.length <= 2) {
+    if (activeModules.length <= 2) {
       throw new Error("Debe haber al menos 2 dominios activos");
     }
 
     // 1. Generar clave de caché para el embedding
-    const domainsKey = activeDomains.sort().join(",");
+    const domainsKey = activeModules.sort().join(",");
     const normalizedQuery = this.normalizeText(query);
     const hash = this.sha256(
       `${version}:${domainsKey}:${lang}:${this.EMBED_VERSION}:${normalizedQuery}`,
@@ -129,7 +129,7 @@ class RagService {
     // 3. Buscar en vector DB (delegando al adaptador puro)
     return this.vectorAdapter.queryIntents(
       embedding,
-      activeDomains,
+      activeModules,
       lang,
       limit,
       this.THRESHOLD,
@@ -141,13 +141,14 @@ class RagService {
    */
   async upsertIntents<I extends string>(intents: SemanticIntent<I>[]) {
     // 1. Preparar datos para embedding en lote
-    const prepared = intents.flatMap(({ intent, domain, examples, lang }) =>
-      examples.map((ex) => ({
-        text: this.normalizeText(ex),
-        intent,
-        domain,
-        lang,
-      })),
+    const prepared = intents.flatMap(
+      ({ intent, module: domain, examples, lang }) =>
+        examples.map((ex) => ({
+          text: this.normalizeText(ex),
+          intent,
+          domain,
+          lang,
+        })),
     );
 
     if (!prepared.length) {
@@ -273,7 +274,7 @@ class RagService {
     }
     const coreIntents = [
       // core intents
-      ...transversalIntents,
+      ...informationalIntents,
 
       // specialized intents
       ...bookingIntents,

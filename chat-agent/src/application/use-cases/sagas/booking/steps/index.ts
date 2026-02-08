@@ -1,6 +1,6 @@
-export { initChangeSteps } from "./initial-change-steps";
-export { initialOptionsWorkflow } from "./initial-options-steps";
-export { conversationalWorkflow } from "./fallback-steps";
+export { initChangeSteps } from "./workflows/initial-change-steps";
+export { initialOptionsWorkflow } from "./workflows/initial-options-workflow";
+export { conversationalWorkflow } from "./workflows/converational-workflow";
 export { startedSteps, ATTEMPTS } from "./started-steps";
 export type {
   StartedFuncSagaResult,

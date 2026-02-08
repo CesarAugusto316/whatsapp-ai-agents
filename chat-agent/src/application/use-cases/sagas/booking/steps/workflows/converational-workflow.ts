@@ -1,7 +1,7 @@
 import { RestaurantProps } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
-import { BookingResult } from "../booking-saga";
+import { BookingResult } from "../../booking-saga";
 import { attachProcessReminder } from "@/application/patterns";
 import {
   conversationalPrompt,
@@ -27,7 +27,7 @@ export async function conversationalWorkflow(
   // 1. INTENT SEARCH
   const { points: intentPoints } = await ragService.classifyIntent(
     customerMessage,
-    ["transversal", "booking", "restaurant"],
+    ["informational", "booking", "restaurant"],
   );
 
   /**
