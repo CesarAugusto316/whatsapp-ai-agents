@@ -10,15 +10,13 @@ import { BookingResult } from "../../booking-saga";
 /**
  *
  * @description use when status is undefined
- * @param props
+ * @param ctx
  * @returns
  */
 export async function initialOptionsWorkflow(
-  props: RestaurantCtx,
+  ctx: RestaurantCtx,
 ): Promise<BookingResult | undefined> {
-  const { customerMessage, bookingKey, customer, business } = Object.freeze(
-    structuredClone(props),
-  );
+  const { customerMessage, bookingKey, customer, business } = ctx;
 
   if (customerMessage === BookingOptions.MAKE_BOOKING) {
     // choice 2

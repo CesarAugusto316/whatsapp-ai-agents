@@ -27,7 +27,10 @@ export const whatsappBookingHandler: Handler<ModuleCtx> = async (c) => {
     return c.json({ message: "Invalid event" });
   }
 
-  const { bag, lastStepResult } = await whatsappSagaOrchestrator(ctx);
+  const { bag, lastStepResult } = await whatsappSagaOrchestrator(
+    Object.freeze(structuredClone(ctx)),
+  );
+
   const message =
     bag?.["execute:reservationFlow"].text ||
     lastStepResult?.compensate?.result ||

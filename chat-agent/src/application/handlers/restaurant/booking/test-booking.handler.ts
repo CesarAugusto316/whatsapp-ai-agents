@@ -25,5 +25,7 @@ export const testBookingHandler: Handler<ModuleCtx> = async (c) => {
     productOrderState: c.get("productOrderState"),
   } as RestaurantCtx;
 
-  return c.json(await bookingStateOrchestrator(context));
+  return c.json(
+    await bookingStateOrchestrator(Object.freeze(structuredClone(context))),
+  );
 };

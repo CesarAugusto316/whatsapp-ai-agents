@@ -18,11 +18,9 @@ import { detectSocialProtocol, ragService } from "@/application/services/rag";
 export async function conversationalWorkflow(
   ctx: RestaurantCtx,
 ): Promise<BookingResult> {
-  const { bookingState, customerMessage, business, chatKey, customer } =
-    Object.freeze(structuredClone(ctx));
-
-  const status = bookingState?.status;
-  const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
+  //
+  const status = ctx.bookingState?.status;
+  const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
 
   const protocol = detectSocialProtocol(ctx.customerMessage);
 
@@ -32,7 +30,7 @@ export async function conversationalWorkflow(
 
   // 1. INTENT SEARCH
   const { points: intentPoints } = await ragService.classifyIntent(
-    customerMessage,
+    ctx.customerMessage,
     ["informational", "booking", "restaurant"],
   );
   console.log({ intentPoints: JSON.stringify(intentPoints) });
@@ -54,15 +52,15 @@ export async function conversationalWorkflow(
       {
         role: "user",
         content: systemMessages.initialGreeting(
-          customerMessage,
-          customer?.name,
+          ctx.customerMessage,
+          ctx.customer?.name,
         ),
       },
     ];
     const assistantResponse = await aiAdapter.userMsg(
       { messages },
       conversationalPrompt({
-        business,
+        business: ctx.business,
         intent: intentPoints.at(0)?.payload?.intent,
       }),
     );
@@ -85,13 +83,13 @@ export async function conversationalWorkflow(
     ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
     {
       role: "user",
-      content: customerMessage,
+      content: ctx.customerMessage,
     },
   ];
   const assistantResponse = await aiAdapter.userMsg(
     { messages },
     conversationalPrompt({
-      business,
+      business: ctx.business,
       intent: intentPoints.at(0)?.payload?.intent,
     }),
   );
