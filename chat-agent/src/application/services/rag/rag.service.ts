@@ -100,7 +100,7 @@ class RagService {
    *  "es"
    * );
    */
-  async classifyIntent(
+  async searchIntent(
     query: string,
     activeModules: ModuleKind[],
     limit = 3,
@@ -117,10 +117,10 @@ class RagService {
     }
 
     // 1. Generar clave de caché para el embedding
-    const domainsKey = activeModules.sort().join(",");
+    const modulesKey = activeModules.sort().join(",");
     const normalizedQuery = this.normalizeText(query);
     const hash = this.sha256(
-      `${version}:${domainsKey}:${lang}:${this.EMBED_VERSION}:${normalizedQuery}`,
+      `${version}:${modulesKey}:${lang}:${this.EMBED_VERSION}:${normalizedQuery}`,
     );
 
     // 2. Obtener embedding (con caché)
@@ -141,14 +141,13 @@ class RagService {
    */
   async upsertIntents<I extends string>(intents: SemanticIntent<I>[]) {
     // 1. Preparar datos para embedding en lote
-    const prepared = intents.flatMap(
-      ({ intent, module: domain, examples, lang }) =>
-        examples.map((ex) => ({
-          text: this.normalizeText(ex),
-          intent,
-          domain,
-          lang,
-        })),
+    const prepared = intents.flatMap(({ intent, module, examples, lang }) =>
+      examples.map((ex) => ({
+        text: this.normalizeText(ex),
+        intent,
+        module,
+        lang,
+      })),
     );
 
     if (!prepared.length) {
@@ -163,14 +162,14 @@ class RagService {
 
     // 3. Preparar puntos para Qdrant
     const points = embeddings.map(({ embedding }, i) => {
-      const { intent, domain, lang, text } = prepared[i];
-      const hash = this.sha256(`${domain}:${lang}:${text}`);
+      const { intent, module, lang, text } = prepared[i];
+      const hash = this.sha256(`${module}:${lang}:${text}`);
       return {
         id: this.hashToUUID(hash), // Generar ID determinístico
         vector: embedding,
         payload: {
           text,
-          domain,
+          module,
           lang,
           intent,
         },

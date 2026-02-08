@@ -29,7 +29,7 @@ export async function conversationalWorkflow(
   }
 
   // 1. INTENT SEARCH
-  const { points: intentPoints } = await ragService.classifyIntent(
+  const { points: intentPoints } = await ragService.searchIntent(
     ctx.customerMessage,
     ["informational", "booking", "restaurant"],
   );

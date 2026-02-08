@@ -3,7 +3,7 @@ import type { Product } from "../cms";
 
 export type IntentPayload = {
   text: string;
-  domain: string;
+  module: string;
   lang: string;
   intent: string;
 };
@@ -55,7 +55,7 @@ export interface IVectorStoreAdapter {
 
   queryIntents(
     vector: number[],
-    domains: string[],
+    activeModules: string[],
     lang: string,
     limit: number,
     threshold: number,

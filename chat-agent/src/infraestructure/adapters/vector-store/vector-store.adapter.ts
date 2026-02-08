@@ -6,6 +6,11 @@ import {
   QuadrantPoint,
 } from "./vector-store.adapter.interface";
 
+type EnabledKey = keyof Pick<Product, "enabled">;
+type BusinessKey = keyof Pick<Product, "business">;
+type LangKey = keyof Pick<IntentPayload, "lang">;
+type ModuleKey = keyof Pick<IntentPayload, "module">;
+
 export class VectorStoreAdapter implements IVectorStoreAdapter {
   private client = new QdrantClient({ url: Bun.env.QDRANT_URL });
 
@@ -35,11 +40,11 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
       vectors: { size: this.dimension, distance: "Cosine" },
     });
     await this.client.createPayloadIndex("intents", {
-      field_name: "lang",
+      field_name: "lang" satisfies LangKey,
       field_schema: "keyword",
     });
     await this.client.createPayloadIndex("intents", {
-      field_name: "domain",
+      field_name: "module" satisfies ModuleKey,
       field_schema: "keyword",
     });
   }
@@ -55,14 +60,14 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
       hnsw_config: { payload_m: 16, m: 0 },
     });
     await this.client.createPayloadIndex("products", {
-      field_name: "business",
+      field_name: "business" satisfies BusinessKey,
       field_schema: {
         type: "uuid",
         is_tenant: true,
       },
     });
     await this.client.createPayloadIndex("products", {
-      field_name: "enabled",
+      field_name: "enabled" satisfies EnabledKey,
       field_schema: "bool",
     });
   }
@@ -86,7 +91,12 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
   deleteProductsByBusiness(businessId: string) {
     return this.client.delete("products", {
       filter: {
-        must: [{ key: "business", match: { value: businessId } }],
+        must: [
+          {
+            key: "business" satisfies BusinessKey,
+            match: { value: businessId },
+          },
+        ],
       },
     });
   }
@@ -102,8 +112,11 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
       score_threshold: threshold,
       filter: {
         must: [
-          { key: "business", match: { value: businessId } },
-          { key: "enabled", match: { value: true } },
+          {
+            key: "business" satisfies BusinessKey,
+            match: { value: businessId },
+          },
+          { key: "enabled" satisfies EnabledKey, match: { value: true } },
         ],
       },
       limit,
@@ -127,7 +140,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
 
   queryIntents(
     vector: number[],
-    domains: string[],
+    activeModules: string[],
     lang: string,
     limit: number,
     threshold: number,
@@ -138,11 +151,11 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
       with_payload: true,
       filter: {
         must: [
-          { key: "lang", match: { value: lang } },
+          { key: "lang" satisfies LangKey, match: { value: lang } },
           {
             // min_should: 1,
-            should: domains.map((d) => ({
-              key: "domain",
+            should: activeModules.map((d) => ({
+              key: "module" satisfies ModuleKey,
               match: { value: d },
             })),
           },
