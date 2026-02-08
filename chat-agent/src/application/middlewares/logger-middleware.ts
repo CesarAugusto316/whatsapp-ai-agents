@@ -1,7 +1,7 @@
 import { MiddlewareHandler } from "hono";
 import { env } from "bun";
 import { BookingState } from "@/domain/restaurant/booking";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { ModuleCtx } from "@/domain/restaurant";
 
 // Tipos para diferentes niveles de log
 type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
@@ -27,7 +27,7 @@ type LogData = {
   response?: unknown;
 };
 
-export const loggerMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
+export const loggerMiddleware = (): MiddlewareHandler<ModuleCtx> => {
   return async (c, next) => {
     const start = performance.now(); // Más preciso que Date.now()
     const method = c.req.method;

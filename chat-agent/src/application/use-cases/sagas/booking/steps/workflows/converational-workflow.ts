@@ -1,4 +1,4 @@
-import { RestaurantProps } from "@/domain/restaurant";
+import { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { BookingResult } from "../../booking-saga";
@@ -16,7 +16,7 @@ import { detectSocialProtocol, ragService } from "@/application/services/rag";
  * No authoritative business logic lives here.
  */
 export async function conversationalWorkflow(
-  ctx: RestaurantProps,
+  ctx: RestaurantCtx,
 ): Promise<BookingResult> {
   const { bookingState, customerMessage, business, chatKey, customer } =
     Object.freeze(structuredClone(ctx));
@@ -35,15 +35,17 @@ export async function conversationalWorkflow(
     customerMessage,
     ["informational", "booking", "restaurant"],
   );
+  console.log({ intentPoints: JSON.stringify(intentPoints) });
 
   /**
+   *
+   * -IMPLEMENT THIS FEATURE IN THE FUTURE IS NOT URGENT NOW
    * @todo notify CMS about unhandled intent
    * Si no se detectó un intent confiable
    *
    * @example
    * cmsAdapter.sendQuestionForReview(businessId, payload)
    */
-  console.log({ intentPoints: JSON.stringify(intentPoints) });
 
   // 2. FLOW SELECTION & INITIALIZATION (pre-FSM)
   const isFirstMessage = chatHistoryCache.length === 0;
@@ -78,7 +80,7 @@ export async function conversationalWorkflow(
     };
   }
 
-  // 4. DEFAULT FALLBACK WITH AI AGENT WHEN CUSTOMER ASKS THE WHAT OF SOMETHING
+  // 3. DEFAULT FALLBACK WITH AI AGENT FOR THE CHAT
   const messages: ChatMessage[] = [
     ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
     {
@@ -93,6 +95,11 @@ export async function conversationalWorkflow(
       intent: intentPoints.at(0)?.payload?.intent,
     }),
   );
+
+  /**
+   *
+   * @todo Replace for a better, less mecanic approach if posible
+   */
   const reminderMSG = status
     ? attachProcessReminder(assistantResponse, status, messages)
     : assistantResponse;

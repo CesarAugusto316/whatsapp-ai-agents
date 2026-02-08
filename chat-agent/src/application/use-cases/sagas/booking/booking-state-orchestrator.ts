@@ -1,6 +1,6 @@
 import { FMStatus, InputIntent } from "@/domain/restaurant/booking";
 import { BookingResult, reservationSaga } from "./booking-saga";
-import { RestaurantProps } from "@/domain/restaurant";
+import { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import {
   conversationalWorkflow,
@@ -27,7 +27,7 @@ const statusSagaMap: Partial<
  * @returns
  */
 export const bookingStateOrchestrator = async (
-  ctx: RestaurantProps,
+  ctx: RestaurantCtx,
 ): Promise<BookingResult> => {
   //
   const status = ctx.bookingState?.status;

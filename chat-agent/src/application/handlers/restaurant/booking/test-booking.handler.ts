@@ -1,5 +1,5 @@
 import { Handler } from "hono/types";
-import { RestaurantCtx, RestaurantProps } from "@/domain/restaurant";
+import { ModuleCtx, RestaurantCtx } from "@/domain/restaurant";
 import { bookingStateOrchestrator } from "@/application/use-cases/sagas";
 
 /**
@@ -8,7 +8,7 @@ import { bookingStateOrchestrator } from "@/application/use-cases/sagas";
  * @param next
  * @returns
  */
-export const testBookingHandler: Handler<RestaurantCtx> = async (c) => {
+export const testBookingHandler: Handler<ModuleCtx> = async (c) => {
   const context = {
     customerMessage: c.get("customerMessage"),
     customerPhone: c.get("customerPhone"),
@@ -23,7 +23,7 @@ export const testBookingHandler: Handler<RestaurantCtx> = async (c) => {
     bookingState: c.get("bookingState"),
     productOrderKey: c.get("productOrderKey"),
     productOrderState: c.get("productOrderState"),
-  } as RestaurantProps;
+  } as RestaurantCtx;
 
   return c.json(await bookingStateOrchestrator(context));
 };

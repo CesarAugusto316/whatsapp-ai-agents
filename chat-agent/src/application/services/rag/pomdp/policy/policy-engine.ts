@@ -2,7 +2,7 @@
 // 4. POLICY ENGINE (Decisiones)
 // ============================================
 
-import { RestaurantProps } from "@/domain/restaurant";
+import { RestaurantCtx } from "@/domain/restaurant";
 import { BeliefState } from "../intents/intent.types";
 
 type PolicyAction =
@@ -12,7 +12,7 @@ type PolicyAction =
   | { type: "fallback"; reason: string };
 
 export class PolicyEngine {
-  decide(belief: BeliefState, context: RestaurantProps): PolicyAction {
+  decide(belief: BeliefState, context: RestaurantCtx): PolicyAction {
     // 1. Si está atascado → fallback a humano o resetear
     if (belief.isStuck) {
       return {

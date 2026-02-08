@@ -26,7 +26,7 @@ import {
   SagaResult,
   stepConfig,
 } from "@/application/patterns";
-import { RestaurantProps } from "@/domain/restaurant";
+import { RestaurantCtx } from "@/domain/restaurant";
 import { BookingSchema } from "@/domain/restaurant/booking/schemas";
 import { mergeReservationData } from "../helpers/merge-state";
 
@@ -42,11 +42,11 @@ export interface StartedSagaResult extends SagaBag {
 }
 
 export type StartedFuncSagaResult = (
-  ctx: RestaurantProps,
+  ctx: RestaurantCtx,
 ) => Promise<SagaResult<StartedSagaResult, StartedSteps>>;
 
 type StartedFuncSagaStep = ISagaStep<
-  RestaurantProps,
+  RestaurantCtx,
   StartedSagaResult,
   StartedSteps
 >;

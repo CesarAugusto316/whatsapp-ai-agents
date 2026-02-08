@@ -1,6 +1,6 @@
 import { humanizerAgent } from "@/application/agents/restaurant";
 import { resolveNextState } from "@/application/patterns";
-import { RestaurantProps } from "@/domain/restaurant";
+import { RestaurantCtx } from "@/domain/restaurant";
 import { BookingOptions } from "@/domain/restaurant/booking";
 import { systemMessages } from "@/domain/restaurant/booking/prompts";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
@@ -14,7 +14,7 @@ import { BookingResult } from "../../booking-saga";
  * @returns
  */
 export async function initialOptionsWorkflow(
-  props: RestaurantProps,
+  props: RestaurantCtx,
 ): Promise<BookingResult | undefined> {
   const { customerMessage, bookingKey, customer, business } = Object.freeze(
     structuredClone(props),

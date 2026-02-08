@@ -1,5 +1,5 @@
 import { MiddlewareHandler } from "hono/types";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { ModuleCtx } from "@/domain/restaurant";
 import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
@@ -12,7 +12,7 @@ import { BeliefState, ModuleKind } from "@/application/services/rag";
  * @param next
  * @returns
  */
-export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
+export const bootstrapMiddleware = (): MiddlewareHandler<ModuleCtx> => {
   return async (ctx, next) => {
     const custumerRecievedEvent = await ctx.req.json<WahaRecievedEvent>();
     const businessId = ctx.req.param("businessId") ?? "";
@@ -20,22 +20,22 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
     const event = custumerRecievedEvent.event;
     const customerMessage = (custumerRecievedEvent.payload.body || "").trim();
     const customerPhone = custumerRecievedEvent.payload.from;
-    const chatKey = `chat:${businessId}:${customerPhone}`;
-    const bookingKey = `booking:${businessId}:${customerPhone}`;
-    const bookingState = await cacheAdapter.getObj<BookingState>(bookingKey);
-    const beliefKey = `belief:${businessId}:${customerPhone}`;
-    const beliefState = await cacheAdapter.getObj<BeliefState>(beliefKey);
 
-    ctx.set("session", session);
-    ctx.set("whatsappEvent", event);
-    ctx.set("chatKey", chatKey);
-    ctx.set("beliefKey", beliefKey);
-    ctx.set("beliefState", beliefState);
-    ctx.set("bookingKey", bookingKey);
-    ctx.set("bookingState", bookingState);
-
+    // ============================================
+    // 1. VALIDATE
+    // ============================================
+    if (!event) {
+      return ctx.json({ error: "Event not received" }, 400);
+    }
+    if (!session) {
+      return ctx.json({ error: "Session not received" }, 400);
+    }
     if (!businessId) {
       return ctx.json({ error: "Business ID not received" }, 400);
+    }
+    const business = await cmsAdapter.getBusinessById(businessId);
+    if (!business) {
+      return ctx.json({ error: "Business not found" }, 404);
     }
     if (!customerMessage) {
       return ctx.json({ error: "Customer message not received" }, 400);
@@ -48,20 +48,38 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
       return ctx.json({ error: "Customer phone not received" }, 400);
     }
 
-    ctx.set("businessId", businessId);
-    ctx.set("customerMessage", customerMessage);
-    ctx.set("customerPhone", customerPhone);
-
+    // ============================================
+    // 2. GET CACHED DATA AND KEYS
+    // ============================================
     const customer = await cmsAdapter.getCostumerByPhone({
       "where[business][equals]": businessId,
       "where[phoneNumber][like]": customerPhone,
-    });
-    const business = await cmsAdapter.getBusinessById(businessId);
+    }); // can be undefined
+    const chatKey = `chat:${businessId}:${customerPhone}`;
+    const beliefKey = `belief:${businessId}:${customerPhone}`;
+    const beliefState = await cacheAdapter.getObj<BeliefState>(beliefKey);
+    const bookingKey = `booking:${businessId}:${customerPhone}`;
+    const bookingState = await cacheAdapter.getObj<BookingState>(bookingKey);
 
-    if (!business) {
-      return ctx.json({ error: "Business not found" }, 404);
-    }
+    // ============================================
+    // 3. SET CONTEXT
+    // ============================================
+    ctx.set("businessId", businessId);
+    ctx.set("customerMessage", customerMessage);
+    ctx.set("customerPhone", customerPhone);
+    ctx.set("customer", customer); // can be undefined
+    ctx.set("business", business);
+    ctx.set("session", session);
+    ctx.set("whatsappEvent", event);
+    ctx.set("chatKey", chatKey);
+    ctx.set("beliefKey", beliefKey);
+    ctx.set("beliefState", beliefState);
+    ctx.set("bookingKey", bookingKey);
+    ctx.set("bookingState", bookingState);
 
+    // ============================================
+    // 4. SET ACTIVE MODULES
+    // ============================================
     const activeModules: ModuleKind[] = ["booking", "informational"];
 
     if (business.general.businessType === "restaurant") {
@@ -74,9 +92,7 @@ export const bootstrapMiddleware = (): MiddlewareHandler<RestaurantCtx> => {
       ctx.set("activeModules", activeModules.concat(["erotic"]));
     }
 
-    ctx.set("customer", customer); // can be undefined
-    ctx.set("business", business);
-
+    // 5. NEXT HANDLER
     await next();
   };
 };

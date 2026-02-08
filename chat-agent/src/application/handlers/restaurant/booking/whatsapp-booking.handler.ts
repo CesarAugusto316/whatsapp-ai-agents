@@ -1,8 +1,8 @@
 import { Handler } from "hono/types";
-import { RestaurantCtx, RestaurantProps } from "@/domain/restaurant";
+import { ModuleCtx, RestaurantCtx } from "@/domain/restaurant";
 import { whatsappSagaOrchestrator } from "@/application/use-cases/sagas";
 
-export const whatsappBookingHandler: Handler<RestaurantCtx> = async (c) => {
+export const whatsappBookingHandler: Handler<ModuleCtx> = async (c) => {
   const ctx = {
     session: c.get("session"),
     whatsappEvent: c.get("whatsappEvent"),
@@ -21,7 +21,7 @@ export const whatsappBookingHandler: Handler<RestaurantCtx> = async (c) => {
     bookingState: c.get("bookingState"),
     productOrderKey: c.get("productOrderKey"),
     productOrderState: c.get("productOrderState"),
-  } satisfies RestaurantProps;
+  } satisfies RestaurantCtx;
 
   if (ctx.whatsappEvent !== "message") {
     return c.json({ message: "Invalid event" });

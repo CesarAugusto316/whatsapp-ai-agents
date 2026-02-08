@@ -1,4 +1,1 @@
-export type {
-  RestaurantCtx,
-  RestaurantProps,
-} from "./restaurant-context.types";
+export type { ModuleCtx, RestaurantCtx } from "./restaurant-context.types";
