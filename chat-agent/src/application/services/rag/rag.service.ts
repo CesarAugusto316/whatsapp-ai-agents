@@ -109,7 +109,7 @@ class RagService {
   ) {
     // VALIDACIONES DE DOMINIO (lógica de aplicación)
     if (!activeModules.includes("informational")) {
-      throw new Error('El dominio "global" siempre debe estar activo');
+      throw new Error('El module "informational" siempre debe estar activo');
     }
 
     if (activeModules.length <= 2) {

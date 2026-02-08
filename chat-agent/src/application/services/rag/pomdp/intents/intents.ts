@@ -1,11 +1,9 @@
-import { ModuleKind, SemanticIntent } from "../../rag.types";
+import { SemanticIntent } from "../../rag.types";
 import type {
   BookingIntentKey,
   ConversationalSignal,
   EroticIntentKey,
   InformationalIntentKey,
-  IntentKey,
-  Observation,
   RestaurantIntentKey,
 } from "./intent.types";
 
@@ -16,7 +14,8 @@ export const socialProtocols = {
 };
 
 export const conversationalPatterns: Record<ConversationalSignal, RegExp> = {
-  affirmation: /\b(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos)\b/i,
+  affirmation:
+    /\b(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos|afirmativo)\b/i,
   negation: /\b(no|nop|nope|nel|nanai|ya no|tampoco)\b/i,
   uncertainty: /\b(no sé|tal vez|quizás|puede ser|no estoy seguro)\b/i,
   request_help: /\b(ayuda|no entiendo|explica|cómo funciona)\b/i,
@@ -46,6 +45,7 @@ export const bookingIntents: SemanticIntent<BookingIntentKey>[] = [
     lang: "es",
     examples: [
       "quiero hacer una reserva",
+      "tiene reservaciones",
       "me gustaría agendar una cita",
       "necesito apartar un espacio para mañana",
       "quisiera reservar para dos personas",
@@ -284,40 +284,3 @@ export const informationalIntents: SemanticIntent<InformationalIntentKey>[] = [
     ],
   },
 ];
-
-// ============================================
-// 5. HELPER PARA CONSTRUIR OBSERVATION
-// ============================================
-export function buildObservation(
-  userMessage: string,
-  ragResults: Array<{ intent: IntentKey; module: ModuleKind; score: number }>,
-  systemContext: {
-    hasActiveBooking: boolean;
-    hasOrderInProgress: boolean;
-    previousDominantIntent?: string;
-    conversationTurns: number;
-  },
-): Observation {
-  const msg = userMessage.toLowerCase();
-
-  return {
-    text: userMessage,
-
-    intentResults: ragResults.map((r) => ({
-      intent: r.intent,
-      module: r.module,
-      // module: r.intent.split(":")[0],  // orginal code by claude from anthrophic
-      score: r.score,
-    })),
-
-    signals: {
-      isAffirmation: conversationalPatterns.affirmation.test(msg),
-      isNegation: conversationalPatterns.negation.test(msg),
-      isUncertain: conversationalPatterns.uncertainty.test(msg),
-      needsHelp: conversationalPatterns.request_help.test(msg),
-      wantsHuman: conversationalPatterns.request_human.test(msg),
-    },
-
-    context: systemContext,
-  };
-}

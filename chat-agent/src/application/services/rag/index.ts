@@ -1,6 +1,6 @@
 export { ragService } from "./rag.service";
 
-// intents
+// objects
 export {
   eroticIntents,
   restaurantIntents,
@@ -8,9 +8,11 @@ export {
   conversationalPatterns,
   informationalIntents,
   socialProtocols,
-  buildObservation,
   detectSocialProtocol,
 } from "./pomdp/intents/intents";
+export { BeliefUpdater } from "./pomdp/belief/belief-updater";
+export { buildObservation } from "./pomdp/observation/build-observation";
+export { PolicyEngine } from "./pomdp/policy/policy-engine";
 
 // types
 export type {
@@ -19,8 +21,9 @@ export type {
   EroticIntentKey,
   ConversationalSignal,
   InformationalIntentKey,
-  Observation,
 } from "./pomdp/intents/intent.types";
-export type { BeliefIntent, BeliefState } from "./pomdp/intents/intent.types";
+export { Observation } from "./pomdp/observation/observation.types";
+
+export type { BeliefIntent, BeliefState } from "./pomdp/belief/belief.types";
 
 export type { SemanticIntent, SyncStateRequest, ModuleKind } from "./rag.types";

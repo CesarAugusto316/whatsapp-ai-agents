@@ -1,10 +1,9 @@
-// ============================================
-// 4. POLICY ENGINE (Decisiones)
-// ============================================
-
 import { RestaurantCtx } from "@/domain/restaurant";
-import { BeliefState } from "../intents/intent.types";
+import { BeliefState } from "../belief/belief.types";
 
+// ============================================
+// 1. POLICY ENGINE (Decisiones)
+// ============================================
 type PolicyAction =
   | { type: "clarify"; question: string }
   | { type: "confirm"; intent: string }

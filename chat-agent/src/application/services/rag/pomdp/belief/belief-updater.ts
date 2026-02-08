@@ -1,14 +1,10 @@
-// ============================================
-// 3. BELIEF UPDATER (Bayesian-inspired)
-// ============================================
+import { IntentKey } from "../intents/intent.types";
+import { Observation } from "../observation/observation.types";
+import { BeliefIntent, BeliefState } from "./belief.types";
 
-import {
-  BeliefIntent,
-  BeliefState,
-  IntentKey,
-  Observation,
-} from "../intents/intent.types";
-
+// ============================================
+// 1. BELIEF UPDATER (Bayesian-inspired)
+// ============================================
 export class BeliefUpdater {
   private readonly DECAY_FACTOR = 0.9; // decae 10% por turno
   private readonly THRESHOLD_DOMINANT = 0.65;
