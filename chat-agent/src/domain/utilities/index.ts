@@ -6,3 +6,4 @@ export {
   toLocalDateTime,
 } from "./datetime-formatting/better-datetime-converter";
 export { formatAvailability } from "./availability/format-availability";
+export { getGoogleMapLink } from "./geo-location/getGoogleMapLink";

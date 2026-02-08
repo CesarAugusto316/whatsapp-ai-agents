@@ -19,7 +19,7 @@ export async function initialOptionsWorkflow(
   const { customerMessage, bookingKey, customer, business } = Object.freeze(
     structuredClone(props),
   );
-  
+
   if (customerMessage === BookingOptions.MAKE_BOOKING) {
     // choice 2
     const transition = resolveNextState(BookingOptions.MAKE_BOOKING);

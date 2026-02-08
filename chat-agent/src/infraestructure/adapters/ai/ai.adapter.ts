@@ -89,12 +89,13 @@ class AiAdapter implements IAiAdapter {
        * must be set to 0 in some cases
        * @link https://www.ibm.com/granite/docs/models/granite
        */
-      temperature,
+      temperature = 0.6,
       response_format,
       max_tokens = 512,
       enable_thinking = false,
     }: MessagesBasedRequest,
     prompt: string,
+    useAux = false,
   ): Promise<string> {
     //
     return resilientQuery(async () => {
@@ -102,7 +103,7 @@ class AiAdapter implements IAiAdapter {
         method: "POST",
         headers: this.config.headers,
         body: JSON.stringify({
-          model: this.config.model,
+          model: useAux ? this.config.auxModel : this.config.model,
           messages: [{ role: "system", content: prompt }, ...messages],
           temperature,
           max_tokens,
@@ -122,13 +123,13 @@ class AiAdapter implements IAiAdapter {
     }, chatConfig);
   }
 
-  async systemMsg(message: string, temperature = 0) {
+  async systemMsg(message: string, temperature = 0.6, useAux = false) {
     return resilientQuery(async () => {
       const response = await fetch(`${this.config.url}/chat/completions`, {
         method: "POST",
         headers: this.config.headers,
         body: JSON.stringify({
-          model: this.config.model,
+          model: useAux ? this.config.auxModel : this.config.model,
           temperature,
           max_tokens: 512,
           messages: [{ role: "system", content: message }],

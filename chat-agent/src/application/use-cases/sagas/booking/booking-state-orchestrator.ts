@@ -13,10 +13,11 @@ const statusSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
 > = {
   MAKE_STARTED: reservationSaga.makeStarted,
-  UPDATE_STARTED: reservationSaga.updateStarted,
-
   MAKE_VALIDATED: reservationSaga.makeValidated,
+
+  UPDATE_STARTED: reservationSaga.updateStarted,
   UPDATE_VALIDATED: reservationSaga.updateValidated,
+
   CANCEL_VALIDATED: reservationSaga.cancelValidated,
 };
 
@@ -44,6 +45,11 @@ export const bookingStateOrchestrator = async (
     };
   }
   if (status) {
+    // ============================================
+    // 1.DETERMINISTIC SAGA ORCHESTRATOR
+    // For every workflow option there is a FSM that determines
+    // which saga orchestrator to execute and the next status
+    // ============================================
     const sagaOrchestrator = statusSagaMap[status];
     if (!sagaOrchestrator) {
       throw new Error(`No saga found for status ${status}`);
@@ -59,6 +65,9 @@ export const bookingStateOrchestrator = async (
       return { bag, lastStepResult };
     }
   } else {
+    // ============================================
+    // 2. MAIN WORKFLOW OPTIONS (DETERMISTIC)
+    // ============================================
     const res = await initialOptionsWorkflow(ctx);
     if (res) {
       const { lastStepResult } = res;
@@ -71,11 +80,11 @@ export const bookingStateOrchestrator = async (
     }
   }
 
+  // ============================================
+  // 1. POMDP (heuristic-light-pragmatic) entry point
+  // ============================================
   /**
    *
-   * @todo refactor to use SagaOrchestrator
-   * @see makeStarted
-   * @see updateStarted
    * @see {InputIntent}
    */
   const { bag, lastStepResult } = await conversationalWorkflow(ctx);
