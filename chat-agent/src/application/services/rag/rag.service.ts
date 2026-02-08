@@ -83,6 +83,11 @@ class RagService {
   // -------------------- INTENCIONES SEMÁNTICAS --------------------
   /**
    *
+   * @todo Futuro (si necesitas más precisión):
+   * 1. Hybrid search (vector + keywords):
+   * Combinar similitud semántica + match exacto de palabras clave
+   * score = 0.7 * vectorScore + 0.3 * keywordScore
+   *
    * @description Busca una consulta en todo el universo semántico del negocio
    * y devuelve un payload con su intent, el intent clasifica/distingue
    * la intención de la consulta
