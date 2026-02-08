@@ -1,6 +1,6 @@
 export { ragService } from "./rag.service";
 
-// objects
+// objects/classes
 export {
   eroticIntents,
   restaurantIntents,
@@ -22,7 +22,7 @@ export type {
   ConversationalSignal,
   InformationalIntentKey,
 } from "./pomdp/intents/intent.types";
-export { Observation } from "./pomdp/observation/observation.types";
+export type { Observation } from "./pomdp/observation/observation.types";
 
 export type { BeliefIntent, BeliefState } from "./pomdp/belief/belief.types";
 

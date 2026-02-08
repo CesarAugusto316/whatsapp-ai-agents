@@ -1,7 +1,7 @@
-import { RestaurantCtx } from "@/domain/restaurant";
+import type { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
-import { BookingResult } from "../../booking-saga";
+import type { BookingResult } from "../booking-saga";
 import { attachProcessReminder } from "@/application/patterns";
 import {
   conversationalPrompt,

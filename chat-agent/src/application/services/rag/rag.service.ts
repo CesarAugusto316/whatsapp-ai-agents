@@ -89,13 +89,15 @@ class RagService {
   // -------------------- INTENCIONES SEMÁNTICAS --------------------
   /**
    *
-   * @description Clasifica una consulta en todo el universo semántico del negocio
+   * @description Busca una consulta en todo el universo semántico del negocio
+   * y devuelve un payload con su intent, el intent clasifica/distingue
+   * la intención de la consulta
    * @example
    *  Para un restaurante con booking habilitado
-   *  const restaurantWithBooking = await classifyIntent(
-   *  "¿Puedo reservar una mesa para 4 personas el viernes?",
+   *  const restaurantWithBooking = await searchIntent(
+   *  "¿Puedo reservar una mesael viernes?",
    *  "1.0",
-   *  ["restaurant", "global", "booking"], // Dominios activos
+   *  ["restaurant", "informational", "booking"], // Modules activos
    *  3,
    *  "es"
    * );

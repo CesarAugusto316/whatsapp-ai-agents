@@ -1,13 +1,9 @@
 import { FMStatus, InputIntent } from "@/domain/restaurant/booking";
 import { BookingResult, reservationSaga } from "./booking-saga";
-import { RestaurantCtx } from "@/domain/restaurant";
+import type { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
-import {
-  conversationalWorkflow,
-  initialOptionsWorkflow,
-  StartedFuncSagaResult,
-  ValidateFuncSagaResult,
-} from "./steps";
+import { conversationalWorkflow, initialOptionsWorkflow } from "./workflows";
+import type { StartedFuncSagaResult, ValidateFuncSagaResult } from "./steps";
 
 const statusSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
