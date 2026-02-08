@@ -60,9 +60,9 @@ export class PolicyEngine {
       .map((i) => i.key);
 
     const questions: Record<string, string> = {
-      create_booking: "¿Quieres hacer una reserva?",
-      request_menu: "¿Quieres ver el menú?",
-      start_order: "¿Quieres hacer un pedido?",
+      "booking:create": "¿Quieres hacer una reserva?", // ← FIX namespace
+      "restaurant:view_menu": "¿Quieres ver el menú?", // ← FIX namespace
+      "restaurant:place_order": "¿Quieres hacer un pedido?", // ← FIX namespace
     };
 
     const options = topIntents.map((i) => questions[i] || i).join(" o ");

@@ -58,6 +58,7 @@ class AiAdapter implements IAiAdapter {
            */
           url: "http://localhost:11434/v1",
           model: "granite4:micro-h", // local ollama model
+          auxModel: "granite4:micro-h", // local ollama model
           embedding: "qwen3-embedding-0.6b",
           headers: {
             Authorization: "",
@@ -66,7 +67,14 @@ class AiAdapter implements IAiAdapter {
         }
       : {
           url: `https://api.cloudflare.com/client/v4/accounts/${env?.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
-          model: "@cf/ibm-granite/granite-4.0-h-micro", //"@cf/meta/llama-4-scout-17b-16e-instruct";
+          /**
+           * $0.07 in /  $0.10 out  / 1M tokens
+           * @link better price at: https://deepinfra.com/Qwen/Qwen3-235B-A22B-Instruct-2507
+           * $0.08 in /  $0.28 out  / 1M tokens
+           * @link better price at: https://deepinfra.com/Qwen/Qwen3-32B
+           */
+          model: "@cf/qwen/qwen3-30b-a3b-fp8",
+          auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
           embedding: "@cf/qwen/qwen3-embedding-0.6b",
           headers: {
             Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
@@ -84,6 +92,7 @@ class AiAdapter implements IAiAdapter {
       temperature,
       response_format,
       max_tokens = 512,
+      enable_thinking = false,
     }: MessagesBasedRequest,
     prompt: string,
   ): Promise<string> {
@@ -98,6 +107,7 @@ class AiAdapter implements IAiAdapter {
           temperature,
           max_tokens,
           response_format,
+          enable_thinking,
         }),
       });
       if (!response.ok) {

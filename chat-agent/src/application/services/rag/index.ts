@@ -8,6 +8,8 @@ export {
   conversationalPatterns,
   informationalIntents,
   socialProtocols,
+  buildObservation,
+  detectSocialProtocol,
 } from "./pomdp/intents/intents";
 
 // types

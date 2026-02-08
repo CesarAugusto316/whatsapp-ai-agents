@@ -92,6 +92,7 @@ export interface MessagesBasedRequest {
     name: string;
     code: string;
   }>;
+  enable_thinking?: boolean;
   tools?: ToolDefinition[];
   response_format?: ResponseFormat;
   raw?: boolean;

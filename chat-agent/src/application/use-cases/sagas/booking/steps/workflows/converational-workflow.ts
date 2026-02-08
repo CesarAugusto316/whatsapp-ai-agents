@@ -7,7 +7,7 @@ import {
   conversationalPrompt,
   systemMessages,
 } from "@/domain/restaurant/booking/prompts";
-import { ragService } from "@/application/services/rag";
+import { detectSocialProtocol, ragService } from "@/application/services/rag";
 
 /**
  *
@@ -23,6 +23,12 @@ export async function conversationalWorkflow(
 
   const status = bookingState?.status;
   const chatHistoryCache = await chatHistoryAdapter.get(chatKey);
+
+  const protocol = detectSocialProtocol(ctx.customerMessage);
+
+  if (protocol) {
+    // skip RAG, to save resources
+  }
 
   // 1. INTENT SEARCH
   const { points: intentPoints } = await ragService.classifyIntent(

@@ -24,6 +24,17 @@ export const conversationalPatterns: Record<ConversationalSignal, RegExp> = {
   ...socialProtocols, // can be deleted these are less important
 };
 
+// Helper function
+export function detectSocialProtocol(msg: string): string | null {
+  const trimmed = msg.trim();
+
+  if (socialProtocols.greeting.test(trimmed)) return "greeting";
+  if (socialProtocols.goodbye.test(trimmed)) return "goodbye";
+  if (socialProtocols.thanks.test(trimmed)) return "thanks";
+
+  return null;
+}
+
 // ============================================
 // 3. INTENTS MEJORADOS
 // ============================================

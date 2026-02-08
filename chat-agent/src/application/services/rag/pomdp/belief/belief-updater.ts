@@ -14,6 +14,20 @@ export class BeliefUpdater {
   private readonly THRESHOLD_DOMINANT = 0.65;
   private readonly MAX_ENTROPY = 0.8;
 
+  // NUEVO: inicializar cuando no hay belief previo
+  static createEmpty(): BeliefState {
+    return {
+      intents: {},
+      dominant: undefined,
+      entropy: 0,
+      confidence: 0,
+      conversationTurns: 0,
+      lastUpdate: Date.now(),
+      needsClarification: false,
+      isStuck: false,
+    };
+  }
+
   update(currentBelief: BeliefState, observation: Observation): BeliefState {
     // 1. Decay de intenciones previas (olvido temporal)
     const decayedIntents = this.applyDecay(currentBelief.intents);
