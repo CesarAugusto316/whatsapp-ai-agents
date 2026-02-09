@@ -7,6 +7,7 @@ import { RestaurantCtx } from "@/domain/restaurant";
 import { ModuleKind } from "../rag.types";
 import { IntentExampleKey } from "./intents/intent.types";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
+import { PomdpLoggingService } from "@/application/services/logging/pomdp-logging.service";
 
 export type PomdpActionResult =
   | { type: "clarify"; question: string; beliefState: BeliefState }
@@ -36,34 +37,44 @@ export class PomdpManager {
     }>,
   ): Promise<PomdpActionResult> {
     // Load previous belief state from cache, or create empty one
-    let currentBeliefState = ctx.beliefState || BeliefUpdater.createEmpty();
+    const previousBeliefState = ctx.beliefState || BeliefUpdater.createEmpty();
 
     // Build observation from user input and RAG results
-    // const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
     const systemContext = {
       hasActiveBooking: Boolean(ctx.bookingState?.status),
       hasOrderInProgress: Boolean(ctx.productOrderState),
-      previousDominantIntent: currentBeliefState.dominant,
-      conversationTurns: currentBeliefState.conversationTurns,
+      previousDominantIntent: previousBeliefState.dominant,
+      conversationTurns: previousBeliefState.conversationTurns,
     };
 
-    const observation: Observation = buildObservation(
+    const newObservation: Observation = buildObservation(
       ctx.customerMessage,
       ragResults,
       systemContext,
     );
 
     // Update belief state based on observation
-    const updatedBeliefState = this.beliefUpdater.update(
-      currentBeliefState,
-      observation,
+    const newBeliefState = this.beliefUpdater.update(
+      previousBeliefState,
+      newObservation,
     );
 
     // Decide on action based on updated belief state
-    const action = this.policyEngine.decide(updatedBeliefState, ctx);
+    const action = this.policyEngine.decide(newBeliefState, ctx);
 
     // Save updated belief state to cache
-    await cacheAdapter.save(ctx.beliefKey, updatedBeliefState, 60 * 60 * 24); // 24 hours TTL
+    await cacheAdapter.save(ctx.beliefKey, newBeliefState, 60 * 60 * 24); // 24 hours TTL
+
+    // Log the interaction for analytics and debugging
+    await PomdpLoggingService.logPomdpInteraction({
+      ctx,
+      ragResults,
+      previousBeliefState,
+      observation: newObservation,
+      updatedBeliefState: newBeliefState,
+      actionResult: action as PomdpActionResult,
+      conversationTurn: newBeliefState.conversationTurns,
+    });
 
     // Return appropriate result based on action
     switch (action.type) {
@@ -71,33 +82,33 @@ export class PomdpManager {
         return {
           type: "clarify",
           question: action.question,
-          beliefState: updatedBeliefState,
+          beliefState: newBeliefState,
         };
       case "confirm":
         return {
           type: "confirm",
           intent: action.intent,
-          beliefState: updatedBeliefState,
+          beliefState: newBeliefState,
         };
       case "execute":
         return {
           type: "execute",
           intent: action.intent,
           saga: action.saga,
-          beliefState: updatedBeliefState,
+          beliefState: newBeliefState,
         };
       case "fallback":
         return {
           type: "fallback",
           reason: action.reason,
-          beliefState: updatedBeliefState,
+          beliefState: newBeliefState,
         };
       default:
         // For any other case, return a continue action with the belief state
         return {
           type: "continue",
           response: "¿En qué más puedo ayudarte?",
-          beliefState: updatedBeliefState,
+          beliefState: newBeliefState,
         };
     }
   }
