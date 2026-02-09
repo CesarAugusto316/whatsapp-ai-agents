@@ -10,10 +10,20 @@ import type {
 // 1. INTENTS MEJORADOS
 // ============================================
 
+/**
+ *
+ * @todo podría ser importante a futuro distinguir entre
+ * preguntas vs sentencias imperativas.
+ *
+ * Ej. Puedes mostrarme el menú?  -> muestrame el menú
+ *     Hay hamburguesas? -> dame el menú/precios de hamburguesas
+ *
+ */
 const booking: IntentExample<BookingIntentKey>[] = [
   {
     intent: "booking:create",
     module: "booking",
+    requiresConfirmation: true,
     lang: "es",
     examples: [
       "quiero hacer una reserva",
@@ -31,6 +41,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intent: "booking:modify",
     module: "booking",
+    requiresConfirmation: true,
     lang: "es",
     examples: [
       "quiero cambiar mi reserva",
@@ -46,6 +57,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intent: "booking:cancel",
     module: "booking",
+    requiresConfirmation: true,
     lang: "es",
     examples: [
       "quiero cancelar",
@@ -78,24 +90,29 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:view_menu",
     module: "restaurant",
+    // requiresConfirmation: Maybe
     lang: "es",
     examples: [
       "qué venden",
+      "qué ofrecen",
+      "cual es la oferta",
       "puedo ver el menú",
+      "tienen menu",
+      "dame las opciones",
       "muéstrame las opciones",
       "qué platos tienen",
       "qué hay para comer",
       "quiero ver la carta",
-      "qué ofrecen",
-      "qué tienen disponible",
     ],
   },
   {
     intent: "restaurant:place_order",
     module: "restaurant",
+    requiresConfirmation: true,
     lang: "es",
     examples: [
       "quiero hacer un pedido",
+      "necesito hacer un pedido",
       "deseo ordenar",
       "voy a pedir",
       "quiero comprar comida",
@@ -112,14 +129,16 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
      * @todo HACER HYBRID SEARCH VECTOR + EXACT WORD MATCH
      */
     examples: [
-      "busco pollo frito",
-      "tienen hamburguesas",
-      "encuentra platos vegetarianos",
-      "busco pasta italiana",
-      "qué opciones hay con camarones",
-      "busco comida picante",
-      "tienen opciones veganas",
-      "encuentra algo con pollo",
+      // "busco pollo frito",
+      "tienen", // opciones veganas
+      "encuentra", // platos vegetarianos, pollo frito
+      "busco", // pollo frito, pizza, comida, china
+      "qué opciones hay con",
+      "busco algo con",
+      "buscame",
+      "encuentrame",
+      "encuentrame algo con", // carne
+      "buscame algo con", // carne
     ],
   },
   {
@@ -128,7 +147,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     lang: "es",
     examples: [
       "qué me recomiendas",
-      "plato estrella",
+      "el plato estrella",
       "lo más popular",
       "qué es lo mejor",
       "qué debo probar",
@@ -140,6 +159,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:update_order",
     module: "restaurant",
+    requiresConfirmation: true,
     lang: "es",
     examples: [
       "quiero actualizar mi pedido",
@@ -155,6 +175,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:cancel_order",
     module: "restaurant",
+    requiresConfirmation: true,
     lang: "es",
     examples: [
       "quiero cancelar mi pedido",
@@ -243,21 +264,6 @@ const erotic: IntentExample<EroticIntentKey>[] = [
 ];
 
 const informational: IntentExample<InformationalIntentKey>[] = [
-  {
-    intent: "info:ask_price",
-    module: "informational",
-    lang: "es",
-    examples: [
-      "cuánto cuesta",
-      "precio",
-      "tarifas",
-      "cuánto vale",
-      "cuál es el costo",
-      "cuánto sale",
-      "valores",
-      "lista de precios",
-    ],
-  },
   {
     intent: "info:ask_location",
     module: "informational",
