@@ -4,23 +4,27 @@
 export type InformationalIntentKey =
   | "info:ask_price"
   | "info:ask_location"
-  | "info:ask_hours"
+  | "info:ask_business_hours"
   | "info:ask_payment_methods"
   | "info:ask_contact";
 
 export type BookingIntentKey =
+  // workflows
   | "booking:create"
   | "booking:modify"
   | "booking:cancel"
+  // conversational
   | "booking:check_availability";
 
 export type RestaurantIntentKey =
+  // conversational
   | "restaurant:view_menu"
-  | "restaurant:place_order"
+  | "restaurant:find_dishes"
+  | "restaurant:recommend_dishes"
   | "restaurant:ask_delivery_time"
   | "restaurant:ask_delivery_method"
-  | "restaurant:find_dishes"
-  | "restaurant:recomend_dishes"
+  // workflows
+  | "restaurant:place_order"
   | "restaurant:update_order"
   | "restaurant:cancel_order";
 

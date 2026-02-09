@@ -105,6 +105,39 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
+    intent: "restaurant:find_dishes",
+    module: "restaurant",
+    lang: "es",
+    /**
+     * @todo HACER HYBRID SEARCH VECTOR + EXACT WORD MATCH
+     */
+    examples: [
+      "busco pollo frito",
+      "tienen hamburguesas",
+      "encuentra platos vegetarianos",
+      "busco pasta italiana",
+      "qué opciones hay con camarones",
+      "busco comida picante",
+      "tienen opciones veganas",
+      "encuentra algo con pollo",
+    ],
+  },
+  {
+    intent: "restaurant:recommend_dishes",
+    module: "restaurant",
+    lang: "es",
+    examples: [
+      "qué me recomiendas",
+      "plato estrella",
+      "lo más popular",
+      "qué es lo mejor",
+      "qué debo probar",
+      "tus recomendaciones",
+      "lo más vendido",
+      "qué piden usualmente",
+    ],
+  },
+  {
     intent: "restaurant:update_order",
     module: "restaurant",
     lang: "es",
@@ -127,9 +160,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
       "quiero cancelar mi pedido",
       "quiero anular mi orden",
       "quiero cancelar mi compra",
-      "quiero cancelar mi reserva",
-      "quiero cancelar mi cita",
-      "quiero cancelar mi cita de comida",
+      "quiero cancelar mi pedido",
+      "quiero cancelar mi pedido de comida",
       "quiero cancelar mi cita de cena",
       "quiero cancelar mi cita de almuerzo",
     ],
@@ -242,7 +274,7 @@ const informational: IntentExample<InformationalIntentKey>[] = [
     ],
   },
   {
-    intent: "info:ask_hours",
+    intent: "info:ask_business_hours",
     module: "informational",
     lang: "es",
     examples: [
