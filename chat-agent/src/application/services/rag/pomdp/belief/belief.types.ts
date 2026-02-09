@@ -17,7 +17,7 @@ export interface BeliefIntent {
 export interface BeliefState {
   intents: Record<string, BeliefIntent>;
 
-  dominant?: string; // intención más probable
+  dominant?: IntentExampleKey; // intención más probable
 
   // Métricas de incertidumbre
   entropy: number; // qué tan confuso está (0=seguro, 1=muy confuso)

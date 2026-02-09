@@ -18,7 +18,11 @@ export type RestaurantIntentKey =
   | "restaurant:view_menu"
   | "restaurant:place_order"
   | "restaurant:ask_delivery_time"
-  | "restaurant:ask_delivery_method";
+  | "restaurant:ask_delivery_method"
+  | "restaurant:find_dishes"
+  | "restaurant:recomend_dishes"
+  | "restaurant:update_order"
+  | "restaurant:cancel_order";
 
 export type EroticIntentKey =
   | "erotic:view_content"

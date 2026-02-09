@@ -4,13 +4,14 @@ import {
   BookingOptions,
   ProductOrderOptions,
 } from "@/domain/restaurant/booking";
+import { IntentExampleKey } from "../intents/intent.types";
 
 // ============================================
 // 1. POLICY ENGINE (Decisiones)
 // ============================================
 export type PolicyDecision =
-  | { type: "clarify"; intent: string }
-  | { type: "confirm"; intent: string }
+  | { type: "ask_clarification"; intent: string }
+  | { type: "ask_confirmation"; intent: string }
   | { type: "execute"; intent: string; saga: string }
   | { type: "fallback"; reason: string };
 
@@ -28,7 +29,7 @@ export class PolicyEngine {
     if (belief.needsClarification) {
       // return this.generateClarification(belief);
       return {
-        type: "clarify",
+        type: "ask_clarification",
         intent: belief.dominant || "",
       };
     }
@@ -39,7 +40,7 @@ export class PolicyEngine {
       const intent = belief.intents[belief.dominant];
       if (intent.evidence <= 2) {
         return {
-          type: "confirm",
+          type: "ask_confirmation",
           intent: belief.dominant,
         };
       }
@@ -54,19 +55,32 @@ export class PolicyEngine {
 
     // 4. Default: hacer pregunta abierta
     return {
-      type: "clarify",
+      type: "ask_clarification",
       intent: belief.dominant || "",
     };
   }
 
-  private mapIntentToWorkflow(intent: string): string {
-    const map: Record<string, string> = {
-      create_booking: BookingOptions.MAKE_BOOKING,
-      modify_booking: BookingOptions.UPDATE_BOOKING,
-      cancel_booking: BookingOptions.CANCEL_BOOKING,
-      start_order: ProductOrderOptions.MAKE_PRODUCT_ORDER,
+  /**
+   * @todo map more intents -> workFlowOptions | tool_call | read cached_business_info
+   * @param intent
+   * @returns
+   */
+  private mapIntentToWorkflow(intent: IntentExampleKey): string {
+    // RestaurantIntentKey| BookingIntentKey
+    const map: Partial<Record<IntentExampleKey, string>> = {
+      "booking:create": BookingOptions.MAKE_BOOKING, // deterministic workflow
+      "booking:modify": BookingOptions.UPDATE_BOOKING,
+      "booking:cancel": BookingOptions.CANCEL_BOOKING,
+      "booking:check_availability": "booking:check_availability", // tool_call
+
+      "restaurant:place_order": ProductOrderOptions.MAKE_PRODUCT_ORDER, // deterministic workflow
+      "restaurant:update_order": ProductOrderOptions.UPDATE_PRODUCT_ORDER,
+      "restaurant:cancel_order": ProductOrderOptions.CANCEL_PRODUCT_ORDER,
+      "restaurant:ask_delivery_method": "restaurant:ask_delivery_method", // read cached_business_info
+      "restaurant:ask_delivery_time": "restaurant:ask_delivery_time",
+      "restaurant:view_menu": "restaurant:view_menu",
     };
 
-    return map[intent];
+    return map[intent] as string;
   }
 }

@@ -34,7 +34,7 @@ export async function conversationalWorkflow(
    * @todo implemnet better guardrails to prevent calling the ragService
    * only when necesary
    */
-  const { skip, signal: type } = shouldSkipProcessing(ctx.customerMessage);
+  const { skip, signal } = shouldSkipProcessing(ctx.customerMessage);
 
   // skip RAG, to save resources
   if (skip) {
