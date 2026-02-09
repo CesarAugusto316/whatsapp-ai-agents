@@ -1,40 +1,13 @@
 import { IntentExample } from "../../rag.types";
 import type {
   BookingIntentKey,
-  ConversationalSignal,
   EroticIntentKey,
   InformationalIntentKey,
   RestaurantIntentKey,
 } from "./intent.types";
 
-export const socialProtocols = {
-  greeting: /(hola|buenas|buen día|qué tal|hey|hi)\s*[,.]?\s*/i,
-  goodbye: /(chau|adiós|hasta luego|nos vemos|bye)\s*[,.]?\s*/i,
-  thanks: /(gracias|muchas gracias|graciass|thx|thanks)\s*[,.]?\s*/i,
-};
-
-// Helper function
-export function detectSocialProtocol(msg: string): string | null {
-  const trimmed = msg.trim();
-
-  if (socialProtocols.greeting.test(trimmed)) return "greeting";
-  if (socialProtocols.goodbye.test(trimmed)) return "goodbye";
-  if (socialProtocols.thanks.test(trimmed)) return "thanks";
-
-  return null;
-}
-
-export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
-  affirmation:
-    /\b(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos|afirmativo)\b/i,
-  negation: /\b(no|nop|nope|nel|nanai|ya no|tampoco)\b/i,
-  uncertainty: /\b(no sé|tal vez|quizás|puede ser|no estoy seguro)\b/i,
-  request_help: /\b(ayuda|no entiendo|explica|cómo funciona)\b/i,
-  request_human: /\b(hablar con|persona|humano|operador|alguien)\b/i,
-};
-
 // ============================================
-// 3. INTENTS MEJORADOS
+// 1. INTENTS MEJORADOS
 // ============================================
 
 const booking: IntentExample<BookingIntentKey>[] = [

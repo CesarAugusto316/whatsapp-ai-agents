@@ -54,11 +54,10 @@ describe("Integration: /test-ai endpoint", () => {
     // Mock AI client
     mock.module("@/infraestructure/adapters/ai", () => ({
       aiClient: {
-        userMsg: mock(
+        generateText: mock(
           async () =>
             "¡Hola! Soy el asistente virtual del restaurante Test Restaurant. ¿En qué puedo ayudarte hoy?",
         ),
-        systemMsg: mock(async () => "Mock AI response"),
       },
     }));
 

@@ -19,10 +19,12 @@ export const intentClassifierAgent = {
    */
   async howOrWhat(message: string): Promise<CUSTOMER_INTENT> {
     try {
-      const raw = await aiAdapter.userMsg(
-        { messages: [{ role: "user", content: message }] },
-        CLASSIFIER_PROMPT,
-      ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
+      const raw = await aiAdapter.generateText({
+        messages: [
+          { role: "system", content: CLASSIFIER_PROMPT },
+          { role: "user", content: message },
+        ],
+      }); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
 
       const { success, data } = customerIntentSchema.safeParse(raw);
       if (success) return data;
@@ -44,10 +46,12 @@ export const intentClassifierAgent = {
    */
   async inputIntent(message: string): Promise<InputIntent> {
     try {
-      const raw = await aiAdapter.userMsg(
-        { messages: [{ role: "user", content: message }] },
-        validationPrompts.intentClassifier(),
-      ); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
+      const raw = await aiAdapter.generateText({
+        messages: [
+          { role: "system", content: validationPrompts.intentClassifier() },
+          { role: "user", content: message },
+        ],
+      }); // Llamamos a aiClient usando CLASSIFIER_PROMPT como system
 
       const { success, data } = inputIntentSchema.safeParse(raw);
       if (success) return data;

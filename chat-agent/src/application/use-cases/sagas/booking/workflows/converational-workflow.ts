@@ -8,7 +8,7 @@ import {
   systemMessages,
 } from "@/domain/restaurant/booking/prompts";
 import {
-  detectSocialProtocol,
+  shouldSkipProcessing,
   PomdpManager,
   ragService,
 } from "@/application/services/rag";
@@ -34,11 +34,12 @@ export async function conversationalWorkflow(
    * @todo implemnet better guardrails to prevent calling the ragService
    * only when necesary
    */
-  const socialProtocol = detectSocialProtocol(ctx.customerMessage);
+  const { skip, signal: type } = shouldSkipProcessing(ctx.customerMessage);
 
   // skip RAG, to save resources
-  if (!socialProtocol) {
+  if (skip) {
     // 1. INTENT SEARCH
+  } else {
     const { points } = await ragService.searchIntent(
       ctx.customerMessage,
       ctx.activeModules, // ["informational", "booking", "restaurant"],
@@ -76,6 +77,12 @@ export async function conversationalWorkflow(
   if (isFirstMessage) {
     const messages: ChatMessage[] = [
       {
+        role: "system",
+        content: conversationalPrompt({
+          business: ctx.business,
+        }),
+      },
+      {
         role: "user",
         content: systemMessages.initialGreeting(
           ctx.customerMessage,
@@ -83,13 +90,10 @@ export async function conversationalWorkflow(
         ),
       },
     ];
-    const assistantResponse = await aiAdapter.userMsg(
-      { messages },
-      conversationalPrompt({
-        business: ctx.business,
-        // intent: intentPoints.at(0)?.payload?.intent,
-      }),
-    );
+    const assistantResponse = await aiAdapter.generateText({
+      messages,
+      useAuxModel: true,
+    });
     return {
       bag: {},
       lastStepResult: {
@@ -106,19 +110,22 @@ export async function conversationalWorkflow(
 
   // 3. DEFAULT FALLBACK WITH AI AGENT FOR THE CHAT
   const messages: ChatMessage[] = [
+    {
+      role: "system",
+      content: conversationalPrompt({
+        business: ctx.business,
+      }),
+    },
     ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
     {
       role: "user",
       content: ctx.customerMessage,
     },
   ];
-  const assistantResponse = await aiAdapter.userMsg(
-    { messages },
-    conversationalPrompt({
-      business: ctx.business,
-      // intent: intentPoints.at(0)?.payload?.intent,
-    }),
-  );
+  const assistantResponse = await aiAdapter.generateText({
+    messages,
+    useAuxModel: true,
+  });
 
   /**
    *

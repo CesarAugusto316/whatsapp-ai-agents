@@ -1,6 +1,6 @@
 import { ModuleKind } from "../../rag.types";
+import { conversationalSignals } from "../intents/conversational-signals";
 import { IntentExampleKey } from "../intents/intent.types";
-import { conversationalSignals } from "../intents/intent-examples";
 import { Observation } from "./observation.types";
 
 // ============================================

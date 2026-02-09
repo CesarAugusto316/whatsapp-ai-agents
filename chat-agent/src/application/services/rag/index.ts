@@ -1,12 +1,12 @@
 export { ragService } from "./rag.service";
 
 // objects/classes/functions
+export { intentExamples } from "./pomdp/intents/intent-examples";
 export {
-  intentExamples,
   conversationalSignals,
   socialProtocols,
-  detectSocialProtocol,
-} from "./pomdp/intents/intent-examples";
+  shouldSkipProcessing,
+} from "./pomdp/intents/conversational-signals";
 export { BeliefUpdater } from "./pomdp/belief/belief-updater";
 export { buildObservation } from "./pomdp/observation/build-observation";
 export { PolicyEngine } from "./pomdp/policy/policy-engine";

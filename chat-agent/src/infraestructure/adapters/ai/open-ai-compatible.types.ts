@@ -105,6 +105,9 @@ export interface MessagesBasedRequest {
   repetition_penalty?: number;
   frequency_penalty?: number;
   presence_penalty?: number;
+
+  // custom field
+  useAuxModel?: boolean;
 }
 
 export type ChatRequest = PromptBasedRequest | MessagesBasedRequest;

@@ -57,7 +57,7 @@ class AiAdapter implements IAiAdapter {
            * @link https://docs.ollama.com/api/openai-compatibility
            */
           url: "http://localhost:11434/v1",
-          model: "granite4:micro-h", // local ollama model
+          primaryModel: "granite4:micro-h", // local ollama model
           auxModel: "granite4:micro-h", // local ollama model
           embedding: "qwen3-embedding-0.6b",
           headers: {
@@ -73,7 +73,7 @@ class AiAdapter implements IAiAdapter {
            * $0.08 in /  $0.28 out  / 1M tokens
            * @link better price at: https://deepinfra.com/Qwen/Qwen3-32B
            */
-          model: "@cf/qwen/qwen3-30b-a3b-fp8",
+          primaryModel: "@cf/qwen/qwen3-30b-a3b-fp8",
           auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
           embedding: "@cf/qwen/qwen3-embedding-0.6b",
           headers: {
@@ -82,57 +82,30 @@ class AiAdapter implements IAiAdapter {
           },
         };
 
-  async userMsg(
-    {
-      messages,
-      /**
-       * must be set to 0 in some cases
-       * @link https://www.ibm.com/granite/docs/models/granite
-       */
-      temperature = 0.6,
-      response_format,
-      max_tokens = 512,
-      enable_thinking = false,
-    }: MessagesBasedRequest,
-    prompt: string,
-    useAux = false,
-  ): Promise<string> {
+  async generateText({
+    messages,
+    /**
+     * must be set to 0 in some cases
+     * @link https://www.ibm.com/granite/docs/models/granite
+     */
+    temperature = 0.5,
+    response_format,
+    max_tokens = 512,
+    enable_thinking = false,
+    useAuxModel = false,
+  }: MessagesBasedRequest): Promise<string> {
     //
     return resilientQuery(async () => {
       const response = await fetch(`${this.config.url}/chat/completions`, {
         method: "POST",
         headers: this.config.headers,
         body: JSON.stringify({
-          model: useAux ? this.config.auxModel : this.config.model,
-          messages: [{ role: "system", content: prompt }, ...messages],
+          model: useAuxModel ? this.config.auxModel : this.config.primaryModel,
+          messages,
           temperature,
           max_tokens,
           response_format,
           enable_thinking,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      const result = (await response.json()) as ChatCompletionResponse;
-      const content = result.choices?.[0]?.message?.content?.trim();
-      if (!content) {
-        throw new Error("No se recibió respuesta de la AI");
-      }
-      return content;
-    }, chatConfig);
-  }
-
-  async systemMsg(message: string, temperature = 0.6, useAux = false) {
-    return resilientQuery(async () => {
-      const response = await fetch(`${this.config.url}/chat/completions`, {
-        method: "POST",
-        headers: this.config.headers,
-        body: JSON.stringify({
-          model: useAux ? this.config.auxModel : this.config.model,
-          temperature,
-          max_tokens: 512,
-          messages: [{ role: "system", content: message }],
         }),
       });
       if (!response.ok) {

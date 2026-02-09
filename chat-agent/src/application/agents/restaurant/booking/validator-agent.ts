@@ -23,12 +23,10 @@ export const validatorAgent = {
   ) {
     const PARSER_PROMPT = validationPrompts.dataParser(business);
     const messages: ChatMessage[] = [
+      { role: "system", content: PARSER_PROMPT },
       { role: "user", content: customerMessage },
     ];
-    const aiValidator: string = await aiAdapter.userMsg(
-      { messages },
-      PARSER_PROMPT,
-    );
+    const aiValidator: string = await aiAdapter.generateText({ messages });
 
     // ✅ Required fields
     const rawObj = JSON.parse(aiValidator || "{}");
@@ -72,16 +70,14 @@ export const validatorAgent = {
       return "No se detectaron errores específicos para corregir.";
     }
 
-    return aiAdapter.userMsg(
-      {
-        messages: [
-          {
-            role: "user",
-            content: JSON.stringify(mappedErrors),
-          },
-        ],
-      },
-      COLLECTOR_PROMPT,
-    );
+    return aiAdapter.generateText({
+      messages: [
+        { role: "system", content: COLLECTOR_PROMPT },
+        {
+          role: "user",
+          content: JSON.stringify(mappedErrors),
+        },
+      ],
+    });
   },
 };
