@@ -4,6 +4,7 @@ export {
   BOOL,
   CustomerActions,
   BookingOptions,
+  ProductOrderOptions,
   BookingStatuses,
   InputIntent,
   CUSTOMER_INTENT,

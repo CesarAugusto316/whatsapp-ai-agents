@@ -1,8 +1,8 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import { PomdpManager } from "../pomdp/pomdp-manager";
-import { BeliefUpdater } from "../pomdp/belief/belief-updater";
-import { IntentExampleKey } from "../pomdp/intents/intent.types";
-import { ModuleKind } from "../rag.types";
+import { PomdpManager } from "@/application/services/rag/pomdp/pomdp-manager";
+import { BeliefUpdater } from "@/application/services/rag/pomdp/belief/belief-updater";
+import { IntentExampleKey } from "@/application/services/rag/pomdp/intents/intent.types";
+import { ModuleKind } from "@/application/services/rag/rag.types";
 
 // Mock context for testing
 const mockCtx = {

@@ -1,19 +1,20 @@
 import type { Schemas } from "@qdrant/js-client-rest";
 import type { Product } from "../cms";
+import { IntentExampleKey, ModuleKind } from "@/application/services/rag";
 
 export type IntentPayload = {
   text: string;
-  module: string;
+  module: ModuleKind;
   lang: string;
-  intent: string;
+  intent: IntentExampleKey;
 };
 
 export interface QuadrantPoint<T> {
   id: string | number;
   version: number;
   score: number;
-  payload?: T;
-  vector?: Schemas["VectorStructOutput"] | (Record<string, unknown> | null);
+  payload: T;
+  vector: Schemas["VectorStructOutput"] | (Record<string, unknown> | null);
   shard_key?: Schemas["ShardKey"] | (Record<string, unknown> | null);
   order_value?: Schemas["OrderValue"] | (Record<string, unknown> | null);
 }

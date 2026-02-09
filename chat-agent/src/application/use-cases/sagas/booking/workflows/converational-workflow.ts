@@ -7,7 +7,15 @@ import {
   conversationalPrompt,
   systemMessages,
 } from "@/domain/restaurant/booking/prompts";
-import { detectSocialProtocol, ragService } from "@/application/services/rag";
+import {
+  detectSocialProtocol,
+  PomdpManager,
+  ragService,
+} from "@/application/services/rag";
+import {
+  IntentPayload,
+  QuadrantPoint,
+} from "@/infraestructure/adapters/vector-store";
 
 /**
  *
@@ -19,31 +27,43 @@ export async function conversationalWorkflow(
   ctx: RestaurantCtx,
 ): Promise<BookingResult> {
   //
-  const status = ctx.bookingState?.status;
+  let matchedIntents: QuadrantPoint<IntentPayload>[] = [];
   const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
 
-  const protocol = detectSocialProtocol(ctx.customerMessage);
+  /**
+   * @todo implemnet better guardrails to prevent calling the ragService
+   * only when necesary
+   */
+  const socialProtocol = detectSocialProtocol(ctx.customerMessage);
 
-  if (protocol) {
-    // skip RAG, to save resources
+  // skip RAG, to save resources
+  if (!socialProtocol) {
+    // 1. INTENT SEARCH
+    const { points } = await ragService.searchIntent(
+      ctx.customerMessage,
+      ctx.activeModules, // ["informational", "booking", "restaurant"],
+    );
+    /**
+     *
+     * -IMPLEMENT THIS FEATURE IN THE FUTURE IS NOT URGENT NOW
+     * @todo notify CMS about unhandled intents
+     * Si no se detectó un intent confiable/preciso
+     *
+     * @example
+     * cmsAdapter.sendQuestionForReview(businessId, payload)
+     */
+    matchedIntents = points ?? [];
   }
 
-  // 1. INTENT SEARCH
-  const { points: intentPoints } = await ragService.searchIntent(
-    ctx.customerMessage,
-    ctx.activeModules, // ["informational", "booking", "restaurant"],
+  console.log({ intentPoints: JSON.stringify(matchedIntents) });
+  const { beliefState, type } = await new PomdpManager().process(
+    ctx,
+    matchedIntents.map(({ payload, score }) => ({
+      intent: payload?.intent,
+      module: payload?.module,
+      score: score,
+    })),
   );
-  console.log({ intentPoints: JSON.stringify(intentPoints) });
-
-  /**
-   *
-   * -IMPLEMENT THIS FEATURE IN THE FUTURE IS NOT URGENT NOW
-   * @todo notify CMS about unhandled intent
-   * Si no se detectó un intent confiable
-   *
-   * @example
-   * cmsAdapter.sendQuestionForReview(businessId, payload)
-   */
 
   // 2. FLOW SELECTION & INITIALIZATION (pre-FSM)
   const isFirstMessage = chatHistoryCache.length === 0;
@@ -61,7 +81,7 @@ export async function conversationalWorkflow(
       { messages },
       conversationalPrompt({
         business: ctx.business,
-        intent: intentPoints.at(0)?.payload?.intent,
+        // intent: intentPoints.at(0)?.payload?.intent,
       }),
     );
     return {
@@ -90,7 +110,7 @@ export async function conversationalWorkflow(
     { messages },
     conversationalPrompt({
       business: ctx.business,
-      intent: intentPoints.at(0)?.payload?.intent,
+      // intent: intentPoints.at(0)?.payload?.intent,
     }),
   );
 
@@ -98,6 +118,7 @@ export async function conversationalWorkflow(
    *
    * @todo Replace for a better, less mecanic approach if posible
    */
+  const status = ctx.bookingState?.status;
   const reminderMSG = status
     ? attachProcessReminder(assistantResponse, status, messages)
     : assistantResponse;

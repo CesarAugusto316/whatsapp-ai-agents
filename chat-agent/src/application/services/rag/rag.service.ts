@@ -9,7 +9,11 @@ import {
 import { Schemas } from "@qdrant/js-client-rest";
 import { IntentExample } from "./rag.types";
 import { Product } from "@/infraestructure/adapters/cms";
-import { intentExamples, ModuleKind } from "@/application/services/rag";
+import {
+  IntentExampleKey,
+  intentExamples,
+  ModuleKind,
+} from "@/application/services/rag";
 
 /**
  *
@@ -140,7 +144,7 @@ class RagService {
   /**
    * Inserta o actualiza intenciones en el sistema
    */
-  async upsertIntents<I extends string>(intents: IntentExample<I>[]) {
+  async upsertIntents(intents: IntentExample<IntentExampleKey>[]) {
     // 1. Preparar datos para embedding en lote
     const prepared = intents.flatMap(({ intent, module, examples, lang }) =>
       examples.map((ex) => ({

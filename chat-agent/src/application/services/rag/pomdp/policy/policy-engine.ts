@@ -1,7 +1,9 @@
-import { RestaurantCtx } from "@/domain/restaurant";
 import { BeliefState } from "../belief/belief.types";
-import { BookingOptions } from "@/domain/restaurant/booking";
-import { ProductOrderOptions } from "@/domain/restaurant/booking/booking.types";
+import { RestaurantCtx } from "@/domain/restaurant";
+import {
+  BookingOptions,
+  ProductOrderOptions,
+} from "@/domain/restaurant/booking";
 
 // ============================================
 // 1. POLICY ENGINE (Decisiones)

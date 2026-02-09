@@ -20,6 +20,7 @@ export function buildObservation(
     conversationTurns: number;
   },
 ): Observation {
+  //
   const msg = userMessage.toLowerCase();
 
   return {

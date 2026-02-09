@@ -41,8 +41,8 @@ export class PomdpManager {
     // Build observation from user input and RAG results
     // const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
     const systemContext = {
-      hasActiveBooking: !!ctx.bookingState?.status,
-      hasOrderInProgress: !!ctx.productOrderState,
+      hasActiveBooking: Boolean(ctx.bookingState?.status),
+      hasOrderInProgress: Boolean(ctx.productOrderState),
       previousDominantIntent: currentBeliefState.dominant,
       conversationTurns: currentBeliefState.conversationTurns,
     };
