@@ -8,9 +8,9 @@ import type {
 } from "./intent.types";
 
 export const socialProtocols = {
-  greeting: /^(hola|buenas|buen día|qué tal|hey|hi)\s*[,.]?\s*$/i,
-  goodbye: /^(chau|adiós|hasta luego|nos vemos|bye)\s*[,.]?\s*$/i,
-  thanks: /^(gracias|muchas gracias|graciass|thx|thanks)\s*[,.]?\s*$/i,
+  greeting: /(hola|buenas|buen día|qué tal|hey|hi)\s*[,.]?\s*/i,
+  goodbye: /(chau|adiós|hasta luego|nos vemos|bye)\s*[,.]?\s*/i,
+  thanks: /(gracias|muchas gracias|graciass|thx|thanks)\s*[,.]?\s*/i,
 };
 
 // Helper function
