@@ -8,14 +8,14 @@ import {
 // ============================================
 // 1. POLICY ENGINE (Decisiones)
 // ============================================
-type PolicyAction =
-  | { type: "clarify"; question: string }
+export type PolicyDecision =
+  | { type: "clarify"; intent: string }
   | { type: "confirm"; intent: string }
   | { type: "execute"; intent: string; saga: string }
   | { type: "fallback"; reason: string };
 
 export class PolicyEngine {
-  public decide(belief: BeliefState, context: RestaurantCtx): PolicyAction {
+  public decide(belief: BeliefState, context: RestaurantCtx): PolicyDecision {
     // 1. Si está atascado → fallback a humano o resetear
     if (belief.isStuck) {
       return {
@@ -26,7 +26,11 @@ export class PolicyEngine {
 
     // 2. Si hay alta incertidumbre → clarificar
     if (belief.needsClarification) {
-      return this.generateClarification(belief);
+      // return this.generateClarification(belief);
+      return {
+        type: "clarify",
+        intent: belief.dominant || "",
+      };
     }
 
     // 3. Si hay intención dominante clara → confirmar o ejecutar
@@ -51,28 +55,7 @@ export class PolicyEngine {
     // 4. Default: hacer pregunta abierta
     return {
       type: "clarify",
-      question: "¿En qué puedo ayudarte hoy?",
-    };
-  }
-
-  private generateClarification(belief: BeliefState): PolicyAction {
-    // Top 2-3 intenciones como opciones
-    const topIntents = Object.values(belief.intents)
-      .sort((a, b) => b.probability - a.probability)
-      .slice(0, 3)
-      .map((i) => i.key);
-
-    const questions: Record<string, string> = {
-      "booking:create": "¿Quieres hacer una reserva?", // ← FIX namespace
-      "restaurant:view_menu": "¿Quieres ver el menú?", // ← FIX namespace
-      "restaurant:place_order": "¿Quieres hacer un pedido?", // ← FIX namespace
-    };
-
-    const options = topIntents.map((i) => questions[i] || i).join(" o ");
-
-    return {
-      type: "clarify",
-      question: `No estoy seguro si quieres ${options}. ¿Podrías aclararlo?`,
+      intent: belief.dominant || "",
     };
   }
 
@@ -84,6 +67,6 @@ export class PolicyEngine {
       start_order: ProductOrderOptions.MAKE_PRODUCT_ORDER,
     };
 
-    return map[intent] || "CONVERSATIONAL";
+    return map[intent];
   }
 }

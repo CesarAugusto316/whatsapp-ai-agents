@@ -56,7 +56,7 @@ export async function conversationalWorkflow(
   }
 
   console.log({ intentPoints: JSON.stringify(matchedIntents) });
-  const { beliefState, type } = await new PomdpManager().process(
+  const { beliefState, policyDecision } = await new PomdpManager().process(
     ctx,
     matchedIntents.map(({ payload, score }) => ({
       intent: payload?.intent,

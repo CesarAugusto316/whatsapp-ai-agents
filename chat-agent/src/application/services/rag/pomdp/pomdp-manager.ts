@@ -1,20 +1,23 @@
 import { BeliefUpdater } from "./belief/belief-updater";
 import { buildObservation } from "./observation/build-observation";
-import { PolicyEngine } from "./policy/policy-engine";
+import { PolicyDecision, PolicyEngine } from "./policy/policy-engine";
 import { BeliefState } from "./belief/belief.types";
 import { Observation } from "./observation/observation.types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { ModuleKind } from "../rag.types";
 import { IntentExampleKey } from "./intents/intent.types";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
-import { PomdpLoggingService } from "@/application/services/logging/pomdp-logging.service";
 
-export type PomdpActionResult =
-  | { type: "clarify"; question: string; beliefState: BeliefState }
-  | { type: "confirm"; intent: string; beliefState: BeliefState }
-  | { type: "execute"; intent: string; saga: string; beliefState: BeliefState }
-  | { type: "fallback"; reason: string; beliefState: BeliefState }
-  | { type: "continue"; response: string; beliefState: BeliefState }; // For cases where we continue with AI response
+export type PomdpResult = {
+  policyDecision: PolicyDecision;
+  beliefState: BeliefState;
+  recommendedIntent?: string;
+  topIntents?: Array<{ intent: string; probability: number }>;
+  confidenceMetrics: {
+    entropy: number;
+    confidence: number;
+  };
+};
 
 export class PomdpManager {
   private beliefUpdater: BeliefUpdater;
@@ -35,8 +38,8 @@ export class PomdpManager {
       module: ModuleKind;
       score: number;
     }>,
-  ): Promise<PomdpActionResult> {
-    // Load previous belief state from cache, or create empty one
+  ): Promise<PomdpResult> {
+    //
     const previousBeliefState = ctx.beliefState || BeliefUpdater.createEmpty();
 
     // Build observation from user input and RAG results
@@ -60,56 +63,30 @@ export class PomdpManager {
     );
 
     // Decide on action based on updated belief state
-    const action = this.policyEngine.decide(newBeliefState, ctx);
+    const policyDecision = this.policyEngine.decide(newBeliefState, ctx);
 
     // Save updated belief state to cache
     await cacheAdapter.save(ctx.beliefKey, newBeliefState, 60 * 60 * 24); // 24 hours TTL
 
-    // Log the interaction for analytics and debugging
-    await PomdpLoggingService.logPomdpInteraction({
-      ctx,
-      ragResults,
-      previousBeliefState,
-      observation: newObservation,
-      updatedBeliefState: newBeliefState,
-      actionResult: action as PomdpActionResult,
-      conversationTurn: newBeliefState.conversationTurns,
-    });
+    // Prepare top intents for context
+    const topIntents = Object.entries(newBeliefState.intents)
+      .sort(([_, a], [__, b]) => b.probability - a.probability)
+      .slice(0, 3)
+      .map(([intent, beliefIntent]) => ({
+        intent,
+        probability: beliefIntent.probability,
+      }));
 
-    // Return appropriate result based on action
-    switch (action.type) {
-      case "clarify":
-        return {
-          type: "clarify",
-          question: action.question,
-          beliefState: newBeliefState,
-        };
-      case "confirm":
-        return {
-          type: "confirm",
-          intent: action.intent,
-          beliefState: newBeliefState,
-        };
-      case "execute":
-        return {
-          type: "execute",
-          intent: action.intent,
-          saga: action.saga,
-          beliefState: newBeliefState,
-        };
-      case "fallback":
-        return {
-          type: "fallback",
-          reason: action.reason,
-          beliefState: newBeliefState,
-        };
-      default:
-        // For any other case, return a continue action with the belief state
-        return {
-          type: "continue",
-          response: "¿En qué más puedo ayudarte?",
-          beliefState: newBeliefState,
-        };
-    }
+    // Return structured result for LLM to generate response
+    return {
+      policyDecision,
+      beliefState: newBeliefState,
+      recommendedIntent: newBeliefState.dominant,
+      topIntents,
+      confidenceMetrics: {
+        entropy: newBeliefState.entropy,
+        confidence: newBeliefState.confidence,
+      },
+    };
   }
 }
