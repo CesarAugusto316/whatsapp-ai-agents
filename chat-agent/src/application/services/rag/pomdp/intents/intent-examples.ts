@@ -90,7 +90,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:view_menu",
     module: "restaurant",
-    // requiresConfirmation: Maybe
+    // requiresConfirmation: false | "maybe", // just give the user menu
     lang: "es",
     examples: [
       "qué venden",
@@ -124,26 +124,47 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:find_dishes",
     module: "restaurant",
+    requiresConfirmation: true,
     lang: "es",
     /**
      * @todo HACER HYBRID SEARCH VECTOR + EXACT WORD MATCH
+     * @example
+     * Usuario: "busco pizzas"
+     * Intent classifier → restaurant:find_dishes (score: 0.62) ⚠️ baja confianza
+              ↓
+     * POMDP detecta alta entropía → "¿Deseas buscar pizzas en el menú?"
+              ↓
+     * Usuario: "sí" ✅
+              ↓
+     * POMDP: confianza → 0.95 → ejecutar searchProducts("busco pizzas", businessId)
+              ↓
+     * Resultados: pizza margherita, pepperoni, hawaiana 🍕
+     *
      */
     examples: [
-      // "busco pollo frito",
-      "tienen", // opciones veganas
-      "encuentra", // platos vegetarianos, pollo frito
-      "busco", // pollo frito, pizza, comida, china
       "qué opciones hay con",
       "busco algo con",
-      "buscame",
-      "encuentrame",
-      "encuentrame algo con", // carne
-      "buscame algo con", // carne
+      "busco algo picante",
+      "busco entradas",
+      "busco sopas",
+      "busco comida con carne",
+      "busco comida con muchas verduras y saludable",
+      "busco algo con poca sal",
+      "tienen opciones vegetarianas",
+      "encuentra platos con pollo",
+      "qué opciones hay con queso",
+      "busco postres",
+      "encuéntrame algo saludable",
+      "tienen opciones sin gluten",
+      "busco algo rápido",
+      "qué platos tienen con camarones",
+      "buscame algo dulce",
     ],
   },
   {
     intent: "restaurant:recommend_dishes",
     module: "restaurant",
+    requiresConfirmation: true,
     lang: "es",
     examples: [
       "qué me recomiendas",
