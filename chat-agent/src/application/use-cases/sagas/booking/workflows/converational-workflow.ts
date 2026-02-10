@@ -8,7 +8,7 @@ import {
   systemMessages,
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
-import {
+import type {
   IntentPayload,
   QuadrantPoint,
 } from "@/infraestructure/adapters/vector-store";
@@ -124,7 +124,6 @@ export async function conversationalWorkflow(
   ];
   const assistantResponse = await aiAdapter.generateText({
     messages,
-    useAuxModel: true,
   });
 
   /**

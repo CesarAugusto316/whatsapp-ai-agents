@@ -8,7 +8,7 @@ import {
 } from "@/infraestructure/adapters/vector-store";
 import { Schemas } from "@qdrant/js-client-rest";
 import { Product } from "@/infraestructure/adapters/cms";
-import { ModuleKind } from "@/application/services/rag";
+import { ModuleKind } from "@/application/services/pomdp";
 import { IntentExample, IntentExampleKey, intentExamples } from "../pomdp";
 
 /**

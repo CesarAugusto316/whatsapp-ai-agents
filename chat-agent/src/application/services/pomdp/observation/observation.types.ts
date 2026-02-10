@@ -1,5 +1,4 @@
-import { ModuleKind } from "../../rag";
-import { IntentExampleKey } from "../intents/intent.types";
+import { IntentExampleKey, ModuleKind } from "../intents/intent.types";
 
 // ============================================
 // 1. OBSERVATION CON SIGNALS

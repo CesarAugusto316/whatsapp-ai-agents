@@ -1,6 +1,6 @@
 import type { Schemas } from "@qdrant/js-client-rest";
 import type { Product } from "../cms";
-import { IntentExampleKey, ModuleKind } from "@/application/services/rag";
+import { IntentExampleKey, ModuleKind } from "@/application/services/pomdp";
 
 export type IntentPayload = {
   text: string;

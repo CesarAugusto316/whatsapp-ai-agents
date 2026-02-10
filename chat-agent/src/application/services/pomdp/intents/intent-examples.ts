@@ -4,11 +4,175 @@ import type {
   InformationalIntentKey,
   IntentExample,
   RestaurantIntentKey,
+  SocialProtocolIntent,
 } from "./intent.types";
 
 // ============================================
 // 1. INTENTS MEJORADOS
 // ============================================
+
+/**
+ * Ejemplos de protocolos sociales para vectorizar y guardar en DB vectorial.
+ * Estos vectores se cachean GLOBALMENTE y se reutilizan entre todos los usuarios/negocios.
+ *
+ * IMPORTANTE: Estos NO se procesan con shouldSkipProcessing porque contienen
+ * variaciones más largas que requieren búsqueda semántica.
+ */
+const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
+  {
+    intent: "social:greeting",
+    module: "social-protocol",
+    lang: "es",
+    examples: [
+      // Variaciones largas que NO detecta el regex
+      "muy buenos días",
+      "hola qué tal todo",
+      "buenas tardes cómo está",
+      "qué tal amigo",
+      "hola buen día",
+      "buenas noches estimado",
+      "saludos cordiales",
+      "un saludo",
+      "qué onda",
+      "cómo andas",
+      "hola buenas",
+      // Combinaciones
+      "hola buen día cómo estás",
+      "buenas qué tal",
+      "hey qué tal todo",
+    ],
+  },
+  {
+    intent: "social:goodbye",
+    module: "social-protocol",
+    lang: "es",
+    examples: [
+      "hasta la próxima",
+      "nos estamos viendo",
+      "que tengas buen día",
+      "hasta otro día",
+      "cuídate mucho",
+      "que estés bien",
+      "un abrazo",
+      "saludos cordiales",
+      "bye que estés bien",
+      "chau nos vemos pronto",
+      "hasta luego cuídate",
+      "adiós gracias por todo",
+    ],
+  },
+  {
+    intent: "social:thanks",
+    module: "social-protocol",
+    lang: "es",
+    examples: [
+      "muchas gracias por todo",
+      "te agradezco mucho",
+      "mil gracias de verdad",
+      "gracias por tu ayuda",
+      "te lo agradezco",
+      "muy agradecido",
+      "gracias por la información",
+      "gracias por atenderme",
+      "agradezco tu tiempo",
+      "thank you so much",
+      "gracias igualmente",
+    ],
+  },
+];
+
+const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
+  {
+    intent: "signal:affirmation",
+    module: "conversational-signal",
+    lang: "es",
+    examples: [
+      "sí por favor",
+      "claro que sí",
+      "por supuesto",
+      "efectivamente",
+      "así es",
+      "está bien",
+      "de acuerdo",
+      "está perfecto",
+      "sí está bien",
+      "ok perfecto",
+      "dale si",
+      "sí claro",
+      "exactamente eso",
+    ],
+  },
+  {
+    intent: "signal:negation",
+    module: "conversational-signal",
+    lang: "es",
+    examples: [
+      "no gracias",
+      "no por ahora",
+      "no creo",
+      "no es necesario",
+      "mejor no",
+      "no está bien",
+      "no me interesa",
+      "no quiero",
+      "tampoco me interesa",
+      "ya no lo necesito",
+      "no es correcto",
+    ],
+  },
+  {
+    intent: "signal:uncertainty",
+    module: "conversational-signal",
+    lang: "es",
+    examples: [
+      "no estoy muy seguro",
+      "no sé bien",
+      "tal vez sí",
+      "quizás más tarde",
+      "puede que sí",
+      "no estoy seguro todavía",
+      "no sé qué decir",
+      "déjame pensarlo",
+      "mmm no sé",
+      "tengo dudas",
+      "no sabría decirte",
+    ],
+  },
+  {
+    intent: "signal:request_help",
+    module: "conversational-signal",
+    lang: "es",
+    examples: [
+      "necesito ayuda",
+      "no entiendo bien",
+      "podrías explicarme",
+      "cómo funciona esto",
+      "me puedes ayudar",
+      "no comprendo",
+      "explícame por favor",
+      "ayúdame con esto",
+      "no me queda claro",
+      "cómo hago para",
+    ],
+  },
+  {
+    intent: "signal:request_human",
+    module: "conversational-signal",
+    lang: "es",
+    examples: [
+      "quiero hablar con alguien",
+      "necesito una persona",
+      "hay algún operador encargado",
+      "puedo hablar con humano",
+      "comunícame con alguien",
+      "quiero atención humana",
+      "hay alguien disponible",
+      "necesito ayuda de persona",
+      "me pueden atender",
+      "quiero hablar con el dueño",
+    ],
+  },
+];
 
 /**
  *
@@ -344,8 +508,11 @@ const informational: IntentExample<InformationalIntentKey>[] = [
 ];
 
 export const intentExamples = [
+  ...socialProtocols,
+  ...conversationalSignals,
+
+  ...informational,
   ...booking,
   ...restaurant,
   ...erotic,
-  ...informational,
 ];

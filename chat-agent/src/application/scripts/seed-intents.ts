@@ -1,4 +1,5 @@
-import { intentExamples, ragService } from "../services/rag";
+import { intentExamples } from "../services/pomdp";
+import { ragService } from "../services/rag";
 
 const target = process.argv[2];
 const forceFlag = process.argv.includes("--force");

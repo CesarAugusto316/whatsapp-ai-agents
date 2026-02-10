@@ -4,8 +4,7 @@ import { PolicyDecision, PolicyEngine } from "./policy/policy-engine";
 import { BeliefState } from "./belief/belief.types";
 import { Observation } from "./observation/observation.types";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { ModuleKind } from "../rag/rag.types";
-import { IntentExampleKey } from "./intents/intent.types";
+import { IntentExampleKey, ModuleKind } from "./intents/intent.types";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 
 export type PomdpResult = {

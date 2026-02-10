@@ -3,20 +3,21 @@ import { ConversationalSignal } from "./intent.types";
 export type SocialProtocol = "greeting" | "goodbye" | "thanks";
 
 export const socialProtocols: Record<SocialProtocol, RegExp> = {
-  // Añadimos variaciones comunes y errores típicos (ola, holi, etc.)
   greeting:
-    /\b(hola|holaa|ola|holi|holis|buenas|buen día|buenos días|qué tal|que tal|hey|hi)\b/i,
-  goodbye: /\b(chau|adiós|adios|hasta luego|nos vemos|bye|byee)\b/i,
-  thanks: /\b(gracias|muchas gracias|graciass|gracias!|thx|thanks|ty)\b/i,
+    /^(hola+|ola+|holi+s?|buenas?( (tardes?|días?|noches?))?|qué tal|que tal|hey+|hi+|saludos?)$/i,
+  goodbye:
+    /^(chau+|adiós|adios|hasta (luego|pronto|mañana|la vista)|nos vemos|bye+|ciao+)$/i,
+  thanks: /^(gracias+|muchas gracias|mil gracias|thx|thanks|ty|thank you)$/i,
 };
 
 export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
   affirmation:
-    /\b(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos|afirmativo)\b/i,
-  negation: /\b(no|nop|nope|nel|nanai|ya no|tampoco)\b/i,
-  uncertainty: /\b(no sé|tal vez|quizás|puede ser|no estoy seguro)\b/i,
-  request_help: /\b(ayuda|no entiendo|explica|cómo funciona)\b/i,
-  request_human: /\b(hablar con|persona|humano|operador|alguien)\b/i,
+    /^(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos|afirmativo|sep|simon|oki)$/i,
+  negation: /^(no|nop|nope|nel|nanai|ya no|tampoco|nada|nunca)$/i,
+  uncertainty: /^(no sé|tal vez|quizás|puede ser|no estoy seguro|mmm|nose)$/i,
+  request_help: /^(ayuda|no entiendo|explica|cómo funciona|help|auxilio)$/i,
+  request_human:
+    /^(hablar con|persona|humano|operador|alguien|dueño|propietario|encargado)$/i,
 };
 
 /**

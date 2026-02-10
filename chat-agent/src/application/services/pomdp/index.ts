@@ -18,6 +18,8 @@ export type {
   InformationalIntentKey,
   IntentExampleKey,
   IntentExample,
+  ModuleKind,
+  SocialProtocolIntent,
 } from "./intents/intent.types";
 export type { Observation } from "./observation/observation.types";
 

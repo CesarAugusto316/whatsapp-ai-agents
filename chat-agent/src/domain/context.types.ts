@@ -1,5 +1,5 @@
 import { Business, Customer } from "@/infraestructure/adapters/cms";
-import { BeliefState, ModuleKind } from "@/application/services/rag";
+import { BeliefState, ModuleKind } from "@/application/services/pomdp";
 
 interface CommonProps {
   session: string; // whatsapp sessionId

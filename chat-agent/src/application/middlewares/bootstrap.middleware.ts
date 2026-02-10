@@ -4,7 +4,7 @@ import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { BookingState } from "@/domain/restaurant/booking";
-import { BeliefState, ModuleKind } from "@/application/services/rag";
+import { BeliefState, ModuleKind } from "@/application/services/pomdp";
 
 /**
  *

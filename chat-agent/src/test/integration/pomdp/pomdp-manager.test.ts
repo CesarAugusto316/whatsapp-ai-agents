@@ -4,7 +4,7 @@ import {
   BeliefUpdater,
   IntentExampleKey,
 } from "@/application/services/pomdp";
-import { ModuleKind } from "@/application/services/rag/rag.types";
+import { ModuleKind } from "@/application/services/pomdp";
 
 // Mock context for testing
 const mockCtx = {

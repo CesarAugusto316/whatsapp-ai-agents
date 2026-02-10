@@ -1,8 +1,15 @@
-import { ModuleKind } from "../../rag";
-
 // ============================================
 // 1. NAMESPACE POR DOMINIO (sin colisiones)
 // ============================================
+
+export type ModuleKind =
+  | "restaurant"
+  | "booking"
+  | "erotic"
+  | "real-state"
+  | "informational"
+  | "social-protocol"
+  | "conversational-signal";
 
 export interface IntentExample<I extends string> {
   intent: I;
@@ -11,6 +18,17 @@ export interface IntentExample<I extends string> {
   lang: "es" | "en";
   examples: string[];
 }
+
+export type SocialProtocolIntent =
+  | "social:greeting"
+  | "social:goodbye"
+  | "social:thanks"
+  | "signal:affirmation"
+  | "signal:negation"
+  | "signal:uncertainty"
+  | "signal:request_help"
+  | "signal:request_human";
+
 export type InformationalIntentKey =
   | "info:ask_price"
   | "info:ask_location"
@@ -44,6 +62,7 @@ export type EroticIntentKey =
   | "erotic:ask_services";
 
 export type IntentExampleKey =
+  | SocialProtocolIntent
   | InformationalIntentKey
   | RestaurantIntentKey
   | BookingIntentKey
