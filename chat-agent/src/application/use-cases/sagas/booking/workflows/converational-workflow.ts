@@ -8,10 +8,6 @@ import {
   systemMessages,
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
-import type {
-  IntentPayload,
-  QuadrantPoint,
-} from "@/infraestructure/adapters/vector-store";
 import {
   PomdpManager,
   shouldSkipProcessing,
@@ -24,44 +20,32 @@ import { formatSagaOutput } from "../helpers/format-saga-output";
  * @description Conversational fallback resolver.
  * Handles unstructured or out-of-FSM interactions using AI agents.
  * No authoritative business logic lives here.
+ *
+ * -IMPLEMENT THIS FEATURE IN THE FUTURE IS NOT URGENT NOW
+ * @todo notify CMS about unhandled intents
+ * Si no se detectó un intent confiable/preciso
+ * @example
+ * cmsAdapter.sendQuestionForReview(businessId, payload)
  */
 export async function conversationalWorkflow(
   ctx: RestaurantCtx,
 ): Promise<BookingResult> {
   //
-  let matchedIntents: QuadrantPoint<IntentPayload>[] = [];
-  const { skip, kind } = shouldSkipProcessing(ctx.customerMessage);
+  const { skip, kind, msg } = shouldSkipProcessing(ctx.customerMessage);
 
   // skip RAG, to save resources
   if (skip && kind === "social-protocol") {
-    // 1. INTENT SEARCH
-
-    return formatSagaOutput("Hola");
+    return formatSagaOutput(msg); // saludar, despedirse, agradecer (reflejo simple)
   }
 
-  const { points } = await ragService.searchIntent(
+  const { points: matchedIntents } = await ragService.searchIntent(
     ctx.customerMessage,
     ctx.activeModules, // ["informational", "booking", "restaurant"],
   );
-  /**
-   *
-   * -IMPLEMENT THIS FEATURE IN THE FUTURE IS NOT URGENT NOW
-   * @todo notify CMS about unhandled intents
-   * Si no se detectó un intent confiable/preciso
-   *
-   * @example
-   * cmsAdapter.sendQuestionForReview(businessId, payload)
-   */
-  matchedIntents = points ?? [];
+
   logger.info("intentPoints", matchedIntents);
 
-  const {
-    beliefState,
-    policyDecision,
-    recommendedIntent,
-    confidenceMetrics,
-    topIntents,
-  } = await new PomdpManager().process(
+  const pompdResult = await new PomdpManager().process(
     ctx,
     matchedIntents.map(({ payload, score }) => ({
       intent: payload?.intent,
@@ -70,9 +54,34 @@ export async function conversationalWorkflow(
     })),
   );
 
+  const messages = await prepareMessages(ctx);
+  const assistant = await aiAdapter.generateText({
+    messages,
+  });
+
+  /**
+   *
+   * @todo Replace for a better less mecanic approach if posible
+   */
+  const status = ctx.bookingState?.status;
+  const reminderMSG = status
+    ? attachProcessReminder(assistant, status, messages)
+    : assistant;
+
+  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
+  return formatSagaOutput(reminderMSG);
+}
+
+/**
+ *
+ * @param ctx
+ * @returns
+ */
+export async function prepareMessages(ctx: RestaurantCtx) {
   let messages: ChatMessage[] = [];
   const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
   const isFirstMessage = chatHistoryCache.length === 0;
+
   if (isFirstMessage) {
     messages = [
       {
@@ -106,19 +115,5 @@ export async function conversationalWorkflow(
     ] satisfies ChatMessage[];
   }
 
-  const assistant = await aiAdapter.generateText({
-    messages,
-  });
-
-  /**
-   *
-   * @todo Replace for a better less mecanic approach if posible
-   */
-  const status = ctx.bookingState?.status;
-  const reminderMSG = status
-    ? attachProcessReminder(assistant, status, messages)
-    : assistant;
-
-  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
-  return formatSagaOutput(reminderMSG);
+  return messages;
 }
