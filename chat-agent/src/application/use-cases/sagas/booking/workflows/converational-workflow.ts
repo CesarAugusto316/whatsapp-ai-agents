@@ -14,8 +14,8 @@ import {
 } from "@/application/services/pomdp";
 import { logger } from "@/infraestructure/logging";
 import { formatSagaOutput } from "../helpers/format-saga-output";
-import { PolicyDecision } from "@/application/services/pomdp";
 import { PomdpResult } from "@/application/services/pomdp/pomdp-manager";
+import { Product } from "@/infraestructure/adapters/cms";
 
 /**
  *
@@ -78,14 +78,36 @@ export async function conversationalWorkflow(
  * Generates a dynamic prompt based on the policy decision
  */
 function generateDynamicPrompt(
-  business: RestaurantCtx["business"],
-  policyDecision: PolicyDecision,
-  intent?: string,
-  flowStatus?: string,
-  customerMessage?: string,
+  ctx: RestaurantCtx,
+  pompdResult: PomdpResult,
+  products?: Product[],
 ): string {
+  const {
+    beliefState,
+    confidenceMetrics,
+    policyDecision,
+    recommendedIntent: intent,
+    topIntents,
+  } = pompdResult;
+  const { business, bookingState, customerMessage } = ctx;
+  const flowStatus = bookingState?.status;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
+
+  // Format top intents for context
+  const topIntentsInfo =
+    topIntents
+      ?.slice(0, 3)
+      .map((t) => `${t.intent}: ${Math.round(t.probability * 100)}%`)
+      .join("\n") || "None detected";
+
+  // Format products for context if provided
+  const productsContext =
+    products && products.length > 0
+      ? products
+          .map((p) => `- ${p.name}: ${p.description} - $${p.price}`)
+          .join("\n")
+      : "";
 
   switch (policyDecision.type) {
     case "ask_clarification":
@@ -106,6 +128,13 @@ function generateDynamicPrompt(
         CURRENT INTENT DETECTED
         ==============================
         Detected intent: ${intent || "unknown"}
+        Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
+        Uncertainty (entropy): ${confidenceMetrics?.entropy ? Math.round(confidenceMetrics.entropy * 100) + "%" : "unknown"}
+
+        ==============================
+        TOP INTENTS DETECTED
+        ==============================
+        ${topIntentsInfo}
 
         ==============================
         AVAILABLE OPTIONS
@@ -149,6 +178,12 @@ function generateDynamicPrompt(
         CONFIRMATION REQUIRED FOR
         ==============================
         Intent: ${intent}
+        Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
+
+        ==============================
+        AVAILABLE PRODUCTS (if applicable)
+        ==============================
+        ${productsContext || "No products available for selection"}
 
         ==============================
         WRITING STYLE
@@ -159,6 +194,7 @@ function generateDynamicPrompt(
         - Be concise but thorough
       `;
 
+    // BYPASS LLM EXECUTION IF POSSIBLE, POLICY ENGINE DECIDES
     case "execute":
       return `
         You are ${assistantName}, an assistant for ${businessName}.
@@ -182,6 +218,12 @@ function generateDynamicPrompt(
         ==============================
         Intent: ${intent}
         Saga: ${policyDecision.saga}
+        Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
+
+        ==============================
+        AVAILABLE PRODUCTS (if applicable)
+        ==============================
+        ${productsContext || "No products available for selection"}
 
         ==============================
         WRITING STYLE
@@ -206,6 +248,17 @@ function generateDynamicPrompt(
         - Be empathetic and offer assistance
 
         ==============================
+        SYSTEM METRICS
+        ==============================
+        Uncertainty (entropy): ${confidenceMetrics?.entropy ? Math.round(confidenceMetrics.entropy * 100) + "%" : "unknown"}
+        Top intents: ${topIntentsInfo}
+
+        ==============================
+        AVAILABLE PRODUCTS (if applicable)
+        ==============================
+        ${productsContext || "No products available for selection"}
+
+        ==============================
         WRITING STYLE
         ==============================
         - Empathetic and helpful
@@ -218,8 +271,9 @@ function generateDynamicPrompt(
       // Fallback to standard conversational prompt
       return conversationalPrompt({
         business,
+        // flowStatus,
         intent,
-        retrievedChunks: [],
+        retrievedChunks: productsContext ? [productsContext] : [],
       });
   }
 }
@@ -242,14 +296,7 @@ export async function prepareMessages(
   let systemPrompt: string;
 
   if (pompdResult && pompdResult.policyDecision) {
-    // Use dynamic prompt based on policy decision
-    systemPrompt = generateDynamicPrompt(
-      ctx.business,
-      pompdResult.policyDecision,
-      pompdResult.recommendedIntent,
-      ctx.bookingState?.status,
-      ctx.customerMessage,
-    );
+    systemPrompt = generateDynamicPrompt(ctx, pompdResult, []);
   } else {
     // Use standard conversational prompt
     systemPrompt = conversationalPrompt({

@@ -15,6 +15,8 @@ export type PolicyDecision =
   | { type: "execute"; intent: string; saga: string }
   | { type: "fallback"; reason: string };
 
+// 🧠 Bonus: Policy Engine puede decidir qué modelo usar
+
 export class PolicyEngine {
   public decide(belief: BeliefState, context: RestaurantCtx): PolicyDecision {
     // 1. Si está atascado → fallback a humano o resetear
@@ -50,6 +52,18 @@ export class PolicyEngine {
         type: "execute",
         intent: belief.dominant,
         saga: this.mapIntentToWorkflow(belief.dominant),
+        // 🧠 Bonus: Policy Engine puede decidir qué modelo usar
+
+        // structuredAction: {
+        //   action: "search_products",
+        //   params: { query: extractQuery(ctx.customerMessage) },
+        // },
+        // // ✨ Metadata para routing de modelo
+        // responseMetadata: {
+        //   requiresLLM: true,
+        //   modelTier: "light", // ← Granite-4.0-h-micro
+        //   maxTokens: 30,
+        // },
       };
     }
 
