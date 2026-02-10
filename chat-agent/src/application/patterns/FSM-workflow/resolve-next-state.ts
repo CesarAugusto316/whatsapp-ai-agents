@@ -8,31 +8,31 @@ import {
 import { ChatMessage } from "@/infraestructure/adapters/ai";
 
 // Mapa de mensajes para el usuario por estado
-const STATE_MESSAGES: Partial<Record<FMStatus, string>> = {
-  // Estados de CREACIÓN
-  [BookingStatuses.MAKE_STARTED]:
-    "📝 *Tienes una reserva en curso.*\nContinúa proporcionando los datos necesarios.",
-  [BookingStatuses.MAKE_RESTARTED]:
-    "🔄 *Has reiniciado tu reserva.*\nVuelve a ingresar tus datos",
-  [BookingStatuses.MAKE_VALIDATED]:
-    "✅ *Datos validados correctamente.*\n¿Quieres confirmar la reserva?",
-  [BookingStatuses.MAKE_CONFIRMED]: "🎉 *¡Reserva confirmada!*",
+// const STATE_MESSAGES: Partial<Record<FMStatus, string>> = {
+//   // Estados de CREACIÓN
+//   [BookingStatuses.MAKE_STARTED]:
+//     "📝 *Tienes una reserva en curso.*\nContinúa proporcionando los datos necesarios.",
+//   [BookingStatuses.MAKE_RESTARTED]:
+//     "🔄 *Has reiniciado tu reserva.*\nVuelve a ingresar tus datos",
+//   [BookingStatuses.MAKE_VALIDATED]:
+//     "✅ *Datos validados correctamente.*\n¿Quieres confirmar la reserva?",
+//   [BookingStatuses.MAKE_CONFIRMED]: "🎉 *¡Reserva confirmada!*",
 
-  // Estados de ACTUALIZACIÓN
-  [BookingStatuses.UPDATE_STARTED]:
-    "✏️ *Tienes una modificación en curso.*\nProporciona los nuevos datos para actualizar.",
-  [BookingStatuses.UPDATE_RESTARTED]:
-    "🔄 *Has reiniciado la modificación.*\nVuelve a ingresar tus datos",
-  [BookingStatuses.UPDATE_VALIDATED]:
-    "✅ *Cambios validados correctamente.*\n¿Quieres confirmar la modificación?",
-  [BookingStatuses.UPDATE_CONFIRMED]: "🔄 *¡Modificación confirmada!*",
+//   // Estados de ACTUALIZACIÓN
+//   [BookingStatuses.UPDATE_STARTED]:
+//     "✏️ *Tienes una modificación en curso.*\nProporciona los nuevos datos para actualizar.",
+//   [BookingStatuses.UPDATE_RESTARTED]:
+//     "🔄 *Has reiniciado la modificación.*\nVuelve a ingresar tus datos",
+//   [BookingStatuses.UPDATE_VALIDATED]:
+//     "✅ *Cambios validados correctamente.*\n¿Quieres confirmar la modificación?",
+//   [BookingStatuses.UPDATE_CONFIRMED]: "🔄 *¡Modificación confirmada!*",
 
-  // Estados de CANCELACIÓN
-  [BookingStatuses.CANCEL_STARTED]: "🗑️ *Has iniciado una cancelación.*",
-  [BookingStatuses.CANCEL_VALIDATED]:
-    "⚠️ *¿Estás seguro de cancelar la reserva?*\nConfirma para proceder con la cancelación.",
-  [BookingStatuses.CANCEL_CONFIRMED]: "❌ *¡Reserva cancelada!*",
-} as const;
+//   // Estados de CANCELACIÓN
+//   [BookingStatuses.CANCEL_STARTED]: "🗑️ *Has iniciado una cancelación.*",
+//   [BookingStatuses.CANCEL_VALIDATED]:
+//     "⚠️ *¿Estás seguro de cancelar la reserva?*\nConfirma para proceder con la cancelación.",
+//   [BookingStatuses.CANCEL_CONFIRMED]: "❌ *¡Reserva cancelada!*",
+// } as const;
 
 export interface StateTransition {
   nextState: FMStatus;
@@ -61,11 +61,11 @@ export function resolveNextState(
         nextState: BookingStatuses.MAKE_STARTED,
         suggestedActions: [],
         messageHint: "",
-        userMessage: STATE_MESSAGES[condition],
+        // userMessage: STATE_MESSAGES[condition],
       };
     case BookingStatuses.MAKE_STARTED:
       return {
-        userMessage: STATE_MESSAGES[condition],
+        // userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.MAKE_VALIDATED,
         suggestedActions: [CustomerActions.EXIT],
         messageHint:
@@ -73,7 +73,7 @@ export function resolveNextState(
       };
     case BookingStatuses.MAKE_VALIDATED:
       return {
-        userMessage: STATE_MESSAGES[condition],
+        // userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.MAKE_CONFIRMED,
         suggestedActions: [
           CustomerActions.CONFIRM,
@@ -93,14 +93,14 @@ export function resolveNextState(
     // UPDATE
     case BookingOptions.UPDATE_BOOKING:
       return {
-        userMessage: STATE_MESSAGES[condition],
+        // userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.UPDATE_STARTED,
         suggestedActions: [],
         messageHint: "",
       };
     case BookingStatuses.UPDATE_STARTED:
       return {
-        userMessage: STATE_MESSAGES[condition],
+        // userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.UPDATE_VALIDATED,
         suggestedActions: [CustomerActions.EXIT],
         messageHint:
@@ -108,7 +108,7 @@ export function resolveNextState(
       };
     case BookingStatuses.UPDATE_VALIDATED:
       return {
-        userMessage: STATE_MESSAGES[condition],
+        // userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.UPDATE_CONFIRMED,
         suggestedActions: [
           CustomerActions.CONFIRM,
@@ -128,14 +128,14 @@ export function resolveNextState(
     // CANCEL
     case BookingOptions.CANCEL_BOOKING:
       return {
-        userMessage: STATE_MESSAGES[condition],
+        // userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.CANCEL_VALIDATED,
         suggestedActions: [],
         messageHint: "",
       };
     case BookingStatuses.CANCEL_VALIDATED:
       return {
-        userMessage: STATE_MESSAGES[condition],
+        // userMessage: STATE_MESSAGES[condition],
         nextState: BookingStatuses.CANCEL_CONFIRMED,
         suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
         messageHint:

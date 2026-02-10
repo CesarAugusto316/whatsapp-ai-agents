@@ -51,6 +51,7 @@ export type RestaurantIntentKey =
   | "restaurant:recommend_dishes"
   | "restaurant:ask_delivery_time"
   | "restaurant:ask_delivery_method"
+  | "restaurant:ask_price"
   // workflows
   | "restaurant:place_order"
   | "restaurant:update_order"

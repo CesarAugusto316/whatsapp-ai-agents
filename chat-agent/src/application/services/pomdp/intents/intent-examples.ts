@@ -377,7 +377,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     module: "restaurant",
     lang: "es",
     examples: [
-      "cuánto tarda",
+      "cuánto tarda en llegar",
       "en cuánto tiempo llega",
       "cuánto demora la comida",
       "a qué hora estaría",
@@ -399,6 +399,20 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
       "cómo llega el pedido",
       "tienen envío",
       "cómo funciona la entrega",
+    ],
+  },
+  {
+    intent: "restaurant:ask_price",
+    module: "restaurant",
+    lang: "es",
+    examples: [
+      "cuánto cuesta el plato",
+      "que precio tiene el combo",
+      "que precio tiene la bebida",
+      "cual es el precio del plato",
+      "valor total a pagar por el pedido",
+      "cuanto hay que pagar por la comida",
+      "cual es la cuenta de la orden",
     ],
   },
 ];
