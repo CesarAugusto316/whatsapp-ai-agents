@@ -16,6 +16,8 @@ import {
   PomdpManager,
   shouldSkipProcessing,
 } from "@/application/services/pomdp";
+import { logger } from "@/infraestructure/logging";
+import { formatSagaOutput } from "../helpers/format-saga-output";
 
 /**
  *
@@ -28,35 +30,31 @@ export async function conversationalWorkflow(
 ): Promise<BookingResult> {
   //
   let matchedIntents: QuadrantPoint<IntentPayload>[] = [];
-  const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
-
-  /**
-   * @todo implemnet better guardrails to prevent calling the ragService
-   * only when necesary
-   */
-  const { skip, signal } = shouldSkipProcessing(ctx.customerMessage);
+  const { skip, kind } = shouldSkipProcessing(ctx.customerMessage);
 
   // skip RAG, to save resources
-  if (skip) {
+  if (skip && kind === "social-protocol") {
     // 1. INTENT SEARCH
-  } else {
-    const { points } = await ragService.searchIntent(
-      ctx.customerMessage,
-      ctx.activeModules, // ["informational", "booking", "restaurant"],
-    );
-    /**
-     *
-     * -IMPLEMENT THIS FEATURE IN THE FUTURE IS NOT URGENT NOW
-     * @todo notify CMS about unhandled intents
-     * Si no se detectó un intent confiable/preciso
-     *
-     * @example
-     * cmsAdapter.sendQuestionForReview(businessId, payload)
-     */
-    matchedIntents = points ?? [];
+
+    return formatSagaOutput("Hola");
   }
 
-  console.log({ intentPoints: JSON.stringify(matchedIntents) });
+  const { points } = await ragService.searchIntent(
+    ctx.customerMessage,
+    ctx.activeModules, // ["informational", "booking", "restaurant"],
+  );
+  /**
+   *
+   * -IMPLEMENT THIS FEATURE IN THE FUTURE IS NOT URGENT NOW
+   * @todo notify CMS about unhandled intents
+   * Si no se detectó un intent confiable/preciso
+   *
+   * @example
+   * cmsAdapter.sendQuestionForReview(businessId, payload)
+   */
+  matchedIntents = points ?? [];
+  logger.info("intentPoints", matchedIntents);
+
   const {
     beliefState,
     policyDecision,
@@ -72,10 +70,11 @@ export async function conversationalWorkflow(
     })),
   );
 
-  // 2. FLOW SELECTION & INITIALIZATION (pre-FSM)
+  let messages: ChatMessage[] = [];
+  const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
   const isFirstMessage = chatHistoryCache.length === 0;
   if (isFirstMessage) {
-    const messages: ChatMessage[] = [
+    messages = [
       {
         role: "system",
         content: conversationalPrompt({
@@ -89,62 +88,37 @@ export async function conversationalWorkflow(
           ctx.customer?.name,
         ),
       },
-    ];
-    const assistantResponse = await aiAdapter.generateText({
-      messages,
-      useAuxModel: true,
-    });
-    return {
-      bag: {},
-      lastStepResult: {
-        execute: {
-          result: assistantResponse,
-          metadata: {
-            description: "INITIALIZATION, chatHistoryCache.length = 0",
-            internal: `isFirstMessage=${isFirstMessage}`,
-          },
-        },
+    ] satisfies ChatMessage[];
+  } //
+  else {
+    messages = [
+      {
+        role: "system",
+        content: conversationalPrompt({
+          business: ctx.business,
+        }),
       },
-    };
+      ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
+      {
+        role: "user",
+        content: ctx.customerMessage,
+      },
+    ] satisfies ChatMessage[];
   }
 
-  // 3. DEFAULT FALLBACK WITH AI AGENT FOR THE CHAT
-  const messages: ChatMessage[] = [
-    {
-      role: "system",
-      content: conversationalPrompt({
-        business: ctx.business,
-      }),
-    },
-    ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
-    {
-      role: "user",
-      content: ctx.customerMessage,
-    },
-  ];
-  const assistantResponse = await aiAdapter.generateText({
+  const assistant = await aiAdapter.generateText({
     messages,
   });
 
   /**
    *
-   * @todo Replace for a better, less mecanic approach if posible
+   * @todo Replace for a better less mecanic approach if posible
    */
   const status = ctx.bookingState?.status;
   const reminderMSG = status
-    ? attachProcessReminder(assistantResponse, status, messages)
-    : assistantResponse;
+    ? attachProcessReminder(assistant, status, messages)
+    : assistant;
 
-  return {
-    bag: {},
-    lastStepResult: {
-      execute: {
-        result: reminderMSG,
-        metadata: {
-          description: "",
-          internal: ``,
-        },
-      },
-    },
-  };
+  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
+  return formatSagaOutput(reminderMSG);
 }

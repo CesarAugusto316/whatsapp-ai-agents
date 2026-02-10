@@ -21,9 +21,11 @@ export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
 };
 
 /**
- * Decide si el mensaje debe saltarse el flujo de RAG/LLM
- * para ahorrar recursos y responder instantáneamente.
+ * Detecta protocolos sociales y señales conversacionales TRIVIALES
+ * para evitar procesamiento RAG innecesario.
  *
+ * Filosofía: Minimalista. Solo skip mensajes de 1-3 palabras que son
+ * obviamente protocolos/señales. El resto → vectorizar + cachear.
  * @returns true si el mensaje debe saltarse el flujo de RAG/LLM
  */
 export function shouldSkipProcessing(msg: string): {
@@ -34,13 +36,13 @@ export function shouldSkipProcessing(msg: string): {
   const text = msg.trim();
   const words = text.split(/\s+/).length;
 
-  // Si el mensaje es muy largo, lo mandamos al flujo normal (LLM)
-  // aunque contenga un "hola", porque probablemente hay una consulta después.
-  if (words > 4) {
+  // Filosofía: Solo skip para mensajes MUY cortos (1-3 palabras)
+  // Mensajes más largos → vectorizar (porque se cachean de todos modos)
+  if (words > 3) {
     return { skip: false, signal: null, kind: null };
   }
 
-  // Revisar protocolos sociales (Saluditos, gracias, etc)
+  // Protocolos sociales
   for (const [signal, regex] of Object.entries(socialProtocols)) {
     if (regex.test(text)) {
       return {
@@ -51,7 +53,7 @@ export function shouldSkipProcessing(msg: string): {
     }
   }
 
-  // Revisar señales de control (Si, No, Ayuda)
+  // Señales conversacionales
   for (const [signal, regex] of Object.entries(conversationalSignals)) {
     if (regex.test(text)) {
       return {

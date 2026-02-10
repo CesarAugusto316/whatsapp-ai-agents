@@ -4,6 +4,7 @@ import type { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { conversationalWorkflow, initialOptionsWorkflow } from "./workflows";
 import type { StartedFuncSagaResult, ValidateFuncSagaResult } from "./steps";
+import { formatSagaOutput } from "./helpers/format-saga-output";
 
 const statusSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
@@ -30,21 +31,14 @@ export const bookingStateOrchestrator = async (
   const business = ctx.business;
 
   if (!business.general.isActive) {
-    return {
-      bag: {},
-      lastStepResult: {
-        execute: {
-          result:
-            "El negocio está fuera de servicio, por favor inténtalo más tarde.",
-        },
-      },
-    };
+    return formatSagaOutput(
+      "El negocio está fuera de servicio, por favor inténtalo más tarde.",
+    );
   }
   if (status) {
     // ============================================
     // 1.DETERMINISTIC SAGA ORCHESTRATOR
-    // For every workflow option there is a FSM that determines
-    // which saga orchestrator to execute and the next status
+    // For every workflow option there is a FSM transition
     // ============================================
     const sagaOrchestrator = statusSagaMap[status];
     if (!sagaOrchestrator) {
@@ -55,7 +49,6 @@ export const bookingStateOrchestrator = async (
       lastStepResult?.execute?.result ||
       lastStepResult?.compensate?.result ||
       "";
-
     if (result && result !== InputIntent.CUSTOMER_QUESTION) {
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return { bag, lastStepResult };
@@ -66,12 +59,6 @@ export const bookingStateOrchestrator = async (
     // ============================================
     const res = await initialOptionsWorkflow(ctx);
     if (res) {
-      const { lastStepResult } = res;
-      const result =
-        lastStepResult?.execute?.result ||
-        lastStepResult?.compensate?.result ||
-        "";
-      await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return res;
     }
   }
@@ -79,13 +66,5 @@ export const bookingStateOrchestrator = async (
   // ============================================
   // 1. POMDP (heuristic-light-pragmatic) entry point
   // ============================================
-  /**
-   *
-   * @see {InputIntent}
-   */
-  const { bag, lastStepResult } = await conversationalWorkflow(ctx);
-  const assistantMsg =
-    lastStepResult?.execute?.result || lastStepResult?.compensate?.result || "";
-  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistantMsg);
-  return { bag, lastStepResult };
+  return conversationalWorkflow(ctx);
 };
