@@ -1,6 +1,16 @@
+import { ModuleKind } from "../../rag";
+
 // ============================================
 // 1. NAMESPACE POR DOMINIO (sin colisiones)
 // ============================================
+
+export interface IntentExample<I extends string> {
+  intent: I;
+  module: ModuleKind;
+  requiresConfirmation?: boolean;
+  lang: "es" | "en";
+  examples: string[];
+}
 export type InformationalIntentKey =
   | "info:ask_price"
   | "info:ask_location"

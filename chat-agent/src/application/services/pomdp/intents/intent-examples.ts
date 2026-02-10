@@ -1,8 +1,8 @@
-import { IntentExample } from "../../rag.types";
 import type {
   BookingIntentKey,
   EroticIntentKey,
   InformationalIntentKey,
+  IntentExample,
   RestaurantIntentKey,
 } from "./intent.types";
 

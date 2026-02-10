@@ -1,4 +1,4 @@
-import { ModuleKind } from "../../rag.types";
+import { ModuleKind } from "../../rag";
 import { IntentExampleKey } from "../intents/intent.types";
 
 // ============================================

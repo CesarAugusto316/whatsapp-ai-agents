@@ -7,15 +7,15 @@ import {
   conversationalPrompt,
   systemMessages,
 } from "@/domain/restaurant/booking/prompts";
-import {
-  shouldSkipProcessing,
-  PomdpManager,
-  ragService,
-} from "@/application/services/rag";
+import { ragService } from "@/application/services/rag";
 import {
   IntentPayload,
   QuadrantPoint,
 } from "@/infraestructure/adapters/vector-store";
+import {
+  PomdpManager,
+  shouldSkipProcessing,
+} from "@/application/services/pomdp";
 
 /**
  *

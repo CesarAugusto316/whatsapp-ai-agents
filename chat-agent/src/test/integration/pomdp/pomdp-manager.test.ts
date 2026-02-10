@@ -1,7 +1,9 @@
 import { describe, expect, test, beforeEach } from "bun:test";
-import { PomdpManager } from "@/application/services/rag/pomdp/pomdp-manager";
-import { BeliefUpdater } from "@/application/services/rag/pomdp/belief/belief-updater";
-import { IntentExampleKey } from "@/application/services/rag/pomdp/intents/intent.types";
+import {
+  PomdpManager,
+  BeliefUpdater,
+  IntentExampleKey,
+} from "@/application/services/pomdp";
 import { ModuleKind } from "@/application/services/rag/rag.types";
 
 // Mock context for testing

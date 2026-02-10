@@ -46,7 +46,9 @@ export class BeliefUpdater {
 
     // 4. Calcular métricas
     const entropy = this.calculateEntropy(adjustedIntents);
-    const dominant = this.getDominantIntent(adjustedIntents);
+    const dominant = this.getDominantIntent(
+      adjustedIntents,
+    ) as IntentExampleKey;
     const confidence = dominant ? adjustedIntents[dominant].probability : 0;
 
     return {

@@ -9,13 +9,6 @@ export type ModuleKind =
   | "real-state"
   | "informational";
 
-export interface IntentExample<I extends string> {
-  intent: I;
-  module: ModuleKind;
-  requiresConfirmation?: boolean;
-  lang: "es" | "en";
-  examples: string[];
-}
 
 export type SyncStateRequest = {
   docId: string;
