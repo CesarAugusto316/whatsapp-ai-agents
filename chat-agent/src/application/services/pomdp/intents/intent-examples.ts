@@ -8,7 +8,7 @@ import type {
 } from "./intent.types";
 
 // ============================================
-// 1. INTENTS MEJORADOS
+// 1. INTENTS
 // ============================================
 
 /**
@@ -98,6 +98,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
       "sí está bien",
       "ok perfecto",
       "dale si",
+      "ok vamos",
       "sí claro",
       "exactamente eso",
     ],

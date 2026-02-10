@@ -3,8 +3,8 @@ import { ModuleCtx } from "@/domain/restaurant";
 import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import { BookingState } from "@/domain/restaurant/booking";
-import { BeliefState, ModuleKind } from "@/application/services/pomdp";
+import type { BookingState } from "@/domain/restaurant/booking";
+import type { BeliefState, ModuleKind } from "@/application/services/pomdp";
 
 /**
  *
@@ -80,16 +80,20 @@ export const bootstrapMiddleware = (): MiddlewareHandler<ModuleCtx> => {
     // ============================================
     // 4. SET ACTIVE MODULES
     // ============================================
-    const activeModules: ModuleKind[] = ["booking", "informational"];
+    const coreModules: ModuleKind[] = [
+      "informational",
+      "conversational-signal",
+      "social-protocol",
+    ];
 
     if (business.general.businessType === "restaurant") {
-      ctx.set("activeModules", activeModules.concat(["restaurant"]));
+      ctx.set("activeModules", coreModules.concat(["restaurant", "booking"]));
     }
     if (business.general.businessType === "real_estate") {
-      ctx.set("activeModules", activeModules.concat(["real-state"]));
+      ctx.set("activeModules", coreModules.concat(["booking"]));
     }
     if (business.general.businessType === "erotic") {
-      ctx.set("activeModules", activeModules.concat(["erotic"]));
+      ctx.set("activeModules", coreModules.concat(["erotic", "booking"]));
     }
 
     // 5. NEXT HANDLER

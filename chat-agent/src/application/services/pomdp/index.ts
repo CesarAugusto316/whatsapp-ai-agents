@@ -7,7 +7,6 @@ export {
 export { BeliefUpdater } from "./belief/belief-updater";
 export { buildObservation } from "./observation/build-observation";
 export { PolicyEngine } from "./policy/policy-engine";
-export type { PolicyDecision } from "./policy/policy-engine";
 export { PomdpManager } from "./pomdp-manager";
 
 // types
@@ -22,6 +21,7 @@ export type {
   ModuleKind,
   SocialProtocolIntent,
 } from "./intents/intent.types";
-export type { Observation } from "./observation/observation.types";
 
+export type { PolicyDecision } from "./policy/policy-engine";
+export type { Observation } from "./observation/observation.types";
 export type { BeliefIntent, BeliefState } from "./belief/belief.types";

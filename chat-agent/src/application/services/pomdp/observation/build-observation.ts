@@ -21,25 +21,21 @@ export function buildObservation(
 ): Observation {
   //
   const msg = userMessage.toLowerCase();
-
   return {
     text: userMessage,
-
     intentResults: ragResults.map((r) => ({
       intent: r.intent,
       module: r.module,
-      // module: r.intent.split(":")[0],  // orginal code by claude from anthrophic
       score: r.score,
     })),
-
     signals: {
+      // take into account conversationalSignal vectors
       isAffirmation: conversationalSignals.affirmation.test(msg),
       isNegation: conversationalSignals.negation.test(msg),
       isUncertain: conversationalSignals.uncertainty.test(msg),
       needsHelp: conversationalSignals.request_help.test(msg),
       wantsHuman: conversationalSignals.request_human.test(msg),
     },
-
     context: systemContext,
   };
 }
