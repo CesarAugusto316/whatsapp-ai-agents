@@ -7,6 +7,7 @@ export {
 export { BeliefUpdater } from "./belief/belief-updater";
 export { buildObservation } from "./observation/build-observation";
 export { PolicyEngine } from "./policy/policy-engine";
+export type { PolicyDecision } from "./policy/policy-engine";
 export { PomdpManager } from "./pomdp-manager";
 
 // types
