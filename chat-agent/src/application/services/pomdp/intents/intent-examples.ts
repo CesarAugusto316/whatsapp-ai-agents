@@ -412,7 +412,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
       "cual es el precio del plato",
       "valor total a pagar por el pedido",
       "cuanto hay que pagar por la comida",
-      "cual es la cuenta de la orden",
+      "cuanto es la cuenta de mi orden",
+      "cuanto es el total final de mi comida",
     ],
   },
 ];
@@ -462,20 +463,19 @@ const erotic: IntentExample<EroticIntentKey>[] = [
   },
 ];
 
-const informational: IntentExample<InformationalIntentKey>[] = [
+const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intent: "info:ask_location",
     module: "informational",
     lang: "es",
     examples: [
       "dónde queda",
-      "dirección",
-      "ubicación",
-      "cómo llegar",
-      "dónde están",
-      "dónde está ubicado",
-      "en qué calle",
-      "cómo llego",
+      "ayudame con la dirección",
+      "dame la ubicación",
+      "dime cómo llegar",
+      "dime dónde están",
+      "dónde está ubicado el establecimiento",
+      "en qué calle están ubicados",
     ],
   },
   {
@@ -525,7 +525,7 @@ export const intentExamples = [
   ...socialProtocols,
   ...conversationalSignals,
 
-  ...informational,
+  ...basicInformation,
   ...booking,
   ...restaurant,
   ...erotic,
