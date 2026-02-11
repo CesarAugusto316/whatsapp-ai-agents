@@ -75,6 +75,67 @@ export async function conversationalWorkflow(
 }
 
 /**
+ *
+ * @param ctx
+ * @param pompdResult
+ * @returns
+ */
+export async function prepareMessages(
+  ctx: RestaurantCtx,
+  pompdResult?: PomdpResult,
+) {
+  let messages: ChatMessage[] = [];
+  const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
+  const isFirstMessage = chatHistoryCache.length === 0;
+
+  // Determine the system prompt based on policy decision if available
+  let systemPrompt: string;
+
+  if (pompdResult && pompdResult.policyDecision) {
+    systemPrompt = generateDynamicPrompt(ctx, pompdResult, []);
+  } else {
+    // Use standard conversational prompt
+    systemPrompt = conversationalPrompt({
+      business: ctx.business,
+      flowStatus: ctx.bookingState?.status,
+      intent: undefined,
+      retrievedChunks: [],
+    });
+  }
+
+  if (isFirstMessage) {
+    messages = [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      {
+        role: "user",
+        content: systemMessages.initialGreeting(
+          ctx.customerMessage,
+          ctx.customer?.name,
+        ),
+      },
+    ] satisfies ChatMessage[];
+  } //
+  else {
+    messages = [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
+      {
+        role: "user",
+        content: ctx.customerMessage,
+      },
+    ] satisfies ChatMessage[];
+  }
+
+  return messages;
+}
+
+/**
  * Generates a dynamic prompt based on the policy decision
  */
 function generateDynamicPrompt(
@@ -241,7 +302,7 @@ function generateDynamicPrompt(
         ==============================
         SPECIFIC INSTRUCTION FOR FALLBACK
         ==============================
-        - The system is in a fallback state due to: ${policyDecision.reason || "unknown reason"}
+        - The system is in a fallback state due to: ${policyDecision.intent || "unknown reason"}
         - The user's message "${customerMessage}" could not be processed automatically
         - Provide a helpful response that acknowledges the situation
         - Guide the user toward available options
@@ -276,65 +337,4 @@ function generateDynamicPrompt(
         retrievedChunks: productsContext ? [productsContext] : [],
       });
   }
-}
-
-/**
- *
- * @param ctx
- * @param pompdResult
- * @returns
- */
-export async function prepareMessages(
-  ctx: RestaurantCtx,
-  pompdResult?: PomdpResult,
-) {
-  let messages: ChatMessage[] = [];
-  const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
-  const isFirstMessage = chatHistoryCache.length === 0;
-
-  // Determine the system prompt based on policy decision if available
-  let systemPrompt: string;
-
-  if (pompdResult && pompdResult.policyDecision) {
-    systemPrompt = generateDynamicPrompt(ctx, pompdResult, []);
-  } else {
-    // Use standard conversational prompt
-    systemPrompt = conversationalPrompt({
-      business: ctx.business,
-      flowStatus: ctx.bookingState?.status,
-      intent: undefined,
-      retrievedChunks: [],
-    });
-  }
-
-  if (isFirstMessage) {
-    messages = [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      {
-        role: "user",
-        content: systemMessages.initialGreeting(
-          ctx.customerMessage,
-          ctx.customer?.name,
-        ),
-      },
-    ] satisfies ChatMessage[];
-  } //
-  else {
-    messages = [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
-      {
-        role: "user",
-        content: ctx.customerMessage,
-      },
-    ] satisfies ChatMessage[];
-  }
-
-  return messages;
 }

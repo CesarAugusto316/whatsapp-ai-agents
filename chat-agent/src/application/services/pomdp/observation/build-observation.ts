@@ -23,11 +23,7 @@ export function buildObservation(
   const msg = userMessage.toLowerCase();
   return {
     text: userMessage,
-    intentResults: ragResults.map((r) => ({
-      intent: r.intent,
-      module: r.module,
-      score: r.score,
-    })),
+    intentResults: ragResults,
     signals: {
       // take into account conversationalSignal vectors
       isAffirmation: conversationalSignals.affirmation.test(msg),

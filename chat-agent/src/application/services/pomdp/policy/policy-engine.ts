@@ -10,10 +10,10 @@ import { IntentExampleKey } from "../intents/intent.types";
 // 1. POLICY ENGINE (Decisiones)
 // ============================================
 export type PolicyDecision =
-  | { type: "ask_clarification"; intent: string }
-  | { type: "ask_confirmation"; intent: string }
-  | { type: "execute"; intent: string; saga: string }
-  | { type: "fallback"; reason: string };
+  | { type: "ask_clarification"; intent: IntentExampleKey }
+  | { type: "ask_confirmation"; intent: IntentExampleKey }
+  | { type: "execute"; intent: IntentExampleKey; saga: string }
+  | { type: "fallback"; intent: IntentExampleKey };
 
 // 🧠 Bonus: Policy Engine puede decidir qué modelo usar
 
@@ -23,16 +23,16 @@ export class PolicyEngine {
     if (belief.isStuck) {
       return {
         type: "fallback",
-        reason: "conversation_stuck",
+        intent: "signal:uncertainty",
       };
     }
 
     // 2. Si hay alta incertidumbre → clarificar
-    if (belief.needsClarification) {
+    if (belief.needsClarification && belief.dominant) {
       // return this.generateClarification(belief);
       return {
         type: "ask_clarification",
-        intent: belief.dominant || "",
+        intent: belief.dominant,
       };
     }
 
@@ -70,7 +70,7 @@ export class PolicyEngine {
     // 4. Default: hacer pregunta abierta
     return {
       type: "ask_clarification",
-      intent: belief.dominant || "",
+      intent: belief.dominant || "signal:uncertainty",
     };
   }
 
@@ -93,6 +93,8 @@ export class PolicyEngine {
       "restaurant:ask_delivery_method": "restaurant:ask_delivery_method", // read cached_business_info
       "restaurant:ask_delivery_time": "restaurant:ask_delivery_time",
       "restaurant:view_menu": "restaurant:view_menu",
+      "restaurant:find_dishes": "restaurant:find_dishes",
+      "restaurant:ask_price": "restaurant:ask_price",
     };
 
     return map[intent] as string;

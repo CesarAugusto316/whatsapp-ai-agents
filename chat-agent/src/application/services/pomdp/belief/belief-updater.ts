@@ -101,6 +101,11 @@ export class BeliefUpdater {
       updated[result.intent].probability =
         current + result.score * (1 - current); // weighted average
 
+      // DESPUÉS (opcional, solo si necesitas más conservador):
+      // const LEARNING_RATE = 0.6; // ← Un solo número nuevo
+      // updated[result.intent].probability =
+      //   current * (1 - LEARNING_RATE) + result.score * LEARNING_RATE;
+
       updated[result.intent].evidence += 1;
       updated[result.intent].lastSeen = Date.now();
     }

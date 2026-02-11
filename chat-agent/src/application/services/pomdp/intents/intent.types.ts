@@ -11,10 +11,12 @@ export type ModuleKind =
   | "social-protocol"
   | "conversational-signal";
 
+export type RequiredConfirmation = "always" | "never" | "maybe";
+
 export interface IntentExample<I extends string> {
   intent: I;
   module: ModuleKind;
-  requiresConfirmation?: boolean;
+  requiresConfirmation: RequiredConfirmation;
   lang: "es" | "en";
   examples: string[];
 }

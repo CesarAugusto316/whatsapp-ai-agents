@@ -22,6 +22,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "social:greeting",
     module: "social-protocol",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       // Variaciones largas que NO detecta el regex
@@ -45,6 +46,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "social:goodbye",
     module: "social-protocol",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "hasta la próxima",
@@ -64,6 +66,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "social:thanks",
     module: "social-protocol",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "muchas gracias por todo",
@@ -85,6 +88,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "signal:affirmation",
     module: "conversational-signal",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "sí por favor",
@@ -106,6 +110,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "signal:negation",
     module: "conversational-signal",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "no gracias",
@@ -124,6 +129,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "signal:uncertainty",
     module: "conversational-signal",
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "no estoy muy seguro",
@@ -142,6 +148,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "signal:request_help",
     module: "conversational-signal",
+    requiresConfirmation: "maybe",
     lang: "es",
     examples: [
       "necesito ayuda",
@@ -159,6 +166,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "signal:request_human",
     module: "conversational-signal",
+    requiresConfirmation: "maybe",
     lang: "es",
     examples: [
       "quiero hablar con alguien",
@@ -188,7 +196,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intent: "booking:create",
     module: "booking",
-    requiresConfirmation: true,
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "quiero hacer una reserva",
@@ -206,7 +214,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intent: "booking:modify",
     module: "booking",
-    requiresConfirmation: true,
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "quiero cambiar mi reserva",
@@ -222,7 +230,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intent: "booking:cancel",
     module: "booking",
-    requiresConfirmation: true,
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "quiero cancelar",
@@ -237,6 +245,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intent: "booking:check_availability",
     module: "booking",
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "hay disponibilidad",
@@ -255,7 +264,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:view_menu",
     module: "restaurant",
-    // requiresConfirmation: false | "maybe", // just give the user menu
+    requiresConfirmation: "maybe",
     lang: "es",
     examples: [
       "qué venden",
@@ -273,7 +282,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:place_order",
     module: "restaurant",
-    requiresConfirmation: true,
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "quiero hacer un pedido",
@@ -289,7 +298,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:find_dishes",
     module: "restaurant",
-    requiresConfirmation: true,
+    requiresConfirmation: "always",
     lang: "es",
     /**
      * @todo HACER HYBRID SEARCH VECTOR + EXACT WORD MATCH
@@ -329,7 +338,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:recommend_dishes",
     module: "restaurant",
-    requiresConfirmation: true,
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "qué me recomiendas",
@@ -345,7 +354,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:update_order",
     module: "restaurant",
-    requiresConfirmation: true,
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "quiero actualizar mi pedido",
@@ -361,7 +370,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:cancel_order",
     module: "restaurant",
-    requiresConfirmation: true,
+    requiresConfirmation: "always",
     lang: "es",
     examples: [
       "quiero cancelar mi pedido",
@@ -376,6 +385,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:ask_delivery_time",
     module: "restaurant",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "cuánto tarda en llegar",
@@ -391,6 +401,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:ask_delivery_method",
     module: "restaurant",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "cómo entregan",
@@ -405,6 +416,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
     intent: "restaurant:ask_price",
     module: "restaurant",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "cuánto cuesta el plato",
@@ -424,6 +436,7 @@ const erotic: IntentExample<EroticIntentKey>[] = [
     intent: "erotic:view_content",
     module: "erotic",
     lang: "es",
+    requiresConfirmation: "maybe",
     examples: [
       "quiero ver tus fotos",
       "muéstrame tu contenido",
@@ -438,6 +451,7 @@ const erotic: IntentExample<EroticIntentKey>[] = [
     intent: "erotic:purchase_content",
     module: "erotic",
     lang: "es",
+    requiresConfirmation: "maybe",
     examples: [
       "quiero comprar esta foto",
       "quiero este pack",
@@ -452,6 +466,7 @@ const erotic: IntentExample<EroticIntentKey>[] = [
     intent: "erotic:ask_services",
     module: "erotic",
     lang: "es",
+    requiresConfirmation: "maybe",
     examples: [
       "haces videollamadas",
       "ofreces contenido personalizado",
@@ -468,6 +483,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intent: "info:ask_location",
     module: "informational",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "dónde queda",
@@ -482,6 +498,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intent: "info:ask_business_hours",
     module: "informational",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "a qué hora abren",
@@ -497,6 +514,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intent: "info:ask_payment_methods",
     module: "informational",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "aceptan tarjeta",
@@ -510,6 +528,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intent: "info:ask_contact",
     module: "informational",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "cómo los contacto",

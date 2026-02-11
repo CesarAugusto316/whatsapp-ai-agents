@@ -20,6 +20,7 @@ export type {
   IntentExample,
   ModuleKind,
   SocialProtocolIntent,
+  RequiredConfirmation,
 } from "./intents/intent.types";
 
 export type { PolicyDecision } from "./policy/policy-engine";

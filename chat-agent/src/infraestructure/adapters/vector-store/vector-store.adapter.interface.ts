@@ -1,11 +1,16 @@
 import type { Schemas } from "@qdrant/js-client-rest";
 import type { Product } from "../cms";
-import { IntentExampleKey, ModuleKind } from "@/application/services/pomdp";
+import {
+  IntentExampleKey,
+  ModuleKind,
+  RequiredConfirmation,
+} from "@/application/services/pomdp";
 
 export type IntentPayload = {
   text: string;
   module: ModuleKind;
   lang: string;
+  requiresConfirmation: RequiredConfirmation;
   intent: IntentExampleKey;
 };
 
