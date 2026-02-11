@@ -1,5 +1,6 @@
 import { conversationalSignals } from "../intents/conversational-signals";
-import { IntentExampleKey, ModuleKind } from "../intents/intent.types";
+import { ModuleKind } from "../intents/intent.types";
+import { PayloadWithScore } from "../pomdp-manager";
 import { Observation } from "./observation.types";
 
 // ============================================
@@ -7,11 +8,7 @@ import { Observation } from "./observation.types";
 // ============================================
 export function buildObservation(
   userMessage: string,
-  ragResults: Array<{
-    intent: IntentExampleKey;
-    module: ModuleKind;
-    score: number;
-  }>,
+  ragResults: PayloadWithScore[],
   systemContext: {
     hasActiveBooking: boolean;
     hasOrderInProgress: boolean;

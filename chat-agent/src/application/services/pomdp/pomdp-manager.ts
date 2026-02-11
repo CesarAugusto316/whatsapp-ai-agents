@@ -4,8 +4,8 @@ import { PolicyDecision, PolicyEngine } from "./policy/policy-engine";
 import { BeliefState } from "./belief/belief.types";
 import { Observation } from "./observation/observation.types";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { IntentExampleKey, ModuleKind } from "./intents/intent.types";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
+import { IntentPayload } from "@/infraestructure/adapters/vector-store";
 
 export type PomdpResult = {
   policyDecision: PolicyDecision;
@@ -17,6 +17,13 @@ export type PomdpResult = {
     confidence: number;
   };
 };
+
+export interface PayloadWithScore extends Pick<
+  IntentPayload,
+  "intent" | "module" | "requiresConfirmation"
+> {
+  score: number;
+}
 
 export class PomdpManager {
   private beliefUpdater: BeliefUpdater;
@@ -32,11 +39,7 @@ export class PomdpManager {
    */
   async process(
     ctx: RestaurantCtx,
-    ragResults: Array<{
-      intent: IntentExampleKey;
-      module: ModuleKind;
-      score: number;
-    }>,
+    ragResults: PayloadWithScore[],
   ): Promise<PomdpResult> {
     //
     const previousBeliefState = ctx.beliefState || BeliefUpdater.createEmpty();

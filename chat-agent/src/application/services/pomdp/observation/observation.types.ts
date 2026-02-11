@@ -1,4 +1,4 @@
-import { IntentExampleKey, ModuleKind } from "../intents/intent.types";
+import { PayloadWithScore } from "../pomdp-manager";
 
 // ============================================
 // 1. OBSERVATION CON SIGNALS
@@ -8,11 +8,7 @@ export type Observation = {
   text: string;
 
   // Resultados RAG (intenciones detectadas)
-  intentResults: Array<{
-    intent: IntentExampleKey;
-    module: ModuleKind;
-    score: number;
-  }>;
+  intentResults: PayloadWithScore[];
 
   // Señales conversacionales detectadas
   signals: {

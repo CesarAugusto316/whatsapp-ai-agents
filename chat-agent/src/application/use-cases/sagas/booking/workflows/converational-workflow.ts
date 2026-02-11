@@ -50,9 +50,8 @@ export async function conversationalWorkflow(
   const pompdResult = await new PomdpManager().process(
     ctx,
     matchedIntents.map(({ payload, score }) => ({
-      intent: payload?.intent,
-      module: payload?.module,
-      score: score,
+      ...payload,
+      score,
     })),
   );
 
