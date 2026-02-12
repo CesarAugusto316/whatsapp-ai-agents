@@ -1,4 +1,9 @@
-import { ConversationalSignal } from "./intent.types";
+import {
+  ConversationalSignal,
+  IntentExampleKey,
+  ModuleKind,
+  SocialProtocolIntent,
+} from "./intent.types";
 
 export type SocialProtocol = "greeting" | "goodbye" | "thanks";
 
@@ -12,12 +17,10 @@ export const socialProtocols: Record<SocialProtocol, RegExp> = {
 
 export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
   affirmation:
-    /^(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos|afirmativo|sep|simon|oki)$/i,
+    /^(sí|si|ok|dale|claro|perfecto|exacto|correcto|vamos|afirmativo|sep|simon|oki|vale|sip)$/i,
   negation: /^(no|nop|nope|nel|nanai|ya no|tampoco|nada|nunca)$/i,
-  uncertainty: /^(no sé|tal vez|quizás|puede ser|no estoy seguro|mmm|nose)$/i,
-  request_help: /^(ayuda|no entiendo|explica|cómo funciona|help|auxilio)$/i,
-  request_human:
-    /^(hablar con|persona|humano|operador|alguien|dueño|propietario|encargado)$/i,
+  uncertainty:
+    /^(no sé|tal vez|quizás|puede ser|no estoy seguro|mmm|nose|no se|mas o menos)$/i,
 };
 
 /**
@@ -30,9 +33,8 @@ export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
  */
 export function shouldSkipProcessing(msg: string): {
   skip: boolean;
-  signal: SocialProtocol | ConversationalSignal | null;
   kind: "social-protocol" | "conversational-signal" | null;
-  msg: string;
+  msg: string | SocialProtocolIntent;
 } {
   const text = msg.trim();
   const words = text.split(/\s+/).length;
@@ -40,7 +42,7 @@ export function shouldSkipProcessing(msg: string): {
   // Filosofía: Solo skip para mensajes MUY cortos (1-3 palabras)
   // Mensajes más largos → vectorizar (porque se cachean de todos modos)
   if (words > 3) {
-    return { skip: false, signal: null, kind: null, msg: "" };
+    return { skip: false, kind: null, msg: "" };
   }
 
   // Protocolos sociales
@@ -49,8 +51,7 @@ export function shouldSkipProcessing(msg: string): {
       const type = signal as SocialProtocol;
       return {
         skip: true,
-        signal: type,
-        kind: "social-protocol",
+        kind: "social-protocol" satisfies ModuleKind,
         msg:
           type === "greeting"
             ? "✨Hola en que puedo ayudarte?"
@@ -66,12 +67,15 @@ export function shouldSkipProcessing(msg: string): {
     if (regex.test(text)) {
       return {
         skip: true,
-        signal: signal as ConversationalSignal,
-        kind: "conversational-signal",
-        msg: "",
+        kind: "conversational-signal" satisfies ModuleKind,
+        msg: (signal === "confirmation"
+          ? "signal:affirmation"
+          : signal === "negation"
+            ? "signal:negation"
+            : "signal:uncertainty") satisfies SocialProtocolIntent,
       };
     }
   }
 
-  return { skip: false, signal: null, kind: null, msg: "" };
+  return { skip: false, kind: null, msg: "" };
 }

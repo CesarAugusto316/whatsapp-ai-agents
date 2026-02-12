@@ -9,13 +9,22 @@ import {
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
 import {
+  IntentExampleKey,
   PomdpManager,
   shouldSkipProcessing,
+  SocialProtocolIntent,
 } from "@/application/services/pomdp";
 import { logger } from "@/infraestructure/logging";
 import { formatSagaOutput } from "../helpers/format-saga-output";
-import { PomdpResult } from "@/application/services/pomdp/pomdp-manager";
+import {
+  PayloadWithScore,
+  PomdpResult,
+} from "@/application/services/pomdp/pomdp-manager";
 import { Product } from "@/infraestructure/adapters/cms";
+import {
+  IntentPayload,
+  QuadrantPoint,
+} from "@/infraestructure/adapters/vector-store";
 
 /**
  *
@@ -33,27 +42,35 @@ export async function conversationalWorkflow(
   ctx: RestaurantCtx,
 ): Promise<BookingResult> {
   //
+  let ragResults: PayloadWithScore[] = [];
   const { skip, kind, msg } = shouldSkipProcessing(ctx.customerMessage);
 
   // skip RAG, to save resources
   if (skip && kind === "social-protocol") {
     return formatSagaOutput(msg); // saludar, despedirse, agradecer (reflejo simple)
   }
-
-  const { points: matchedIntents } = await ragService.searchIntent(
-    ctx.customerMessage,
-    ctx.activeModules, // ["informational", "booking", "restaurant"],
-  );
-
-  logger.info("intentPoints", matchedIntents);
-
-  const pompdResult = await new PomdpManager().process(
-    ctx,
-    matchedIntents.map(({ payload, score }) => ({
+  if (skip && kind === "conversational-signal") {
+    ragResults = [
+      {
+        score: 1,
+        module: "conversational-signal",
+        intent: msg as SocialProtocolIntent,
+        requiresConfirmation: "never",
+      } satisfies PayloadWithScore,
+    ]; // default, we know exactly the form for super basic "conversational-signal" so we can skip RAG
+  }
+  if (!skip) {
+    const { points } = await ragService.searchIntent(
+      ctx.customerMessage,
+      ctx.activeModules, // ["informational", "booking", "restaurant"],
+    );
+    ragResults = points.map(({ payload, score }) => ({
       ...payload,
       score,
-    })),
-  );
+    }));
+  }
+
+  const pompdResult = await new PomdpManager().process(ctx, ragResults);
 
   const messages = await prepareMessages(ctx, pompdResult);
   // const assistant = await aiAdapter.generateText({
@@ -69,7 +86,7 @@ export async function conversationalWorkflow(
   //   ? attachProcessReminder(assistant, status, messages)
   //   : assistant;
 
-  // await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
+  // await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, "");
   return formatSagaOutput(ctx.customerMessage, "intents + prompts", messages);
 }
 

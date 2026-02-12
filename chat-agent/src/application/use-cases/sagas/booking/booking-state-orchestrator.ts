@@ -6,6 +6,8 @@ import { conversationalWorkflow, initialOptionsWorkflow } from "./workflows";
 import type { StartedFuncSagaResult, ValidateFuncSagaResult } from "./steps";
 import { formatSagaOutput } from "./helpers/format-saga-output";
 
+const MAX_WORDS = 60;
+
 const statusSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
 > = {
@@ -29,10 +31,18 @@ export const bookingStateOrchestrator = async (
   //
   const status = ctx.bookingState?.status;
   const business = ctx.business;
+  const words = ctx.customerMessage.split(" ");
 
+  if (words.length > MAX_WORDS) {
+    return formatSagaOutput(
+      `Por favor resume tu consulta en máximo ${MAX_WORDS} palabras. 😊`,
+      "MAX_WORDS_REACHED",
+    );
+  }
   if (!business.general.isActive) {
     return formatSagaOutput(
       "El negocio está fuera de servicio, por favor inténtalo más tarde.",
+      "OUT_OF_SERVICE",
     );
   }
   if (status) {

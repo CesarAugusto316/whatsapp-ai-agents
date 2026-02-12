@@ -45,18 +45,9 @@ export class PomdpManager {
     //
     const previousBeliefState = ctx.beliefState || BeliefUpdater.createEmpty();
 
-    // Build observation from user input and RAG results
-    const systemContext = {
-      hasActiveBooking: Boolean(ctx.bookingState?.status),
-      hasOrderInProgress: Boolean(ctx.productOrderState),
-      previousDominantIntent: previousBeliefState.dominant,
-      conversationTurns: previousBeliefState.conversationTurns,
-    };
-
     const newObservation: Observation = buildObservation(
       ctx.customerMessage,
       ragResults,
-      systemContext,
     );
 
     // Update belief state based on observation

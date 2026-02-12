@@ -9,12 +9,6 @@ import { Observation } from "./observation.types";
 export function buildObservation(
   userMessage: string,
   ragResults: PayloadWithScore[],
-  systemContext: {
-    hasActiveBooking: boolean;
-    hasOrderInProgress: boolean;
-    previousDominantIntent?: BeliefState["dominant"];
-    conversationTurns: number;
-  },
 ): Observation {
   //
   const msg = userMessage.toLowerCase();
@@ -26,9 +20,6 @@ export function buildObservation(
       isAffirmation: conversationalSignals.affirmation.test(msg),
       isNegation: conversationalSignals.negation.test(msg),
       isUncertain: conversationalSignals.uncertainty.test(msg),
-      needsHelp: conversationalSignals.request_help.test(msg),
-      wantsHuman: conversationalSignals.request_human.test(msg),
     },
-    context: systemContext,
   };
 }

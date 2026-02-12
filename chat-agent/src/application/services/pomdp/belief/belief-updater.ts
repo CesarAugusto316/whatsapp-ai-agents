@@ -19,22 +19,34 @@ export class BeliefUpdater {
     };
   }
 
-  public update(current: BeliefState, observation: Observation): BeliefState {
+  public update(
+    prevState: BeliefState,
+    newObservation: Observation,
+  ): BeliefState {
     // 1. Tomar SOLO la intención más fuerte del RAG (la primera)
-    const topResult = observation.intentResults[0];
+    const topResult = newObservation.intentResults[0];
     if (!topResult) {
-      return this.createLowConfidenceState(current);
+      return this.createLowConfidenceState(prevState);
     }
 
     // 2. Calcular confianza base = score del RAG
     let confidence = topResult.score;
 
     // 3. Ajustar por "sí" / "no" del usuario
-    if (current.dominant?.intent === topResult.intent) {
-      if (observation.signals.isAffirmation) {
+    if (
+      prevState.dominant?.requiresConfirmation === "always" ||
+      prevState.dominant?.requiresConfirmation === "maybe"
+    ) {
+      if (
+        newObservation.signals.isAffirmation ||
+        topResult.intent === "signal:affirmation"
+      ) {
         confidence = Math.min(0.95, confidence + 0.3); // +30% por "sí"
       }
-      if (observation.signals.isNegation) {
+      if (
+        newObservation.signals.isNegation ||
+        topResult.intent === "signal:negation"
+      ) {
         confidence = Math.max(0.1, confidence - 0.5); // -50% por "no"
       }
     }
@@ -44,10 +56,10 @@ export class BeliefUpdater {
     const newIntent: BeliefIntent = {
       key: intentKey,
       probability: confidence,
-      evidence: current.intents[intentKey]?.evidence + 1 || 1,
-      rejected: observation.signals.isNegation ? 1 : 0,
+      evidence: prevState.intents[intentKey]?.evidence + 1 || 1,
+      rejected: newObservation.signals.isNegation ? 1 : 0,
       requiresConfirmation: topResult.requiresConfirmation,
-      lastSeen: Date.now(),
+      createdAt: Date.now(),
     };
 
     const dominant =
@@ -63,10 +75,10 @@ export class BeliefUpdater {
       dominant,
       entropy: 1 - confidence, // Simplificado: 0=seguro, 1=confundido
       confidence,
-      conversationTurns: current.conversationTurns + 1,
+      conversationTurns: prevState.conversationTurns + 1,
       lastUpdate: Date.now(),
       needsClarification: confidence < this.CONFIDENCE_THRESHOLD,
-      isStuck: current.conversationTurns > 5 && confidence < 0.4,
+      isStuck: prevState.conversationTurns > 5 && confidence < 0.4,
     };
   }
 

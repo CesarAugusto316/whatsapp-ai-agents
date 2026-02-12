@@ -84,7 +84,7 @@ export class BeliefUpdater {
           evidence: 0,
           rejected: 0,
           requiresConfirmation: r.requiresConfirmation,
-          lastSeen: Date.now(),
+          createdAt: Date.now(),
         };
       }
 
@@ -93,7 +93,7 @@ export class BeliefUpdater {
       result[r.intent].probability = current + r.score * (1 - current);
 
       result[r.intent].evidence += 1;
-      result[r.intent].lastSeen = Date.now();
+      result[r.intent].createdAt = Date.now();
     }
 
     return this.normalize(result);

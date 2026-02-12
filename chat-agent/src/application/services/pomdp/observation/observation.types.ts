@@ -16,15 +16,5 @@ export type Observation = {
     isAffirmation: boolean;
     isNegation: boolean;
     isUncertain: boolean;
-    needsHelp: boolean;
-    wantsHuman: boolean;
-  };
-
-  // Contexto del sistema
-  context: {
-    hasActiveBooking: boolean;
-    hasOrderInProgress: boolean;
-    previousDominantIntent?: BeliefState["dominant"];
-    conversationTurns: number;
   };
 };

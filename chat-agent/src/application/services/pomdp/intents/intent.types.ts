@@ -27,9 +27,7 @@ export type SocialProtocolIntent =
   | "social:thanks"
   | "signal:affirmation"
   | "signal:negation"
-  | "signal:uncertainty"
-  | "signal:request_help"
-  | "signal:request_human";
+  | "signal:uncertainty";
 
 export type InformationalIntentKey =
   | "info:ask_price"
@@ -77,6 +75,4 @@ export type IntentExampleKey =
 export type ConversationalSignal =
   | "affirmation" // sí, ok, dale
   | "negation" // no, no quiero
-  | "uncertainty" // no sé, tal vez
-  | "request_help" // ayuda, no entiendo
-  | "request_human"; // hablar con persona
+  | "uncertainty"; // no sé, tal vez

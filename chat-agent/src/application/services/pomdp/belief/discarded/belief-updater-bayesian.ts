@@ -121,7 +121,7 @@ export class BeliefUpdaterBayesian {
           evidence: 1,
           rejected: 0,
           requiresConfirmation: ragResult.requiresConfirmation,
-          lastSeen: Date.now(),
+          createdAt: Date.now(),
         } satisfies BeliefIntent;
       }
       // Si ya existía, actualizamos su probabilidad
@@ -133,7 +133,7 @@ export class BeliefUpdaterBayesian {
         result[intentKey].probability = currentProb + score * (1 - currentProb);
 
         result[intentKey].evidence += 1;
-        result[intentKey].lastSeen = Date.now();
+        result[intentKey].createdAt = Date.now();
       }
     }
 

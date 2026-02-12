@@ -14,7 +14,7 @@ export interface BeliefIntent {
   evidence: number; // +1 cada vez que se confirma
   rejected: number; // +1 cada vez que se rechaza
 
-  lastSeen: number; // timestamp última aparición
+  createdAt: number; // timestamp última aparición
   decayRate?: number; // opcional: qué tan rápido "olvida"
 }
 
@@ -30,11 +30,11 @@ export interface BeliefState {
   entropy: number; // qué tan confuso está (0=seguro, 1=muy confuso)
   confidence: number; // confianza en dominant (0-1)
 
-  // Control de contexto
-  conversationTurns: number; // turnos de conversación
-  lastUpdate: number; // timestamp
-
   // Flags de comportamiento
   needsClarification: boolean; // debe preguntar al usuario
   isStuck: boolean; // lleva muchos turnos sin avanzar
+
+  // Control de contexto
+  conversationTurns: number; // turnos de conversación
+  lastUpdate: number; // timestamp
 }
