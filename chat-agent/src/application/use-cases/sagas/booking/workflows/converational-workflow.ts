@@ -54,14 +54,17 @@ export async function conversationalWorkflow(
     ]; //  we know exactly the form for "conversational-signal" so we can skip RAG
   }
   if (!skip) {
+    const limit = 1;
     const { points } = await ragService.searchIntent(
       ctx.customerMessage,
       ctx.activeModules, // ["informational", "booking", "restaurant"],
+      limit,
     );
-    ragResults = points.map(({ payload, score }) => ({
-      ...payload,
-      score,
-    }));
+    ragResults =
+      points.map(({ payload, score }) => ({
+        ...payload,
+        score,
+      })) ?? [];
   }
 
   const pompdResult = await pomdpManager.process(ctx, ragResults);

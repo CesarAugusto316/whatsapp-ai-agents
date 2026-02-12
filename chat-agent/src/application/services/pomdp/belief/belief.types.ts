@@ -1,4 +1,3 @@
-import { IntentExampleKey } from "../intents/intent.types";
 import { PayloadWithScore } from "../pomdp-manager";
 
 // ============================================
@@ -12,14 +11,12 @@ export interface BeliefIntent extends PayloadWithScore {
   };
 }
 
-export interface SubIntent extends PayloadWithScore {
-  subIntents: PayloadWithScore[];
-}
-
 export interface BeliefState {
-  executedIntents: Record<string, SubIntent>;
+  executedIntents: BeliefIntent[];
   current?: BeliefIntent;
   previous?: BeliefIntent;
+
+  isIntentFound: boolean;
 
   // Control de contexto
   intentJumps: number; // turnos de conversación

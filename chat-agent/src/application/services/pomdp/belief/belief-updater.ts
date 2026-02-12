@@ -1,5 +1,5 @@
 import { PayloadWithScore } from "../pomdp-manager";
-import { BeliefIntent, BeliefState, SubIntent } from "./belief.types";
+import { BeliefIntent, BeliefState } from "./belief.types";
 
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
@@ -7,11 +7,12 @@ export class BeliefStateUpdater {
 
   static createEmpty(): BeliefState {
     return {
-      executedIntents: {},
+      executedIntents: [],
       current: undefined,
       previous: undefined,
       intentJumps: 0,
       lastUpdate: Date.now(),
+      isIntentFound: false,
     };
   }
 
@@ -21,7 +22,7 @@ export class BeliefStateUpdater {
   ): BeliefState {
     //
     if (!topResult) {
-      return prevState;
+      return { ...prevState, isIntentFound: false };
     }
 
     if (prevState.current && topResult.module === "conversational-signal") {
@@ -80,6 +81,7 @@ export class BeliefStateUpdater {
       current: newIntent,
       intentJumps: prevState.intentJumps + 1,
       lastUpdate: Date.now(),
+      isIntentFound: true,
     };
   }
 }

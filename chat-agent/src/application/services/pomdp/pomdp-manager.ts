@@ -45,12 +45,13 @@ class PomdpManager {
     );
 
     // Decide on action based on updated belief state
-    const policyDecision = this.policyEngine.decide(newBeliefState);
+    const hasResults = ragResults.length > 0;
+    const policyDecision = this.policyEngine.decide(newBeliefState, hasResults);
 
     // Save updated belief state to cache
     await cacheAdapter.save<BeliefState>(
       ctx.beliefKey,
-      newBeliefState,
+      policyDecision.state,
       60 * 60 * 24,
     ); // 24 hours TTL
 
