@@ -15,7 +15,6 @@ export interface BeliefIntent {
   rejected: number; // +1 cada vez que se rechaza
 
   createdAt: number; // timestamp última aparición
-  decayRate?: number; // opcional: qué tan rápido "olvida"
 }
 
 export interface BeliefState {

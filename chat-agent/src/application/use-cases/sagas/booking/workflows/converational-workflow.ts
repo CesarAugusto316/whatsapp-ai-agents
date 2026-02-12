@@ -9,22 +9,16 @@ import {
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
 import {
-  IntentExampleKey,
   PomdpManager,
   shouldSkipProcessing,
   SocialProtocolIntent,
 } from "@/application/services/pomdp";
-import { logger } from "@/infraestructure/logging";
 import { formatSagaOutput } from "../helpers/format-saga-output";
 import {
   PayloadWithScore,
   PomdpResult,
 } from "@/application/services/pomdp/pomdp-manager";
 import { Product } from "@/infraestructure/adapters/cms";
-import {
-  IntentPayload,
-  QuadrantPoint,
-} from "@/infraestructure/adapters/vector-store";
 
 /**
  *
@@ -57,7 +51,7 @@ export async function conversationalWorkflow(
         intent: msg as SocialProtocolIntent,
         requiresConfirmation: "never",
       } satisfies PayloadWithScore,
-    ]; // default, we know exactly the form for super basic "conversational-signal" so we can skip RAG
+    ]; //  we know exactly the form for "conversational-signal" so we can skip RAG
   }
   if (!skip) {
     const { points } = await ragService.searchIntent(
