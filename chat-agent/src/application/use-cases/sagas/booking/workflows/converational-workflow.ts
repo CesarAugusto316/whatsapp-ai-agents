@@ -295,7 +295,7 @@ function generateDynamicPrompt(
         - Be clear about next steps
       `;
 
-    case "fallback":
+    case "default":
       return `
         You are ${assistantName}, an assistant for ${businessName}.
 

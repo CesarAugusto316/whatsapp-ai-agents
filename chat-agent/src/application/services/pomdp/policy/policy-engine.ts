@@ -13,16 +13,16 @@ export type PolicyDecision =
   | { type: "ask_clarification"; dominant: BeliefState["dominant"] }
   | { type: "ask_confirmation"; dominant: BeliefState["dominant"] }
   | { type: "execute"; dominant: BeliefState["dominant"]; saga: string }
-  | { type: "fallback"; dominant: BeliefState["dominant"] };
+  | { type: "default"; dominant: BeliefState["dominant"] };
 
 // 🧠 Bonus: Policy Engine puede decidir qué modelo usar
 
 export class PolicyEngine {
   public decide(belief: BeliefState, context: RestaurantCtx): PolicyDecision {
-    // 1. Si está atascado → fallback
+    // 1. Si está atascado → default
     if (belief.isStuck) {
       return {
-        type: "fallback",
+        type: "default",
         dominant: belief.dominant,
       };
     }
@@ -51,6 +51,13 @@ export class PolicyEngine {
 
       // 🔑 Regla 2: "always" → SIEMPRE pedir confirmación (alto riesgo)
       if (dominantIntent.requiresConfirmation === "always") {
+        if (intentBelief.evidence > 1) {
+          return {
+            type: "execute",
+            dominant: dominantIntent,
+            saga: this.mapIntentToWorkflow(dominantIntent.intent),
+          };
+        }
         return {
           type: "ask_confirmation",
           dominant: dominantIntent,
@@ -66,6 +73,7 @@ export class PolicyEngine {
             dominant: dominantIntent,
           };
         }
+
         // Segunda señal (confirmación explícita) → ejecutar
         return {
           type: "execute",
@@ -108,10 +116,10 @@ export class PolicyEngine {
 
 // export class PolicyEngine {
 //   public decide(belief: BeliefState, context: RestaurantCtx): PolicyDecision {
-//     // 1. Si está atascado → fallback a humano o resetear
+//     // 1. Si está atascado → default a humano o resetear
 //     if (belief.isStuck) {
 //       return {
-//         type: "fallback",
+//         type: "default",
 //         dominant: belief.dominant,
 //       };
 //     }
