@@ -1,7 +1,7 @@
 export function formatSagaOutput(
   msg: string,
   description?: string,
-  internal?: string,
+  internal?: any,
 ) {
   return {
     bag: {},

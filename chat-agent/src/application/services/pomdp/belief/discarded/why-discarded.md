@@ -128,4 +128,63 @@ export class BeliefUpdater {
 
 Este código tiene **~40 líneas de lógica real** (vs 100+ en tu versión original) y mantiene 100% compatibilidad con tu `PolicyEngine` y cache. Es lo mínimo necesario para tomar decisiones inteligentes sin complejidad académica.
 
-¿Te sirve esta versión minimalista para avanzar rápido en tu proyecto?
+
+
+
+
+Para tu dominio (restaurantes/e-commerce/ventas) ese `BeliefUpdater` es **over-engineering académico**. Te explico por qué con datos de tus propios archivos:
+
+### Lo que tu `PolicyEngine` realmente usa del `BeliefState`:
+
+```typescript
+// policy-engine.ts → decisiones reales que toma:
+if (belief.isStuck) → fallback
+if (belief.needsClarification && belief.dominant) → ask_clarification
+if (belief.dominant && belief.confidence > 0.8) → execute o ask_confirmation
+```
+
+Es decir, solo necesita **4 cosas simples**:
+1. ¿Cuál es la intención más probable? (`dominant`)
+2. ¿Qué tan seguro estoy? (`confidence` = score del RAG ajustado por "sí/no")
+3. ¿Lleva muchos turnos sin avanzar? (`conversationTurns > 5`)
+4. ¿Necesita confirmación? (`requiresConfirmation` del intent)
+
+### Lo que NO usa (y es complejidad innecesaria):
+| Concepto en tu BeliefUpdater | ¿Lo usa PolicyEngine? | ¿Necesario para restaurantes? |
+|-----------------------------|------------------------|-------------------------------|
+| `entropy` (Shannon) | ❌ Solo compara con threshold fijo | ❌ No: basta con `1 - confidence` |
+| `decay` (olvido temporal) | ❌ | ❌ Las conversaciones duran 3-5 turnos, no hay "olvido" |
+| Tracking de múltiples intenciones | ❌ Solo usa `dominant` | ❌ El usuario tiene UNA intención clara por turno |
+| Normalización de probabilidades | ❌ | ❌ Solo necesitas el score del RAG + ajuste "sí/no" |
+| `evidence` / `rejected` counters | ⚠️ Solo para `evidence <= 2` | ⚠️ Se puede reemplazar con "¿es primera vez que veo este intent?" |
+
+### ¿Qué mínimo SÍ necesitas?
+
+Para vender comida/pedidos, basta con:
+
+```typescript
+// Estado mínimo (sin clases complejas)
+{
+  dominantIntent: "restaurant:place_order" | undefined,
+  confidence: 0.7, // score del RAG ajustado por "sí" (+0.3) / "no" (-0.5)
+  conversationTurns: 3,
+  needsConfirmation: true, // viene del intent.requiresConfirmation
+}
+```
+
+**Flujo real en tu dominio:**
+1. Usuario: "quiero pizza" → RAG score 0.75 → `confidence = 0.75`
+2. Sistema: "¿Confirmas pedido de pizza?" (`requiresConfirmation = true`)
+3. Usuario: "sí" → `confidence = 0.75 + 0.3 = 1.05 → 0.95 (tope)`
+4. Sistema: ejecuta `place_order`
+
+**No hay ambigüedad continua**, no hay incertidumbre bayesiana, no hay necesidad de modelar "creencias" como en robots o diagnóstico médico.
+
+### Conclusión práctica:
+
+- **Para tu MVP/producto real**: Usa un contador simple de `última intención + confidence ajustado por sí/no`.
+- **Para tu portfolio de IA**: Mantén el POMDP como experimento académico, pero no como base de tu producto.
+
+¿Vale la pena pasar semanas debuggeando entropía y decay para vender hamburguesas? **No.** Es como usar un F1 para ir al supermercado: técnicamente posible, pero absurdo en la práctica.
+
+¿Quieres que te muestre cómo sería el estado mínimo (20 líneas) que cubre el 100% de tus casos de uso reales? Sin teoría, solo lo que tu `PolicyEngine` necesita.

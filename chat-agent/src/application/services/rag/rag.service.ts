@@ -75,7 +75,7 @@ class RagService {
     const embedding = data[0].embedding;
 
     // 3. Guardar en caché
-    await this.cacheAdapter.save(cacheKey, embedding, this.CACHE_TTL);
+    await this.cacheAdapter.save(cacheKey, embedding, this.CACHE_TTL); // Store in disk
 
     return embedding;
   }

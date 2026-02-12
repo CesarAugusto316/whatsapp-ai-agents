@@ -52,10 +52,10 @@ export class BeliefUpdater {
 
     const dominant =
       confidence > this.CONFIDENCE_THRESHOLD
-        ? {
-            intent: intentKey as IntentExampleKey,
+        ? ({
+            intent: intentKey,
             requiresConfirmation: topResult.requiresConfirmation,
-          }
+          } satisfies BeliefState["dominant"])
         : undefined;
 
     return {

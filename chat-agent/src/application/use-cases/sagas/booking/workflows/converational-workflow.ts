@@ -9,7 +9,6 @@ import {
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
 import {
-  BeliefIntent,
   PomdpManager,
   shouldSkipProcessing,
 } from "@/application/services/pomdp";
@@ -57,21 +56,21 @@ export async function conversationalWorkflow(
   );
 
   const messages = await prepareMessages(ctx, pompdResult);
-  const assistant = await aiAdapter.generateText({
-    messages,
-  });
+  // const assistant = await aiAdapter.generateText({
+  //   messages,
+  // });
 
   /**
    *
    * @todo Replace for a better less mecanic approach if posible
    */
-  const status = ctx.bookingState?.status;
-  const reminderMSG = status
-    ? attachProcessReminder(assistant, status, messages)
-    : assistant;
+  // const status = ctx.bookingState?.status;
+  // const reminderMSG = status
+  //   ? attachProcessReminder(assistant, status, messages)
+  //   : assistant;
 
-  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
-  return formatSagaOutput(reminderMSG);
+  // await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
+  return formatSagaOutput(ctx.customerMessage, "intents + prompts", messages);
 }
 
 /**
