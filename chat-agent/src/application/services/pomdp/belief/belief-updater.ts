@@ -3,7 +3,7 @@ import { BeliefIntent, BeliefState } from "./belief.types";
 
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
-  private readonly CONFIDENCE_THRESHOLD = 0.65;
+  private readonly CONFIDENCE_THRESHOLD = 0.75;
 
   static createEmpty(): BeliefState {
     return {
@@ -21,67 +21,66 @@ export class BeliefStateUpdater {
     topResult?: PayloadWithScore,
   ): BeliefState {
     //
-    if (!topResult) {
-      return { ...prevState, isIntentFound: false };
+    if (!topResult && prevState.current) {
+      const newIntent = this.newIntent(prevState.current);
+      const isIntentFound = false;
+      return this.newSnapShot(prevState, newIntent, isIntentFound);
     }
 
-    if (prevState.current && topResult.module === "conversational-signal") {
-      //
-      if (topResult.intent === "signal:affirmation") {
-        //
-      }
-      if (topResult.intent === "signal:negation") {
-        //
-      }
-      if (topResult.intent === "signal:uncertainty") {
-        //
-      }
-      return prevState;
-    }
-    if (topResult.module === "social-protocol") {
-      return prevState;
-    }
-
-    // 2. Calcular confianza base = score del RAG
-    let confidence = topResult.score;
-
-    // 3. Ajustar por "sí" / "no" del usuario
-    if (
-      prevState.previous?.requiresConfirmation === "always" ||
-      prevState.previous?.requiresConfirmation === "maybe"
-    ) {
+    // 1. Confirmando|Negando|Questionando una intencion previa y actualizando el estado
+    if (topResult) {
       if (
-        // newObservation.signals.isAffirmation ||
-        topResult.intent === "signal:affirmation"
+        (prevState.current?.requiresConfirmation === "always" ||
+          prevState.current?.requiresConfirmation === "maybe") &&
+        topResult?.module === "conversational-signal" &&
+        topResult.score >= this.CONFIDENCE_THRESHOLD
       ) {
-        //
+        const newIntent = this.signalPrevIntent(prevState.current, topResult);
+        return this.newSnapShot(prevState, newIntent);
       }
-      if (
-        // newObservation.signals.isNegation ||
-        topResult.intent === "signal:negation"
-      ) {
-        //
-      }
+
+      // 4. Construir estado mínimo (solo 1 intención)
+      const newIntent = this.newIntent(topResult);
+      return this.newSnapShot(prevState, newIntent);
     }
 
-    // 4. Construir estado mínimo (solo 1 intención)
-    const intentKey = topResult.intent;
-    const newIntent: BeliefIntent = {
-      ...topResult,
+    return { ...prevState, isIntentFound: false };
+  }
+
+  private signalPrevIntent(
+    prevIntent: BeliefIntent,
+    topResult: PayloadWithScore,
+  ): BeliefIntent {
+    //
+    return {
+      ...prevIntent,
       signals: {
         isConfirmed: topResult.intent === "signal:affirmation",
         isRejected: topResult.intent === "signal:negation",
         isUncertain: topResult.intent === "signal:uncertainty",
       },
     };
+  }
 
+  private newIntent(topResult: PayloadWithScore): BeliefIntent {
     return {
-      ...prevState,
-      previous: prevState.current,
-      current: newIntent,
-      intentJumps: prevState.intentJumps + 1,
+      ...topResult,
+      signals: {},
+    };
+  }
+
+  private newSnapShot(
+    prev: BeliefState,
+    curr: BeliefIntent,
+    isIntentFound = true,
+  ): BeliefState {
+    //
+    return {
+      ...prev,
+      previous: prev.current,
+      current: curr,
       lastUpdate: Date.now(),
-      isIntentFound: true,
+      isIntentFound,
     };
   }
 }
