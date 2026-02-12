@@ -1,22 +1,14 @@
-import { BeliefUpdater } from "./belief/belief-updater";
-import { buildObservation } from "./observation/build-observation";
+import { BeliefStateUpdater } from "./belief/belief-updater";
 import { PolicyDecision, PolicyEngine } from "./policy/policy-engine";
-import { BeliefState } from "./belief/belief.types";
-import { Observation } from "./observation/observation.types";
+import { BeliefIntent, BeliefState } from "./belief/belief.types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { IntentPayload } from "@/infraestructure/adapters/vector-store";
-import { IntentExampleKey } from "./intents/intent.types";
 
 export type PomdpResult = {
   policyDecision: PolicyDecision;
   beliefState: BeliefState;
-  recommendedIntent?: BeliefState["dominant"];
-  topIntents?: Array<{ intent: IntentExampleKey; probability: number }>;
-  confidenceMetrics: {
-    entropy: number;
-    confidence: number;
-  };
+  currentIntent?: BeliefIntent;
 };
 
 export interface PayloadWithScore extends Pick<
@@ -26,12 +18,12 @@ export interface PayloadWithScore extends Pick<
   score: number;
 }
 
-export class PomdpManager {
-  private beliefUpdater: BeliefUpdater;
+class PomdpManager {
+  private beliefUpdater: BeliefStateUpdater;
   private policyEngine: PolicyEngine;
 
   constructor() {
-    this.beliefUpdater = new BeliefUpdater();
+    this.beliefUpdater = new BeliefStateUpdater();
     this.policyEngine = new PolicyEngine();
   }
 
@@ -43,17 +35,13 @@ export class PomdpManager {
     ragResults: PayloadWithScore[],
   ): Promise<PomdpResult> {
     //
-    const previousBeliefState = ctx.beliefState || BeliefUpdater.createEmpty();
-
-    const newObservation: Observation = buildObservation(
-      ctx.customerMessage,
-      ragResults,
-    );
+    const previousBeliefState =
+      ctx.beliefState || BeliefStateUpdater.createEmpty();
 
     // Update belief state based on observation
     const newBeliefState = this.beliefUpdater.update(
       previousBeliefState,
-      newObservation,
+      ragResults.at(0),
     );
 
     // Decide on action based on updated belief state
@@ -62,25 +50,13 @@ export class PomdpManager {
     // Save updated belief state to cache
     await cacheAdapter.save(ctx.beliefKey, newBeliefState, 60 * 60 * 24); // 24 hours TTL
 
-    // Prepare top intents for context
-    const topIntents = Object.entries(newBeliefState.intents)
-      .sort(([_, a], [__, b]) => b.probability - a.probability)
-      .slice(0, 3)
-      .map(([intent, beliefIntent]) => ({
-        intent: intent as IntentExampleKey,
-        probability: beliefIntent.probability,
-      }));
-
     // Return structured result for LLM to generate response
     return {
+      currentIntent: newBeliefState.current,
       policyDecision,
       beliefState: newBeliefState,
-      recommendedIntent: newBeliefState.dominant,
-      topIntents,
-      confidenceMetrics: {
-        entropy: newBeliefState.entropy,
-        confidence: newBeliefState.confidence,
-      },
     };
   }
 }
+
+export const pomdpManager = new PomdpManager();

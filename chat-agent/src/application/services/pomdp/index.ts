@@ -4,10 +4,9 @@ export {
   socialProtocols,
   shouldSkipProcessing,
 } from "./intents/conversational-signals";
-export { BeliefUpdater } from "./belief/belief-updater";
-export { buildObservation } from "./observation/build-observation";
+export { BeliefStateUpdater } from "./belief/belief-updater";
 export { PolicyEngine } from "./policy/policy-engine";
-export { PomdpManager } from "./pomdp-manager";
+export { pomdpManager } from "./pomdp-manager";
 
 // types
 export type {
@@ -24,5 +23,4 @@ export type {
 } from "./intents/intent.types";
 
 export type { PolicyDecision } from "./policy/policy-engine";
-export type { Observation } from "./observation/observation.types";
 export type { BeliefIntent, BeliefState } from "./belief/belief.types";

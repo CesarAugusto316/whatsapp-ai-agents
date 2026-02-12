@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeEach } from "bun:test";
 import {
   PomdpManager,
-  BeliefUpdater,
+  BeliefStateUpdater,
   IntentExampleKey,
 } from "@/application/services/pomdp";
 import { ModuleKind } from "@/application/services/pomdp";
@@ -30,7 +30,7 @@ describe("PomdpManager", () => {
   });
 
   test("should initialize with empty belief state", () => {
-    const emptyBelief = BeliefUpdater.createEmpty();
+    const emptyBelief = BeliefStateUpdater.createEmpty();
     expect(emptyBelief.intents).toEqual({});
     expect(emptyBelief.conversationTurns).toBe(0);
     expect(emptyBelief.entropy).toBe(0);
@@ -48,7 +48,7 @@ describe("PomdpManager", () => {
 
     // Since the process method requires async operations with cache adapter,
     // we'll test the individual components instead
-    const initialBelief = BeliefUpdater.createEmpty();
+    const initialBelief = BeliefStateUpdater.createEmpty();
 
     // Create a mock observation
     const observation = {
@@ -81,7 +81,7 @@ describe("PomdpManager", () => {
   });
 
   test("should handle multiple intents with varying scores", () => {
-    const initialBelief = BeliefUpdater.createEmpty();
+    const initialBelief = BeliefStateUpdater.createEmpty();
 
     const observation = {
       text: "Maybe I want to see the menu or make a reservation",

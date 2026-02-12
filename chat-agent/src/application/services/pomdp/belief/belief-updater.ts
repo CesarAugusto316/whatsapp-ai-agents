@@ -1,32 +1,47 @@
 import { IntentExampleKey } from "../intents/intent.types";
-import { Observation } from "../observation/observation.types";
+
+import { PayloadWithScore } from "../pomdp-manager";
 import { BeliefIntent, BeliefState } from "./belief.types";
 
-export class BeliefUpdater {
+export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
   private readonly CONFIDENCE_THRESHOLD = 0.65;
 
   static createEmpty(): BeliefState {
     return {
-      intents: {},
-      dominant: undefined,
-      entropy: 0,
-      confidence: 0,
+      current: undefined,
+      previous: undefined,
       conversationTurns: 0,
       lastUpdate: Date.now(),
-      needsClarification: false,
       isStuck: false,
     };
   }
 
   public update(
     prevState: BeliefState,
-    newObservation: Observation,
+    topResult?: PayloadWithScore,
   ): BeliefState {
     // 1. Tomar SOLO la intención más fuerte del RAG (la primera)
-    const topResult = newObservation.intentResults[0];
+    // const topResult = newObservation.intentResults[0];
     if (!topResult) {
       return this.createLowConfidenceState(prevState);
+    }
+
+    if (prevState.current && topResult.module === "conversational-signal") {
+      //
+      if (topResult.intent === "signal:affirmation") {
+        //
+      }
+      if (topResult.intent === "signal:negation") {
+        //
+      }
+      if (topResult.intent === "signal:uncertainty") {
+        //
+      }
+      return prevState;
+    }
+    if (topResult.module === "social-protocol") {
+      return prevState;
     }
 
     // 2. Calcular confianza base = score del RAG
@@ -34,17 +49,17 @@ export class BeliefUpdater {
 
     // 3. Ajustar por "sí" / "no" del usuario
     if (
-      prevState.dominant?.requiresConfirmation === "always" ||
-      prevState.dominant?.requiresConfirmation === "maybe"
+      prevState.previous?.requiresConfirmation === "always" ||
+      prevState.previous?.requiresConfirmation === "maybe"
     ) {
       if (
-        newObservation.signals.isAffirmation ||
+        // newObservation.signals.isAffirmation ||
         topResult.intent === "signal:affirmation"
       ) {
         confidence = Math.min(0.95, confidence + 0.3); // +30% por "sí"
       }
       if (
-        newObservation.signals.isNegation ||
+        // newObservation.signals.isNegation ||
         topResult.intent === "signal:negation"
       ) {
         confidence = Math.max(0.1, confidence - 0.5); // -50% por "no"
@@ -54,30 +69,23 @@ export class BeliefUpdater {
     // 4. Construir estado mínimo (solo 1 intención)
     const intentKey = topResult.intent;
     const newIntent: BeliefIntent = {
-      key: intentKey,
-      probability: confidence,
-      evidence: prevState.intents[intentKey]?.evidence + 1 || 1,
-      rejected: newObservation.signals.isNegation ? 1 : 0,
+      ...topResult,
+      signals: {},
+      // evidence: prevState.intents[intentKey]?.evidence + 1 || 1,
+      // rejected: 0,
       requiresConfirmation: topResult.requiresConfirmation,
       createdAt: Date.now(),
     };
 
-    const dominant =
-      confidence > this.CONFIDENCE_THRESHOLD
-        ? ({
-            intent: intentKey,
-            requiresConfirmation: topResult.requiresConfirmation,
-          } satisfies BeliefState["dominant"])
-        : undefined;
-
     return {
-      intents: { [intentKey]: newIntent }, // Solo guardamos la mejor
-      dominant,
-      entropy: 1 - confidence, // Simplificado: 0=seguro, 1=confundido
-      confidence,
+      previous: prevState.current,
+      // intents: { [intentKey]: newIntent }, // Solo guardamos la mejor
+      // dominant,
+      // entropy: 1 - confidence, // Simplificado: 0=seguro, 1=confundido
+      // confidence,
       conversationTurns: prevState.conversationTurns + 1,
       lastUpdate: Date.now(),
-      needsClarification: confidence < this.CONFIDENCE_THRESHOLD,
+      // needsClarification: confidence < this.CONFIDENCE_THRESHOLD,
       isStuck: prevState.conversationTurns > 5 && confidence < 0.4,
     };
   }
@@ -85,9 +93,9 @@ export class BeliefUpdater {
   private createLowConfidenceState(current: BeliefState): BeliefState {
     return {
       ...current,
-      confidence: 0.1,
-      entropy: 0.9,
-      needsClarification: true,
+      // confidence: 0.1,
+      // entropy: 0.9,
+
       conversationTurns: current.conversationTurns + 1,
       lastUpdate: Date.now(),
     };

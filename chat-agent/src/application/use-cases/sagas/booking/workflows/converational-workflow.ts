@@ -9,7 +9,7 @@ import {
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
 import {
-  PomdpManager,
+  pomdpManager,
   shouldSkipProcessing,
   SocialProtocolIntent,
 } from "@/application/services/pomdp";
@@ -64,7 +64,7 @@ export async function conversationalWorkflow(
     }));
   }
 
-  const pompdResult = await new PomdpManager().process(ctx, ragResults);
+  const pompdResult = await pomdpManager.process(ctx, ragResults);
 
   const messages = await prepareMessages(ctx, pompdResult);
   // const assistant = await aiAdapter.generateText({
@@ -153,24 +153,18 @@ function generateDynamicPrompt(
   pompdResult: PomdpResult,
   products?: Product[],
 ): string {
-  const {
-    beliefState,
-    confidenceMetrics,
-    policyDecision,
-    recommendedIntent,
-    topIntents,
-  } = pompdResult;
+  const { beliefState, policyDecision, currentIntent } = pompdResult;
   const { business, bookingState, customerMessage } = ctx;
   const flowStatus = bookingState?.status;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
 
   // Format top intents for context
-  const topIntentsInfo =
-    topIntents
-      ?.slice(0, 3)
-      .map((t) => `${t.intent}: ${Math.round(t.probability * 100)}%`)
-      .join("\n") || "None detected";
+  // const topIntentsInfo =
+  //   topIntents
+  //     ?.slice(0, 3)
+  //     .map((t) => `${t.intent}: ${Math.round(t.probability * 100)}%`)
+  //     .join("\n") || "None detected";
 
   // Format products for context if provided
   const productsContext =
@@ -198,14 +192,8 @@ function generateDynamicPrompt(
         ==============================
         CURRENT INTENT DETECTED
         ==============================
-        Detected intent: ${recommendedIntent || "unknown"}
-        Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
-        Uncertainty (entropy): ${confidenceMetrics?.entropy ? Math.round(confidenceMetrics.entropy * 100) + "%" : "unknown"}
+        Detected intent: ${currentIntent || "unknown"}
 
-        ==============================
-        TOP INTENTS DETECTED
-        ==============================
-        ${topIntentsInfo}
 
         ==============================
         AVAILABLE OPTIONS
@@ -234,7 +222,7 @@ function generateDynamicPrompt(
         ==============================
         SPECIFIC INSTRUCTION FOR CONFIRMATION
         ==============================
-        - The user expressed intent to "${recommendedIntent}"
+        - The user expressed intent to "${currentIntent}"
         - You need to confirm their intention before proceeding
         - Summarize what you understood they want to do
         - Ask for explicit confirmation before taking action
@@ -248,8 +236,7 @@ function generateDynamicPrompt(
         ==============================
         CONFIRMATION REQUIRED FOR
         ==============================
-        Intent: ${recommendedIntent}
-        Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
+        Intent: ${currentIntent}
 
         ==============================
         AVAILABLE PRODUCTS (if applicable)
@@ -273,7 +260,7 @@ function generateDynamicPrompt(
         ==============================
         SPECIFIC INSTRUCTION FOR EXECUTION
         ==============================
-        - The user wants to execute action for intent "${recommendedIntent?.intent}"
+        - The user wants to execute action for intent "${currentIntent?.intent}"
         - The system will execute the "${policyDecision.saga}" workflow
         - Acknowledge their request and explain what will happen next
         - Provide any necessary information about the process
@@ -287,9 +274,8 @@ function generateDynamicPrompt(
         ==============================
         EXECUTION DETAILS
         ==============================
-        Intent: ${recommendedIntent}
+        Intent: ${currentIntent}
         Saga: ${policyDecision.saga}
-        Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
 
         ==============================
         AVAILABLE PRODUCTS (if applicable)
@@ -321,8 +307,6 @@ function generateDynamicPrompt(
         ==============================
         SYSTEM METRICS
         ==============================
-        Uncertainty (entropy): ${confidenceMetrics?.entropy ? Math.round(confidenceMetrics.entropy * 100) + "%" : "unknown"}
-        Top intents: ${topIntentsInfo}
 
         ==============================
         AVAILABLE PRODUCTS (if applicable)
@@ -343,7 +327,7 @@ function generateDynamicPrompt(
       return conversationalPrompt({
         business,
         // flowStatus,
-        intent: recommendedIntent?.intent,
+        intent: currentIntent?.intent,
         retrievedChunks: productsContext ? [productsContext] : [],
       });
   }

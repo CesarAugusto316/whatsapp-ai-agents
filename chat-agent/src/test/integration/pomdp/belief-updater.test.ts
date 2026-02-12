@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach } from "bun:test";
 import {
-  BeliefUpdater,
+  BeliefStateUpdater,
   PolicyEngine,
   buildObservation,
 } from "@/application/services/pomdp";
