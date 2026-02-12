@@ -1,5 +1,6 @@
 import { IntentExampleKey } from "../intents/intent.types";
 import { Observation } from "../observation/observation.types";
+import { PayloadWithScore } from "../pomdp-manager";
 import { BeliefIntent, BeliefState } from "./belief.types";
 
 // ============================================
@@ -81,19 +82,21 @@ export class BeliefUpdater {
 
   private incorporateEvidence(
     intents: Record<string, BeliefIntent>,
-    vectorResults: Array<{ intent: IntentExampleKey; score: number }>,
+    vectorResults: PayloadWithScore[],
   ): Record<string, BeliefIntent> {
     const updated = { ...intents };
 
     for (const result of vectorResults) {
+      // first time seeing this intent
       if (!updated[result.intent]) {
         updated[result.intent] = {
           key: result.intent,
           probability: 0,
           evidence: 0,
           rejected: 0,
+          requiresConfirmation: result.requiresConfirmation,
           lastSeen: Date.now(),
-        };
+        } satisfies BeliefIntent;
       }
 
       // Actualización "soft" tipo Bayesiana

@@ -1,5 +1,4 @@
 import { conversationalSignals } from "../intents/conversational-signals";
-import { ModuleKind } from "../intents/intent.types";
 import { PayloadWithScore } from "../pomdp-manager";
 import { Observation } from "./observation.types";
 

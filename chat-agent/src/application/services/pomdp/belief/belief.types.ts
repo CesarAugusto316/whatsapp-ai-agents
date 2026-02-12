@@ -1,4 +1,7 @@
-import { IntentExampleKey } from "../intents/intent.types";
+import {
+  IntentExampleKey,
+  RequiredConfirmation,
+} from "../intents/intent.types";
 
 // ============================================
 // 1. BELIEF STATE (Estado de Creencia)
@@ -12,6 +15,7 @@ export interface BeliefIntent {
 
   lastSeen: number; // timestamp última aparición
   decayRate?: number; // opcional: qué tan rápido "olvida"
+  requiresConfirmation: RequiredConfirmation;
 }
 
 export interface BeliefState {
