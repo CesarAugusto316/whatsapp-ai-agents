@@ -1,6 +1,7 @@
 import { Business } from "@/infraestructure/adapters/cms/cms-types";
 import { BookingOptions, FMStatus } from "../booking.types";
 import { formatSchedule } from "@/domain/utilities";
+import { IntentExampleKey } from "@/application/services/pomdp";
 
 export const WRITING_STYLE = `
   Writing style:
@@ -18,7 +19,7 @@ export const WRITING_STYLE = `
 `;
 
 type Args = {
-  intent?: string;
+  intent?: IntentExampleKey;
   flowStatus?: FMStatus;
   retrievedChunks?: string[];
   business: Business;

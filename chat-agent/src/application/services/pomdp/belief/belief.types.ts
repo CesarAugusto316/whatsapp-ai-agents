@@ -8,6 +8,7 @@ import {
 // ============================================
 export interface BeliefIntent {
   key: IntentExampleKey; // ej: "info:ask_price" | "restaurant:view_menu"
+  requiresConfirmation: RequiredConfirmation;
   probability: number; // 0.0 - 1.0
 
   evidence: number; // +1 cada vez que se confirma
@@ -15,13 +16,15 @@ export interface BeliefIntent {
 
   lastSeen: number; // timestamp última aparición
   decayRate?: number; // opcional: qué tan rápido "olvida"
-  requiresConfirmation: RequiredConfirmation;
 }
 
 export interface BeliefState {
   intents: Record<string, BeliefIntent>;
 
-  dominant?: IntentExampleKey; // intención más probable
+  dominant?: {
+    intent: IntentExampleKey;
+    requiresConfirmation: RequiredConfirmation;
+  }; // intención más probable
 
   // Métricas de incertidumbre
   entropy: number; // qué tan confuso está (0=seguro, 1=muy confuso)

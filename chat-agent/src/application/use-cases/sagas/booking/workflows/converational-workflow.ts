@@ -9,6 +9,7 @@ import {
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
 import {
+  BeliefIntent,
   PomdpManager,
   shouldSkipProcessing,
 } from "@/application/services/pomdp";
@@ -146,7 +147,7 @@ function generateDynamicPrompt(
     beliefState,
     confidenceMetrics,
     policyDecision,
-    recommendedIntent: intent,
+    recommendedIntent,
     topIntents,
   } = pompdResult;
   const { business, bookingState, customerMessage } = ctx;
@@ -187,7 +188,7 @@ function generateDynamicPrompt(
         ==============================
         CURRENT INTENT DETECTED
         ==============================
-        Detected intent: ${intent || "unknown"}
+        Detected intent: ${recommendedIntent || "unknown"}
         Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
         Uncertainty (entropy): ${confidenceMetrics?.entropy ? Math.round(confidenceMetrics.entropy * 100) + "%" : "unknown"}
 
@@ -223,7 +224,7 @@ function generateDynamicPrompt(
         ==============================
         SPECIFIC INSTRUCTION FOR CONFIRMATION
         ==============================
-        - The user expressed intent to "${intent}"
+        - The user expressed intent to "${recommendedIntent}"
         - You need to confirm their intention before proceeding
         - Summarize what you understood they want to do
         - Ask for explicit confirmation before taking action
@@ -237,7 +238,7 @@ function generateDynamicPrompt(
         ==============================
         CONFIRMATION REQUIRED FOR
         ==============================
-        Intent: ${intent}
+        Intent: ${recommendedIntent}
         Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
 
         ==============================
@@ -262,7 +263,7 @@ function generateDynamicPrompt(
         ==============================
         SPECIFIC INSTRUCTION FOR EXECUTION
         ==============================
-        - The user wants to execute action for intent "${intent}"
+        - The user wants to execute action for intent "${recommendedIntent?.intent}"
         - The system will execute the "${policyDecision.saga}" workflow
         - Acknowledge their request and explain what will happen next
         - Provide any necessary information about the process
@@ -276,7 +277,7 @@ function generateDynamicPrompt(
         ==============================
         EXECUTION DETAILS
         ==============================
-        Intent: ${intent}
+        Intent: ${recommendedIntent}
         Saga: ${policyDecision.saga}
         Confidence: ${confidenceMetrics?.confidence ? Math.round(confidenceMetrics.confidence * 100) + "%" : "unknown"}
 
@@ -301,7 +302,7 @@ function generateDynamicPrompt(
         ==============================
         SPECIFIC INSTRUCTION FOR FALLBACK
         ==============================
-        - The system is in a fallback state due to: ${policyDecision.intent || "unknown reason"}
+        - The system is in a fallback state due to: ${policyDecision.dominant?.intent || "unknown reason"}
         - The user's message "${customerMessage}" could not be processed automatically
         - Provide a helpful response that acknowledges the situation
         - Guide the user toward available options
@@ -332,7 +333,7 @@ function generateDynamicPrompt(
       return conversationalPrompt({
         business,
         // flowStatus,
-        intent,
+        intent: recommendedIntent?.intent,
         retrievedChunks: productsContext ? [productsContext] : [],
       });
   }

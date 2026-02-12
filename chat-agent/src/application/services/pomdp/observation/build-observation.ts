@@ -1,3 +1,4 @@
+import { BeliefState } from "../belief/belief.types";
 import { conversationalSignals } from "../intents/conversational-signals";
 import { PayloadWithScore } from "../pomdp-manager";
 import { Observation } from "./observation.types";
@@ -11,7 +12,7 @@ export function buildObservation(
   systemContext: {
     hasActiveBooking: boolean;
     hasOrderInProgress: boolean;
-    previousDominantIntent?: string;
+    previousDominantIntent?: BeliefState["dominant"];
     conversationTurns: number;
   },
 ): Observation {

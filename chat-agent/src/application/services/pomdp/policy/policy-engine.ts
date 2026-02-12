@@ -10,10 +10,10 @@ import { IntentExampleKey } from "../intents/intent.types";
 // 1. POLICY ENGINE (Decisiones)
 // ============================================
 export type PolicyDecision =
-  | { type: "ask_clarification"; intent: IntentExampleKey }
-  | { type: "ask_confirmation"; intent: IntentExampleKey }
-  | { type: "execute"; intent: IntentExampleKey; saga: string }
-  | { type: "fallback"; intent: IntentExampleKey };
+  | { type: "ask_clarification"; dominant: BeliefState["dominant"] }
+  | { type: "ask_confirmation"; dominant: BeliefState["dominant"] }
+  | { type: "execute"; dominant: BeliefState["dominant"]; saga: string }
+  | { type: "fallback"; dominant: BeliefState["dominant"] };
 
 // 🧠 Bonus: Policy Engine puede decidir qué modelo usar
 
@@ -23,7 +23,7 @@ export class PolicyEngine {
     if (belief.isStuck) {
       return {
         type: "fallback",
-        intent: "signal:uncertainty",
+        dominant: belief.dominant,
       };
     }
 
@@ -32,26 +32,26 @@ export class PolicyEngine {
       // return this.generateClarification(belief);
       return {
         type: "ask_clarification",
-        intent: belief.dominant,
+        dominant: belief.dominant,
       };
     }
 
     // 3. Si hay intención dominante clara → confirmar o ejecutar
     if (belief.dominant && belief.confidence > 0.8) {
       // Si es primera vez que aparece con alta confianza → confirmar
-      const intent = belief.intents[belief.dominant];
+      const intent = belief.intents[belief.dominant.intent];
       if (intent.evidence <= 2) {
         return {
           type: "ask_confirmation",
-          intent: belief.dominant,
+          dominant: belief.dominant,
         };
       }
 
       // Si ya fue confirmado → ejecutar
       return {
         type: "execute",
-        intent: belief.dominant,
-        saga: this.mapIntentToWorkflow(belief.dominant),
+        dominant: belief.dominant,
+        saga: this.mapIntentToWorkflow(belief.dominant.intent),
         // 🧠 Bonus: Policy Engine puede decidir qué modelo usar
 
         // structuredAction: {
@@ -70,7 +70,7 @@ export class PolicyEngine {
     // 4. Default: hacer pregunta abierta
     return {
       type: "ask_clarification",
-      intent: belief.dominant || "signal:uncertainty",
+      dominant: belief.dominant,
     };
   }
 

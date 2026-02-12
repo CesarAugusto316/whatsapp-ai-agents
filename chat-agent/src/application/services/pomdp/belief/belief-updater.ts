@@ -1,4 +1,7 @@
-import { IntentExampleKey } from "../intents/intent.types";
+import {
+  IntentExampleKey,
+  RequiredConfirmation,
+} from "../intents/intent.types";
 import { Observation } from "../observation/observation.types";
 import { PayloadWithScore } from "../pomdp-manager";
 import { BeliefIntent, BeliefState } from "./belief.types";
@@ -22,7 +25,7 @@ export class BeliefUpdater {
       lastUpdate: Date.now(),
       needsClarification: false,
       isStuck: false,
-    };
+    } satisfies BeliefState;
   }
 
   public update(
@@ -42,16 +45,16 @@ export class BeliefUpdater {
     const adjustedIntents = this.adjustByConversationalCues(
       updatedIntents,
       observation,
-      currentBelief.dominant,
+      currentBelief.dominant?.intent,
     );
 
     // 4. Calcular métricas
     const entropy = this.calculateEntropy(adjustedIntents);
-    const dominant = this.getDominantIntent(
-      adjustedIntents,
-    ) as IntentExampleKey;
-    const confidence = dominant ? adjustedIntents[dominant].probability : 0;
+    const dominant = this.getDominantIntent(adjustedIntents);
 
+    const confidence = dominant
+      ? adjustedIntents[dominant.intent].probability
+      : 0;
     return {
       intents: adjustedIntents,
       dominant,
@@ -162,14 +165,21 @@ export class BeliefUpdater {
 
   private getDominantIntent(
     intents: Record<string, BeliefIntent>,
-  ): string | undefined {
+  ): BeliefState["dominant"] | undefined {
+    //
     let maxProb = 0;
-    let dominant: string | undefined;
+    let dominant!: {
+      intent: IntentExampleKey;
+      requiresConfirmation: RequiredConfirmation;
+    };
 
     for (const key in intents) {
       if (intents[key].probability > maxProb) {
         maxProb = intents[key].probability;
-        dominant = key;
+        dominant = {
+          intent: key as IntentExampleKey,
+          requiresConfirmation: intents[key].requiresConfirmation,
+        };
       }
     }
 

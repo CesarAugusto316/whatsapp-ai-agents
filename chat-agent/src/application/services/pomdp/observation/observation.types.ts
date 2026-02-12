@@ -1,3 +1,4 @@
+import { BeliefState } from "../belief/belief.types";
 import { PayloadWithScore } from "../pomdp-manager";
 
 // ============================================
@@ -23,7 +24,7 @@ export type Observation = {
   context: {
     hasActiveBooking: boolean;
     hasOrderInProgress: boolean;
-    previousDominantIntent?: string;
+    previousDominantIntent?: BeliefState["dominant"];
     conversationTurns: number;
   };
 };

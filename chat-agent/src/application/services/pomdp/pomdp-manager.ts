@@ -6,12 +6,13 @@ import { Observation } from "./observation/observation.types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { IntentPayload } from "@/infraestructure/adapters/vector-store";
+import { IntentExampleKey } from "./intents/intent.types";
 
 export type PomdpResult = {
   policyDecision: PolicyDecision;
   beliefState: BeliefState;
-  recommendedIntent?: string;
-  topIntents?: Array<{ intent: string; probability: number }>;
+  recommendedIntent?: BeliefState["dominant"];
+  topIntents?: Array<{ intent: IntentExampleKey; probability: number }>;
   confidenceMetrics: {
     entropy: number;
     confidence: number;
@@ -75,7 +76,7 @@ export class PomdpManager {
       .sort(([_, a], [__, b]) => b.probability - a.probability)
       .slice(0, 3)
       .map(([intent, beliefIntent]) => ({
-        intent,
+        intent: intent as IntentExampleKey,
         probability: beliefIntent.probability,
       }));
 
