@@ -50,7 +50,7 @@ class PomdpManager {
     // Save updated belief state to cache
     await cacheAdapter.save<BeliefState>(
       ctx.beliefKey,
-      policyDecision.state,
+      newBeliefState,
       60 * 60 * 24,
     ); // 24 hours TTL
 

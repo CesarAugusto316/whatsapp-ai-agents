@@ -12,18 +12,18 @@ export type PolicyDecision =
   | {
       type: "ask_clarification";
       dominant: BeliefState["current"];
-      state: BeliefState;
+      // state: BeliefState;
     }
   | {
       type: "ask_confirmation";
       dominant: BeliefState["current"];
-      state: BeliefState;
+      // state: BeliefState;
     }
   | {
       type: "execute";
       dominant: BeliefState["current"];
       saga: string;
-      state: BeliefState;
+      // state: BeliefState;
     }
   | { type: "default"; dominant: BeliefState["current"]; state: BeliefState };
 
@@ -41,7 +41,7 @@ export class PolicyEngine {
       return {
         type: "ask_clarification",
         dominant: belief.current,
-        state: beliefCopy,
+        // state: beliefCopy,
       };
     }
 
@@ -56,10 +56,10 @@ export class PolicyEngine {
           type: "execute",
           dominant: dominantIntent,
           saga: this.mapIntentToWorkflow(dominantIntent.intent),
-          state: this.addExecuted(beliefCopy, {
-            parent: dominantIntent.intent,
-            ...belief.current,
-          }),
+          // state: this.addExecuted(beliefCopy, {
+          //   parent: dominantIntent.intent,
+          //   ...belief.current,
+          // }),
         };
       }
 
@@ -70,16 +70,16 @@ export class PolicyEngine {
             type: "execute",
             dominant: dominantIntent,
             saga: this.mapIntentToWorkflow(dominantIntent.intent),
-            state: this.addExecuted(beliefCopy, {
-              parent: dominantIntent.intent,
-              ...belief.current,
-            }),
+            // state: this.addExecuted(beliefCopy, {
+            //   parent: dominantIntent.intent,
+            //   ...belief.current,
+            // }),
           };
         }
         return {
           type: "ask_confirmation",
           dominant: dominantIntent,
-          state: beliefCopy,
+          // state: beliefCopy,
         };
       }
 
@@ -90,7 +90,7 @@ export class PolicyEngine {
           return {
             type: "ask_confirmation",
             dominant: dominantIntent,
-            state: beliefCopy,
+            // state: beliefCopy,
           };
         }
 
@@ -99,10 +99,10 @@ export class PolicyEngine {
           type: "execute",
           dominant: dominantIntent,
           saga: this.mapIntentToWorkflow(dominantIntent.intent),
-          state: this.addExecuted(beliefCopy, {
-            parent: dominantIntent.intent,
-            ...belief.current,
-          }),
+          // state: this.addExecuted(beliefCopy, {
+          //   parent: dominantIntent.intent,
+          //   ...belief.current,
+          // }),
         };
       }
     }
@@ -111,7 +111,7 @@ export class PolicyEngine {
     return {
       type: "ask_clarification",
       dominant: belief.current,
-      state: beliefCopy,
+      // state: beliefCopy,
     };
   }
 
@@ -138,7 +138,33 @@ export class PolicyEngine {
   private addExecuted(intent: BeliefState, subIntent: SubIntent): BeliefState {
     return {
       ...intent,
-      executedIntents: [...intent.executedIntents, subIntent],
+      executedIntents: {
+        ...intent.executedIntents,
+        [subIntent.intent]: {
+          ...subIntent,
+          subIntents: [],
+        },
+      } satisfies Record<string, SubIntent>,
+    };
+  }
+
+  private addNestedExecuted(
+    intent: BeliefState,
+    subIntent: string,
+    nestedSubIntent: SubIntent,
+  ): BeliefState {
+    return {
+      ...intent,
+      executedIntents: {
+        ...intent.executedIntents,
+        [subIntent]: {
+          ...intent.executedIntents[subIntent],
+          subIntents: [
+            ...intent.executedIntents[subIntent].subIntents,
+            nestedSubIntent,
+          ],
+        },
+      } satisfies Record<string, SubIntent>,
     };
   }
 }

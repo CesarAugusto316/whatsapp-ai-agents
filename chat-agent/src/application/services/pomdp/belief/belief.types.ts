@@ -13,11 +13,11 @@ export interface BeliefIntent extends PayloadWithScore {
 }
 
 export interface SubIntent extends PayloadWithScore {
-  parent?: string;
+  subIntents: PayloadWithScore[];
 }
 
 export interface BeliefState {
-  executedIntents: SubIntent[];
+  executedIntents: Record<string, SubIntent>;
   current?: BeliefIntent;
   previous?: BeliefIntent;
 
