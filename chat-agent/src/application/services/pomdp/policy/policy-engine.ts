@@ -18,7 +18,7 @@ export type PolicyDecision =
 // 🧠 Bonus: Policy Engine puede decidir qué modelo usar
 
 export class PolicyEngine {
-  public decide(belief: BeliefState, context: RestaurantCtx): PolicyDecision {
+  public decide(belief: BeliefState): PolicyDecision {
     // 1. Si está atascado → default
     if (belief.isStuck) {
       return {
@@ -51,7 +51,7 @@ export class PolicyEngine {
 
       // 🔑 Regla 2: "always" → SIEMPRE pedir confirmación (alto riesgo)
       if (dominantIntent.requiresConfirmation === "always") {
-        if (intentBelief.evidence > 1) {
+        if (intentBelief.evidence > 2) {
           return {
             type: "execute",
             dominant: dominantIntent,
