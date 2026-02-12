@@ -32,7 +32,7 @@ describe("PomdpManager", () => {
   test("should initialize with empty belief state", () => {
     const emptyBelief = BeliefStateUpdater.createEmpty();
     expect(emptyBelief.intents).toEqual({});
-    expect(emptyBelief.conversationTurns).toBe(0);
+    expect(emptyBelief.intentJumps).toBe(0);
     expect(emptyBelief.entropy).toBe(0);
     expect(emptyBelief.confidence).toBe(0);
   });

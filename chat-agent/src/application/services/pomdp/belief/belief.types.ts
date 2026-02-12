@@ -1,8 +1,4 @@
-import { IntentPayload } from "@/infraestructure/adapters/vector-store";
-import {
-  IntentExampleKey,
-  RequiredConfirmation,
-} from "../intents/intent.types";
+import { IntentExampleKey } from "../intents/intent.types";
 import { PayloadWithScore } from "../pomdp-manager";
 
 // ============================================
@@ -14,16 +10,18 @@ export interface BeliefIntent extends PayloadWithScore {
     isUncertain?: boolean;
     isRejected?: boolean; // true si el usuario dijo "no" explícitamente
   };
-  createdAt: number; // timestamp última aparición
+}
+
+export interface SubIntent extends PayloadWithScore {
+  parent?: string;
 }
 
 export interface BeliefState {
+  executedIntents: SubIntent[];
   current?: BeliefIntent;
   previous?: BeliefIntent;
 
-  isStuck?: boolean; // lleva muchos turnos sin avanzar
-
   // Control de contexto
-  conversationTurns: number; // turnos de conversación
+  intentJumps: number; // turnos de conversación
   lastUpdate: number; // timestamp
 }

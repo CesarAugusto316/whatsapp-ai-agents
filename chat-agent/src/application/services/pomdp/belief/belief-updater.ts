@@ -1,7 +1,5 @@
-import { IntentExampleKey } from "../intents/intent.types";
-
 import { PayloadWithScore } from "../pomdp-manager";
-import { BeliefIntent, BeliefState } from "./belief.types";
+import { BeliefIntent, BeliefState, SubIntent } from "./belief.types";
 
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
@@ -9,11 +7,11 @@ export class BeliefStateUpdater {
 
   static createEmpty(): BeliefState {
     return {
+      executedIntents: [],
       current: undefined,
       previous: undefined,
-      conversationTurns: 0,
+      intentJumps: 0,
       lastUpdate: Date.now(),
-      isStuck: false,
     };
   }
 
@@ -21,10 +19,9 @@ export class BeliefStateUpdater {
     prevState: BeliefState,
     topResult?: PayloadWithScore,
   ): BeliefState {
-    // 1. Tomar SOLO la intención más fuerte del RAG (la primera)
-    // const topResult = newObservation.intentResults[0];
+    //
     if (!topResult) {
-      return this.createLowConfidenceState(prevState);
+      return prevState;
     }
 
     if (prevState.current && topResult.module === "conversational-signal") {
@@ -56,13 +53,13 @@ export class BeliefStateUpdater {
         // newObservation.signals.isAffirmation ||
         topResult.intent === "signal:affirmation"
       ) {
-        confidence = Math.min(0.95, confidence + 0.3); // +30% por "sí"
+        //
       }
       if (
         // newObservation.signals.isNegation ||
         topResult.intent === "signal:negation"
       ) {
-        confidence = Math.max(0.1, confidence - 0.5); // -50% por "no"
+        //
       }
     }
 
@@ -70,33 +67,18 @@ export class BeliefStateUpdater {
     const intentKey = topResult.intent;
     const newIntent: BeliefIntent = {
       ...topResult,
-      signals: {},
-      // evidence: prevState.intents[intentKey]?.evidence + 1 || 1,
-      // rejected: 0,
-      requiresConfirmation: topResult.requiresConfirmation,
-      createdAt: Date.now(),
+      signals: {
+        isConfirmed: topResult.intent === "signal:affirmation",
+        isRejected: topResult.intent === "signal:negation",
+        isUncertain: topResult.intent === "signal:uncertainty",
+      },
     };
 
     return {
+      ...prevState,
       previous: prevState.current,
-      // intents: { [intentKey]: newIntent }, // Solo guardamos la mejor
-      // dominant,
-      // entropy: 1 - confidence, // Simplificado: 0=seguro, 1=confundido
-      // confidence,
-      conversationTurns: prevState.conversationTurns + 1,
-      lastUpdate: Date.now(),
-      // needsClarification: confidence < this.CONFIDENCE_THRESHOLD,
-      isStuck: prevState.conversationTurns > 5 && confidence < 0.4,
-    };
-  }
-
-  private createLowConfidenceState(current: BeliefState): BeliefState {
-    return {
-      ...current,
-      // confidence: 0.1,
-      // entropy: 0.9,
-
-      conversationTurns: current.conversationTurns + 1,
+      current: newIntent,
+      intentJumps: prevState.intentJumps + 1,
       lastUpdate: Date.now(),
     };
   }
