@@ -4,7 +4,7 @@ import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import type { BookingResult } from "../booking-saga";
 import { attachProcessReminder } from "@/application/patterns";
 import {
-  conversationalPrompt,
+  defaultPrompt,
   systemMessages,
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
@@ -15,7 +15,7 @@ import {
 } from "@/application/services/pomdp";
 import { formatSagaOutput } from "../helpers/format-saga-output";
 import {
-  PayloadWithScore,
+  IntentPayloadWithScore,
   PomdpResult,
 } from "@/application/services/pomdp/pomdp-manager";
 
@@ -35,7 +35,7 @@ export async function conversationalWorkflow(
   ctx: RestaurantCtx,
 ): Promise<BookingResult> {
   //
-  let ragResults: PayloadWithScore[] = [];
+  let ragResults: IntentPayloadWithScore[] = [];
   const { skip, kind, msg } = shouldSkipProcessing(ctx.customerMessage);
 
   // skip RAG, to save resources
@@ -43,14 +43,15 @@ export async function conversationalWorkflow(
     return formatSagaOutput(msg); // saludar, despedirse, agradecer (reflejo simple)
   }
   if (skip && kind === "conversational-signal") {
+    //  we know exactly the form for "conversational-signal" so we can skip RAG
     ragResults = [
       {
         score: 1,
         module: "conversational-signal",
         intent: msg as SocialProtocolIntent,
         requiresConfirmation: "never",
-      } satisfies PayloadWithScore,
-    ]; //  we know exactly the form for "conversational-signal" so we can skip RAG
+      } satisfies IntentPayloadWithScore,
+    ];
     console.log({ ragResults });
   }
   if (!skip) {
@@ -107,7 +108,7 @@ export async function prepareMessages(
 
   const systemPrompt = pompdResult?.policyDecision
     ? generateDynamicPrompt(ctx, pompdResult)
-    : conversationalPrompt({
+    : defaultPrompt({
         business: ctx.business,
         flowStatus: ctx.bookingState?.status,
         intent: undefined,
@@ -142,6 +143,7 @@ function generateDynamicPrompt(
   pompdResult: PomdpResult,
 ): string {
   const { policyDecision, currentIntent } = pompdResult;
+  const { intent, module, signals } = currentIntent || {};
   const { business, customerMessage, bookingState } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
@@ -169,7 +171,7 @@ function generateDynamicPrompt(
         - Do NOT assume what the user wants.
 
         CURRENT INTENT DETECTED:
-        ${currentIntent || "unknown"}
+        ${intent || "unknown"}
 
         AVAILABLE OPTIONS:
         - Make a reservation
@@ -188,7 +190,7 @@ function generateDynamicPrompt(
         - Ask for explicit confirmation.
 
         CONFIRMATION REQUIRED FOR:
-        Intent: ${currentIntent}
+        Intent: ${intent}
     `;
 
     case "execute":
@@ -200,15 +202,15 @@ function generateDynamicPrompt(
         - The system will run workflow: "${policyDecision.saga}".
 
         EXECUTION DETAILS:
-        Intent: ${currentIntent}
+        Intent: ${intent}
         Saga: ${policyDecision.saga}
    `;
 
     default:
-      return conversationalPrompt({
+      return defaultPrompt({
         business: ctx.business,
         flowStatus: bookingState?.status,
-        intent: currentIntent?.intent,
+        intent: intent,
         retrievedChunks: [],
       });
   }

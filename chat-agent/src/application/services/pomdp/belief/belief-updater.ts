@@ -1,4 +1,4 @@
-import { PayloadWithScore } from "../pomdp-manager";
+import { IntentPayloadWithScore } from "../pomdp-manager";
 import { BeliefIntent, BeliefState } from "./belief.types";
 
 export class BeliefStateUpdater {
@@ -10,7 +10,7 @@ export class BeliefStateUpdater {
       executedIntents: [],
       current: undefined,
       previous: undefined,
-      intentJumps: 0,
+      intentCorrections: 0,
       lastUpdate: Date.now(),
       isIntentFound: false,
     };
@@ -18,11 +18,11 @@ export class BeliefStateUpdater {
 
   public update(
     prevState: BeliefState,
-    topResult?: PayloadWithScore,
+    topResult?: IntentPayloadWithScore,
   ): BeliefState {
     // Si no hay resultado nuevo, no cambiamos el estado (no creamos "nueva intención" artificial)
     if (!topResult) {
-      return { ...prevState };
+      return { ...prevState, isIntentFound: false };
     }
 
     if (
@@ -35,14 +35,14 @@ export class BeliefStateUpdater {
       return this.newSnapShot(prevState, newIntent);
     }
 
-    // Si no aplica confirmación, tratamos la señal como nueva intención
+    // registramos las nuevas intenciones
     const newIntent = this.newIntent(topResult);
     return this.newSnapShot(prevState, newIntent);
   }
 
   private signalPrevIntent(
     prevIntent: BeliefIntent,
-    topResult: PayloadWithScore,
+    topResult: IntentPayloadWithScore,
   ): BeliefIntent {
     //
     return {
@@ -55,10 +55,14 @@ export class BeliefStateUpdater {
     };
   }
 
-  private newIntent(topResult: PayloadWithScore): BeliefIntent {
+  private newIntent(topResult: IntentPayloadWithScore): BeliefIntent {
     return {
       ...topResult,
-      signals: {},
+      signals: {
+        isConfirmed: false,
+        isRejected: false,
+        isUncertain: false,
+      },
     };
   }
 
@@ -74,6 +78,11 @@ export class BeliefStateUpdater {
       current: curr,
       lastUpdate: Date.now(),
       isIntentFound,
+      intentCorrections:
+        // Si la intención anterior es diferente de la nueva intención
+        (prev.current?.intent && prev.current?.intent) !== curr.intent
+          ? (prev?.intentCorrections ?? 0) + 1
+          : prev.intentCorrections,
     };
   }
 }

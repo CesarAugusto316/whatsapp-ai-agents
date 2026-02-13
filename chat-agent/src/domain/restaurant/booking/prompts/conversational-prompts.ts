@@ -25,7 +25,7 @@ type Args = {
   business: Business;
 };
 
-export const conversationalPrompt = ({
+export const defaultPrompt = ({
   business,
   flowStatus,
   intent,

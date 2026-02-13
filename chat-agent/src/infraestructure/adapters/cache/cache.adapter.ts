@@ -1,8 +1,10 @@
+import { env } from "bun";
 import { ICacheAdapter } from "./cache.adapter.interface";
 import { redisClient } from "./redis.client";
 
 class CacheAdapter implements ICacheAdapter {
-  private EXPIRATION_TIME = 60 * 60 * 2; // 2 horas
+  private hours = env.NODE_ENV === "production" ? 24 : 0.5;
+  private EXPIRATION_TIME = 60 * 60 * this.hours; // 24 horas
 
   /**
    * @description Get reservation data by key

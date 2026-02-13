@@ -18,7 +18,7 @@ import { IntentExample, IntentExampleKey, intentExamples } from "../pomdp";
  */
 class RagService {
   private readonly EMBED_VERSION = "qwen3-0.6b";
-  private readonly THRESHOLD = 0.6;
+  private readonly THRESHOLD = 0.65;
   private readonly CACHE_TTL = 60 * 60 * 24 * 40; // 40 días
 
   constructor(

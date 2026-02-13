@@ -1,19 +1,21 @@
 import { redisClient } from "./redis.client";
 import type { ChatMessage } from "../ai";
+import { env } from "bun";
 
-// COMMANDS REDDIS
-// KEYS chat:*
-//         1) "chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:+3455555555"
-// LRANGE chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:+3455555555 0 -1
 type StoredMessage = {
   role: "user" | "assistant" | "system";
   content: string;
   timestamp: number;
 };
-const MAX_MESSAGES = 20;
-const EXPIRATION_TIME = 60 * 60 * 2; // 2 horas
 
+// COMMANDS REDDIS
+// KEYS chat:*  -> "chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:+3455555555"
+// LRANGE chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:+3455555555 0 -1
 class ChatHistory {
+  private hours = env.NODE_ENV === "production" ? 24 : 0.5;
+  private readonly MAX_MESSAGES = 20;
+  private readonly EXPIRATION_TIME = 60 * 60 * this.hours; // 24 horas
+
   /**
    * @example
    * KEYS chat:*
@@ -24,7 +26,7 @@ class ChatHistory {
    */
   async get(chatKey: string) {
     const rawHistory =
-      (await redisClient.lrange(chatKey, -MAX_MESSAGES, -1)) ?? [];
+      (await redisClient.lrange(chatKey, -this.MAX_MESSAGES, -1)) ?? [];
     return rawHistory.map((item) => {
       const msg: StoredMessage = JSON.parse(item);
       return {
@@ -59,8 +61,8 @@ class ChatHistory {
         timestamp: Date.now(),
       } satisfies StoredMessage),
     );
-    await redisClient.ltrim(chatKey, -MAX_MESSAGES, -1);
-    await redisClient.expire(chatKey, EXPIRATION_TIME);
+    await redisClient.ltrim(chatKey, -this.MAX_MESSAGES, -1);
+    await redisClient.expire(chatKey, this.EXPIRATION_TIME);
   }
 }
 

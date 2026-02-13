@@ -15,6 +15,11 @@ export type PolicyDecision =
       dominant: BeliefIntent | undefined;
       state: BeliefState;
     }
+  | {
+      type: "unknown_intent";
+      dominant: undefined;
+      state: BeliefState;
+    }
   | { type: "ask_confirmation"; dominant: BeliefIntent; state: BeliefState }
   | {
       type: "execute";
@@ -24,30 +29,35 @@ export type PolicyDecision =
     };
 
 export class PolicyEngine {
+  private readonly CONFIDENCE_THRESHOLD = 0.75;
+
   public decide(belief: BeliefState): PolicyDecision {
     const current = belief.current;
-    if (!current) {
-      return { type: "ask_clarification", dominant: undefined, state: belief };
+    if (!current || !belief.isIntentFound) {
+      return { type: "unknown_intent", dominant: undefined, state: belief };
     }
 
-    const cloned = structuredClone(belief);
+    const clonedBelief = structuredClone(belief);
 
-    // 1. Si la confianza es baja → clarificar (solo para intenciones que requieren confirmación)
-    if (
-      (current.requiresConfirmation === "always" ||
-        current.requiresConfirmation === "maybe") &&
-      current.score < 0.7
-    ) {
-      return { type: "ask_clarification", dominant: current, state: cloned };
+    // 1. Si la confianza es baja → clarificar (para cualquier intencion)
+    if (current.score < this.CONFIDENCE_THRESHOLD) {
+      return {
+        type: "ask_clarification",
+        dominant: current,
+        state: clonedBelief,
+      };
     }
 
     // 2. Regla: "never" → ejecutar inmediatamente
-    if (current.requiresConfirmation === "never") {
+    if (
+      current.requiresConfirmation === "never" &&
+      current.score >= this.CONFIDENCE_THRESHOLD
+    ) {
       return {
         type: "execute",
         dominant: current,
         saga: this.mapIntentToWorkflow(current.intent),
-        state: this.markAsExecuted(cloned, current),
+        state: this.markAsExecuted(clonedBelief, current),
       };
     }
 
@@ -58,10 +68,14 @@ export class PolicyEngine {
           type: "execute",
           dominant: current,
           saga: this.mapIntentToWorkflow(current.intent),
-          state: this.markAsExecuted(cloned, current),
+          state: this.markAsExecuted(clonedBelief, current),
         };
       }
-      return { type: "ask_confirmation", dominant: current, state: cloned };
+      return {
+        type: "ask_confirmation",
+        dominant: current,
+        state: clonedBelief,
+      };
     }
 
     // 4. Regla: "maybe" → ejecutar directo (confirmación implícita por contexto)
@@ -72,12 +86,16 @@ export class PolicyEngine {
         type: "execute",
         dominant: current,
         saga: this.mapIntentToWorkflow(current.intent),
-        state: this.markAsExecuted(cloned, current),
+        state: this.markAsExecuted(clonedBelief, current),
       };
     }
 
     // Fallback seguro (no debería ocurrir si tus intents están bien definidos)
-    return { type: "ask_clarification", dominant: current, state: cloned };
+    return {
+      type: "ask_clarification",
+      dominant: current,
+      state: clonedBelief,
+    };
   }
 
   private mapIntentToWorkflow(intent: IntentExampleKey): string {
@@ -86,17 +104,17 @@ export class PolicyEngine {
       "booking:create": BookingOptions.MAKE_BOOKING,
       "booking:modify": BookingOptions.UPDATE_BOOKING,
       "booking:cancel": BookingOptions.CANCEL_BOOKING,
-      "booking:check_availability": "booking:check_availability",
+      "booking:check_availability": "booking:check_availability", // hay que implementar
 
       // Restaurant
       "restaurant:place_order": ProductOrderOptions.MAKE_PRODUCT_ORDER,
       "restaurant:update_order": ProductOrderOptions.UPDATE_PRODUCT_ORDER,
       "restaurant:cancel_order": ProductOrderOptions.CANCEL_PRODUCT_ORDER,
-      "restaurant:view_menu": "restaurant:view_menu",
-      "restaurant:find_dishes": "restaurant:find_dishes",
-      "restaurant:ask_delivery_method": "restaurant:ask_delivery_method",
-      "restaurant:ask_delivery_time": "restaurant:ask_delivery_time",
-      "restaurant:ask_price": "restaurant:ask_price",
+      "restaurant:view_menu": "restaurant:view_menu", // hay que implementar
+      "restaurant:find_dishes": "restaurant:find_dishes", // hay que implementar
+      "restaurant:ask_delivery_method": "restaurant:ask_delivery_method", // hay que implementar
+      "restaurant:ask_delivery_time": "restaurant:ask_delivery_time", // hay que implementar
+      "restaurant:ask_price": "restaurant:ask_price", // hay que implementar
     };
 
     return map[intent] ?? "unknown_intent";

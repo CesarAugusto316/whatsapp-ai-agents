@@ -22,5 +22,6 @@ export type {
   RequiredConfirmation,
 } from "./intents/intent.types";
 
+export type { IntentPayloadWithScore, PomdpResult } from "./pomdp-manager";
 export type { PolicyDecision } from "./policy/policy-engine";
 export type { BeliefIntent, BeliefState } from "./belief/belief.types";

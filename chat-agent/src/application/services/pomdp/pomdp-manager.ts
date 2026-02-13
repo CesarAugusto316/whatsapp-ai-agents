@@ -11,7 +11,7 @@ export type PomdpResult = {
   currentIntent?: BeliefIntent;
 };
 
-export interface PayloadWithScore extends Pick<
+export interface IntentPayloadWithScore extends Pick<
   IntentPayload,
   "intent" | "module" | "requiresConfirmation"
 > {
@@ -32,7 +32,7 @@ class PomdpManager {
    */
   async process(
     ctx: RestaurantCtx,
-    ragResults: PayloadWithScore[],
+    ragResults: IntentPayloadWithScore[],
   ): Promise<PomdpResult> {
     //
     const previousBeliefState =
@@ -49,11 +49,7 @@ class PomdpManager {
     const policyDecision = this.policyEngine.decide(newBeliefState);
 
     // Save updated belief state to cache
-    await cacheAdapter.save<BeliefState>(
-      ctx.beliefKey,
-      policyDecision.state,
-      60 * 60 * 24,
-    ); // 24 hours TTL
+    await cacheAdapter.save<BeliefState>(ctx.beliefKey, policyDecision.state); // 24 hours TTL
 
     // Return structured result for LLM to generate response
     return {

@@ -1,9 +1,9 @@
-import { PayloadWithScore } from "../pomdp-manager";
+import { IntentPayloadWithScore } from "../pomdp-manager";
 
 // ============================================
 // 1. BELIEF STATE (Estado de Creencia)
 // ============================================
-export interface BeliefIntent extends PayloadWithScore {
+export interface BeliefIntent extends IntentPayloadWithScore {
   signals: {
     isConfirmed?: boolean; // true si el usuario dijo "sí" explícitamente
     isUncertain?: boolean;
@@ -19,6 +19,6 @@ export interface BeliefState {
   isIntentFound: boolean;
 
   // Control de contexto
-  intentJumps?: number; // turnos de conversación
+  intentCorrections?: number; // corrección de intentos
   lastUpdate: number; // timestamp
 }
