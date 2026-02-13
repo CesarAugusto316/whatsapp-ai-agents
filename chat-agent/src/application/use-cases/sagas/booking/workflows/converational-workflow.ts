@@ -15,10 +15,7 @@ import {
   SocialProtocolIntent,
 } from "@/application/services/pomdp";
 import { formatSagaOutput } from "../helpers/format-saga-output";
-import {
-  IntentPayloadWithScore,
-  PomdpResult,
-} from "@/application/services/pomdp/pomdp-manager";
+import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
 
 /**
  *
@@ -68,12 +65,11 @@ export async function conversationalWorkflow(
       })) ?? [];
   }
 
-  const pompdResult = await pomdpManager.process(ctx, ragResults);
-
-  const messages = await prepareMessages(ctx, pompdResult);
-  // const assistant = await aiAdapter.generateText({
-  //   messages,
-  // });
+  const policyDecision = await pomdpManager.process(ctx, ragResults);
+  const messages = await prepareMessages(ctx, policyDecision);
+  const assistant = await aiAdapter.generateText({
+    messages,
+  });
 
   /**
    *
@@ -83,9 +79,12 @@ export async function conversationalWorkflow(
   // const reminderMSG = status
   //   ? attachProcessReminder(assistant, status, messages)
   //   : assistant;
-
-  // await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, "");
-  return formatSagaOutput(ctx.customerMessage, pompdResult.type, messages);
+  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
+  return formatSagaOutput(
+    ctx.customerMessage,
+    `${policyDecision.intent?.intent}:${policyDecision.type}`,
+    messages,
+  );
 }
 
 /**

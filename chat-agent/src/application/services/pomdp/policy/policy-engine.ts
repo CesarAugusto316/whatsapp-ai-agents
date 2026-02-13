@@ -35,8 +35,7 @@ export type PolicyDecision =
     };
 
 export class PolicyEngine {
-  private readonly CONFIDENCE_THRESHOLD = 0.75; // esto se eliminaría porque sera responsabilidad de BeliefStateUpdater
-
+  //
   public decide(belief: BeliefState): PolicyDecision {
     const intent = belief.current;
     if (!belief.isIntentFound || !intent) {
@@ -46,10 +45,7 @@ export class PolicyEngine {
     const clonedBelief = structuredClone(belief);
 
     // 1. Regla: "never" → ejecutar inmediatamente
-    if (
-      intent.requiresConfirmation === "never" &&
-      intent.score >= this.CONFIDENCE_THRESHOLD // esto debe salir y ser reemplazado por algo como isSafeToExecute
-    ) {
+    if (intent.requiresConfirmation === "never" && intent.isConfident) {
       return {
         type: "execute",
         intent,
@@ -59,15 +55,20 @@ export class PolicyEngine {
     }
 
     // 2. Regla: "maybe" → ejecutar si la confianza es alta, sino pedir confirmación
-    if (
-      intent.requiresConfirmation === "maybe" &&
-      intent.score >= this.CONFIDENCE_THRESHOLD // esto debe salir y ser reemplazado por algo como isSafeToExecute
-    ) {
+    if (intent.requiresConfirmation === "maybe") {
+      if (intent.isConfident) {
+        return {
+          type: "execute",
+          intent,
+          action: this.mapIntentToWorkflow(intent.intent),
+          state: this.markAsExecuted(clonedBelief, intent),
+        };
+      }
+      // Just an example (can be changed in the future)
       return {
-        type: "execute",
+        type: "propose_alternative",
         intent,
-        action: this.mapIntentToWorkflow(intent.intent),
-        state: this.markAsExecuted(clonedBelief, intent),
+        state: clonedBelief,
       };
     }
 
