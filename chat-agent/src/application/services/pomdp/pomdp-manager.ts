@@ -45,8 +45,8 @@ class PomdpManager {
     );
 
     // Decide on action based on updated belief state
-    const hasResults = ragResults.length > 0;
-    const policyDecision = this.policyEngine.decide(newBeliefState, hasResults);
+    // const hasResults = ragResults.length > 0;
+    const policyDecision = this.policyEngine.decide(newBeliefState);
 
     // Save updated belief state to cache
     await cacheAdapter.save<BeliefState>(

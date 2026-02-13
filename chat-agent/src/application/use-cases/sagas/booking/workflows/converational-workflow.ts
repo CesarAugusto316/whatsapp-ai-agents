@@ -294,36 +294,36 @@ function generateDynamicPrompt(
         - Be clear about next steps
       `;
 
-    case "default":
-      return `
-        You are ${assistantName}, an assistant for ${businessName}.
+    // case "default":
+    //   return `
+    //     You are ${assistantName}, an assistant for ${businessName}.
 
-        ==============================
-        SPECIFIC INSTRUCTION FOR FALLBACK
-        ==============================
-        - The system is in a fallback state due to: ${policyDecision.dominant?.intent || "unknown reason"}
-        - The user's message "${customerMessage}" could not be processed automatically
-        - Provide a helpful response that acknowledges the situation
-        - Guide the user toward available options
-        - Be empathetic and offer assistance
+    //     ==============================
+    //     SPECIFIC INSTRUCTION FOR FALLBACK
+    //     ==============================
+    //     - The system is in a fallback state due to: ${policyDecision.dominant?.intent || "unknown reason"}
+    //     - The user's message "${customerMessage}" could not be processed automatically
+    //     - Provide a helpful response that acknowledges the situation
+    //     - Guide the user toward available options
+    //     - Be empathetic and offer assistance
 
-        ==============================
-        SYSTEM METRICS
-        ==============================
+    //     ==============================
+    //     SYSTEM METRICS
+    //     ==============================
 
-        ==============================
-        AVAILABLE PRODUCTS (if applicable)
-        ==============================
-        ${productsContext || "No products available for selection"}
+    //     ==============================
+    //     AVAILABLE PRODUCTS (if applicable)
+    //     ==============================
+    //     ${productsContext || "No products available for selection"}
 
-        ==============================
-        WRITING STYLE
-        ==============================
-        - Empathetic and helpful
-        - Use emojis when appropriate 😊
-        - Always respond in SPANISH
-        - Be reassuring and offer clear next steps
-      `;
+    //     ==============================
+    //     WRITING STYLE
+    //     ==============================
+    //     - Empathetic and helpful
+    //     - Use emojis when appropriate 😊
+    //     - Always respond in SPANISH
+    //     - Be reassuring and offer clear next steps
+    //   `;
 
     default:
       // Fallback to standard conversational prompt
