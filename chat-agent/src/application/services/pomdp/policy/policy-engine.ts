@@ -34,6 +34,26 @@ export type PolicyDecision =
       state: BeliefState;
     };
 
+/**
+ *
+ * @todo implement Reinforce learning RL (decisión secuencial óptima)
+ * @example
+ * Futuro híbrido (ejemplo conceptual)
+ * class PolicyEngine {
+ *  decide(belief: BeliefState): PolicyDecision {
+ *    // 1. Fallback seguro: reglas deterministas (tu código actual)
+ *    const ruleBased = this.ruleBasedDecision(belief);
+ *
+ *    // 2. Solo si el sistema está en modo "aprendizaje" y la confianza del modelo es alta
+ *    if (this.rlMode && this.rlConfidence > 0.9) {
+ *      return this.rlPolicy.decide(belief);
+ *    }
+ *
+ *    // 3. Siempre cae a reglas deterministas (control humano explícito)
+ *    return ruleBased;
+ *  }
+ * }
+ */
 export class PolicyEngine {
   //
   public decide(belief: BeliefState): PolicyDecision {

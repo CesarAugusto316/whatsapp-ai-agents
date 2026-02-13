@@ -2,6 +2,10 @@ import { ModuleKind, RequiredConfirmation } from "../intents/intent.types";
 import { IntentPayloadWithScore } from "../pomdp-manager";
 import { BeliefIntent, BeliefState } from "./belief.types";
 
+/**
+ *
+ * @todo ML predictivo (mejor detección de intenciones)
+ */
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
 

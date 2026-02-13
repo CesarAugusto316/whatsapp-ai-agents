@@ -214,3 +214,31 @@ test('isIntentFound=false → type="unknown_intent"', () => {
   expect(decision.type).toBe("unknown_intent");
   expect(decision.intent).toBeUndefined();
 });
+
+test('requiresConfirmation con valor inválido → type="ask_clarification" (fallback)', () => {
+  const engine = new PolicyEngine();
+
+  const state: BeliefState = {
+    executedIntents: [],
+    current: {
+      intentKey: "booking:create",
+      module: "booking",
+      score: 0.9,
+      requiresConfirmation: "invalid_value" as any,
+      signals: {
+        isConfirmed: false,
+        isRejected: false,
+        isUncertain: false,
+      },
+      isConfident: true,
+    },
+    previous: undefined,
+    lastUpdate: Date.now(),
+    isIntentFound: true,
+  };
+
+  const decision = engine.decide(state);
+
+  expect(decision.type).toBe("ask_clarification");
+  expect(decision.intent).toBeDefined();
+});
