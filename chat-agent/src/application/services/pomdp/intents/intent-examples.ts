@@ -130,7 +130,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intent: "signal:uncertainty",
     module: "conversational-signal",
-    requiresConfirmation: "always",
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       "no estoy muy seguro",

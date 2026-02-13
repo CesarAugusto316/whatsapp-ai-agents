@@ -9,6 +9,7 @@ export interface BeliefIntent extends IntentPayloadWithScore {
     isUncertain: boolean;
     isRejected: boolean; // true si el usuario dijo "no" explícitamente
   };
+  isConfident: boolean;
 }
 
 export interface BeliefState {
@@ -17,7 +18,4 @@ export interface BeliefState {
   previous?: BeliefIntent;
   isIntentFound: boolean;
   lastUpdate: number; // timestamp
-
-  // Control de contexto
-  // intentCorrections?: number; // corrección de intentos (cuando salta de un intento a otro)
 }

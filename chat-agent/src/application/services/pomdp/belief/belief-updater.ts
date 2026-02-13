@@ -1,10 +1,10 @@
-import { ModuleKind } from "../intents/intent.types";
+import { ModuleKind, RequiredConfirmation } from "../intents/intent.types";
 import { IntentPayloadWithScore } from "../pomdp-manager";
 import { BeliefIntent, BeliefState } from "./belief.types";
 
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
-  private readonly CONFIDENCE_THRESHOLD = 0.75;
+
   private readonly excludedModules: ModuleKind[] = [
     "conversational-signal",
     "social-protocol",
@@ -20,6 +20,24 @@ export class BeliefStateUpdater {
     };
   }
 
+  private getThreshold(Key: RequiredConfirmation): number {
+    const base = Key.trim() as RequiredConfirmation;
+    switch (base) {
+      case "always":
+        return 0.8;
+      case "maybe":
+        return 0.7;
+      case "never":
+        return 0.65;
+      default:
+        return 0.75;
+    }
+  }
+
+  private isConfident(score: number, threshold: number): boolean {
+    return score >= threshold;
+  }
+
   public update(
     prevState: BeliefState,
     topResult?: IntentPayloadWithScore,
@@ -29,16 +47,24 @@ export class BeliefStateUpdater {
       return { ...prevState, isIntentFound: false };
     }
 
-    if (
-      (prevState.current?.requiresConfirmation === "always" ||
-        prevState.current?.requiresConfirmation === "maybe") &&
-      topResult.score >= this.CONFIDENCE_THRESHOLD &&
-      topResult.module === "conversational-signal"
-    ) {
-      const newIntent = this.signalPrevIntent(prevState.current, topResult);
-      return this.newSnapShot(prevState, newIntent);
+    if (prevState.current) {
+      const previousIntent = prevState.current;
+
+      const isTopResultConfident = this.isConfident(
+        topResult.score,
+        this.getThreshold(previousIntent.requiresConfirmation), // -> mismo nivel de riesgo que la intencion principal, nunca pude ser menor
+      );
+
+      if (
+        topResult.module === "conversational-signal" &&
+        previousIntent.isConfident &&
+        isTopResultConfident
+      ) {
+        const newIntent = this.updatePreviousIntent(previousIntent, topResult);
+        return this.newSnapShot(prevState, newIntent);
+      }
     }
-    // exclude modules because we don't need to have them
+    // We never store excludedModules alone
     if (this.excludedModules.includes(topResult.module)) {
       return { ...prevState };
     }
@@ -48,7 +74,7 @@ export class BeliefStateUpdater {
     return this.newSnapShot(prevState, newIntent);
   }
 
-  private signalPrevIntent(
+  private updatePreviousIntent(
     prevIntent: BeliefIntent,
     topResult: IntentPayloadWithScore,
   ): BeliefIntent {
@@ -64,6 +90,11 @@ export class BeliefStateUpdater {
   }
 
   private newIntent(topResult: IntentPayloadWithScore): BeliefIntent {
+    const isConfident = this.isConfident(
+      topResult.score,
+      this.getThreshold(topResult.requiresConfirmation),
+    );
+
     return {
       ...topResult,
       signals: {
@@ -71,6 +102,7 @@ export class BeliefStateUpdater {
         isRejected: false,
         isUncertain: false,
       },
+      isConfident,
     };
   }
 
@@ -86,11 +118,6 @@ export class BeliefStateUpdater {
       current: curr,
       lastUpdate: Date.now(),
       isIntentFound,
-      // intentCorrections:
-      //   // Si la intención anterior es diferente de la nueva intención
-      //   (prev.current?.intent && prev.current?.intent) !== curr.intent
-      //     ? (prev?.intentCorrections ?? 0) + 1
-      //     : prev.intentCorrections,
     };
   }
 }

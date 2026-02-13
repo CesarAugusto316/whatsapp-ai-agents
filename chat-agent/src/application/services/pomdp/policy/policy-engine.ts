@@ -35,7 +35,7 @@ export type PolicyDecision =
     };
 
 export class PolicyEngine {
-  private readonly CONFIDENCE_THRESHOLD = 0.75;
+  private readonly CONFIDENCE_THRESHOLD = 0.75; // esto se eliminaría porque sera responsabilidad de BeliefStateUpdater
 
   public decide(belief: BeliefState): PolicyDecision {
     const intent = belief.current;
@@ -48,7 +48,7 @@ export class PolicyEngine {
     // 1. Regla: "never" → ejecutar inmediatamente
     if (
       intent.requiresConfirmation === "never" &&
-      intent.score >= this.CONFIDENCE_THRESHOLD
+      intent.score >= this.CONFIDENCE_THRESHOLD // esto debe salir y ser reemplazado por algo como isSafeToExecute
     ) {
       return {
         type: "execute",
@@ -61,7 +61,7 @@ export class PolicyEngine {
     // 2. Regla: "maybe" → ejecutar si la confianza es alta, sino pedir confirmación
     if (
       intent.requiresConfirmation === "maybe" &&
-      intent.score >= this.CONFIDENCE_THRESHOLD
+      intent.score >= this.CONFIDENCE_THRESHOLD // esto debe salir y ser reemplazado por algo como isSafeToExecute
     ) {
       return {
         type: "execute",
