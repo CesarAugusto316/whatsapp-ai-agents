@@ -18,7 +18,6 @@ import {
   PayloadWithScore,
   PomdpResult,
 } from "@/application/services/pomdp/pomdp-manager";
-import { Product } from "@/infraestructure/adapters/cms";
 
 /**
  *
@@ -84,7 +83,11 @@ export async function conversationalWorkflow(
   //   : assistant;
 
   // await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, "");
-  return formatSagaOutput(ctx.customerMessage, "intents + prompts", messages);
+  return formatSagaOutput(
+    ctx.customerMessage,
+    JSON.stringify(pompdResult.policyDecision),
+    messages,
+  );
 }
 
 /**
@@ -96,32 +99,23 @@ export async function conversationalWorkflow(
 export async function prepareMessages(
   ctx: RestaurantCtx,
   pompdResult?: PomdpResult,
-) {
-  let messages: ChatMessage[] = [];
+): Promise<ChatMessage[]> {
+  //
   const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
   const isFirstMessage = chatHistoryCache.length === 0;
 
-  // Determine the system prompt based on policy decision if available
-  let systemPrompt: string;
-
-  if (pompdResult && pompdResult.policyDecision) {
-    systemPrompt = generateDynamicPrompt(ctx, pompdResult, []);
-  } else {
-    // Use standard conversational prompt
-    systemPrompt = conversationalPrompt({
-      business: ctx.business,
-      flowStatus: ctx.bookingState?.status,
-      intent: undefined,
-      retrievedChunks: [],
-    });
-  }
+  const systemPrompt = pompdResult?.policyDecision
+    ? generateDynamicPrompt(ctx, pompdResult)
+    : conversationalPrompt({
+        business: ctx.business,
+        flowStatus: ctx.bookingState?.status,
+        intent: undefined,
+        retrievedChunks: [],
+      });
 
   if (isFirstMessage) {
-    messages = [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
+    return [
+      { role: "system", content: systemPrompt },
       {
         role: "user",
         content: systemMessages.initialGreeting(
@@ -129,23 +123,14 @@ export async function prepareMessages(
           ctx.customer?.name,
         ),
       },
-    ] satisfies ChatMessage[];
-  } //
-  else {
-    messages = [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      ...chatHistoryCache, // WE CAN LOAD MESSAGES FROM REDIS AS CONTEXT
-      {
-        role: "user",
-        content: ctx.customerMessage,
-      },
-    ] satisfies ChatMessage[];
+    ];
   }
 
-  return messages;
+  return [
+    { role: "system", content: systemPrompt },
+    ...chatHistoryCache,
+    { role: "user", content: ctx.customerMessage },
+  ];
 }
 
 /**
@@ -154,184 +139,76 @@ export async function prepareMessages(
 function generateDynamicPrompt(
   ctx: RestaurantCtx,
   pompdResult: PomdpResult,
-  products?: Product[],
 ): string {
-  const { beliefState, policyDecision, currentIntent } = pompdResult;
-  const { business, bookingState, customerMessage } = ctx;
-  const flowStatus = bookingState?.status;
+  const { policyDecision, currentIntent } = pompdResult;
+  const { business, customerMessage, bookingState } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
 
-  // Format top intents for context
-  // const topIntentsInfo =
-  //   topIntents
-  //     ?.slice(0, 3)
-  //     .map((t) => `${t.intent}: ${Math.round(t.probability * 100)}%`)
-  //     .join("\n") || "None detected";
+  const baseSections = `
+    You are ${assistantName}, an assistant for ${businessName}.
 
-  // Format products for context if provided
-  const productsContext =
-    products && products.length > 0
-      ? products
-          .map((p) => `- ${p.name}: ${p.description} - $${p.price}`)
-          .join("\n")
-      : "";
+    USER MESSAGE:
+    "${customerMessage}"
+
+    WRITING STYLE:
+    - Always respond in SPANISH
+    - Be concise, friendly, and helpful
+    - Use emojis when appropriate
+  `;
 
   switch (policyDecision.type) {
     case "ask_clarification":
       return `
-        You are ${assistantName}, an assistant for ${businessName}.
+        ${baseSections}
 
-        ==============================
-        SPECIFIC INSTRUCTION FOR CLARIFICATION
-        ==============================
-        - The user's message "${customerMessage}" was ambiguous or unclear
-        - You need to ask for clarification to determine their exact intent
-        - Ask a specific, direct question to clarify their intention
-        - Do NOT make assumptions about what they want
-        - Keep your question short and to the point
-        - If possible, offer 2-3 specific options to choose from
+        SPECIFIC INSTRUCTION:
+        - The message was ambiguous. Ask a direct question to clarify intent.
+        - Offer 2-3 specific options if possible.
+        - Do NOT assume what the user wants.
 
-        ==============================
-        CURRENT INTENT DETECTED
-        ==============================
-        Detected intent: ${currentIntent || "unknown"}
+        CURRENT INTENT DETECTED:
+        ${currentIntent || "unknown"}
 
-
-        ==============================
-        AVAILABLE OPTIONS
-        ==============================
+        AVAILABLE OPTIONS:
         - Make a reservation
-        - Modify an existing reservation
-        - Cancel a reservation
-        - View menu
-        - Place an order
-        - Ask about delivery
-        - Other inquiry
-
-        ==============================
-        WRITING STYLE
-        ==============================
-        - Friendly and helpful
-        - Use emojis when appropriate 😊
-        - Always respond in SPANISH
-        - Be concise but clear
-      `;
+        - Modify or cancel reservation
+        - View menu or place order
+        - Ask about delivery or business info
+     `;
 
     case "ask_confirmation":
       return `
-        You are ${assistantName}, an assistant for ${businessName}.
+        ${baseSections}
 
-        ==============================
-        SPECIFIC INSTRUCTION FOR CONFIRMATION
-        ==============================
-        - The user expressed intent to "${currentIntent}"
-        - You need to confirm their intention before proceeding
-        - Summarize what you understood they want to do
-        - Ask for explicit confirmation before taking action
-        - Be clear about what will happen next if confirmed
+        SPECIFIC INSTRUCTION:
+        - Confirm the user's intent before proceeding.
+        - Summarize what you understood.
+        - Ask for explicit confirmation.
 
-        ==============================
-        USER MESSAGE
-        ==============================
-        ${customerMessage}
-
-        ==============================
-        CONFIRMATION REQUIRED FOR
-        ==============================
+        CONFIRMATION REQUIRED FOR:
         Intent: ${currentIntent}
+    `;
 
-        ==============================
-        AVAILABLE PRODUCTS (if applicable)
-        ==============================
-        ${productsContext || "No products available for selection"}
-
-        ==============================
-        WRITING STYLE
-        ==============================
-        - Professional and clear
-        - Use emojis when appropriate ✅
-        - Always respond in SPANISH
-        - Be concise but thorough
-      `;
-
-    // BYPASS LLM EXECUTION IF POSSIBLE, POLICY ENGINE DECIDES
     case "execute":
       return `
-        You are ${assistantName}, an assistant for ${businessName}.
+        ${baseSections}
 
-        ==============================
-        SPECIFIC INSTRUCTION FOR EXECUTION
-        ==============================
-        - The user wants to execute action for intent "${currentIntent?.intent}"
-        - The system will execute the "${policyDecision.saga}" workflow
-        - Acknowledge their request and explain what will happen next
-        - Provide any necessary information about the process
-        - Set expectations about timing or next steps
+        SPECIFIC INSTRUCTION:
+        - Acknowledge the request and explain next steps.
+        - The system will run workflow: "${policyDecision.saga}".
 
-        ==============================
-        USER REQUEST
-        ==============================
-        ${customerMessage}
-
-        ==============================
-        EXECUTION DETAILS
-        ==============================
+        EXECUTION DETAILS:
         Intent: ${currentIntent}
         Saga: ${policyDecision.saga}
-
-        ==============================
-        AVAILABLE PRODUCTS (if applicable)
-        ==============================
-        ${productsContext || "No products available for selection"}
-
-        ==============================
-        WRITING STYLE
-        ==============================
-        - Confident and reassuring
-        - Use emojis when appropriate 🔄
-        - Always respond in SPANISH
-        - Be clear about next steps
-      `;
-
-    // case "default":
-    //   return `
-    //     You are ${assistantName}, an assistant for ${businessName}.
-
-    //     ==============================
-    //     SPECIFIC INSTRUCTION FOR FALLBACK
-    //     ==============================
-    //     - The system is in a fallback state due to: ${policyDecision.dominant?.intent || "unknown reason"}
-    //     - The user's message "${customerMessage}" could not be processed automatically
-    //     - Provide a helpful response that acknowledges the situation
-    //     - Guide the user toward available options
-    //     - Be empathetic and offer assistance
-
-    //     ==============================
-    //     SYSTEM METRICS
-    //     ==============================
-
-    //     ==============================
-    //     AVAILABLE PRODUCTS (if applicable)
-    //     ==============================
-    //     ${productsContext || "No products available for selection"}
-
-    //     ==============================
-    //     WRITING STYLE
-    //     ==============================
-    //     - Empathetic and helpful
-    //     - Use emojis when appropriate 😊
-    //     - Always respond in SPANISH
-    //     - Be reassuring and offer clear next steps
-    //   `;
+   `;
 
     default:
-      // Fallback to standard conversational prompt
       return conversationalPrompt({
-        business,
-        // flowStatus,
+        business: ctx.business,
+        flowStatus: bookingState?.status,
         intent: currentIntent?.intent,
-        retrievedChunks: productsContext ? [productsContext] : [],
+        retrievedChunks: [],
       });
   }
 }
