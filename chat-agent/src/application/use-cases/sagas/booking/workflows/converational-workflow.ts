@@ -3,10 +3,7 @@ import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import type { BookingResult } from "../booking-saga";
 import { attachProcessReminder } from "@/application/patterns";
-import {
-  defaultPrompt,
-  systemMessages,
-} from "@/domain/restaurant/booking/prompts";
+import { systemMessages } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
 import {
   PolicyDecision,
@@ -122,9 +119,7 @@ export async function prepareMessages(
   const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
   const isFirstMessage = chatHistoryCache.length === 0;
 
-  const systemPrompt = policy
-    ? generateDynamicPrompt(ctx, policy)
-    : defaultPrompt(ctx);
+  const systemPrompt = generateDynamicPrompt(ctx, policy);
 
   if (isFirstMessage) {
     return [
@@ -203,9 +198,9 @@ function generateAgentGoals(activeModules: string[]): string {
  */
 function generateDynamicPrompt(
   ctx: RestaurantCtx,
-  policy: PolicyDecision,
+  policy?: PolicyDecision,
 ): string {
-  const { intentKey: intent } = policy.intent || {};
+  const { intentKey } = policy?.intent || {};
   const { business, activeModules } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
@@ -221,7 +216,7 @@ function generateDynamicPrompt(
      ${WRITING_STYLE}
    `;
 
-  switch (policy.type) {
+  switch (policy?.type) {
     case "unknown_intent":
       return `
          ${baseSections}
@@ -248,7 +243,7 @@ function generateDynamicPrompt(
          - NO asumas lo que el usuario quiere.
 
          CURRENT INTENT DETECTED:
-         ${intent || "unknown"}
+         ${intentKey || "unknown"}
 
          EXAMPLE OPTIONS:
          - ¿Quieres reservar mesa o hacer un pedido?
@@ -282,7 +277,7 @@ function generateDynamicPrompt(
          - Pide confirmación explícita.
 
          CONFIRMATION REQUIRED FOR:
-         Intent: ${intent}
+         Intent: ${intentKey}
      `;
 
     case "propose_alternative":
@@ -295,7 +290,7 @@ function generateDynamicPrompt(
          - Sé flexible y ofrece opciones similares.
 
          PREVIOUS INTENT (REJECTED):
-         ${intent}
+         ${intentKey}
 
          SUGGESTED ALTERNATIVES:
          - Opciones relacionadas al mismo módulo
@@ -304,18 +299,21 @@ function generateDynamicPrompt(
 
     default:
       return `
-        ${baseSections}
+         ${baseSections}
 
-        SPECIFIC INSTRUCTION:
-        - El usuario necesita ayuda específica.
-        - Proporciona instrucciones claras y concisas.
-        - Ofrece opciones relevantes y flexibles.
-        - Asegúrate de entender la pregunta antes de responder.
-        - Evita respuestas ambiguas o vagas.
+         SPECIFIC INSTRUCTION:
+         - Responde de manera útil y orientada a las capacidades del negocio.
+         - Si la pregunta está relacionada con tus metas, proporciona información clara.
+         - Si no está relacionada con tus metas, orienta al usuario hacia lo que SÍ puedes hacer.
+         - Sé directo y evita rodeos.
 
-        SUGGESTED APPROACH:
-        - ¿Qué prefieres hacer primero?
-        - ¿Te ayudo a ver opciones disponibles?
-    `;
+         WHAT YOU CAN DO (AGENT GOALS):
+         ${generateAgentGoals(activeModules)}
+
+         SUGGESTED RESPONSES:
+         - Para preguntas dentro de tus metas: responde directamente con información útil.
+         - Para preguntas fuera de tus metas: "Soy ${assistantName} de ${businessName}. Puedo ayudarte con [mencionar metas relevantes]. ¿En qué te ayudo?"
+         - Para preguntas ambiguas: ofrece 2-3 opciones específicas basadas en tus metas.
+     `;
   }
 }

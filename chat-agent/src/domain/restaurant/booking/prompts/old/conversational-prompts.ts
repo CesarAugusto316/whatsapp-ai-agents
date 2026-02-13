@@ -1,8 +1,4 @@
-import { Business } from "@/infraestructure/adapters/cms/cms-types";
-import { BookingOptions, FMStatus } from "../booking.types";
-import { formatSchedule } from "@/domain/utilities";
-import { IntentExampleKey } from "@/application/services/pomdp";
-import { RestaurantCtx } from "../../restaurant-context.types";
+import { RestaurantCtx } from "../../../restaurant-context.types";
 
 export const WRITING_STYLE = `
   Writing style:
