@@ -5,9 +5,9 @@ import { IntentPayloadWithScore } from "../pomdp-manager";
 // ============================================
 export interface BeliefIntent extends IntentPayloadWithScore {
   signals: {
-    isConfirmed?: boolean; // true si el usuario dijo "sí" explícitamente
-    isUncertain?: boolean;
-    isRejected?: boolean; // true si el usuario dijo "no" explícitamente
+    isConfirmed: boolean; // true si el usuario dijo "sí" explícitamente
+    isUncertain: boolean;
+    isRejected: boolean; // true si el usuario dijo "no" explícitamente
   };
 }
 

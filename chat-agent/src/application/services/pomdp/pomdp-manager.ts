@@ -30,10 +30,7 @@ class PomdpManager {
   /**
    * Process user input through the POMDP pipeline
    */
-  async process(
-    ctx: RestaurantCtx,
-    ragResults: IntentPayloadWithScore[],
-  ): Promise<PomdpResult> {
+  async process(ctx: RestaurantCtx, ragResults: IntentPayloadWithScore[]) {
     //
     const previousBeliefState =
       ctx.beliefState || BeliefStateUpdater.createEmpty();
@@ -52,11 +49,7 @@ class PomdpManager {
     await cacheAdapter.save<BeliefState>(ctx.beliefKey, policyDecision.state); // 24 hours TTL
 
     // Return structured result for LLM to generate response
-    return {
-      currentIntent: newBeliefState.current,
-      policyDecision,
-      beliefState: newBeliefState,
-    };
+    return policyDecision;
   }
 }
 

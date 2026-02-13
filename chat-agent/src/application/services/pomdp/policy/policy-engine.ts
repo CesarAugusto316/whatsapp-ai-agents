@@ -11,21 +11,26 @@ import { IntentExampleKey } from "../intents/intent.types";
 
 export type PolicyDecision =
   | {
-      type: "ask_clarification";
-      dominant: BeliefIntent | undefined;
+      type: "unknown_intent";
+      intent: undefined;
       state: BeliefState;
     }
   | {
-      type: "unknown_intent";
-      dominant: undefined;
+      type: "ask_clarification";
+      intent: BeliefIntent;
       state: BeliefState;
     }
-  | { type: "ask_confirmation"; dominant: BeliefIntent; state: BeliefState }
-  | { type: "ask_alternative"; dominant: BeliefIntent; state: BeliefState }
+  | {
+      type: "clear_up_uncertainty";
+      intent: BeliefIntent;
+      state: BeliefState;
+    }
+  | { type: "ask_confirmation"; intent: BeliefIntent; state: BeliefState }
+  | { type: "propose_alternative"; intent: BeliefIntent; state: BeliefState }
   | {
       type: "execute";
-      dominant: BeliefIntent;
-      saga: string;
+      intent: BeliefIntent;
+      action: string;
       state: BeliefState;
     };
 
@@ -33,62 +38,69 @@ export class PolicyEngine {
   private readonly CONFIDENCE_THRESHOLD = 0.75;
 
   public decide(belief: BeliefState): PolicyDecision {
-    const current = belief.current;
-    if (!belief.isIntentFound || !current) {
-      return { type: "unknown_intent", dominant: undefined, state: belief };
+    const intent = belief.current;
+    if (!belief.isIntentFound || !intent) {
+      return { type: "unknown_intent", intent: undefined, state: belief };
     }
 
     const clonedBelief = structuredClone(belief);
 
     // 1. Regla: "never" → ejecutar inmediatamente
     if (
-      current.requiresConfirmation === "never" &&
-      current.score >= this.CONFIDENCE_THRESHOLD
+      intent.requiresConfirmation === "never" &&
+      intent.score >= this.CONFIDENCE_THRESHOLD
     ) {
       return {
         type: "execute",
-        dominant: current,
-        saga: this.mapIntentToWorkflow(current.intent),
-        state: this.markAsExecuted(clonedBelief, current),
+        intent,
+        action: this.mapIntentToWorkflow(intent.intent),
+        state: this.markAsExecuted(clonedBelief, intent),
       };
     }
 
     // 2. Regla: "maybe" → ejecutar si la confianza es alta, sino pedir confirmación
     if (
-      current.requiresConfirmation === "maybe" &&
-      current.score >= this.CONFIDENCE_THRESHOLD
+      intent.requiresConfirmation === "maybe" &&
+      intent.score >= this.CONFIDENCE_THRESHOLD
     ) {
       return {
         type: "execute",
-        dominant: current,
-        saga: this.mapIntentToWorkflow(current.intent),
-        state: this.markAsExecuted(clonedBelief, current),
+        intent,
+        action: this.mapIntentToWorkflow(intent.intent),
+        state: this.markAsExecuted(clonedBelief, intent),
       };
     }
 
     // 2. Regla: "always" → pedir confirmación a menos que ya esté confirmada
-    if (current.requiresConfirmation === "always") {
-      if (current.signals?.isConfirmed) {
+    if (intent.requiresConfirmation === "always") {
+      if (intent.signals?.isConfirmed) {
         return {
           type: "execute",
-          dominant: current,
-          saga: this.mapIntentToWorkflow(current.intent),
-          state: this.markAsExecuted(clonedBelief, current),
+          intent,
+          action: this.mapIntentToWorkflow(intent.intent),
+          state: this.markAsExecuted(clonedBelief, intent),
         };
       }
-      if (current.signals?.isRejected) {
+      if (intent.signals?.isRejected) {
         return {
-          type: "ask_alternative",
-          dominant: current,
-          state: this.markAsExecuted(clonedBelief, current),
+          type: "propose_alternative",
+          intent,
+          state: this.markAsExecuted(clonedBelief, intent),
         };
       }
-      // isUncertain = "no se" | "talvez" | "puede ser" ó isConfirmed=false|null
-      if (current.signals?.isUncertain || !current.signals?.isConfirmed) {
+      // isUncertain = "no se" | "talvez" | "puede ser"
+      if (intent.signals?.isUncertain) {
+        return {
+          type: "clear_up_uncertainty",
+          intent,
+          state: this.markAsExecuted(clonedBelief, intent),
+        };
+      }
+      if (!intent.signals?.isConfirmed) {
         return {
           type: "ask_confirmation",
-          dominant: current,
-          state: this.markAsExecuted(clonedBelief, current),
+          intent,
+          state: this.markAsExecuted(clonedBelief, intent),
         };
       }
     }
@@ -96,7 +108,7 @@ export class PolicyEngine {
     // Fallback seguro (no debería ocurrir si tus intents están bien definidos)
     return {
       type: "ask_clarification",
-      dominant: current,
+      intent,
       state: clonedBelief,
     };
   }

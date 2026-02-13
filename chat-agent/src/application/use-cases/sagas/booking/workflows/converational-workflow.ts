@@ -9,6 +9,7 @@ import {
 } from "@/domain/restaurant/booking/prompts";
 import { ragService } from "@/application/services/rag";
 import {
+  PolicyDecision,
   pomdpManager,
   shouldSkipProcessing,
   SocialProtocolIntent,
@@ -52,7 +53,6 @@ export async function conversationalWorkflow(
         requiresConfirmation: "never",
       } satisfies IntentPayloadWithScore,
     ];
-    console.log({ ragResults });
   }
   if (!skip) {
     const limit = 1;
@@ -85,29 +85,25 @@ export async function conversationalWorkflow(
   //   : assistant;
 
   // await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, "");
-  return formatSagaOutput(
-    ctx.customerMessage,
-    pompdResult.policyDecision.type,
-    messages,
-  );
+  return formatSagaOutput(ctx.customerMessage, pompdResult.type, messages);
 }
 
 /**
  *
  * @param ctx
- * @param pompdResult
+ * @param policy
  * @returns
  */
 export async function prepareMessages(
   ctx: RestaurantCtx,
-  pompdResult?: PomdpResult,
+  policy?: PolicyDecision,
 ): Promise<ChatMessage[]> {
   //
   const chatHistoryCache = await chatHistoryAdapter.get(ctx.chatKey);
   const isFirstMessage = chatHistoryCache.length === 0;
 
-  const systemPrompt = pompdResult?.policyDecision
-    ? generateDynamicPrompt(ctx, pompdResult)
+  const systemPrompt = policy
+    ? generateDynamicPrompt(ctx, policy)
     : defaultPrompt({
         business: ctx.business,
         flowStatus: ctx.bookingState?.status,
@@ -140,10 +136,9 @@ export async function prepareMessages(
  */
 function generateDynamicPrompt(
   ctx: RestaurantCtx,
-  pompdResult: PomdpResult,
+  policy: PolicyDecision,
 ): string {
-  const { policyDecision, currentIntent } = pompdResult;
-  const { intent, module, signals } = currentIntent || {};
+  const { intent, module, signals } = policy.intent || {};
   const { business, customerMessage, bookingState } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
@@ -160,7 +155,7 @@ function generateDynamicPrompt(
     - Use emojis when appropriate
   `;
 
-  switch (policyDecision.type) {
+  switch (policy.type) {
     case "ask_clarification":
       return `
         ${baseSections}
@@ -199,11 +194,11 @@ function generateDynamicPrompt(
 
         SPECIFIC INSTRUCTION:
         - Acknowledge the request and explain next steps.
-        - The system will run workflow: "${policyDecision.saga}".
+        - The system will run workflow: "${policy.action}".
 
         EXECUTION DETAILS:
         Intent: ${intent}
-        Saga: ${policyDecision.saga}
+        Saga: ${policy.action}
    `;
 
     default:
