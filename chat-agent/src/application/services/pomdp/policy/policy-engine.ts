@@ -21,6 +21,7 @@ export type PolicyDecision =
       state: BeliefState;
     }
   | { type: "ask_confirmation"; dominant: BeliefIntent; state: BeliefState }
+  | { type: "ask_alternative"; dominant: BeliefIntent; state: BeliefState }
   | {
       type: "execute";
       dominant: BeliefIntent;
@@ -33,22 +34,13 @@ export class PolicyEngine {
 
   public decide(belief: BeliefState): PolicyDecision {
     const current = belief.current;
-    if (!current || !belief.isIntentFound) {
+    if (!belief.isIntentFound || !current) {
       return { type: "unknown_intent", dominant: undefined, state: belief };
     }
 
     const clonedBelief = structuredClone(belief);
 
-    // 1. Si la confianza es baja → clarificar (para cualquier intencion)
-    if (current.score < this.CONFIDENCE_THRESHOLD) {
-      return {
-        type: "ask_clarification",
-        dominant: current,
-        state: clonedBelief,
-      };
-    }
-
-    // 2. Regla: "never" → ejecutar inmediatamente
+    // 1. Regla: "never" → ejecutar inmediatamente
     if (
       current.requiresConfirmation === "never" &&
       current.score >= this.CONFIDENCE_THRESHOLD
@@ -61,7 +53,20 @@ export class PolicyEngine {
       };
     }
 
-    // 3. Regla: "always" → pedir confirmación a menos que ya esté confirmada
+    // 2. Regla: "maybe" → ejecutar si la confianza es alta, sino pedir confirmación
+    if (
+      current.requiresConfirmation === "maybe" &&
+      current.score >= this.CONFIDENCE_THRESHOLD
+    ) {
+      return {
+        type: "execute",
+        dominant: current,
+        saga: this.mapIntentToWorkflow(current.intent),
+        state: this.markAsExecuted(clonedBelief, current),
+      };
+    }
+
+    // 2. Regla: "always" → pedir confirmación a menos que ya esté confirmada
     if (current.requiresConfirmation === "always") {
       if (current.signals?.isConfirmed) {
         return {
@@ -71,23 +76,21 @@ export class PolicyEngine {
           state: this.markAsExecuted(clonedBelief, current),
         };
       }
-      return {
-        type: "ask_confirmation",
-        dominant: current,
-        state: clonedBelief,
-      };
-    }
-
-    // 4. Regla: "maybe" → ejecutar directo (confirmación implícita por contexto)
-    //    Nota: en tu sistema, las señales ya actualizaron `signals` si aplica.
-    //    Pero como "maybe" no exige confirmación estricta, ejecutamos.
-    if (current.requiresConfirmation === "maybe") {
-      return {
-        type: "execute",
-        dominant: current,
-        saga: this.mapIntentToWorkflow(current.intent),
-        state: this.markAsExecuted(clonedBelief, current),
-      };
+      if (current.signals?.isRejected) {
+        return {
+          type: "ask_alternative",
+          dominant: current,
+          state: this.markAsExecuted(clonedBelief, current),
+        };
+      }
+      // isUncertain = "no se" | "talvez" | "puede ser" ó isConfirmed=false|null
+      if (current.signals?.isUncertain || !current.signals?.isConfirmed) {
+        return {
+          type: "ask_confirmation",
+          dominant: current,
+          state: this.markAsExecuted(clonedBelief, current),
+        };
+      }
     }
 
     // Fallback seguro (no debería ocurrir si tus intents están bien definidos)

@@ -1,9 +1,14 @@
+import { ModuleKind } from "../intents/intent.types";
 import { IntentPayloadWithScore } from "../pomdp-manager";
 import { BeliefIntent, BeliefState } from "./belief.types";
 
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
   private readonly CONFIDENCE_THRESHOLD = 0.75;
+  private readonly excludedModules: ModuleKind[] = [
+    "conversational-signal",
+    "social-protocol",
+  ];
 
   static createEmpty(): BeliefState {
     return {
@@ -33,6 +38,10 @@ export class BeliefStateUpdater {
     ) {
       const newIntent = this.signalPrevIntent(prevState.current, topResult);
       return this.newSnapShot(prevState, newIntent);
+    }
+    // exclude modules because we don't need to have them
+    if (this.excludedModules.includes(topResult.module)) {
+      return { ...prevState };
     }
 
     // registramos las nuevas intenciones

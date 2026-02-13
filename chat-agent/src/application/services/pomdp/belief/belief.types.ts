@@ -19,6 +19,6 @@ export interface BeliefState {
   isIntentFound: boolean;
 
   // Control de contexto
-  intentCorrections?: number; // corrección de intentos
+  intentCorrections?: number; // corrección de intentos (cuando salta de un intento a otro)
   lastUpdate: number; // timestamp
 }
