@@ -51,6 +51,7 @@ export async function conversationalWorkflow(
         requiresConfirmation: "never",
       } satisfies PayloadWithScore,
     ]; //  we know exactly the form for "conversational-signal" so we can skip RAG
+    console.log({ ragResults });
   }
   if (!skip) {
     const limit = 1;
@@ -85,7 +86,7 @@ export async function conversationalWorkflow(
   // await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, "");
   return formatSagaOutput(
     ctx.customerMessage,
-    JSON.stringify(pompdResult.policyDecision),
+    pompdResult.policyDecision.type,
     messages,
   );
 }

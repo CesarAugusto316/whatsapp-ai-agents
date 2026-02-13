@@ -1,6 +1,5 @@
 import {
   ConversationalSignal,
-  IntentExampleKey,
   ModuleKind,
   SocialProtocolIntent,
 } from "./intent.types";
@@ -53,9 +52,9 @@ export function shouldSkipProcessing(msg: string): {
         skip: true,
         kind: "social-protocol" satisfies ModuleKind,
         msg:
-          type === "greeting"
+          type === ("greeting" satisfies SocialProtocol)
             ? "✨Hola en que puedo ayudarte?"
-            : type === "goodbye"
+            : type === ("goodbye" satisfies SocialProtocol)
               ? "Hasta pronto✌🏽"
               : "Gracias a ti🙏🏽",
       };
@@ -68,9 +67,9 @@ export function shouldSkipProcessing(msg: string): {
       return {
         skip: true,
         kind: "conversational-signal" satisfies ModuleKind,
-        msg: (signal === "confirmation"
+        msg: (signal === ("affirmation" satisfies ConversationalSignal)
           ? "signal:affirmation"
-          : signal === "negation"
+          : signal === ("negation" satisfies ConversationalSignal)
             ? "signal:negation"
             : "signal:uncertainty") satisfies SocialProtocolIntent,
       };
