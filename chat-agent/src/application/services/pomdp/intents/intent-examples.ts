@@ -12,6 +12,11 @@ import type {
 // ============================================
 
 /**
+ *
+ * @prompt entre 4 a 7 palabras semanticamente consistentes y coherentes con cada
+ * intencion, debe haber variedad y reflejar diferentes localidades españa, latam.
+ * Entre 15 - 25 ejemplos por intent
+ *
  * Ejemplos de protocolos sociales para vectorizar y guardar en DB vectorial.
  * Estos vectores se cachean GLOBALMENTE y se reutilizan entre todos los usuarios/negocios.
  *
@@ -164,16 +169,26 @@ const booking: IntentExample<BookingIntentKey>[] = [
     requiresConfirmation: "always",
     lang: "es",
     examples: [
+      // Universal (núcleo semántico limpio)
       "quiero hacer una reserva",
-      "tiene reservaciones",
-      "me gustaría agendar una cita",
-      "necesito apartar un espacio para mañana",
-      "quisiera reservar para dos personas",
-      "puedes ayudarme a sacar una cita",
-      "quiero una habitación para el viernes",
-      "busco agendar una visita",
-      "necesito reservar un cupo",
-      "quiero asegurar un lugar",
+      "necesito reservar ahora",
+      "me gustaría reservar",
+      "voy a reservar",
+      "quiero apartar lugar",
+
+      // España (auténtico, sin slots)
+      "quiero dejar mesa",
+      "puedo reservar mesa",
+      "deja sitio para dos",
+      "quiero pillar mesa",
+      "necesito un turno",
+      "apúntame en la lista",
+
+      // Latam (CO/EC/MX)
+      "déjame apartado",
+      "guarda lugar para mí",
+      "bloquea un espacio",
+      "quiero asegurar cupo",
     ],
   },
   {
@@ -182,14 +197,27 @@ const booking: IntentExample<BookingIntentKey>[] = [
     requiresConfirmation: "always",
     lang: "es",
     examples: [
+      // Universal
       "quiero cambiar mi reserva",
-      "necesito mover la cita",
-      "puedo cambiar la hora",
-      "quiero modificar la fecha",
-      "hay forma de reprogramar",
-      "quiero adelantar la cita",
-      "necesito corregir mi reserva",
-      "puedo moverla para mañana",
+      "necesito modificar la reserva",
+      "puedo ajustar mi reserva",
+      "quiero reprogramar",
+      "necesito mover la reserva",
+
+      // España
+      "mover la reserva",
+      "cambiar la reserva",
+      "adelantar la reserva",
+      "atrasar la reserva",
+      "ajustar el turno",
+      "cambiar la hora",
+
+      // Latam (CO/EC/MX)
+      "correr la reserva",
+      "recorrer la reserva",
+      "empujar la reserva",
+      "mover para otro día",
+      "cambiar el horario",
     ],
   },
   {
@@ -198,29 +226,57 @@ const booking: IntentExample<BookingIntentKey>[] = [
     requiresConfirmation: "always",
     lang: "es",
     examples: [
+      // Universal
       "quiero cancelar",
-      "ya no voy a poder asistir",
-      "puedes eliminar mi reserva",
-      "necesito anular la cita",
-      "ya no la necesito",
+      "necesito cancelar",
+      "ya no puedo ir",
+      "no voy a poder",
+      "cancelar mi reserva",
+
+      // España
+      "quiero anular la reserva",
+      "dame de baja",
+      "quita mi reserva",
+      "me he liado",
+      "algo ha surgido",
+      "ya no voy a ir",
+
+      // Latam (CO/EC/MX)
+      "desmarca mi reserva",
+      "echar para atrás",
+      "me cancelaron planes",
+      "ya no voy",
+      "se me complicó",
       "no voy a llegar",
-      "quiero cancelar lo que agendé",
     ],
   },
   {
     intentKey: "booking:check_availability",
     module: "booking",
-    requiresConfirmation: "always",
+    requiresConfirmation: "never", // ← Corregido: no modifica estado
     lang: "es",
     examples: [
+      // Universal
       "hay disponibilidad",
-      "qué horarios están libres",
-      "tienen espacio hoy",
-      "hay cupos mañana",
-      "qué días tienen disponibles",
-      "hay mesas libres",
-      "pueden atenderme ahora",
-      "qué horas están disponibles",
+      "qué horarios tienen libres",
+      "días fechas disponibles",
+      "hay para hoy",
+      "pueden atenderme",
+
+      // España
+      "queda sitio",
+      "tenéis hueco",
+      "estáis completos",
+      "queda mesa",
+      "estáis llenos",
+
+      // Latam (CO/EC/MX)
+      "queda lugar",
+      "hay mesa libre",
+      "se puede reservar",
+      "están ocupados",
+      "hay cupo",
+      "mesas disponibles",
     ],
   },
 ];
@@ -232,16 +288,28 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     requiresConfirmation: "maybe",
     lang: "es",
     examples: [
-      "qué venden",
-      "qué ofrecen",
-      "cual es la oferta",
+      // Universal
+      "qué venden hoy",
+      "qué ofrecen para comer",
       "puedo ver el menú",
-      "tienen menu",
+      "tienen menú disponible",
       "dame las opciones",
       "muéstrame las opciones",
       "qué platos tienen",
-      "qué hay para comer",
+
+      // España (auténtico)
       "quiero ver la carta",
+      "qué hay en carta",
+      "enseñame la carta",
+      "qué tienen para cenar",
+      "opciones de la carta",
+
+      // Latam (CO/EC/MX)
+      "qué hay de comer",
+      "menú del día",
+      "qué tienen para almorzar",
+      "opciones del menú",
+      "qué recomiendan comer",
     ],
   },
   {
@@ -250,14 +318,28 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     requiresConfirmation: "always",
     lang: "es",
     examples: [
+      // Universal
       "quiero hacer un pedido",
       "necesito hacer un pedido",
-      "deseo ordenar",
-      "voy a pedir",
-      "quiero comprar comida",
-      "quisiera ordenar",
+      "deseo hacer un pedido",
+      "voy a hacer pedido",
+      "quiero pedir ahora",
       "listo para pedir",
-      "quiero hacer mi pedido",
+
+      // España
+      "quiero hacer un pedido",
+      "voy a pedir comida",
+      "quiero pedir para llevar",
+      "hacer el pedido ya",
+      "quiero realizar pedido",
+
+      // Latam (CO/EC/MX)
+      "quiero hacer una orden",
+      "necesito ordenar comida",
+      "deseo ordenar ahora",
+      "voy a ordenar",
+      "quiero ordenar para domicilio",
+      "listo para ordenar",
     ],
   },
   {
@@ -265,39 +347,29 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     module: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
-    /**
-     * @todo HACER HYBRID SEARCH VECTOR + EXACT WORD MATCH
-     * @example
-     * Usuario: "busco pizzas"
-     * Intent classifier → restaurant:find_dishes (score: 0.62) ⚠️ baja confianza
-              ↓
-     * POMDP detecta alta entropía → "¿Deseas buscar pizzas en el menú?"
-              ↓
-     * Usuario: "sí" ✅
-              ↓
-     * POMDP: confianza → 0.95 → ejecutar searchProducts("busco pizzas", businessId)
-              ↓
-     * Resultados: pizza margherita, pepperoni, hawaiana 🍕
-     *
-     */
     examples: [
-      "qué opciones hay con",
-      "busco algo con",
+      // Universal (búsqueda por atributo)
       "busco algo picante",
-      "busco entradas",
-      "busco sopas",
-      "busco comida con carne",
-      "busco comida con muchas verduras y saludable",
-      "busco algo con poca sal",
-      "tienen opciones vegetarianas",
-      "encuentra platos con pollo",
-      "qué opciones hay con queso",
-      "busco postres",
-      "encuéntrame algo saludable",
-      "tienen opciones sin gluten",
+      "busco platos vegetarianos",
+      "busco comida saludable",
       "busco algo rápido",
-      "qué platos tienen con camarones",
-      "buscame algo dulce",
+      "busco postres dulces",
+      "tienen opciones sin gluten",
+
+      // España
+      "qué tienen vegetariano",
+      "busco platos ligeros",
+      "tienen opciones veganas",
+      "busco algo tradicional",
+      "qué hay sin lactosa",
+
+      // Latam (CO/EC/MX)
+      "busco comida picante",
+      "tienen platos vegetarianos",
+      "busco algo económico",
+      "qué hay sin picante",
+      "busco platos típicos",
+      "tienen opciones rápidas",
     ],
   },
   {
@@ -306,14 +378,28 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     requiresConfirmation: "always",
     lang: "es",
     examples: [
+      // Universal
       "qué me recomiendas",
-      "el plato estrella",
-      "lo más popular",
       "qué es lo mejor",
       "qué debo probar",
-      "tus recomendaciones",
+      "lo más popular",
       "lo más vendido",
+
+      // España
+      "qué me recomendáis",
+      "el plato estrella",
+      "lo más típico",
+      "qué piden los clientes",
+      "vuestra especialidad",
+      "qué es lo más rico",
+
+      // Latam (CO/EC/MX)
+      "qué me recomiendan",
+      "lo más pedido",
+      "qué es lo más rico",
+      "sus recomendaciones",
       "qué piden usualmente",
+      "lo más famoso",
     ],
   },
   {
@@ -322,14 +408,27 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     requiresConfirmation: "always",
     lang: "es",
     examples: [
-      "quiero actualizar mi pedido",
-      "quiero cambiar algo en mi orden",
-      "quiero modificar mi pedido",
-      "quiero agregar algo más",
-      "quiero eliminar algo",
-      "quiero actualizar mi dirección",
-      "quiero actualizar mi método de pago",
-      "quiero actualizar mi información de contacto",
+      // Universal (modificar contenido del pedido)
+      "quiero cambiar mi pedido",
+      "necesito modificar mi pedido",
+      "quiero ajustar mi pedido",
+      "cambiar algo del pedido",
+      "modificar mi orden",
+
+      // España
+      "quiero cambiar el pedido",
+      "ajustar mi pedido",
+      "agregar al pedido",
+      "quitar del pedido",
+      "corregir mi pedido",
+
+      // Latam (CO/EC/MX)
+      "cambiar mi orden",
+      "modificar mi orden",
+      "agregar a mi orden",
+      "quitar de mi orden",
+      "actualizar mi pedido",
+      "corregir mi orden",
     ],
   },
   {
@@ -338,13 +437,27 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     requiresConfirmation: "always",
     lang: "es",
     examples: [
+      // Universal
       "quiero cancelar mi pedido",
-      "quiero anular mi orden",
-      "quiero cancelar mi compra",
-      "quiero cancelar mi pedido",
-      "quiero cancelar mi pedido de comida",
-      "quiero cancelar mi cita de cena",
-      "quiero cancelar mi cita de almuerzo",
+      "necesito cancelar mi pedido",
+      "cancelar mi pedido",
+      "ya no quiero el pedido",
+      "no quiero mi pedido",
+
+      // España
+      "quiero anular el pedido",
+      "anular mi pedido",
+      "ya no quiero la comida",
+      "cancelad mi pedido",
+      "no quiero recogerlo",
+
+      // Latam (CO/EC/MX)
+      "quiero cancelar mi orden",
+      "anular mi orden",
+      "cancelar mi orden",
+      "ya no quiero la orden",
+      "no quiero mi orden",
+      "desmarcar mi pedido",
     ],
   },
   {
@@ -353,14 +466,27 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
+      // Universal
       "cuánto tarda en llegar",
       "en cuánto tiempo llega",
-      "cuánto demora la comida",
-      "a qué hora estaría",
+      "cuánto demora el pedido",
       "cuánto tiempo toma",
-      "cuánto falta",
-      "qué tiempo de espera hay",
-      "cuándo estaría listo",
+      "cuándo llega el pedido",
+
+      // España
+      "cuánto tarda el reparto",
+      "tiempo de entrega",
+      "cuánto falta para llegar",
+      "cuándo estará aquí",
+      "cuánto tarda para llevar",
+
+      // Latam (CO/EC/MX)
+      "cuánto demora la comida",
+      "cuánto tarda el domicilio",
+      "tiempo de llegada",
+      "cuándo llega mi pedido",
+      "cuánto falta para entregar",
+      "cuánto demora el delivery",
     ],
   },
   {
@@ -369,29 +495,27 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
-      "cómo entregan",
-      "hacen delivery",
-      "puedo recoger",
-      "llevan a domicilio",
+      // Universal
+      "cómo entregan el pedido",
       "cómo llega el pedido",
+      "métodos de entrega",
+      "formas de entrega",
+
+      // España
+      "hacen para llevar",
+      "puedo recoger",
+      "entregan a domicilio",
+      "recoger en tienda",
+      "solo para llevar",
+      "tienen reparto",
+
+      // Latam (CO/EC/MX)
+      "hacen delivery",
+      "llevan a domicilio",
+      "puedo recoger personalmente",
+      "entrega a domicilio",
+      "recoger en el local",
       "tienen envío",
-      "cómo funciona la entrega",
-    ],
-  },
-  {
-    intentKey: "restaurant:ask_price",
-    module: "restaurant",
-    requiresConfirmation: "never",
-    lang: "es",
-    examples: [
-      "cuánto cuesta el plato",
-      "que precio tiene el combo",
-      "que precio tiene la bebida",
-      "cual es el precio del plato",
-      "valor total a pagar por el pedido",
-      "cuanto hay que pagar por la comida",
-      "cuanto es la cuenta de mi orden",
-      "cuanto es el total final de mi comida",
     ],
   },
 ];
@@ -403,13 +527,26 @@ const erotic: IntentExample<EroticIntentKey>[] = [
     lang: "es",
     requiresConfirmation: "maybe",
     examples: [
-      "quiero ver tus fotos",
-      "muéstrame tu contenido",
-      "ver tus videos",
-      "qué contenido ofreces",
-      "ver tus packs",
-      "explorar tu galería",
-      "quiero ver más de ti",
+      "quiero ver tu galería completa",
+      "muéstrame tus fotos disponibles",
+      "quiero ver más contenido",
+      "puedo ver tus videos",
+      "enséñame lo que tienes",
+      "quiero explorar tu perfil",
+      "ver contenido premium ahora",
+      "qué material tienes publicado",
+      "quiero ver tus packs",
+      "déjame ver tu catálogo",
+      "quiero ver tus publicaciones",
+      "muestra tu contenido exclusivo",
+      "quiero revisar tu galería",
+      "ver tus fotos recientes",
+      "quiero mirar tu contenido",
+      "qué contenido puedo ver",
+      "enséñame tu material disponible",
+      "quiero ver lo que ofreces",
+      "ver tus videos disponibles",
+      "puedo revisar tu contenido",
     ],
   },
   {
@@ -418,13 +555,26 @@ const erotic: IntentExample<EroticIntentKey>[] = [
     lang: "es",
     requiresConfirmation: "maybe",
     examples: [
-      "quiero comprar esta foto",
-      "quiero este pack",
-      "me gustaría comprar un video",
-      "quiero adquirir contenido",
-      "quiero comprar ahora",
-      "cómo compro",
-      "quiero este contenido",
+      "quiero comprar este pack",
+      "cómo puedo comprar contenido",
+      "quiero adquirir este video",
+      "me interesa comprar ahora",
+      "quiero comprar tus fotos",
+      "dónde compro ese pack",
+      "quiero pagar por contenido",
+      "cómo hago la compra",
+      "quiero comprar este contenido",
+      "quiero adquirir un pack",
+      "quiero comprar acceso completo",
+      "me gustaría comprar videos",
+      "quiero comprar algo tuyo",
+      "cómo se paga esto",
+      "quiero comprar ahora mismo",
+      "quiero ese pack premium",
+      "quiero comprar tu material",
+      "puedo comprar ese contenido",
+      "quiero adquirir acceso premium",
+      "cómo compro tus packs",
     ],
   },
   {
@@ -433,13 +583,26 @@ const erotic: IntentExample<EroticIntentKey>[] = [
     lang: "es",
     requiresConfirmation: "maybe",
     examples: [
-      "haces videollamadas",
       "ofreces contenido personalizado",
-      "qué modalidades tienes",
-      "cuáles son tus horarios",
-      "tienes packs especiales",
+      "haces videollamadas privadas",
+      "qué servicios tienes disponibles",
+      "cuáles son tus tarifas",
+      "tienes promociones activas",
+      "qué modalidades manejas",
+      "ofreces packs especiales",
       "cuánto cuesta una sesión",
-      "tienes promociones",
+      "tienes contenido a pedido",
+      "cómo funcionan tus servicios",
+      "qué opciones ofreces",
+      "haces contenido por encargo",
+      "tienes horarios disponibles",
+      "ofreces sesiones privadas",
+      "qué incluye cada pack",
+      "hay descuentos disponibles",
+      "puedo pedir contenido personalizado",
+      "qué tipo de contenido haces",
+      "cómo agendo una sesión",
+      "qué planes tienes disponibles",
     ],
   },
 ];
@@ -451,13 +614,29 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
-      "dónde queda",
-      "ayudame con la dirección",
-      "dame la ubicación",
-      "dime cómo llegar",
-      "dime dónde están",
-      "dónde está ubicado el establecimiento",
-      "en qué calle están ubicados",
+      // Universal (4-7 palabras exactas)
+      "dónde queda el local",
+      "dime la dirección exacta",
+      "cuál es su ubicación",
+      "dónde está ubicado",
+      "cómo llegar al lugar",
+      "dónde se encuentran",
+
+      // España (auténtico)
+      "dónde está el establecimiento",
+      "en qué calle estáis",
+      "dónde os encontráis",
+      "dirección del restaurante",
+      "cómo llegar hasta allí",
+      "en qué zona estáis",
+
+      // Latam (CO/EC/MX)
+      "dónde queda el negocio",
+      "en qué calle quedan",
+      "dónde está el local",
+      "cuál es la dirección",
+      "cómo llego al lugar",
+      "en qué sector quedan",
     ],
   },
   {
@@ -466,14 +645,29 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
+      // Universal
       "a qué hora abren",
       "a qué hora cierran",
       "cuál es el horario",
-      "están abiertos",
-      "horario de atención",
-      "hasta qué hora trabajan",
-      "atienden los domingos",
-      "horarios de hoy",
+      "horario de atención hoy",
+      "están abiertos ahora",
+      "hasta qué hora abiertos",
+
+      // España
+      "a qué hora abrís",
+      "a qué hora cerráis",
+      "horario de apertura",
+      "estáis abiertos hoy",
+      "hasta cuándo estáis abiertos",
+      "horario del establecimiento",
+
+      // Latam (CO/EC/MX)
+      "a qué hora abren ustedes",
+      "a qué hora cierran ustedes",
+      "cuál es su horario",
+      "horario de atención completo",
+      "están abiertos hoy",
+      "hasta qué hora atienden",
     ],
   },
   {
@@ -482,12 +676,28 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
-      "aceptan tarjeta",
-      "puedo pagar con transferencia",
-      "formas de pago",
-      "métodos de pago",
-      "efectivo solamente",
-      "aceptan crédito",
+      // Universal
+      "qué formas de pago",
+      "métodos de pago aceptados",
+      "aceptan tarjeta de crédito",
+      "puedo pagar con efectivo",
+      "aceptan pago digital",
+
+      // España
+      "aceptáis tarjeta",
+      "pagar con tarjeta",
+      "aceptáis efectivo",
+      "pagos con bizum",
+      "aceptáis transferencia",
+      "pagar con móvil",
+
+      // Latam (CO/EC/MX)
+      "aceptan tarjeta débito",
+      "puedo pagar en efectivo",
+      "aceptan nequi o daviplata",
+      "pago con transferencia",
+      "aceptan pago móvil",
+      "métodos de pago disponibles",
     ],
   },
   {
@@ -496,12 +706,63 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
-      "cómo los contacto",
-      "tienen teléfono",
+      // Universal
+      "cómo puedo contactarlos",
+      "tienen número de teléfono",
+      "correo electrónico por favor",
+      "redes sociales del negocio",
+      "cómo hablar con ustedes",
+
+      // España
+      "teléfono de contacto",
+      "cómo contactaros",
+      "tenéis instagram",
+      "correo electrónico del local",
+      "cómo hablar con vosotros",
+      "redes sociales del establecimiento",
+
+      // Latam (CO/EC/MX)
       "número de contacto",
-      "correo electrónico",
-      "instagram",
-      "redes sociales",
+      "tienen whatsapp",
+      "correo del negocio",
+      "instagram del local",
+      "cómo contactarlos",
+      "teléfono para llamar",
+    ],
+  },
+  {
+    intentKey: "info:ask_price",
+    module: "informational",
+    requiresConfirmation: "never",
+    lang: "es",
+    examples: [
+      // Universal (núcleo semántico)
+      "cuánto cuesta esto",
+      "qué precio tiene",
+      "a cuánto sale",
+      "cuál es el costo",
+      "cuánto vale esto",
+
+      // Variaciones léxicas
+      "cuál es el valor",
+      "cuánto debo pagar",
+      "cuál es la tarifa",
+      "cuánto es en total",
+      "precio del servicio",
+
+      // España (auténtico)
+      "a cómo está esto",
+      "cuánto os debo",
+      "precio de la comida",
+      "cuánto cuesta el menú",
+      "valor del plato",
+
+      // Latam (CO/EC/MX)
+      "cuánto me cobran",
+      "precio de la orden",
+      "cuánto sale esto",
+      "precio del producto",
+      "cuánto cuesta todo",
     ],
   },
 ];

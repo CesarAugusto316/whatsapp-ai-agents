@@ -143,14 +143,21 @@ export class PolicyEngine {
       "booking:check_availability": "booking:check_availability", // hay que implementar
 
       // Restaurant
+      "restaurant:view_menu": "restaurant:view_menu", // hay que implementar
       "restaurant:place_order": ProductOrderOptions.MAKE_PRODUCT_ORDER,
+      "restaurant:find_dishes": "restaurant:find_dishes", // hay que implementar
+      "restaurant:recommend_dishes": "restaurant:recommend_dishes", // hay que implementar
       "restaurant:update_order": ProductOrderOptions.UPDATE_PRODUCT_ORDER,
       "restaurant:cancel_order": ProductOrderOptions.CANCEL_PRODUCT_ORDER,
-      "restaurant:view_menu": "restaurant:view_menu", // hay que implementar
-      "restaurant:find_dishes": "restaurant:find_dishes", // hay que implementar
       "restaurant:ask_delivery_method": "restaurant:ask_delivery_method", // hay que implementar
       "restaurant:ask_delivery_time": "restaurant:ask_delivery_time", // hay que implementar
-      "restaurant:ask_price": "restaurant:ask_price", // hay que implementar
+
+      // basicInformational
+      "info:ask_location": "info:ask_location",
+      "info:ask_business_hours": "info:business_hours",
+      "info:ask_payment_methods": "info:ask_payment_methods",
+      "info:ask_contact": "info:ask_contact",
+      "info:ask_price": "info:ask_price",
     };
 
     return map[intent] ?? "unknown_intent";
