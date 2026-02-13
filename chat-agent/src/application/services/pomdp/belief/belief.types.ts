@@ -15,10 +15,9 @@ export interface BeliefState {
   executedIntents: BeliefIntent[];
   current?: BeliefIntent;
   previous?: BeliefIntent;
-
   isIntentFound: boolean;
+  lastUpdate: number; // timestamp
 
   // Control de contexto
-  intentCorrections?: number; // corrección de intentos (cuando salta de un intento a otro)
-  lastUpdate: number; // timestamp
+  // intentCorrections?: number; // corrección de intentos (cuando salta de un intento a otro)
 }

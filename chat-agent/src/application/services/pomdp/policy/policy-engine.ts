@@ -11,22 +11,22 @@ import { IntentExampleKey } from "../intents/intent.types";
 
 export type PolicyDecision =
   | {
-      type: "unknown_intent";
+      type: "unknown_intent"; // Intent not recognized, so we must provide the available options
       intent: undefined;
       state: BeliefState;
     }
   | {
-      type: "ask_clarification";
+      type: "ask_clarification"; // when we are not sure about the intent
       intent: BeliefIntent;
       state: BeliefState;
     }
   | {
-      type: "clear_up_uncertainty";
+      type: "clear_up_uncertainty"; // when we are sure the user is unsure
       intent: BeliefIntent;
       state: BeliefState;
     }
-  | { type: "ask_confirmation"; intent: BeliefIntent; state: BeliefState }
-  | { type: "propose_alternative"; intent: BeliefIntent; state: BeliefState }
+  | { type: "ask_confirmation"; intent: BeliefIntent; state: BeliefState } // when we want confirm an intent (if required)
+  | { type: "propose_alternative"; intent: BeliefIntent; state: BeliefState } // when an our initial beliefIntent was rejected
   | {
       type: "execute";
       intent: BeliefIntent;
@@ -85,7 +85,7 @@ export class PolicyEngine {
         return {
           type: "propose_alternative",
           intent,
-          state: this.markAsExecuted(clonedBelief, intent),
+          state: clonedBelief,
         };
       }
       // isUncertain = "no se" | "talvez" | "puede ser"
@@ -93,14 +93,14 @@ export class PolicyEngine {
         return {
           type: "clear_up_uncertainty",
           intent,
-          state: this.markAsExecuted(clonedBelief, intent),
+          state: clonedBelief,
         };
       }
       if (!intent.signals?.isConfirmed) {
         return {
           type: "ask_confirmation",
           intent,
-          state: this.markAsExecuted(clonedBelief, intent),
+          state: clonedBelief,
         };
       }
     }

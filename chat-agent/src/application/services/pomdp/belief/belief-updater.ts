@@ -15,7 +15,6 @@ export class BeliefStateUpdater {
       executedIntents: [],
       current: undefined,
       previous: undefined,
-      intentCorrections: 0,
       lastUpdate: Date.now(),
       isIntentFound: false,
     };
@@ -87,11 +86,11 @@ export class BeliefStateUpdater {
       current: curr,
       lastUpdate: Date.now(),
       isIntentFound,
-      intentCorrections:
-        // Si la intención anterior es diferente de la nueva intención
-        (prev.current?.intent && prev.current?.intent) !== curr.intent
-          ? (prev?.intentCorrections ?? 0) + 1
-          : prev.intentCorrections,
+      // intentCorrections:
+      //   // Si la intención anterior es diferente de la nueva intención
+      //   (prev.current?.intent && prev.current?.intent) !== curr.intent
+      //     ? (prev?.intentCorrections ?? 0) + 1
+      //     : prev.intentCorrections,
     };
   }
 }
