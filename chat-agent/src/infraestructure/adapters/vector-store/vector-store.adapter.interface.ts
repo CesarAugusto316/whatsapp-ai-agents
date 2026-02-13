@@ -11,7 +11,7 @@ export type IntentPayload = {
   module: ModuleKind;
   lang: string;
   requiresConfirmation: RequiredConfirmation;
-  intent: IntentExampleKey;
+  intentKey: IntentExampleKey;
 };
 
 export interface QuadrantPoint<T> {

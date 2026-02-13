@@ -46,7 +46,7 @@ export async function conversationalWorkflow(
       {
         score: 1,
         module: "conversational-signal",
-        intent: msg as SocialProtocolIntent,
+        intentKey: msg as SocialProtocolIntent,
         requiresConfirmation: "never",
       } satisfies IntentPayloadWithScore,
     ];
@@ -77,13 +77,13 @@ export async function conversationalWorkflow(
       ctx.chatKey,
       ctx.customerMessage,
       `
-        tool_executed: ${policyDecision.intent.intent}
+        tool_executed: ${policyDecision.intent.intentKey}
         result: ${"tool_result"}
       `,
     );
     return formatSagaOutput(
       ctx.customerMessage,
-      `${policyDecision.intent?.intent}:${policyDecision.type}`, // optional
+      `${policyDecision.intent?.intentKey}:${policyDecision.type}`, // optional
     );
   }
 
@@ -103,7 +103,7 @@ export async function conversationalWorkflow(
   await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
   return formatSagaOutput(
     ctx.customerMessage,
-    `${policyDecision.intent?.intent}:${policyDecision.type}`, // optional
+    `${policyDecision.intent?.intentKey}:${policyDecision.type}`, // optional
     messages, // optional
   );
 }
@@ -205,7 +205,7 @@ function generateDynamicPrompt(
   ctx: RestaurantCtx,
   policy: PolicyDecision,
 ): string {
-  const { intent } = policy.intent || {};
+  const { intentKey: intent } = policy.intent || {};
   const { business, activeModules } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;

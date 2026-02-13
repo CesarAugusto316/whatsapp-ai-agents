@@ -13,7 +13,7 @@ export type PomdpResult = {
 
 export interface IntentPayloadWithScore extends Pick<
   IntentPayload,
-  "intent" | "module" | "requiresConfirmation"
+  "intentKey" | "module" | "requiresConfirmation"
 > {
   score: number;
 }

@@ -143,14 +143,17 @@ class RagService {
   async upsertIntents(intents: IntentExample<IntentExampleKey>[]) {
     // 1. Preparar datos para embedding en lote
     const prepared = intents.flatMap(
-      ({ intent, module, examples, lang, requiresConfirmation }) =>
-        examples.map((ex) => ({
-          text: this.normalizeText(ex),
-          intent,
-          module,
-          requiresConfirmation,
-          lang,
-        })),
+      ({ intentKey, module, examples, lang, requiresConfirmation }) =>
+        examples.map(
+          (ex) =>
+            ({
+              text: this.normalizeText(ex),
+              intentKey,
+              module,
+              requiresConfirmation,
+              lang,
+            }) satisfies IntentPayload,
+        ),
     );
 
     if (!prepared.length) {
@@ -165,7 +168,8 @@ class RagService {
 
     // 3. Preparar puntos para Qdrant
     const points = embeddings.map(({ embedding }, i) => {
-      const { intent, module, lang, text, requiresConfirmation } = prepared[i];
+      const { intentKey, module, lang, text, requiresConfirmation } =
+        prepared[i];
       const hash = this.sha256(`${module}:${lang}:${text}`);
       return {
         id: this.hashToUUID(hash), // Generar ID determinístico
@@ -175,8 +179,8 @@ class RagService {
           module,
           requiresConfirmation,
           lang,
-          intent,
-        },
+          intentKey,
+        } satisfies IntentPayload,
       };
     });
 

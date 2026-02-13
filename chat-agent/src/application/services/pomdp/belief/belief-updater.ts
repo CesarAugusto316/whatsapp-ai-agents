@@ -82,9 +82,9 @@ export class BeliefStateUpdater {
     return {
       ...prevIntent,
       signals: {
-        isConfirmed: topResult.intent === "signal:affirmation",
-        isRejected: topResult.intent === "signal:negation",
-        isUncertain: topResult.intent === "signal:uncertainty",
+        isConfirmed: topResult.intentKey === "signal:affirmation",
+        isRejected: topResult.intentKey === "signal:negation",
+        isUncertain: topResult.intentKey === "signal:uncertainty",
       },
     };
   }

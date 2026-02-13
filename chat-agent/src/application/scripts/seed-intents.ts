@@ -61,7 +61,7 @@ Usage:
           "informational",
         ]);
 
-        const detected = points[0].payload?.intent;
+        const detected = points[0].payload?.intentKey;
         if (detected === test.expected) {
           console.log(`✅ "${test.query}" → ${detected}`);
           passed++;

@@ -20,7 +20,7 @@ import type {
  */
 const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
-    intent: "social:greeting",
+    intentKey: "social:greeting",
     module: "social-protocol",
     requiresConfirmation: "never",
     lang: "es",
@@ -44,7 +44,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
     ],
   },
   {
-    intent: "social:goodbye",
+    intentKey: "social:goodbye",
     module: "social-protocol",
     requiresConfirmation: "never",
     lang: "es",
@@ -64,7 +64,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
     ],
   },
   {
-    intent: "social:thanks",
+    intentKey: "social:thanks",
     module: "social-protocol",
     requiresConfirmation: "never",
     lang: "es",
@@ -86,7 +86,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
 
 const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
-    intent: "signal:affirmation",
+    intentKey: "signal:affirmation",
     module: "conversational-signal",
     requiresConfirmation: "never",
     lang: "es",
@@ -109,7 +109,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
     ],
   },
   {
-    intent: "signal:negation",
+    intentKey: "signal:negation",
     module: "conversational-signal",
     requiresConfirmation: "never",
     lang: "es",
@@ -128,7 +128,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
     ],
   },
   {
-    intent: "signal:uncertainty",
+    intentKey: "signal:uncertainty",
     module: "conversational-signal",
     requiresConfirmation: "never",
     lang: "es",
@@ -159,7 +159,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
  */
 const booking: IntentExample<BookingIntentKey>[] = [
   {
-    intent: "booking:create",
+    intentKey: "booking:create",
     module: "booking",
     requiresConfirmation: "always",
     lang: "es",
@@ -177,7 +177,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
     ],
   },
   {
-    intent: "booking:modify",
+    intentKey: "booking:modify",
     module: "booking",
     requiresConfirmation: "always",
     lang: "es",
@@ -193,7 +193,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
     ],
   },
   {
-    intent: "booking:cancel",
+    intentKey: "booking:cancel",
     module: "booking",
     requiresConfirmation: "always",
     lang: "es",
@@ -208,7 +208,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
     ],
   },
   {
-    intent: "booking:check_availability",
+    intentKey: "booking:check_availability",
     module: "booking",
     requiresConfirmation: "always",
     lang: "es",
@@ -227,7 +227,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
 
 const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
-    intent: "restaurant:view_menu",
+    intentKey: "restaurant:view_menu",
     module: "restaurant",
     requiresConfirmation: "maybe",
     lang: "es",
@@ -245,7 +245,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
-    intent: "restaurant:place_order",
+    intentKey: "restaurant:place_order",
     module: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
@@ -261,7 +261,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
-    intent: "restaurant:find_dishes",
+    intentKey: "restaurant:find_dishes",
     module: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
@@ -301,7 +301,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
-    intent: "restaurant:recommend_dishes",
+    intentKey: "restaurant:recommend_dishes",
     module: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
@@ -317,7 +317,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
-    intent: "restaurant:update_order",
+    intentKey: "restaurant:update_order",
     module: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
@@ -333,7 +333,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
-    intent: "restaurant:cancel_order",
+    intentKey: "restaurant:cancel_order",
     module: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
@@ -348,7 +348,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
-    intent: "restaurant:ask_delivery_time",
+    intentKey: "restaurant:ask_delivery_time",
     module: "restaurant",
     requiresConfirmation: "never",
     lang: "es",
@@ -364,7 +364,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
-    intent: "restaurant:ask_delivery_method",
+    intentKey: "restaurant:ask_delivery_method",
     module: "restaurant",
     requiresConfirmation: "never",
     lang: "es",
@@ -379,7 +379,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     ],
   },
   {
-    intent: "restaurant:ask_price",
+    intentKey: "restaurant:ask_price",
     module: "restaurant",
     requiresConfirmation: "never",
     lang: "es",
@@ -398,7 +398,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
 
 const erotic: IntentExample<EroticIntentKey>[] = [
   {
-    intent: "erotic:view_content",
+    intentKey: "erotic:view_content",
     module: "erotic",
     lang: "es",
     requiresConfirmation: "maybe",
@@ -413,7 +413,7 @@ const erotic: IntentExample<EroticIntentKey>[] = [
     ],
   },
   {
-    intent: "erotic:purchase_content",
+    intentKey: "erotic:purchase_content",
     module: "erotic",
     lang: "es",
     requiresConfirmation: "maybe",
@@ -428,7 +428,7 @@ const erotic: IntentExample<EroticIntentKey>[] = [
     ],
   },
   {
-    intent: "erotic:ask_services",
+    intentKey: "erotic:ask_services",
     module: "erotic",
     lang: "es",
     requiresConfirmation: "maybe",
@@ -446,7 +446,7 @@ const erotic: IntentExample<EroticIntentKey>[] = [
 
 const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
-    intent: "info:ask_location",
+    intentKey: "info:ask_location",
     module: "informational",
     requiresConfirmation: "never",
     lang: "es",
@@ -461,7 +461,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     ],
   },
   {
-    intent: "info:ask_business_hours",
+    intentKey: "info:ask_business_hours",
     module: "informational",
     requiresConfirmation: "never",
     lang: "es",
@@ -477,7 +477,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     ],
   },
   {
-    intent: "info:ask_payment_methods",
+    intentKey: "info:ask_payment_methods",
     module: "informational",
     requiresConfirmation: "never",
     lang: "es",
@@ -491,7 +491,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     ],
   },
   {
-    intent: "info:ask_contact",
+    intentKey: "info:ask_contact",
     module: "informational",
     requiresConfirmation: "never",
     lang: "es",

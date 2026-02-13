@@ -14,7 +14,7 @@ export type ModuleKind =
 export type RequiredConfirmation = "always" | "never" | "maybe";
 
 export interface IntentExample<I extends string> {
-  intent: I;
+  intentKey: I;
   module: ModuleKind;
   requiresConfirmation: RequiredConfirmation;
   lang: "es" | "en";

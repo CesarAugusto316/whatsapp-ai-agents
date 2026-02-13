@@ -49,7 +49,7 @@ export class PolicyEngine {
       return {
         type: "execute",
         intent,
-        action: this.mapIntentToWorkflow(intent.intent),
+        action: this.mapIntentToWorkflow(intent.intentKey),
         state: this.markAsExecuted(clonedBelief, intent),
       };
     }
@@ -60,7 +60,7 @@ export class PolicyEngine {
         return {
           type: "execute",
           intent,
-          action: this.mapIntentToWorkflow(intent.intent),
+          action: this.mapIntentToWorkflow(intent.intentKey),
           state: this.markAsExecuted(clonedBelief, intent),
         };
       }
@@ -78,7 +78,7 @@ export class PolicyEngine {
         return {
           type: "execute",
           intent,
-          action: this.mapIntentToWorkflow(intent.intent),
+          action: this.mapIntentToWorkflow(intent.intentKey),
           state: this.markAsExecuted(clonedBelief, intent),
         };
       }
