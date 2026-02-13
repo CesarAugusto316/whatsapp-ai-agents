@@ -55,7 +55,7 @@ export async function conversationalWorkflow(
     const limit = 1;
     const { points } = await ragService.searchIntent(
       ctx.customerMessage,
-      ctx.activeModules, // ["informational", "booking", "restaurant"],
+      ctx.activeModules, // ej: ["informational", "booking", "restaurant"],
       limit,
     );
     ragResults =
@@ -66,6 +66,27 @@ export async function conversationalWorkflow(
   }
 
   const policyDecision = await pomdpManager.process(ctx, ragResults);
+
+  if (policyDecision.type === "execute") {
+    // call the execute function
+    // await executeFunction(ctx, policyDecision);
+
+    policyDecision.action;
+
+    await chatHistoryAdapter.push(
+      ctx.chatKey,
+      ctx.customerMessage,
+      `
+        tool_executed: ${policyDecision.intent.intent}
+        result: ${"tool_result"}
+      `,
+    );
+    return formatSagaOutput(
+      ctx.customerMessage,
+      `${policyDecision.intent?.intent}:${policyDecision.type}`, // optional
+    );
+  }
+
   const messages = await prepareMessages(ctx, policyDecision);
   const assistant = await aiAdapter.generateText({
     messages,
@@ -82,8 +103,8 @@ export async function conversationalWorkflow(
   await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistant);
   return formatSagaOutput(
     ctx.customerMessage,
-    `${policyDecision.intent?.intent}:${policyDecision.type}`,
-    messages,
+    `${policyDecision.intent?.intent}:${policyDecision.type}`, // optional
+    messages, // optional
   );
 }
 
@@ -103,12 +124,7 @@ export async function prepareMessages(
 
   const systemPrompt = policy
     ? generateDynamicPrompt(ctx, policy)
-    : defaultPrompt({
-        business: ctx.business,
-        flowStatus: ctx.bookingState?.status,
-        intent: undefined,
-        retrievedChunks: [],
-      });
+    : defaultPrompt(ctx);
 
   if (isFirstMessage) {
     return [
@@ -130,6 +146,58 @@ export async function prepareMessages(
   ];
 }
 
+export const WRITING_STYLE = `
+  - Clear, concise and friendly
+  - Use emojis when appropriate 😊✨✅
+  - Polite
+  - The message should feel like it comes from a real person helping the user, not from a system.
+  - Keep it short when possible
+
+  Language rules:
+  - ALWAYS respond in SPANISH
+`;
+
+/**
+ * Genera las metas del agente basadas en los módulos activos
+ * Excluye módulos de soporte (informational, social-protocol, conversational-signal)
+ */
+function generateAgentGoals(activeModules: string[]): string {
+  const coreModules = activeModules.filter(
+    (mod) =>
+      !["informational", "social-protocol", "conversational-signal"].includes(
+        mod,
+      ),
+  );
+
+  const goals: string[] = [];
+
+  if (coreModules.includes("booking")) {
+    goals.push("- Gestionar reservas (crear, modificar, cancelar)");
+    goals.push("- Verificar disponibilidad de horarios");
+  }
+
+  if (coreModules.includes("restaurant")) {
+    goals.push("- Mostrar menú y opciones de comida");
+    goals.push("- Procesar pedidos de comida");
+    goals.push("- Buscar platos específicos por preferencias");
+    goals.push("- Recomendar platos populares");
+    goals.push("- Gestionar entregas y tiempos de espera");
+  }
+
+  if (coreModules.includes("erotic")) {
+    goals.push("- Mostrar contenido para adultos");
+    goals.push("- Procesar compras de contenido");
+    goals.push("- Informar sobre servicios disponibles");
+  }
+
+  if (goals.length === 0) {
+    goals.push("- Responder preguntas generales");
+    goals.push("- Ayudar con información básica");
+  }
+
+  return goals.join("\n");
+}
+
 /**
  * Generates a dynamic prompt based on the policy decision
  */
@@ -137,75 +205,117 @@ function generateDynamicPrompt(
   ctx: RestaurantCtx,
   policy: PolicyDecision,
 ): string {
-  const { intent, module, signals } = policy.intent || {};
-  const { business, customerMessage, bookingState } = ctx;
+  const { intent } = policy.intent || {};
+  const { business, activeModules } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
+  const agentGoals = generateAgentGoals(activeModules);
 
   const baseSections = `
-    You are ${assistantName}, an assistant for ${businessName}.
+     You are ${assistantName}, an assistant for ${businessName}.
 
-    USER MESSAGE:
-    "${customerMessage}"
+     AGENT GOALS:
+     ${agentGoals}
 
-    WRITING STYLE:
-    - Always respond in SPANISH
-    - Be concise, friendly, and helpful
-    - Use emojis when appropriate
-  `;
+     WRITING STYLE:
+     ${WRITING_STYLE}
+   `;
 
   switch (policy.type) {
+    case "unknown_intent":
+      return `
+         ${baseSections}
+
+         SPECIFIC INSTRUCTION:
+         - No se detectó una intención clara.
+         - Ofrece las opciones principales disponibles.
+         - Sé directo y orienta al usuario.
+
+         AVAILABLE SERVICES:
+         - Reservar mesa
+         - Modificar o cancelar reserva
+         - Ver menú o hacer pedido
+         - Consultar horarios, ubicación o entrega
+     `;
+
     case "ask_clarification":
       return `
-        ${baseSections}
+         ${baseSections}
 
-        SPECIFIC INSTRUCTION:
-        - The message was ambiguous. Ask a direct question to clarify intent.
-        - Offer 2-3 specific options if possible.
-        - Do NOT assume what the user wants.
+         SPECIFIC INSTRUCTION:
+         - El mensaje fue ambiguo. Pide aclaración directa.
+         - Ofrece 2-3 opciones específicas si es posible.
+         - NO asumas lo que el usuario quiere.
 
-        CURRENT INTENT DETECTED:
-        ${intent || "unknown"}
+         CURRENT INTENT DETECTED:
+         ${intent || "unknown"}
 
-        AVAILABLE OPTIONS:
-        - Make a reservation
-        - Modify or cancel reservation
-        - View menu or place order
-        - Ask about delivery or business info
+         EXAMPLE OPTIONS:
+         - ¿Quieres reservar mesa o hacer un pedido?
+         - ¿Buscas información o quieres realizar una acción?
+     `;
+
+    case "clear_up_uncertainty":
+      return `
+         ${baseSections}
+
+         SPECIFIC INSTRUCTION:
+         - El usuario está indeciso o ambiguo.
+         - Ayuda a aclarar ofreciendo opciones concretas.
+         - Sé paciente y guía paso a paso.
+
+         USER SIGNAL:
+         "no sé" | "tal vez" | "puede ser"
+
+         SUGGESTED APPROACH:
+         - ¿Qué prefieres hacer primero?
+         - ¿Te ayudo a ver opciones disponibles?
      `;
 
     case "ask_confirmation":
       return `
-        ${baseSections}
+         ${baseSections}
 
-        SPECIFIC INSTRUCTION:
-        - Confirm the user's intent before proceeding.
-        - Summarize what you understood.
-        - Ask for explicit confirmation.
+         SPECIFIC INSTRUCTION:
+         - Confirma la intención antes de proceder.
+         - Resume lo que entendiste.
+         - Pide confirmación explícita.
 
-        CONFIRMATION REQUIRED FOR:
-        Intent: ${intent}
-    `;
+         CONFIRMATION REQUIRED FOR:
+         Intent: ${intent}
+     `;
 
-    case "execute":
+    case "propose_alternative":
+      return `
+         ${baseSections}
+
+         SPECIFIC INSTRUCTION:
+         - El usuario rechazó la opción anterior.
+         - Propón alternativas relevantes.
+         - Sé flexible y ofrece opciones similares.
+
+         PREVIOUS INTENT (REJECTED):
+         ${intent}
+
+         SUGGESTED ALTERNATIVES:
+         - Opciones relacionadas al mismo módulo
+         - Acciones más simples o menos comprometedoras
+     `;
+
+    default:
       return `
         ${baseSections}
 
         SPECIFIC INSTRUCTION:
-        - Acknowledge the request and explain next steps.
-        - The system will run workflow: "${policy.action}".
+        - El usuario necesita ayuda específica.
+        - Proporciona instrucciones claras y concisas.
+        - Ofrece opciones relevantes y flexibles.
+        - Asegúrate de entender la pregunta antes de responder.
+        - Evita respuestas ambiguas o vagas.
 
-        EXECUTION DETAILS:
-        Intent: ${intent}
-        Saga: ${policy.action}
-   `;
-
-    default:
-      return defaultPrompt({
-        business: ctx.business,
-        flowStatus: bookingState?.status,
-        intent: intent,
-        retrievedChunks: [],
-      });
+        SUGGESTED APPROACH:
+        - ¿Qué prefieres hacer primero?
+        - ¿Te ayudo a ver opciones disponibles?
+    `;
   }
 }

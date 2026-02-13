@@ -2,6 +2,7 @@ import { Business } from "@/infraestructure/adapters/cms/cms-types";
 import { BookingOptions, FMStatus } from "../booking.types";
 import { formatSchedule } from "@/domain/utilities";
 import { IntentExampleKey } from "@/application/services/pomdp";
+import { RestaurantCtx } from "../../restaurant-context.types";
 
 export const WRITING_STYLE = `
   Writing style:
@@ -18,20 +19,10 @@ export const WRITING_STYLE = `
   - ALWAYS respond in SPANISH
 `;
 
-type Args = {
-  intent?: IntentExampleKey;
-  flowStatus?: FMStatus;
-  retrievedChunks?: string[];
-  business: Business;
-};
-
-export const defaultPrompt = ({
-  business,
-  flowStatus,
-  intent,
-  retrievedChunks,
-}: Args) => {
+export const defaultPrompt = (ctx: RestaurantCtx) => {
   //
+  const { business, bookingState } = ctx;
+  const status = bookingState?.status; //  productOrderState
   const businessName = `${business.general.businessType} ${business.name}`; // example: Restaurant El Gordo
   const PROMPT = `
     You are ${business.assistantName}, an assistant for ${businessName}.
@@ -55,13 +46,7 @@ export const defaultPrompt = ({
     ==============================
     CONTEXT
     ==============================
-    User Intent: ${intent}
-    Current conversation status: ${flowStatus}
-
-    ==============================
-    BUSINESS INFO (Use it to provide information)
-    ==============================
-    ${retrievedChunks}
+    Current conversation status: ${status}
   `;
   return PROMPT;
 };
