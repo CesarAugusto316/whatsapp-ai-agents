@@ -19,6 +19,6 @@ export interface BeliefState {
   isIntentFound: boolean;
 
   // Control de contexto
-  intentJumps: number; // turnos de conversación
+  intentJumps?: number; // turnos de conversación
   lastUpdate: number; // timestamp
 }

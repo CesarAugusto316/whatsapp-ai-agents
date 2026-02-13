@@ -28,11 +28,10 @@ export class BeliefStateUpdater {
     }
 
     // 1. Confirmando|Negando|Questionando una intencion previa y actualizando el estado
-    if (topResult) {
+    if (topResult?.module === "conversational-signal") {
       if (
         (prevState.current?.requiresConfirmation === "always" ||
           prevState.current?.requiresConfirmation === "maybe") &&
-        topResult?.module === "conversational-signal" &&
         topResult.score >= this.CONFIDENCE_THRESHOLD
       ) {
         const newIntent = this.signalPrevIntent(prevState.current, topResult);
@@ -42,9 +41,15 @@ export class BeliefStateUpdater {
       // 4. Construir estado mínimo (solo 1 intención)
       const newIntent = this.newIntent(topResult);
       return this.newSnapShot(prevState, newIntent);
+    } //
+    else if (topResult && prevState.current) {
+      // 4. Construir estado mínimo (solo 1 intención)
+      const newIntent = this.newIntent(topResult);
+      return this.newSnapShot(prevState, newIntent);
     }
 
-    return { ...prevState, isIntentFound: false };
+    // 4. Construir estado mínimo (solo 1 intención)
+    return { ...prevState };
   }
 
   private signalPrevIntent(
