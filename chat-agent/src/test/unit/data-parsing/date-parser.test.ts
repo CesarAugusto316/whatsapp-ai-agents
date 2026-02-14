@@ -1,32 +1,10 @@
 import { parseBookingData } from "@/application/use-cases/sagas/booking/workflows/helpers/input-parser/parse-booking-data";
 import { describe, expect, test } from "bun:test";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
-
-// Helper: obtiene "hoy" en una zona horaria específica (a las 00:00:00 local)
-function getTodayInTimezone(timezone: string): string {
-  const now = new Date();
-  const zoned = toZonedTime(now, timezone);
-  zoned.setHours(0, 0, 0, 0);
-  return fromZonedTime(zoned, timezone).toISOString().split("T")[0];
-}
-
-// Helper: obtiene "mañana" en una zona horaria
-function getTomorrowInTimezone(timezone: string): string {
-  const now = new Date();
-  const zoned = toZonedTime(now, timezone);
-  zoned.setDate(zoned.getDate() + 1);
-  zoned.setHours(0, 0, 0, 0);
-  return fromZonedTime(zoned, timezone).toISOString().split("T")[0];
-}
-
-// Helper: obtiene "pasado mañana"
-function getDayAfterTomorrowInTimezone(timezone: string): string {
-  const now = new Date();
-  const zoned = toZonedTime(now, timezone);
-  zoned.setDate(zoned.getDate() + 2);
-  zoned.setHours(0, 0, 0, 0);
-  return fromZonedTime(zoned, timezone).toISOString().split("T")[0];
-}
+import {
+  getDayAfterTomorrowInTimezone,
+  getTodayInTimezone,
+  getTomorrowInTimezone,
+} from "./date-parser-helpers";
 
 describe("parseBookingData2 - Timezone-aware date parsing", () => {
   const timezones = [
