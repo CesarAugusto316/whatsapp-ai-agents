@@ -9,7 +9,7 @@ import {
 } from "@/application/services/pomdp";
 import { formatSagaOutput } from "../helpers/format-saga-output";
 import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
-import { generateIntentPrompt } from "./helpers/prompts";
+import { generateIntentPrompt } from "./helpers/intent-prompt";
 import { businessInfoChunck } from "./helpers/business-info-chunk";
 import { handleMessageProcessing } from "./helpers/prepare-messages";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
@@ -120,17 +120,15 @@ export async function conversationalWorkflow(
         );
       }
 
-      const useAuxModel = true;
-      const assistantMsg = await handleMessageProcessing(
-        () =>
-          socialProtocolChunk(
-            intent?.intentKey as SocialProtocolIntent,
-            ctx.business,
-          ),
-        ctx.customerMessage,
+      const assistantMsg = await handleMessageProcessing({
+        systemPrompt: socialProtocolChunk(
+          intent?.intentKey as SocialProtocolIntent,
+          ctx,
+        ),
+        msg: ctx.customerMessage,
         chatHistory,
-        useAuxModel,
-      );
+        useAuxModel: true,
+      });
       await chatHistoryAdapter.push(
         ctx.chatKey,
         ctx.customerMessage,
@@ -145,12 +143,12 @@ export async function conversationalWorkflow(
     if (intent.module === "informational") {
       const key = intent.intentKey as InformationalIntentKey;
       const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
-      const assistantMsg = await handleMessageProcessing(
-        () => businessInfoChunck(key, ctx.business),
-        ctx.customerMessage,
+      const assistantMsg = await handleMessageProcessing({
+        systemPrompt: businessInfoChunck(key, ctx),
+        msg: ctx.customerMessage,
         chatHistory,
-        true,
-      );
+        useAuxModel: true,
+      });
       await chatHistoryAdapter.push(
         ctx.chatKey,
         ctx.customerMessage,
@@ -173,11 +171,11 @@ export async function conversationalWorkflow(
 
   // 3. handling intent feedback
   const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
-  const assistantMsg = await handleMessageProcessing(
-    () => generateIntentPrompt(ctx, policyDecision),
-    ctx.customerMessage,
+  const assistantMsg = await handleMessageProcessing({
+    systemPrompt: generateIntentPrompt(ctx, policyDecision),
+    msg: ctx.customerMessage,
     chatHistory,
-  );
+  });
   await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistantMsg);
 
   return formatSagaOutput(

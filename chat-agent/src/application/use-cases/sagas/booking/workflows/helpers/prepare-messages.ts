@@ -1,5 +1,19 @@
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 
+type Args = {
+  readonly systemPrompt: string;
+  readonly msg: string;
+  readonly chatHistory?: ChatMessage[];
+  readonly useAuxModel?: boolean;
+};
+
+const defaultConfig: Args = {
+  chatHistory: [],
+  msg: "",
+  useAuxModel: false,
+  systemPrompt: "",
+};
+
 /**
  *
  * @param promptGen
@@ -7,17 +21,17 @@ import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
  * @param chatHistory
  * @returns
  */
-export async function handleMessageProcessing(
-  promptGen: () => string,
-  customerMessage: string,
-  chatHistory: ChatMessage[] = [],
-  useAuxModel: boolean = false,
-) {
+export async function handleMessageProcessing({
+  systemPrompt,
+  msg,
+  chatHistory = [],
+  useAuxModel = false,
+}: Args = defaultConfig) {
   //
   const messages: ChatMessage[] = [
-    { role: "system", content: promptGen() },
+    { role: "system", content: systemPrompt },
     ...chatHistory,
-    { role: "user", content: customerMessage },
+    { role: "user", content: msg },
   ];
 
   return await aiAdapter.generateText({

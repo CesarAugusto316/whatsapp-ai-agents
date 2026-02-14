@@ -1,60 +1,8 @@
 import { PolicyDecision } from "@/application/services/pomdp";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { formatSchedule, getGoogleMapLink } from "@/domain/utilities";
-import { Business } from "@/infraestructure/adapters/cms";
 import { attachProcessReminder } from "@/application/patterns";
-
-export const WRITING_STYLE = `
-  - Clear, concise and friendly
-  - Use emojis when appropriate 😊✨✅
-  - Polite
-  - The message should feel like it comes from a real person helping the user, not from a system.
-  - Keep it short when possible
-
-  Language rules:
-  - ALWAYS respond in SPANISH
-`;
-
-/**
- * Genera las metas del agente basadas en los módulos activos
- * Excluye módulos de soporte (informational, social-protocol, conversational-signal)
- */
-function generateAgentGoals(activeModules: string[]): string {
-  const coreModules = activeModules.filter(
-    (mod) =>
-      !["informational", "social-protocol", "conversational-signal"].includes(
-        mod,
-      ),
-  );
-
-  const goals: string[] = [];
-
-  if (coreModules.includes("booking")) {
-    goals.push("- Gestionar reservas (crear, modificar, cancelar)");
-    goals.push("- Verificar disponibilidad de horarios");
-  }
-
-  if (coreModules.includes("restaurant")) {
-    goals.push("- Mostrar menú y opciones de comida");
-    goals.push("- Procesar pedidos de comida");
-    goals.push("- Buscar platos específicos por preferencias");
-    goals.push("- Recomendar platos populares");
-    goals.push("- Gestionar entregas y tiempos de espera");
-  }
-
-  if (coreModules.includes("erotic")) {
-    goals.push("- Mostrar contenido para adultos");
-    goals.push("- Procesar compras de contenido");
-    goals.push("- Informar sobre servicios disponibles");
-  }
-
-  if (goals.length === 0) {
-    goals.push("- Responder preguntas generales");
-    goals.push("- Ayudar con información básica");
-  }
-
-  return goals.join("\n");
-}
+import { basePrompt } from "./base-prompt";
+import { generateAgentGoals } from "./agent-goals";
 
 /**
  * Generates a dynamic prompt based on the policy decision
@@ -67,22 +15,11 @@ export function generateIntentPrompt(
   const { business, activeModules } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
-  const agentGoals = generateAgentGoals(activeModules);
-
-  const baseSections = `
-     You are ${assistantName}, an assistant for ${businessName}.
-
-     AGENT GOALS:
-     ${agentGoals}
-
-     WRITING STYLE:
-     ${WRITING_STYLE}
-  `;
 
   switch (policy?.type) {
     case "unknown_intent":
       return `
-        ${baseSections}
+       ${basePrompt(ctx)}
 
         SPECIFIC INSTRUCTION:
         - El usuario escribió algo ambiguo o no reconocible.
@@ -106,7 +43,7 @@ export function generateIntentPrompt(
 
     case "ask_clarification":
       return `
-        ${baseSections}
+        ${basePrompt(ctx)}
 
         SPECIFIC INSTRUCTION:
         - El usuario fue ambiguo pero hay 2-3 intents posibles.
@@ -129,7 +66,7 @@ export function generateIntentPrompt(
 
     case "clear_up_uncertainty":
       return `
-        ${baseSections}
+        ${basePrompt(ctx)}
 
         SPECIFIC INSTRUCTION:
         - El usuario está indeciso. NO preguntes "¿qué quieres hacer?" (es abrumador).
@@ -153,7 +90,7 @@ export function generateIntentPrompt(
 
     case "ask_confirmation":
       return `
-        ${baseSections}
+        ${basePrompt(ctx)}
 
         SPECIFIC INSTRUCTION:
         - Confirma SOLO el dato crítico que falta para proceder.
@@ -178,7 +115,7 @@ export function generateIntentPrompt(
 
     case "propose_alternative":
       return `
-        ${baseSections}
+        ${basePrompt(ctx)}
 
         SPECIFIC INSTRUCTION:
         - Propón UNA sola alternativa relevante (no una lista).
@@ -202,7 +139,7 @@ export function generateIntentPrompt(
 
     default:
       return `
-         ${baseSections}
+        ${basePrompt(ctx)}
 
          SPECIFIC INSTRUCTION:
          - Responde de manera útil y orientada a las capacidades del negocio.
@@ -219,80 +156,4 @@ export function generateIntentPrompt(
          - Para preguntas ambiguas: ofrece 2-3 opciones específicas basadas en tus metas.
      `;
   }
-}
-
-/**
- *
- * @todo DELETE
- */
-export function businesInfoPrompt(business: Business) {
-  const { name, general, schedule, assistantName } = business;
-  const SCHEDULE_BLOCK = formatSchedule(schedule, general.timezone);
-  const currentDate = new Date().toLocaleString("en-GB", {
-    dateStyle: "full",
-    timeStyle: "full",
-    timeZone: general.timezone,
-  });
-
-  const businessName = `${business.general.businessType} ${business.name}`;
-
-  const baseSections = `
-     You are ${assistantName}, an assistant for ${businessName}.
-
-     RULES:
-     - Your role is strictly informational, a user asks a question and you provide a useful response based on existing information.
-     - You ONLY provide existing information
-     - You NEVER request, ask for, or prompt user to provide any information
-     - You NEVER ask questions that require user input (names, dates, times, etc.)
-
-     WRITING STYLE:
-     ${WRITING_STYLE}
-  `;
-
-  const basicInfo = `
-    ${baseSections}
-
-    ==============================
-    BUSINESS GENERAL INFORMATION
-    ==============================
-    - Name: ${name}
-    - Business type: ${general.businessType}
-    - General Description: ${general.description}
-    - Timezone: ${general.timezone}
-
-    - Booking:
-      - Approval by owner/admin required: ${general.requireAppointmentApproval ? "Yes" : "No"}
-      - Minimal booking duration: ${schedule.averageTime} minutes
-
-    - Address: ${general.address}
-    - Location Google Map Link: ${general.location ? getGoogleMapLink(general.location[0], general.location[1]) : ""}
-
-    - Price: Depends on the selected product or item
-    - Payment Methods:
-       - Cash ${business.currency}
-       - Debit Card
-       - Credit Card
-
-    - Estimated Delivery Processing Time: Depends on the selected product or item and the demand
-    - Delivery Methods:
-       - Para llevar: El Cliente puede pedir a domicilio
-       - Para retirar: El Cliente puede ir retirar al establecimiento
-       - El cliente elige el metodo al hacer una order o pedido
-
-    - Contact Info:
-      - Owner Email: ${general?.user?.email}
-      - Owner Phone number: ${general?.user?.phoneNumber}
-
-    ==============================
-     BUSINESS SCHEDULE (working hours)
-    ==============================
-      ${SCHEDULE_BLOCK}
-
-    ==============================
-      TEMPORAL CONTEXT
-    ==============================
-      - Current date/time (for reference only): ${currentDate}
-      - Do NOT infer availability, predict, or invent future schedules.
-  `;
-  return basicInfo;
 }

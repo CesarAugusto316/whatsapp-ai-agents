@@ -1,8 +1,8 @@
-import { Business } from "@/infraestructure/adapters/cms";
-import { WRITING_STYLE } from "./prompts";
 import { SocialProtocolIntent } from "@/application/services/pomdp";
+import { RestaurantCtx } from "@/domain/restaurant";
+import { basePrompt } from "./base-prompt";
 
-const variants = [
+const firstMessageVariants = [
   // V1 - Detallada pero fluida
   (name: string, business: string) => `
     ¡Hola! 👋 Soy ${name} de ${business}.
@@ -209,28 +209,22 @@ export const getRandomOnboardingMsg = (
   assistantName: string,
   businessName: string,
 ): string => {
-  const randomIndex = Math.floor(Math.random() * variants.length);
-  return variants[randomIndex](assistantName, businessName).trim();
+  const randomIndex = Math.floor(Math.random() * firstMessageVariants.length);
+  return firstMessageVariants[randomIndex](assistantName, businessName).trim();
 };
 
 export function socialProtocolChunk(
   intentKey: SocialProtocolIntent,
-  business: Business,
+  ctx: RestaurantCtx,
 ): string {
-  const { assistantName, name, general } = business;
-  const businessName = `${general.businessType} ${name}`;
-
   // Base: identidad del asistente (siempre necesaria)
   const base = `
-      You are ${assistantName}, assistant for ${businessName}.
+    ${basePrompt(ctx)}
 
       RULES:
       - Be warm but concise
       - NEVER ask for user input in goodbye/thanks
       - For greetings: adapt depth based on user state (new vs returning)
-
-      WRITING STYLE:
-      ${WRITING_STYLE}
   `.trim();
 
   // Respuestas predefinidas (el LLM solo formatea, no inventa)

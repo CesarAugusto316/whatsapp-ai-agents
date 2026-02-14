@@ -87,7 +87,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
       "gracias igualmente",
     ],
   },
-];
+] as const;
 
 const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
@@ -151,7 +151,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
       "no sabría decirte",
     ],
   },
-];
+] as const;
 
 /**
  *
@@ -279,7 +279,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
       "mesas disponibles",
     ],
   },
-];
+] as const;
 
 const restaurant: IntentExample<RestaurantIntentKey>[] = [
   {
@@ -460,7 +460,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
       "desmarcar mi pedido",
     ],
   },
-];
+] as const;
 
 const erotic: IntentExample<EroticIntentKey>[] = [
   {
@@ -547,7 +547,7 @@ const erotic: IntentExample<EroticIntentKey>[] = [
       "qué planes tienes disponibles",
     ],
   },
-];
+] as const;
 
 const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
@@ -769,7 +769,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
       "tienen envío",
     ],
   },
-];
+] as const;
 
 export const intentExamples = [
   ...socialProtocols,
@@ -779,4 +779,4 @@ export const intentExamples = [
   ...booking,
   ...restaurant,
   ...erotic,
-];
+] as const;

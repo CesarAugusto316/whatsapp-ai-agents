@@ -1,14 +1,13 @@
 import { formatSchedule, getGoogleMapLink } from "@/domain/utilities";
-import { Business } from "@/infraestructure/adapters/cms";
-import { WRITING_STYLE } from "./prompts";
 import { InformationalIntentKey } from "@/application/services/pomdp";
+import { RestaurantCtx } from "@/domain/restaurant";
+import { basePrompt } from "./base-prompt";
 
 export function businessInfoChunck(
   intentKey: InformationalIntentKey,
-  business: Business,
+  ctx: RestaurantCtx,
 ): string {
-  const { name, general, schedule, assistantName } = business;
-  const businessName = `${general.businessType} ${name}`;
+  const { name, general, schedule, currency } = ctx.business;
   const SCHEDULE_BLOCK = formatSchedule(schedule, general.timezone);
   const currentDate = new Date().toLocaleString("en-GB", {
     dateStyle: "full",
@@ -18,15 +17,12 @@ export function businessInfoChunck(
 
   // Base minimalista (siempre necesaria)
   const base = `
-    You are ${assistantName}, assistant for ${businessName}.
+    ${basePrompt(ctx)}
 
     RULES:
     - Strictly informational: answer based ONLY on existing data
     - NEVER invent or predict unavailable information
     - NEVER ask questions that require user input
-
-    WRITING STYLE:
-    ${WRITING_STYLE}
 
     ==============================
     BUSINESS GENERAL INFORMATION
@@ -58,7 +54,7 @@ export function businessInfoChunck(
     `,
     "info:ask_payment_methods": `
         PAYMENT METHODS
-        - Cash (${business.currency})
+        - Cash (${currency})
         - Debit Card
         - Credit Card
     `,

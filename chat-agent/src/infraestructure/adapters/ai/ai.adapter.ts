@@ -153,7 +153,7 @@ class AiAdapter implements IAiAdapter {
      */
     temperature = 0.5,
     response_format,
-    max_tokens = 512,
+    max_tokens = 256,
     enable_thinking = false,
     useAuxModel = false,
   }: MessagesBasedRequest): Promise<string> {
