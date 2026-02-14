@@ -166,6 +166,30 @@ function extractNumberOfPeople(message: string): number {
     }
   }
 
+  // Buscar también patrones más generales como "grupo de X personas", "equipo de X", etc.
+  const generalPatterns = [
+    /grupo de (\d+) personas/i,
+    /equipo de (\d+) personas/i,
+    /familia de (\d+) personas/i,
+    /evento de (\d+) personas/i,
+    /celebraci[oó]n de (\d+) personas/i,
+    /(\d+) personas/i,
+    /(\d+) comensales/i,
+    /(\d+) invitados/i,
+    /(\d+) huespedes/i,
+    /(\d+) huéspedes/i,
+  ];
+
+  for (const pattern of generalPatterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > 0 && num <= 50) {
+        return num;
+      }
+    }
+  }
+
   // Si no encontramos un número explícito, buscar algunos casos comunes
   if (text.includes("solo") || text.includes("solos")) {
     if (text.includes("dos") || text.includes("2")) return 2;
@@ -304,7 +328,7 @@ function extractDate(
     return { date: dayAfterTomorrow, isNextWeek: false };
   }
 
-  // Días de la semana
+  // Días de la semana (para fechas relativas como "el viernes")
   const daysOfWeek = [
     "domingo",
     "lunes",
@@ -410,12 +434,48 @@ function extractDate(
     return { date: parsedDate, isNextWeek: false };
   }
 
-  // También buscar "viernes 20 de septiembre" u otros formatos similares
+  // También buscar "viernes 12 de abril", "viernes 20 de septiembre" u otros formatos similares
+  // Permitir palabras intermedias como "el", "del", etc.
   const weekdayMonthDayPattern =
-    /(lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s+(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
+    /(lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s*(?:el\s*)?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
   const weekdayMonthDayMatch = text.match(weekdayMonthDayPattern);
   if (weekdayMonthDayMatch) {
     const [, , dayStr, monthStr] = weekdayMonthDayMatch;
+    const months = [
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
+    ];
+    const monthIndex = months.findIndex(
+      (m) => m.toLowerCase() === monthStr.toLowerCase(),
+    );
+    const day = parseInt(dayStr, 10);
+
+    const parsedDate = new Date(today.getFullYear(), monthIndex, day);
+
+    // Si la fecha ya pasó este año, usar el próximo año
+    if (parsedDate < today) {
+      parsedDate.setFullYear(parsedDate.getFullYear() + 1);
+    }
+
+    return { date: parsedDate, isNextWeek: false };
+  }
+
+  // Buscar también patrones como "12 de abril", "20 de julio", etc. sin día de la semana
+  const dayMonthPattern =
+    /(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
+  const dayMonthMatch = text.match(dayMonthPattern);
+  if (dayMonthMatch) {
+    const [, dayStr, monthStr] = dayMonthMatch;
     const months = [
       "enero",
       "febrero",
@@ -555,6 +615,9 @@ function extractEndTime(text: string, startTime: string): string {
     // "de X a Y", "de X hasta Y", "de X a las Y"
     /(?:de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+)?(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
     /(?:de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+)?(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    // "entre la X y las Y", "entre X y Y"
+    /(?:entre\s+la\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    /(?:entre\s+la\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?/i,
   ];
 
   for (const pattern of endPatterns) {
@@ -566,14 +629,60 @@ function extractEndTime(text: string, startTime: string): string {
       let hour = parseInt(hourStr, 10);
 
       // Verificar si es AM o PM
-      if (pattern.source.includes("a\\.?m\\.?|p\\.?m\\.")) {
-        const ampm = (text.match(/(a\.?m\.?|p\.?m\.?)/i) ||
-          [])[0]?.toLowerCase();
-        if (ampm?.includes("p") && hour < 12) {
-          hour += 12;
-        } else if (ampm?.includes("a") && hour === 12) {
-          hour = 0;
+      // Primero intentar encontrar AM/PM asociado directamente con esta hora específica
+      let ampm = null;
+      if (match[3]) {
+        // Si hay un tercer grupo de captura que podría ser AM/PM
+        ampm = match[3]?.toLowerCase();
+      }
+
+      // Si no se encontró AM/PM en el match, buscar en el texto general
+      if (!ampm) {
+        const allAmpmMatches = text.match(
+          /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)\s*(a\.?m\.?|p\.?m\.?)/gi,
+        );
+        if (allAmpmMatches) {
+          for (const matchText of allAmpmMatches) {
+            const hourPart = matchText.match(
+              /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)/i,
+            );
+            if (hourPart) {
+              let matchHour = parseInt(hourPart[1], 10);
+              if (isNaN(matchHour)) {
+                // Si es una hora en palabras, convertirla
+                const hourWords: Record<string, number> = {
+                  una: 1,
+                  dos: 2,
+                  tres: 3,
+                  cuatro: 4,
+                  cinco: 5,
+                  seis: 6,
+                  siete: 7,
+                  ocho: 8,
+                  nueve: 9,
+                  diez: 10,
+                  once: 11,
+                  doce: 12,
+                };
+                const wordHour = hourPart[1].toLowerCase().trim();
+                matchHour = hourWords[wordHour];
+              }
+
+              if (matchHour === hour) {
+                ampm = matchText
+                  .match(/(a\.?m\.?|p\.?m\.?)/i)?.[1]
+                  ?.toLowerCase();
+                break;
+              }
+            }
+          }
         }
+      }
+
+      if (ampm?.includes("p") && hour < 12) {
+        hour += 12;
+      } else if (ampm?.includes("a") && hour === 12) {
+        hour = 0;
       }
 
       return `${hour.toString().padStart(2, "0")}:${minuteStr.padStart(2, "0")}:00`;
