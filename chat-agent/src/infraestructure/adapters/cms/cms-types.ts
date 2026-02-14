@@ -102,7 +102,7 @@ export interface Business {
     businessType: "restaurant" | "medical" | "legal" | "real_estate" | "erotic";
     maxCapacity?: number | null;
     description?: string | null;
-    user: string | User;
+    user: User;
     timezone:
       | "Europe/Madrid"
       | "Europe/Paris"

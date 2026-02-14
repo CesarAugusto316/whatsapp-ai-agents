@@ -34,7 +34,9 @@ export type InformationalIntentKey =
   | "info:ask_location"
   | "info:ask_business_hours"
   | "info:ask_payment_methods"
-  | "info:ask_contact";
+  | "info:ask_contact"
+  | "info:ask_delivery_time"
+  | "info:ask_delivery_method";
 
 export type BookingIntentKey =
   // workflows
@@ -49,8 +51,6 @@ export type RestaurantIntentKey =
   | "restaurant:view_menu"
   | "restaurant:find_dishes"
   | "restaurant:recommend_dishes"
-  | "restaurant:ask_delivery_time"
-  | "restaurant:ask_delivery_method"
   // workflows
   | "restaurant:place_order"
   | "restaurant:update_order"

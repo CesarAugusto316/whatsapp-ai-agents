@@ -460,64 +460,6 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
       "desmarcar mi pedido",
     ],
   },
-  {
-    intentKey: "restaurant:ask_delivery_time",
-    module: "restaurant",
-    requiresConfirmation: "never",
-    lang: "es",
-    examples: [
-      // Universal
-      "cuánto tarda en llegar",
-      "en cuánto tiempo llega",
-      "cuánto demora el pedido",
-      "cuánto tiempo toma",
-      "cuándo llega el pedido",
-
-      // España
-      "cuánto tarda el reparto",
-      "tiempo de entrega",
-      "cuánto falta para llegar",
-      "cuándo estará aquí",
-      "cuánto tarda para llevar",
-
-      // Latam (CO/EC/MX)
-      "cuánto demora la comida",
-      "cuánto tarda el domicilio",
-      "tiempo de llegada",
-      "cuándo llega mi pedido",
-      "cuánto falta para entregar",
-      "cuánto demora el delivery",
-    ],
-  },
-  {
-    intentKey: "restaurant:ask_delivery_method",
-    module: "restaurant",
-    requiresConfirmation: "never",
-    lang: "es",
-    examples: [
-      // Universal
-      "cómo entregan el pedido",
-      "cómo llega el pedido",
-      "métodos de entrega",
-      "formas de entrega",
-
-      // España
-      "hacen para llevar",
-      "puedo recoger",
-      "entregan a domicilio",
-      "recoger en tienda",
-      "solo para llevar",
-      "tienen reparto",
-
-      // Latam (CO/EC/MX)
-      "hacen delivery",
-      "llevan a domicilio",
-      "puedo recoger personalmente",
-      "entrega a domicilio",
-      "recoger en el local",
-      "tienen envío",
-    ],
-  },
 ];
 
 const erotic: IntentExample<EroticIntentKey>[] = [
@@ -763,6 +705,68 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
       "cuánto sale esto",
       "precio del producto",
       "cuánto cuesta todo",
+    ],
+  },
+  // ---------------------------------------------------------------
+  // TODO: this two intentKeys can be more general
+  // and maybe checked again
+  // ---------------------------------------------------------------
+  {
+    intentKey: "info:ask_delivery_time",
+    module: "informational",
+    requiresConfirmation: "never",
+    lang: "es",
+    examples: [
+      // Universal
+      "cuánto tarda en llegar",
+      "en cuánto tiempo llega",
+      "cuánto demora el pedido",
+      "cuánto tiempo toma",
+      "cuándo llega el pedido",
+
+      // España
+      "cuánto tarda el reparto",
+      "tiempo de entrega",
+      "cuánto falta para llegar",
+      "cuándo estará aquí",
+      "cuánto tarda para llevar",
+
+      // Latam (CO/EC/MX)
+      "cuánto demora la comida",
+      "cuánto tarda el domicilio",
+      "tiempo de llegada",
+      "cuándo llega mi pedido",
+      "cuánto falta para entregar",
+      "cuánto demora el delivery",
+    ],
+  },
+  {
+    intentKey: "info:ask_delivery_method",
+    module: "informational",
+    requiresConfirmation: "never",
+    lang: "es",
+    examples: [
+      // Universal
+      "cómo entregan el pedido",
+      "cómo llega el pedido",
+      "métodos de entrega",
+      "formas de entrega",
+
+      // España
+      "hacen para llevar",
+      "puedo recoger",
+      "entregan a domicilio",
+      "recoger en tienda",
+      "solo para llevar",
+      "tienen reparto",
+
+      // Latam (CO/EC/MX)
+      "hacen delivery",
+      "llevan a domicilio",
+      "puedo recoger personalmente",
+      "entrega a domicilio",
+      "recoger en el local",
+      "tienen envío",
     ],
   },
 ];

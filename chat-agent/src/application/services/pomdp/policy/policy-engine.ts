@@ -149,8 +149,6 @@ export class PolicyEngine {
       "restaurant:recommend_dishes": "restaurant:recommend_dishes", // hay que implementar
       "restaurant:update_order": ProductOrderOptions.UPDATE_PRODUCT_ORDER,
       "restaurant:cancel_order": ProductOrderOptions.CANCEL_PRODUCT_ORDER,
-      "restaurant:ask_delivery_method": "restaurant:ask_delivery_method", // hay que implementar
-      "restaurant:ask_delivery_time": "restaurant:ask_delivery_time", // hay que implementar
 
       // basicInformational
       "info:ask_location": "info:ask_location",
@@ -158,6 +156,8 @@ export class PolicyEngine {
       "info:ask_payment_methods": "info:ask_payment_methods",
       "info:ask_contact": "info:ask_contact",
       "info:ask_price": "info:ask_price",
+      "info:ask_delivery_method": "info:ask_delivery_method",
+      "info:ask_delivery_time": "info:ask_delivery_time",
     };
 
     return map[intent] ?? "unknown_intent";
