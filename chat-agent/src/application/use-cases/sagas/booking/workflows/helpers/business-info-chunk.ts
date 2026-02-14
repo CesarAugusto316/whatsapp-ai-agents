@@ -1,0 +1,101 @@
+import { formatSchedule, getGoogleMapLink } from "@/domain/utilities";
+import { Business } from "@/infraestructure/adapters/cms";
+import { WRITING_STYLE } from "./prompts";
+import { InformationalIntentKey } from "@/application/services/pomdp";
+
+export function businessInfoChunck(
+  intentKey: InformationalIntentKey,
+  business: Business,
+): string {
+  const { name, general, schedule, assistantName } = business;
+  const businessName = `${general.businessType} ${name}`;
+  const SCHEDULE_BLOCK = formatSchedule(schedule, general.timezone);
+  const currentDate = new Date().toLocaleString("en-GB", {
+    dateStyle: "full",
+    timeStyle: "full",
+    timeZone: general.timezone,
+  });
+
+  // Base minimalista (siempre necesaria)
+  const base = `
+    You are ${assistantName}, assistant for ${businessName}.
+
+    RULES:
+    - Strictly informational: answer based ONLY on existing data
+    - NEVER invent or predict unavailable information
+    - NEVER ask questions that require user input
+
+    WRITING STYLE:
+    ${WRITING_STYLE}
+
+    ==============================
+    BUSINESS GENERAL INFORMATION
+    ==============================
+    - Name: ${name}
+    - Business type: ${general.businessType}
+    - General Description: ${general.description}
+    - Timezone: ${general.timezone}
+
+    - Booking:
+      - Approval by owner/admin required: ${general.requireAppointmentApproval ? "Yes" : "No"}
+      - Minimal booking duration: ${schedule.averageTime} minutes
+  `.trim();
+
+  // Mapeo 1:1 intentKey → sección relevante
+  const sections: Record<InformationalIntentKey, string> = {
+    "info:ask_location": `
+        BUSINESS LOCATION
+        - Address: ${general.address}
+        - Google Maps: ${general.location ? getGoogleMapLink(general.location[0], general.location[1]) : "Not available"}
+    `,
+    "info:ask_business_hours": `
+        BUSINESS SCHEDULE
+        ${SCHEDULE_BLOCK}
+
+        CURRENT TIME (reference only):
+        ${currentDate}
+        ⚠️ Do NOT infer future availability — only state published hours.
+    `,
+    "info:ask_payment_methods": `
+        PAYMENT METHODS
+        - Cash (${business.currency})
+        - Debit Card
+        - Credit Card
+    `,
+    "info:ask_contact": `
+        CONTACT INFORMATION
+        - Email: ${general?.user?.email}
+        - Phone: ${general?.user?.phoneNumber}
+  `,
+    "info:ask_price": `
+        PRICING POLICY
+        - Prices vary by product/item selected
+        - No fixed pricing — depends on order composition
+  `,
+    "info:ask_delivery_time": `
+        DELIVERY TIMING
+        - Processing time depends on:
+          • Selected product/item
+          • Current kitchen demand
+        - No fixed ETA — provided at order confirmation
+  `,
+    "info:ask_delivery_method": `
+        DELIVERY OPTIONS
+        - 🚶 Para retirar: Pick up at establishment
+        - 🛵 Para llevar: Home delivery available
+        - Method selected during order placement
+  `,
+  };
+
+  const fallback = `
+    AVAILABLE INFORMATION
+    - Location, hours, contact, payment methods
+    - Delivery options and pricing policy
+    Ask specifically about what you need 😊
+  `;
+
+  // Fallback: información general mínima si no hay match
+  const relevantSection = sections[intentKey] || fallback;
+
+  return `${base}\n\n${relevantSection.trim()}`;
+}

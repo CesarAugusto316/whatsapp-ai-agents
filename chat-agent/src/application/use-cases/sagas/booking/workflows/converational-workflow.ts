@@ -2,13 +2,15 @@ import type { RestaurantCtx } from "@/domain/restaurant";
 import type { BookingResult } from "../booking-saga";
 import { ragService } from "@/application/services/rag";
 import {
+  InformationalIntentKey,
   pomdpManager,
   shouldSkipProcessing,
   SocialProtocolIntent,
 } from "@/application/services/pomdp";
 import { formatSagaOutput } from "../helpers/format-saga-output";
 import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
-import { businesInfoPrompt, generateIntentPrompt } from "./helpers/prompts";
+import { generateIntentPrompt } from "./helpers/prompts";
+import { businessInfoChunck } from "./helpers/business-info-chunk";
 import { handleMessageProcessing } from "./helpers/prepare-messages";
 
 /**
@@ -59,23 +61,28 @@ export async function conversationalWorkflow(
       })) ?? [];
   }
 
+  // 1. generating the policy decision
   const policyDecision = await pomdpManager.process(ctx, ragResults);
 
+  // 2. handling intent execution
   if (policyDecision.type === "execute") {
+    const { intent } = policyDecision;
     //
-    if (policyDecision.intent.module === "informational") {
+    if (intent.module === "informational") {
+      const key = intent.intentKey as InformationalIntentKey;
       const assistantMsg = await handleMessageProcessing(
-        () => businesInfoPrompt(ctx.business),
+        () => businessInfoChunck(key, ctx.business),
         ctx,
       );
       return formatSagaOutput(
         assistantMsg,
-        `${policyDecision.intent?.intentKey}:${policyDecision.type}`, // optional
+        `${intent?.intentKey}:${policyDecision.type}`, // optional
       );
       // else call the execute function
     }
   }
 
+  // 3. handling intent feedback
   const assistantMsg = await handleMessageProcessing(
     () => generateIntentPrompt(ctx, policyDecision),
     ctx,

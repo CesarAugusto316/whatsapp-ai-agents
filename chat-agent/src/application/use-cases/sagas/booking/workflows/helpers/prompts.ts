@@ -234,6 +234,8 @@ export function businesInfoPrompt(business: Business) {
     - Price: Depends on the selected product or item
     - Payment Methods:
        - Cash ${business.currency}
+       - Debit Card
+       - Credit Card
 
     - Estimated Delivery Processing Time: Depends on the selected product or item and the demand
     - Delivery Methods:
