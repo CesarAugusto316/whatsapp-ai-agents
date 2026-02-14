@@ -15,10 +15,11 @@ import { BookingResult } from "../booking-saga";
  */
 export async function initialOptionsWorkflow(
   ctx: RestaurantCtx,
+  option: string, // replace in the future for CoreIntentKey
 ): Promise<BookingResult | undefined> {
-  const { customerMessage, bookingKey, customer, business } = ctx;
+  const { bookingKey, customer, business } = ctx;
 
-  if (customerMessage === BookingOptions.MAKE_BOOKING) {
+  if (option === BookingOptions.MAKE_BOOKING) {
     // choice 2
     const transition = resolveNextState(BookingOptions.MAKE_BOOKING);
     await cacheAdapter.save(bookingKey, {
@@ -45,7 +46,7 @@ export async function initialOptionsWorkflow(
     };
   }
 
-  if (customerMessage === BookingOptions.UPDATE_BOOKING) {
+  if (option === BookingOptions.UPDATE_BOOKING) {
     const msg = await initChangeSteps({
       business,
       customer,
@@ -68,7 +69,7 @@ export async function initialOptionsWorkflow(
     };
   }
 
-  if (customerMessage === BookingOptions.CANCEL_BOOKING) {
+  if (option === BookingOptions.CANCEL_BOOKING) {
     const msg = await initChangeSteps({
       business,
       customer,

@@ -20,6 +20,7 @@ export type {
   ModuleKind,
   SocialProtocolIntent,
   RequiredConfirmation,
+  CoreIntentKey,
 } from "./intents/intent.types";
 
 export type { IntentPayloadWithScore, PomdpResult } from "./pomdp-manager";

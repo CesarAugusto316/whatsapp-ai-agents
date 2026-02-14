@@ -47,7 +47,7 @@ export const bookingStateOrchestrator = async (
   }
   if (status) {
     // ============================================
-    // 1.DETERMINISTIC SAGA ORCHESTRATOR
+    // 2.DETERMINISTIC SAGA ORCHESTRATOR
     // For every workflow option there is a FSM transition
     // ============================================
     const sagaOrchestrator = statusSagaMap[status];
@@ -62,14 +62,6 @@ export const bookingStateOrchestrator = async (
     if (result && result !== InputIntent.CUSTOMER_QUESTION) {
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return { bag, lastStepResult };
-    }
-  } else {
-    // ============================================
-    // 2. MAIN WORKFLOW OPTIONS (DETERMISTIC)
-    // ============================================
-    const res = await initialOptionsWorkflow(ctx);
-    if (res) {
-      return res;
     }
   }
 

@@ -7,7 +7,7 @@ import {
 const MODULE_PRIORITY: Record<ModuleKind, number> = {
   "social-protocol": 1, // Saludos, despedidas, gracias → baja prioridad
   "conversational-signal": 1, // Confirmaciones, negaciones → baja prioridad
-  informational: 2, // Información básica → media prioridad
+  informational: 3, // Información básica → media prioridad
   booking: 3, // Reservas → alta prioridad
   restaurant: 3, // Pedidos → alta prioridad
   erotic: 3, // Contenido adulto → alta prioridad

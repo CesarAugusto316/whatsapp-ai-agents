@@ -68,6 +68,11 @@ export type IntentExampleKey =
   | BookingIntentKey
   | EroticIntentKey;
 
+export type CoreIntentKey =
+  | RestaurantIntentKey
+  | BookingIntentKey
+  | EroticIntentKey;
+
 // ============================================
 // 2. CONVERSATIONAL SIGNALS (no son intents, do not need vectorize)
 // ============================================

@@ -18,6 +18,7 @@ import {
   socialProtocolChunk,
 } from "./helpers/social-chunks";
 import { prioritizeIntents } from "./helpers/prioritize-intents";
+import { initialOptionsWorkflow } from "./initial-options-workflow";
 
 /**
  *
@@ -60,7 +61,7 @@ export async function conversationalWorkflow(
       } satisfies IntentPayloadWithScore,
     ];
   }
-  // TODO: skip RAG for "booking" | "restaurant" etc.. by user REGEX
+  // TODO: skip RAG for "booking" | "restaurant" etc.. by REGEX
   if (!skip) {
     const limit = 2;
     const { points } = await ragService.searchIntent(
@@ -77,11 +78,11 @@ export async function conversationalWorkflow(
   }
 
   // 1. generating the policy decision
-  const policyDecision = await pomdpManager.process(ctx, ragResults);
+  const policy = await pomdpManager.process(ctx, ragResults);
 
   // 2. handling intent execution
-  if (policyDecision.type === "execute") {
-    const { intent } = policyDecision;
+  if (policy.type === "execute") {
+    const { intent } = policy;
     const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
     const isFirstMessage = chatHistory.length === 0;
     const isCustomer = Boolean(ctx.customer);
@@ -95,7 +96,7 @@ export async function conversationalWorkflow(
       );
       return formatSagaOutput(
         ONBOARDING_MSG,
-        `${intent?.intentKey}:${policyDecision.type}`, // optional
+        `${intent?.intentKey}:${policy.type}`, // optional
       );
     }
 
@@ -112,7 +113,7 @@ export async function conversationalWorkflow(
         );
         return formatSagaOutput(
           ONBOARDING_MSG,
-          `${intent?.intentKey}:${policyDecision.type}`, // optional
+          `${intent?.intentKey}:${policy.type}`, // optional
         );
       }
 
@@ -132,7 +133,7 @@ export async function conversationalWorkflow(
       );
       return formatSagaOutput(
         ASSISTANT_MSG,
-        `${intent?.intentKey}:${policyDecision.type}`, // optional
+        `${intent?.intentKey}:${policy.type}`, // optional
       );
     }
 
@@ -152,12 +153,14 @@ export async function conversationalWorkflow(
       );
       return formatSagaOutput(
         ASSISTANT_MSG,
-        `${intent?.intentKey}:${policyDecision.type}`, // optional
+        `${intent?.intentKey}:${policy.type}`, // optional
       );
     }
 
     if (intent.module === "booking") {
       //
+      const res = await initialOptionsWorkflow(ctx, policy.action);
+      if (res) return res;
     }
 
     if (intent.module === "restaurant") {
@@ -168,7 +171,7 @@ export async function conversationalWorkflow(
   // 3. handling intent feedback
   const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
   const ASSISTANT_MSG = await handleMessageProcessing({
-    systemPrompt: intentClassifierPrompt(ctx, policyDecision),
+    systemPrompt: intentClassifierPrompt(ctx, policy),
     msg: ctx.customerMessage,
     chatHistory,
   });
@@ -180,6 +183,6 @@ export async function conversationalWorkflow(
 
   return formatSagaOutput(
     ASSISTANT_MSG,
-    `${policyDecision.intent?.intentKey}:${policyDecision.type}`, // optional
+    `${policy.intent?.intentKey}:${policy.type}`, // optional
   );
 }

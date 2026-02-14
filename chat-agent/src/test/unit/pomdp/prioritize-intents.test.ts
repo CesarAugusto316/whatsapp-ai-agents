@@ -165,7 +165,7 @@ describe("prioritizeIntents", () => {
 
     const result = prioritizeIntents(intents);
 
-    expect(result[0].intentKey).toBe("booking:create");
-    expect(result[1].intentKey).toBe("info:ask_contact");
+    expect(result[0].intentKey).toBe("info:ask_contact");
+    expect(result[1].intentKey).toBe("booking:create");
   });
 });
