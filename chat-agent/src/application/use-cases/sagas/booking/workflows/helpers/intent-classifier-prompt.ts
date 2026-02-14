@@ -21,24 +21,22 @@ export function intentClassifierPrompt(
       return `
        ${basePrompt(ctx)}
 
-        SPECIFIC INSTRUCTION:
+       INTENT DETECTED:
+       ${intentKey}
+
+       RULES:
+        - No menciones el intento detectado.
         - El usuario escribió algo ambiguo o no reconocible.
         - NO digas "no entendí" ni "no sé qué quieres".
         - En su lugar, presenta las capacidades del sistema de forma cálida y útil.
 
-        HOW TO RESPOND:
+       HOW TO RESPOND:
         1. Breve reconocimiento: "Vale, te ayudo 👋" o "Claro, mira lo que puedo hacer por ti:"
         2. Muestra SOLO estas capacidades (ajusta según módulos activos):
           • Reservas: crear, modificar o cancelar mesa
           • Pedidos: ver menú, hacer pedidos para llevar o retirar
           • Información: horarios, dirección, pago y entrega
         3. Cierra con una invitación simple: "¿Por dónde empezamos?" o "¿Qué te apetece hoy?"
-
-        RULES:
-        - Usa máximo 6 líneas (mobile-friendly)
-        - Emojis como bullets (🍽️ 📋 📍), nunca guiones técnicos
-        - Lenguaje coloquial: "reservar mesa" NO "gestionar reservas"
-        - NO menciones que el mensaje fue ambiguo — solo orienta positivamente
      `;
 
     case "ask_clarification":
@@ -95,7 +93,7 @@ export function intentClassifierPrompt(
         SPECIFIC INSTRUCTION:
         - Confirma SOLO el dato crítico que falta para proceder.
         - NO repitas toda la intención (es ruido).
-        - Sé ultra-conciso: máximo 1 pregunta + 1 botón implícito.
+        - Sé conciso: máximo 1 pregunta + 1 botón implícito.
 
         RESPONSE FORMAT (obligatorio):
         ¿[Verbo en infinitivo] [dato crítico]? ✅

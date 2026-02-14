@@ -9,7 +9,7 @@ import {
 } from "@/application/services/pomdp";
 import { formatSagaOutput } from "../helpers/format-saga-output";
 import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
-import { intentClassifierPrompt } from "./helpers/intent-prompt";
+import { intentClassifierPrompt } from "./helpers/intent-classifier-prompt";
 import { businessInfoChunck } from "./helpers/business-info-chunk";
 import { handleMessageProcessing } from "./helpers/prepare-messages";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";

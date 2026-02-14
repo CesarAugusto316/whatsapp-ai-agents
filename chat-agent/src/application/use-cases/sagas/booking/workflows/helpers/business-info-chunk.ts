@@ -19,10 +19,12 @@ export function businessInfoChunck(
   const base = `
     ${basePrompt(ctx)}
 
+    INTENT DETECTED:
+    ${intentKey}
+
     RULES:
-    - Strictly informational: answer based ONLY on existing data
-    - NEVER invent or predict unavailable information
-    - NEVER ask questions that require user input
+    - No menciones el intento detectado.
+    - You Never invent information,
 
     ==============================
     BUSINESS GENERAL INFORMATION

@@ -4,13 +4,17 @@
  */
 export function generateAgentGoals(activeModules: string[]): string {
   const coreModules = activeModules.filter(
-    (mod) =>
-      !["informational", "social-protocol", "conversational-signal"].includes(
-        mod,
-      ),
+    (mod) => !["social-protocol", "conversational-signal"].includes(mod),
   );
 
   const goals: string[] = [];
+
+  if (coreModules.includes("informational")) {
+    goals.push("- Responder preguntas basadas únicamente en el contexto");
+    goals.push(
+      "- Dar información sobre el negocio: horarios, precios, servicios, ubicación etc.",
+    );
+  }
 
   if (coreModules.includes("booking")) {
     goals.push("- Gestionar reservas (crear, modificar, cancelar)");
@@ -31,6 +35,7 @@ export function generateAgentGoals(activeModules: string[]): string {
     goals.push("- Informar sobre servicios disponibles");
   }
 
+  // fallback
   if (goals.length === 0) {
     goals.push("- Responder preguntas generales");
     goals.push("- Ayudar con información básica");

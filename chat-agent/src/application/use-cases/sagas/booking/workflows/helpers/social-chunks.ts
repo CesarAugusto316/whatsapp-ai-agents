@@ -221,10 +221,12 @@ export function socialProtocolChunk(
   const base = `
     ${basePrompt(ctx)}
 
-      RULES:
-      - Be warm but concise
-      - NEVER ask for user input in goodbye/thanks
-      - For greetings: adapt depth based on user state (new vs returning)
+    INTENT DETECTED:
+    ${intentKey}
+
+    RULES:
+    - No menciones el intento detectado.
+    - You Never invent information,
   `.trim();
 
   // Respuestas predefinidas (el LLM solo formatea, no inventa)
