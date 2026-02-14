@@ -1,8 +1,5 @@
 import { BeliefIntent, BeliefState } from "../belief/belief.types";
-import {
-  BookingOptions,
-  ProductOrderOptions,
-} from "@/domain/restaurant/booking";
+import { BookingOptions } from "@/domain/restaurant/booking";
 import { IntentExampleKey } from "../intents/intent.types";
 
 // ============================================
@@ -148,11 +145,11 @@ export class PolicyEngine {
 
       // Restaurant
       "restaurant:view_menu": "restaurant:view_menu", // hay que implementar
-      "restaurant:place_order": ProductOrderOptions.MAKE_PRODUCT_ORDER,
+      "restaurant:place_order": "restaurant:place_order",
       "restaurant:find_dishes": "restaurant:find_dishes", // hay que implementar
       "restaurant:recommend_dishes": "restaurant:recommend_dishes", // hay que implementar
-      "restaurant:update_order": ProductOrderOptions.UPDATE_PRODUCT_ORDER,
-      "restaurant:cancel_order": ProductOrderOptions.CANCEL_PRODUCT_ORDER,
+      "restaurant:update_order": "restaurant:update_order",
+      "restaurant:cancel_order": "restaurant:cancel_order",
 
       // basicInformational
       "info:ask_location": "info:ask_location",

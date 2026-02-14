@@ -6,6 +6,7 @@ import { systemMessages } from "@/domain/restaurant/booking/prompts";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
 import { BookingResult } from "../booking-saga";
+import { BookingIntentKey } from "@/application/services/pomdp";
 
 /**
  *
@@ -15,7 +16,7 @@ import { BookingResult } from "../booking-saga";
  */
 export async function initialOptionsWorkflow(
   ctx: RestaurantCtx,
-  option: string, // replace in the future for CoreIntentKey
+  option: BookingIntentKey | string, // replace in the future for CoreIntentKey
 ): Promise<BookingResult | undefined> {
   const { bookingKey, customer, business } = ctx;
 
@@ -90,5 +91,10 @@ export async function initialOptionsWorkflow(
         },
       },
     };
+  }
+
+  if (option === "booking:check_availability") {
+    //
+    console.log({ option });
   }
 }
