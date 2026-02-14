@@ -1,77 +1,243 @@
-import { BookingSchema } from "@/domain/restaurant/booking/schemas";
-import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+import { z } from "zod";
 
+// Definición del esquema de respuesta
+const BookingDataSchema = z.object({
+  customerName: z.string(),
+  datetime: z.object({
+    start: z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // formato YYYY-MM-DD
+      time: z.string().regex(/^\d{2}:\d{2}:\d{2}$/), // formato HH:MM:SS
+    }),
+    end: z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // formato YYYY-MM-DD
+      time: z.string().regex(/^\d{2}:\d{2}:\d{2}$/), // formato HH:MM:SS
+    }),
+  }),
+  numberOfPeople: z.number().int().min(0).max(50),
+});
+
+export type ParsedBookingData = z.infer<typeof BookingDataSchema>;
+
+/**
+ * Parsea datos de reserva desde un mensaje de texto en lenguaje natural
+ * @param message Mensaje de texto en lenguaje natural
+ * @param timezone Zona horaria para interpretar las fechas/tiempos
+ * @param referenceDate Fecha de referencia para interpretar fechas relativas (por defecto: fecha actual)
+ * @returns Objeto con los datos de reserva parseados
+ */
 export function parseBookingData(
   message: string,
-  timezone = "Europe/Madrid", //
-  averageDurationMinutes: number = 60,
-): BookingSchema {
-  //
-  const now = new Date();
-  const referenceDate = toZonedTime(now, timezone);
-  const text = message.toLowerCase().trim();
+  timezone: string = "America/Mexico_City", // Zona horaria por defecto para Latinoamérica
+  referenceDate: Date = new Date(),
+): ParsedBookingData {
+  // Normalizar el mensaje
+  const normalizedMessage = message.trim();
 
-  // 1. Extraer número de personas
-  const people = extractPeople(text);
+  // Extraer número de personas
+  const numberOfPeople = extractNumberOfPeople(normalizedMessage);
 
-  // 2. Extraer fechas
-  const dates = extractDates(text, referenceDate);
+  // Extraer nombre del cliente
+  const customerName = extractCustomerName(message); // Usar el mensaje original para preservar mayúsculas
 
-  // 3. Extraer tiempos (rango o individual)
-  const times = extractTimes(text);
-
-  // 4. Aplicar reglas de negocio
-  const resolvedDateTime = resolveDateTime({
-    dates,
-    times,
+  // Extraer fechas y tiempos
+  const { startDate, startTime, endDate, endTime } = extractDateTime(
+    normalizedMessage,
+    timezone,
     referenceDate,
-    averageDurationMinutes,
+  );
+
+  // Validar y formatear la respuesta
+  const result = BookingDataSchema.parse({
+    customerName,
+    datetime: {
+      start: {
+        date: startDate,
+        time: startTime,
+      },
+      end: {
+        date: endDate,
+        time: endTime,
+      },
+    },
+    numberOfPeople,
   });
 
-  // 5. Extraer nombre (preservar mayúsculas del original)
-  const name = extractName(message);
+  return result;
+}
+
+/**
+ * Extrae el número de personas del mensaje
+ */
+function extractNumberOfPeople(message: string): number {
+  const text = message.toLowerCase();
+
+  // Patrones comunes para identificar número de personas
+  const patterns = [
+    // "mesa para X", "para X personas", etc.
+    /(?:mesa|reserva|cita|evento)\s+para\s+(\d+)/i,
+    // "para X personas", "X personas", "mesa para X"
+    /(?:para|de|con|grupo de|somos|vamos a ser|vamos|total|reserva para)\s*(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?)/i,
+
+    // "X adultos", "X niños", etc.
+    /(\d+)\s*(?:adultos?|niños?|menores?|bebes?|bebés?)/i,
+
+    // Números simples al principio o al final
+    /^(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?)/i,
+    /(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?)\s*(\d+)$/i,
+
+    // "somos X", "serán X", etc.
+    /(?:somos|serán|vamos a ser|vamos|va a ir|van a ir|irá|irán)\s*(\d+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > 0 && num <= 50) {
+        // Rango razonable
+        return num;
+      }
+    }
+  }
+
+  // Si no encontramos un número explícito, buscar algunos casos comunes
+  if (text.includes("solo") || text.includes("solos")) {
+    if (text.includes("dos") || text.includes("2")) return 2;
+    if (text.includes("uno") || text.includes("1")) return 1;
+  }
+
+  // Valor por defecto si no se encuentra número
+  return 0;
+}
+
+/**
+ * Extrae el nombre del cliente del mensaje
+ */
+function extractCustomerName(message: string): string {
+  // Buscar posibles nombres propios (palabras que comienzan con mayúscula)
+  const namePattern = /[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})*/g;
+  const matches = message.match(namePattern) || [];
+
+  // Filtrar palabras comunes que no son nombres
+  const commonWords = [
+    "Hola",
+    "Buen",
+    "Buenos",
+    "Buenas",
+    "Gracias",
+    "Por",
+    "Para",
+    "Con",
+    "De",
+    "La",
+    "El",
+    "Las",
+    "Los",
+    "Del",
+    "Al",
+    "A",
+    "En",
+    "Y",
+    "O",
+    "Si",
+    "No",
+    "Que",
+    "Es",
+    "Se",
+    "Te",
+    "Me",
+    "Le",
+    "Les",
+    "Da",
+    "Dan",
+    "Doy",
+    "Dio",
+    "Dieron",
+    "Hoy",
+    "Mañana",
+    "Tarde",
+    "Noche",
+    "Mesa",
+    "Reserva",
+    "Personas",
+    "Para",
+    "Ellos",
+    "Ellas",
+    "Usted",
+    "Ustedes",
+  ];
+
+  const potentialNames = matches.filter((name) => !commonWords.includes(name));
+
+  // Devolver el primer nombre potencial encontrado o cadena vacía
+  return potentialNames.length > 0 ? potentialNames[0] : "";
+}
+
+/**
+ * Extrae fecha y hora del mensaje
+ */
+function extractDateTime(
+  message: string,
+  timezone: string,
+  referenceDate: Date,
+): {
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+} {
+  const text = message.toLowerCase();
+
+  // Determinar la fecha
+  const { date, isNextWeek } = extractDate(text, referenceDate);
+
+  // Determinar la hora de inicio
+  const startTime = extractStartTime(text);
+
+  // Determinar la hora de fin (basada en duración promedio o explícita)
+  const endTime = extractEndTime(text, startTime);
+
+  // Formatear fechas en UTC
+  const startDate = formatDateUTC(date);
+  const endDate = startTime > endTime ? addDays(date, 1) : date; // Si la hora final es menor, es cruza medianoche
 
   return {
-    customerName: name,
-    datetime: resolvedDateTime,
-    numberOfPeople: people,
+    startDate,
+    startTime,
+    endDate: formatDateUTC(endDate),
+    endTime,
   };
 }
 
-function extractPeople(text: string): number {
-  // "para 4 personas", "somos 3", "2 comensales"
-  const match = text.match(
-    /\b(?:para|somos|seremos|serán|comensales?)\s*(\d+)|\b(\d+)\s*(?:personas?|comensales?)\b/i,
-  );
-  if (match) return parseInt(match[1] || match[2]);
-
-  // Mensajes ultra-cortos: "4", "para 2"
-  if (/^\d+$/.test(text.trim()) && parseInt(text) <= 20) {
-    return parseInt(text.trim());
-  }
-
-  return 0; // 0 = no proporcionado
-}
-
-function extractDates(text: string, ref: Date): { start?: Date; end?: Date } {
-  const today = new Date(ref);
+/**
+ * Extrae la fecha del mensaje
+ */
+function extractDate(
+  text: string,
+  referenceDate: Date,
+): { date: Date; isNextWeek: boolean } {
+  const today = new Date(referenceDate);
   today.setHours(0, 0, 0, 0);
 
-  // Hoy, mañana, pasado mañana
-  if (/hoy/i.test(text)) return { start: today };
-  if (/mañana/i.test(text)) {
-    const tmrw = new Date(today);
-    tmrw.setDate(tmrw.getDate() + 1);
-    return { start: tmrw };
-  }
-  if (/pasad[oa]\s*mañana/i.test(text)) {
-    const dat = new Date(today);
-    dat.setDate(dat.getDate() + 2);
-    return { start: dat };
+  // Fechas relativas
+  if (text.includes("hoy")) {
+    return { date: today, isNextWeek: false };
   }
 
-  // Weekdays en español
-  const weekdays = [
+  if (text.includes("mañana")) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return { date: tomorrow, isNextWeek: false };
+  }
+
+  if (text.includes("pasado mañana")) {
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    return { date: dayAfterTomorrow, isNextWeek: false };
+  }
+
+  // Días de la semana
+  const daysOfWeek = [
     "domingo",
     "lunes",
     "martes",
@@ -80,34 +246,61 @@ function extractDates(text: string, ref: Date): { start?: Date; end?: Date } {
     "viernes",
     "sábado",
   ];
-  const dayMatch = text.match(
-    /(domingo|lunes|martes|miércoles|jueves|viernes|sábado)/i,
-  );
-  if (dayMatch) {
-    const targetDay = weekdays.indexOf(dayMatch[1].toLowerCase());
-    const currentDay = ref.getDay();
-    let daysToAdd = (targetDay - currentDay + 7) % 7;
-    if (daysToAdd === 0) daysToAdd = 7; // próximo ocurrencia
+  for (let i = 0; i < daysOfWeek.length; i++) {
+    if (text.includes(daysOfWeek[i])) {
+      const targetDay = i;
+      const currentDay = referenceDate.getDay(); // 0 = domingo, 1 = lunes, etc.
 
-    const next = new Date(today);
-    next.setDate(today.getDate() + daysToAdd);
-    return { start: next };
+      let daysUntilTarget = (targetDay - currentDay + 7) % 7;
+      if (daysUntilTarget === 0) daysUntilTarget = 7; // Si es el mismo día, ir al siguiente
+
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + daysUntilTarget);
+
+      return { date: targetDate, isNextWeek: daysUntilTarget > 7 };
+    }
   }
 
-  // Fin de semana → sábado
-  if (/fin\s+de\s+semana/i.test(text)) {
-    const sat = new Date(today);
-    while (sat.getDay() !== 6) sat.setDate(sat.getDate() + 1);
-    return { start: sat };
+  // Fechas específicas (DD/MM/YYYY, DD-MM-YYYY, etc.)
+  const datePatterns = [
+    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/, // DD/MM/YYYY o DD-MM-YYYY
+    /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/, // YYYY-MM-DD o YYYY/MM/DD
+    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})/, // DD/MM/YY o DD-MM-YY
+  ];
+
+  for (const pattern of datePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let [, day, month, year] = match;
+      let fullYear = parseInt(year, 10);
+
+      // Convertir años de 2 dígitos a 4 dígitos
+      if (fullYear < 100) {
+        fullYear = fullYear + 2000;
+      }
+
+      const parsedDate = new Date(
+        fullYear,
+        parseInt(month, 10) - 1,
+        parseInt(day, 10),
+      );
+
+      // Si la fecha ya pasó, asumir que es del próximo año
+      if (parsedDate < today) {
+        parsedDate.setFullYear(parsedDate.getFullYear() + 1);
+      }
+
+      return { date: parsedDate, isNextWeek: false };
+    }
   }
 
-  // Fechas absolutas: "25 de enero"
-  const absMatch = text.match(
-    /(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i,
-  );
-  if (absMatch) {
-    const day = parseInt(absMatch[1]);
-    const monthNames = [
+  // Mes y día (sin año)
+  const monthDayPattern =
+    /(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
+  const monthDayMatch = text.match(monthDayPattern);
+  if (monthDayMatch) {
+    const [, dayStr, monthStr] = monthDayMatch;
+    const months = [
       "enero",
       "febrero",
       "marzo",
@@ -121,140 +314,192 @@ function extractDates(text: string, ref: Date): { start?: Date; end?: Date } {
       "noviembre",
       "diciembre",
     ];
-    const month = monthNames.indexOf(absMatch[2].toLowerCase());
-    const year = ref.getFullYear();
+    const monthIndex = months.findIndex(
+      (m) => m.toLowerCase() === monthStr.toLowerCase(),
+    );
+    const day = parseInt(dayStr, 10);
 
-    let date = new Date(year, month, day);
-    if (date < ref) date.setFullYear(year + 1); // Si ya pasó, usar próximo año
+    const parsedDate = new Date(today.getFullYear(), monthIndex, day);
 
-    return { start: date };
-  }
-
-  return {};
-}
-
-function extractTimes(text: string): {
-  start?: string;
-  end?: string;
-  isRange: boolean;
-} {
-  // Rango horario: "de 8 a 10", "de 22:00 a 02:00"
-  const rangeMatch = text.match(
-    /(?:de|entre|desde)\s+(\d{1,2})(?::(\d{2}))?\s*(?:a|hasta|y)\s+(\d{1,2})(?::(\d{2}))?/i,
-  );
-  if (rangeMatch) {
-    const h1 = rangeMatch[1].padStart(2, "0");
-    const m1 = rangeMatch[2] || "00";
-    const h2 = rangeMatch[3].padStart(2, "0");
-    const m2 = rangeMatch[4] || "00";
-    return {
-      start: `${h1}:${m1}:00`,
-      end: `${h2}:${m2}:00`,
-      isRange: true,
-    };
-  }
-
-  // Formato 12h: "a las 8pm", "para las 2pm"
-  const pmMatch = text.match(
-    /(?:a\s+las|para\s+las)\s+(\d{1,2})\s*(?:pm|p\.?m\.?)/i,
-  );
-  if (pmMatch) {
-    let hour = parseInt(pmMatch[1]);
-    if (hour < 12) hour += 12;
-    return {
-      start: `${hour.toString().padStart(2, "0")}:00:00`,
-      end: undefined,
-      isRange: false,
-    };
-  }
-
-  // Formato 24h: "a las 20:00", "para las 14:30"
-  const timeMatch = text.match(
-    /(?:a\s+las|para\s+las)\s+(\d{1,2})(?::(\d{2}))?/i,
-  );
-  if (timeMatch) {
-    const h = timeMatch[1].padStart(2, "0");
-    const m = timeMatch[2] || "00";
-    return {
-      start: `${h}:${m}:00`,
-      end: undefined,
-      isRange: false,
-    };
-  }
-
-  return { isRange: false };
-}
-
-function resolveDateTime({
-  dates,
-  times,
-  referenceDate,
-  averageDurationMinutes,
-}: {
-  dates: { start?: Date; end?: Date };
-  times: { start?: string; end?: string; isRange: boolean };
-  referenceDate: Date;
-  averageDurationMinutes: number;
-}): BookingSchema["datetime"] {
-  const formatDate = (d: Date) => d.toISOString().split("T")[0];
-  const formatTime = (d: Date) => d.toTimeString().slice(0, 8);
-
-  // Caso 1: Rango horario explícito
-  if (times.isRange && times.start && times.end) {
-    const startDate = dates.start || referenceDate;
-    const endDate = dates.end || startDate;
-
-    // Manejar cruce de medianoche
-    const startHour = parseInt(times.start.split(":")[0]);
-    const endHour = parseInt(times.end.split(":")[0]);
-    let finalEndDate = endDate;
-
-    if (endHour < startHour) {
-      finalEndDate = new Date(endDate);
-      finalEndDate.setDate(finalEndDate.getDate() + 1);
+    // Si la fecha ya pasó este año, usar el próximo año
+    if (parsedDate < today) {
+      parsedDate.setFullYear(parsedDate.getFullYear() + 1);
     }
 
-    return {
-      start: { date: formatDate(startDate), time: times.start },
-      end: { date: formatDate(finalEndDate), time: times.end },
-    };
+    return { date: parsedDate, isNextWeek: false };
   }
 
-  // Caso 2: Solo hora de inicio → calcular endTime
-  if (times.start && !times.end) {
-    const startDate = dates.start || referenceDate;
-
-    const [h, m] = times.start.split(":").map(Number);
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(h, m, 0);
-
-    const endDateTime = new Date(
-      startDateTime.getTime() + averageDurationMinutes * 60000,
+  // También buscar "viernes 20 de septiembre" u otros formatos similares
+  const weekdayMonthDayPattern =
+    /(lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s+(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
+  const weekdayMonthDayMatch = text.match(weekdayMonthDayPattern);
+  if (weekdayMonthDayMatch) {
+    const [, , dayStr, monthStr] = weekdayMonthDayMatch;
+    const months = [
+      "enero",
+      "febrero",
+      "marzo",
+      "abril",
+      "mayo",
+      "junio",
+      "julio",
+      "agosto",
+      "septiembre",
+      "octubre",
+      "noviembre",
+      "diciembre",
+    ];
+    const monthIndex = months.findIndex(
+      (m) => m.toLowerCase() === monthStr.toLowerCase(),
     );
+    const day = parseInt(dayStr, 10);
 
-    return {
-      start: { date: formatDate(startDate), time: times.start },
-      end: { date: formatDate(endDateTime), time: formatTime(endDateTime) },
-    };
+    const parsedDate = new Date(today.getFullYear(), monthIndex, day);
+
+    // Si la fecha ya pasó este año, usar el próximo año
+    if (parsedDate < today) {
+      parsedDate.setFullYear(parsedDate.getFullYear() + 1);
+    }
+
+    return { date: parsedDate, isNextWeek: false };
   }
 
-  // Caso 3: Solo fecha → sin tiempos
-  return {
-    start: { date: dates.start ? formatDate(dates.start) : "", time: "" },
-    end: { date: dates.end ? formatDate(dates.end) : "", time: "" },
-  };
+  // Si no se encuentra ninguna fecha específica, usar hoy por defecto
+  return { date: today, isNextWeek: false };
 }
 
-function extractName(message: string): string {
-  // Detectar nombres con mayúsculas: "Raúl Lara", "Juan Pérez"
-  const nameMatch = message.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
-  if (
-    nameMatch &&
-    !/^(Hola|Buenos|Buenas|Gracias|Adiós|Por favor|Sí|No|Vale|Ok|Claro|Perfecto)$/i.test(
-      nameMatch[0],
-    )
-  ) {
-    return nameMatch[0];
+/**
+ * Extrae la hora de inicio del mensaje
+ */
+function extractStartTime(text: string): string {
+  // Patrones para horas (formato 24h o 12h con AM/PM)
+  const timePatterns = [
+    // HH:MM AM/PM o HH:MM PM/AM
+    /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
+    /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
+
+    // HH:MM (formato 24h)
+    /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})/i,
+    /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:hrs?|horas?)/i,
+
+    // "a las ocho", "a las nueve treinta", etc. (horas en palabras)
+    /(?:a\s+las?|desde|inicio|comienza|empieza)\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?/i,
+  ];
+
+  for (const pattern of timePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let hourStr = match[1];
+      const minuteStr = match[2] || "00";
+
+      // Convertir horas en palabras a números si es necesario
+      const hourWords: Record<string, number> = {
+        una: 1,
+        dos: 2,
+        tres: 3,
+        cuatro: 4,
+        cinco: 5,
+        seis: 6,
+        siete: 7,
+        ocho: 8,
+        nueve: 9,
+        diez: 10,
+        once: 11,
+        doce: 12,
+      };
+
+      let hour = parseInt(hourStr, 10);
+      if (isNaN(hour) && hourWords[hourStr.toLowerCase()]) {
+        hour = hourWords[hourStr.toLowerCase()];
+      }
+
+      // Verificar si es AM o PM
+      if (pattern.source.includes("a\\.?m\\.?|p\\.?m\\.")) {
+        const ampm = (text.match(/(a\.?m\.?|p\.?m\.?)/i) ||
+          [])[0]?.toLowerCase();
+        if (ampm?.includes("p") && hour < 12) {
+          hour += 12;
+        } else if (ampm?.includes("a") && hour === 12) {
+          hour = 0;
+        }
+      }
+
+      return `${hour.toString().padStart(2, "0")}:${minuteStr.padStart(2, "0")}:00`;
+    }
   }
-  return "";
+
+  // Si no se encuentra hora específica, usar hora por defecto (por ejemplo, 19:00)
+  return "19:00:00";
+}
+
+/**
+ * Extrae la hora de fin del mensaje
+ */
+function extractEndTime(text: string, startTime: string): string {
+  // Patrones para hora de fin
+  const endPatterns = [
+    // "de X a Y", "de X hasta Y", "de X a las Y"
+    /(?:de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+)?(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    /(?:de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+)?(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+  ];
+
+  for (const pattern of endPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let hourStr = match[1];
+      const minuteStr = match[2] || "00";
+
+      let hour = parseInt(hourStr, 10);
+
+      // Verificar si es AM o PM
+      if (pattern.source.includes("a\\.?m\\.?|p\\.?m\\.")) {
+        const ampm = (text.match(/(a\.?m\.?|p\.?m\.?)/i) ||
+          [])[0]?.toLowerCase();
+        if (ampm?.includes("p") && hour < 12) {
+          hour += 12;
+        } else if (ampm?.includes("a") && hour === 12) {
+          hour = 0;
+        }
+      }
+
+      return `${hour.toString().padStart(2, "0")}:${minuteStr.padStart(2, "0")}:00`;
+    }
+  }
+
+  // Si no se encuentra hora de fin específica, calcularla basada en la hora de inicio
+  // Suponiendo una duración promedio de 2 horas
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  let endHour = startHour;
+  let endMinute = startMinute + 120; // Duración promedio de 2 horas
+
+  // Ajustar minutos y horas si es necesario
+  if (endMinute >= 60) {
+    endHour += Math.floor(endMinute / 60);
+    endMinute = endMinute % 60;
+
+    if (endHour >= 24) {
+      endHour = endHour % 24;
+    }
+  }
+
+  return `${endHour.toString().padStart(2, "0")}:${endMinute.toString().padStart(2, "0")}:00`;
+}
+
+/**
+ * Formatea una fecha en formato UTC (YYYY-MM-DD)
+ */
+function formatDateUTC(date: Date): string {
+  // Convertir a UTC asegurando que sea la fecha completa
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    .toISOString()
+    .split("T")[0];
+}
+
+/**
+ * Agrega días a una fecha
+ */
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
 }
