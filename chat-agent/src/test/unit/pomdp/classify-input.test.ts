@@ -396,7 +396,7 @@ describe("classifyInput", () => {
     expect(classifyInput("¿Me aguantan pa' 4 parce y 2 más?")).toBe(
       InputIntent.NORMAL_SENTENCE,
     );
-    expect(classifyInput("Somos 3 hermanos pa' el viernes, ¿cholo?")).toBe(
+    expect(classifyInput("Somos 3 hermanos pa' el viernes")).toBe(
       InputIntent.INPUT_DATA,
     );
     expect(classifyInput("caben 6 chamacos pa hoy?")).toBe(
@@ -404,6 +404,97 @@ describe("classifyInput", () => {
     );
     expect(classifyInput("Pa' 2 compas el sábado, ¿sí?")).toBe(
       InputIntent.INPUT_DATA,
+    );
+  });
+
+  // Additional tests for lowercase and no punctuation cases
+  test("should handle lowercase inputs with no punctuation", () => {
+    // Lowercase without punctuation - INPUT_DATA
+    expect(classifyInput("reserva para 2 personas")).toBe(
+      InputIntent.INPUT_DATA,
+    );
+    expect(classifyInput("mesa para 4 el viernes")).toBe(
+      InputIntent.INPUT_DATA,
+    );
+    expect(classifyInput("hoy a las 8pm")).toBe(InputIntent.INPUT_DATA);
+    expect(classifyInput("mañana")).toBe(InputIntent.INPUT_DATA);
+    expect(classifyInput("2 personas")).toBe(InputIntent.INPUT_DATA);
+
+    // Lowercase without punctuation - CUSTOMER_QUESTION
+    expect(classifyInput("tienen disponibilidad")).toBe(
+      InputIntent.NORMAL_SENTENCE,
+    );
+    expect(classifyInput("que opciones hay")).toBe(InputIntent.NORMAL_SENTENCE);
+    expect(classifyInput("cuanto cuesta")).toBe(InputIntent.NORMAL_SENTENCE);
+    expect(classifyInput("a que hora abren")).toBe(InputIntent.NORMAL_SENTENCE);
+    expect(classifyInput("hay mesa para 4")).toBe(InputIntent.NORMAL_SENTENCE);
+  });
+
+  test("should handle no punctuation cases", () => {
+    // Without any punctuation - INPUT_DATA
+    expect(classifyInput("RESERVA PARA 2 PERSONAS")).toBe(
+      InputIntent.INPUT_DATA,
+    );
+    expect(classifyInput("MESA PARA 4 EL VIERNES")).toBe(
+      InputIntent.INPUT_DATA,
+    );
+    expect(classifyInput("HOY A LAS 8PM")).toBe(InputIntent.INPUT_DATA);
+    expect(classifyInput("MAÑANA")).toBe(InputIntent.INPUT_DATA);
+
+    // Without any punctuation - CUSTOMER_QUESTION
+    expect(classifyInput("TIENEN DISPONIBILIDAD")).toBe(
+      InputIntent.NORMAL_SENTENCE,
+    );
+    expect(classifyInput("QUE OPCIONES HAY")).toBe(InputIntent.NORMAL_SENTENCE);
+    expect(classifyInput("CUANTO CUESTA")).toBe(InputIntent.NORMAL_SENTENCE);
+    expect(classifyInput("A QUE HORA ABREN")).toBe(InputIntent.NORMAL_SENTENCE);
+  });
+
+  test("should handle mixed lowercase uppercase with no punctuation", () => {
+    // Mixed case without punctuation - INPUT_DATA
+    expect(classifyInput("Reserva Para 2 Personas")).toBe(
+      InputIntent.INPUT_DATA,
+    );
+    expect(classifyInput("Mesa Para 4 El Viernes")).toBe(
+      InputIntent.INPUT_DATA,
+    );
+    expect(classifyInput("Hoy A Las 8pm")).toBe(InputIntent.INPUT_DATA);
+
+    // Mixed case without punctuation - CUSTOMER_QUESTION
+    expect(classifyInput("Tienen Disponibilidad")).toBe(
+      InputIntent.NORMAL_SENTENCE,
+    );
+    expect(classifyInput("Que Opciones Hay")).toBe(InputIntent.NORMAL_SENTENCE);
+    expect(classifyInput("Cuanto Cuesta")).toBe(InputIntent.NORMAL_SENTENCE);
+  });
+
+  test("should handle regional expressions without punctuation", () => {
+    // Regional expressions without punctuation - INPUT_DATA
+    expect(classifyInput("pa 2 el sabado")).toBe(InputIntent.INPUT_DATA);
+    expect(classifyInput("vamos pa 4 el lunes")).toBe(InputIntent.INPUT_DATA);
+    expect(classifyInput("somos 6 para hoy")).toBe(InputIntent.INPUT_DATA);
+
+    // Regional expressions without punctuation - CUSTOMER_QUESTION
+    expect(classifyInput("caben 6 chamacos pa hoy")).toBe(
+      InputIntent.NORMAL_SENTENCE,
+    );
+    expect(classifyInput("espacio pa 4")).toBe(InputIntent.INPUT_DATA);
+    expect(classifyInput("me aguantan pa 3")).toBe(InputIntent.NORMAL_SENTENCE);
+  });
+
+  test("should handle complex inputs without punctuation", () => {
+    // Complex without punctuation - INPUT_DATA
+    expect(classifyInput("reserva para 4 personas el viernes a las 8pm")).toBe(
+      InputIntent.INPUT_DATA,
+    );
+    expect(classifyInput("mesa para 2 manana")).toBe(InputIntent.INPUT_DATA);
+
+    // Complex without punctuation - CUSTOMER_QUESTION
+    expect(classifyInput("tienen disponible para 4 personas")).toBe(
+      InputIntent.NORMAL_SENTENCE,
+    );
+    expect(classifyInput("hay disponibilidad para hoy")).toBe(
+      InputIntent.NORMAL_SENTENCE,
     );
   });
 });

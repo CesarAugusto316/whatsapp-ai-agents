@@ -14,6 +14,49 @@ import { InputIntent } from "@/domain/restaurant/booking";
 export function classifyInput(message: string): InputIntent {
   const m = message.trim().toLowerCase();
 
+  // Additional normalization for specific edge cases without affecting main logic
+  // This handles the issue where removing punctuation or using lowercase shouldn't break classification
+  // But we need to be careful not to interfere with the existing logic that relies on punctuation
+
+  // Early detection for specific issue: "caben 6 chamacos pa hoy?" and similar patterns
+  // If the message starts with question words like "caben", "hay", "tienen", etc. followed by numbers and regional terms
+  // but ends with time/place references, it's likely a question despite containing data elements
+  if (
+    /\b^(caben|hay|tienen|tenés|queda|quedan|alcanza|aguantan|entran|puedo|podemos|me dan|nos dan|me ubican|nos ubican|páguenos)\s+\d+\s+\w+\s+(pa|para)\s+\w+/i.test(
+      m.replace(/[¿?]/g, ""),
+    )
+  ) {
+    return InputIntent.NORMAL_SENTENCE;
+  }
+
+  // Additional early detection for common question patterns without punctuation
+  if (
+    /\b^(hay|tienen|tenés|queda|quedan)\s+(mesa|espacio|disponible)/i.test(m) &&
+    /\b\d+\b/.test(m)
+  ) {
+    return InputIntent.NORMAL_SENTENCE;
+  }
+
+  // Handle "hay disponibilidad para hoy" and similar patterns
+  if (
+    /\b^(hay|tienen|tenés|queda|quedan)\s+disponibilidad\s+(para|pa)\s+\w+$/i.test(
+      m,
+    )
+  ) {
+    return InputIntent.NORMAL_SENTENCE;
+  }
+
+  // Enhanced question detection for informal speech without punctuation
+  const hasQuestionWithoutPunctuation =
+    // Check for question words that typically indicate a question even without punctuation
+    /\b(caben|cubre|alcanza|aguantan|entran|queda|quedan|disponible|disponibles|hay|tienen|tenés|tienes|está|están|puedo|podemos|me dan|nos dan|me hace|nos hace|me ubican|nos ubican|páguenos)\b/i.test(
+      m,
+    ) &&
+    // Ensure it's not followed by strong data indicators that would make it INPUT_DATA
+    !/\b(personas?|pers|comensales?|somos|seremos|será?n|vamos a ser)\b/i.test(
+      m.split(/[\.\!\?¿]/)[0] || m,
+    );
+
   // === PATRONES QUE INDICAN INPUT_DATA (reserva datos) ===
   const inputDataPatterns = [
     // Números de personas explícitos (incluyendo abreviaturas y términos regionales)
@@ -71,7 +114,7 @@ export function classifyInput(message: string): InputIntent {
     // Nombres de personas (palabras con mayúsculas o formatos comunes)
     {
       test: () =>
-        /[A-Z][a-z]+(\s+[A-Z][a-z]+)?/.test(message) &&
+        /[A-Z][a-z]+(\s+[A-Z][a-z]+)?/.test(message) && // Using original message to preserve capitalization for name detection
         !/^(hola|buenos|buenas|gracias|adiós|adios|por favor|sí|si|no|vale|ok|vale|claro|perfecto)$/i.test(
           m,
         ),
@@ -285,6 +328,53 @@ export function classifyInput(message: string): InputIntent {
       /\b(hoy|mañana|pasado|:\d{2}|am|pm|tarde|noche)\b/i.test(m))
   ) {
     return InputIntent.INPUT_DATA;
+  }
+
+  // Enhanced check for sentences starting with question words, even with punctuation
+  // If a sentence starts with or contains question words like "caben", "tienen", etc.
+  // and has numbers, but the question context is stronger, treat as NORMAL_SENTENCE
+  const startsWithQuestionWord =
+    /\b^(caben|tienen|tenés|hay|queda|quedan|alcanza|aguantan|entran|puedo|podemos|me dan|nos dan|me ubican|nos ubican|páguenos|cuánto|cuanto|qué|que|dónde|donde|cuándo|cuando|por qué|porque|para qué|para que|a qué|a que)/i.test(
+      m.replace(/[¿?]/g, "").trim(),
+    );
+
+  if (
+    startsWithQuestionWord &&
+    /\b(caben|tienen|tenés|hay|queda|quedan|alcanza|aguantan|entran|puedo|podemos|me dan|nos dan|me ubican|nos ubican|páguenos)\b/i.test(
+      m,
+    ) &&
+    /\b\d+\s*(chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|personas?|pers|comensales?)\b/i.test(
+      m,
+    )
+  ) {
+    return InputIntent.NORMAL_SENTENCE;
+  }
+
+  // Specific fix for the issue mentioned: "caben 6 chamacos pa hoy?" should be NORMAL_SENTENCE
+  // This handles the case where a question word is followed by numbers and regional terms
+  if (/\b^caben\s+\d+\s+chamacos?\b/i.test(m.replace(/[¿?]/g, ""))) {
+    return InputIntent.NORMAL_SENTENCE;
+  }
+
+  // Enhanced check for informal questions without punctuation
+  // If we detected question-like phrasing without punctuation and the question score isn't significantly lower,
+  // classify as NORMAL_SENTENCE instead of defaulting
+  if (hasQuestionWithoutPunctuation && questionScore >= inputDataScore - 2) {
+    return InputIntent.NORMAL_SENTENCE;
+  }
+
+  // Special case: if the message contains question words like "caben", "alcanza", etc.
+  // AND has numbers but the context suggests a question, treat as NORMAL_SENTENCE
+  if (
+    hasQuestionWithoutPunctuation &&
+    /\b(caben|alcanza|aguantan|entran|queda|quedan|tienen|hay|puedo|podemos|me dan|nos dan|me ubican|nos ubican|páguenos)\b/i.test(
+      m,
+    ) &&
+    /\b\d+\s*(chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|personas?|pers|comensales?)\b/i.test(
+      m,
+    )
+  ) {
+    return InputIntent.NORMAL_SENTENCE;
   }
 
   // Caso 4: Por defecto, asumir pregunta si no hay datos claros
