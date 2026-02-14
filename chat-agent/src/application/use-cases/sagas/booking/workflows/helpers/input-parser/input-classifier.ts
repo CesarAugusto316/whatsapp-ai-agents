@@ -16,10 +16,10 @@ export function classifyInput(message: string): InputIntent {
 
   // === PATRONES QUE INDICAN INPUT_DATA (reserva datos) ===
   const inputDataPatterns = [
-    // Números de personas explícitos (incluyendo abreviaturas y errores comunes)
+    // Números de personas explícitos (incluyendo abreviaturas y términos regionales)
     {
       test: () =>
-        /\b(\d+)\s*(personas?|pers|comensales?|somos|seremos|será?n|vamos a ser)\b/i.test(
+        /\b(\d+)\s*(personas?|pers|comensales?|somos|seremos|será?n|vamos a ser|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|hermano)\b/i.test(
           m,
         ) ||
         // Detectar errores comunes como "persnas" como variante de "personas"
@@ -112,7 +112,7 @@ export function classifyInput(message: string): InputIntent {
     // Verbos de pregunta/información
     {
       test: () =>
-        /\b(tienen|tenéis|hay|es|son|puedo|podemos|quisiera|me gustaría|necesito|necesitamos)\b/i.test(
+        /\b(tienen|tenéis|hay|es|son|puedo|podemos|quisiera|me gustaría|necesito|necesitamos|dan|dará|daran|aguantan|alcanza|caben|cabemos|cubre|ubican|páguenos)\b/i.test(
           m,
         ) && !/\b(\d+|mañana|manana|hoy|pasado)\b/i.test(m),
       weight: 8,
@@ -121,7 +121,7 @@ export function classifyInput(message: string): InputIntent {
     // Preguntas sobre disponibilidad/info (incluyendo variantes comunes)
     {
       test: () =>
-        /\b(disponibilidad|disponible|abren|cierran|horario|menú|menu|carta|opciones|precio|precios|costo|cuesta|sale|aceptan|formas|pago)\b/i.test(
+        /\b(disponibilidad|disponible|abren|cierran|horario|menú|menu|carta|opciones|precio|precios|costo|cuesta|sale|aceptan|formas|pago|vacantes|cupo|rato|chance|espacio|lugar|hueco)\b/i.test(
           m,
         ),
       weight: 9,
@@ -205,6 +205,55 @@ export function classifyInput(message: string): InputIntent {
       m.includes("cuesta") ||
       m.includes("precio") ||
       m.includes("costo"))
+  ) {
+    return InputIntent.CUSTOMER_QUESTION;
+  }
+
+  // Caso especial: Frases coloquiales y regionales que son claramente preguntas
+  if (
+    (m.includes("¿me") || m.startsWith("me")) &&
+    (m.includes("alcanza") ||
+      m.includes("aguantan") ||
+      m.includes("caben") ||
+      m.includes("cubre") ||
+      m.includes("ubican") ||
+      m.includes("páguenos"))
+  ) {
+    return InputIntent.CUSTOMER_QUESTION;
+  }
+
+  // Caso especial: Frases que empiezan con "¿Tenés", "¿Tienen", etc. seguidas de "lugar", "espacio", etc.
+  if (
+    (m.startsWith("¿tenés") ||
+      m.startsWith("¿tienen") ||
+      m.startsWith("¿hay")) &&
+    (m.includes("lugar") ||
+      m.includes("espacio") ||
+      m.includes("pa'") ||
+      m.includes("para"))
+  ) {
+    return InputIntent.CUSTOMER_QUESTION;
+  }
+
+  // Caso especial: Frases con "¿Cabemos", "¿Caben", "¿Cubre", etc.
+  if (
+    m.startsWith("¿cabemos") ||
+    m.startsWith("¿caben") ||
+    m.startsWith("¿cubre") ||
+    m.startsWith("¿hay") ||
+    m.startsWith("¿tienen") ||
+    m.startsWith("¿van a entrar") ||
+    m.startsWith("¿nos ubican")
+  ) {
+    return InputIntent.CUSTOMER_QUESTION;
+  }
+
+  // Caso especial: Frases coloquiales con pronombres y verbos de capacidad/ubicación
+  if (
+    (m.includes("¿van a entrar") ||
+      m.includes("¿nos ubican") ||
+      m.includes("¿nos dan")) &&
+    (m.includes("pa'") || m.includes("para"))
   ) {
     return InputIntent.CUSTOMER_QUESTION;
   }
