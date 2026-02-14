@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
+import { parse, isValid } from "date-fns";
 
 // Definición del esquema de respuesta
 const BookingDataSchema = z.object({
@@ -510,6 +512,15 @@ function extractDate(
 }
 
 /**
+ * Convierte una fecha local a UTC manteniendo la misma fecha
+ */
+function localDateToUTC(localDate: Date): Date {
+  // Para mantener la misma fecha, necesitamos ajustar la zona horaria
+  // de manera que la fecha no cambie al convertir a UTC
+  return fromZonedTime(localDate, "UTC");
+}
+
+/**
  * Extrae la hora de inicio del mensaje
  */
 function extractStartTime(text: string): string {
@@ -712,10 +723,10 @@ function extractEndTime(text: string, startTime: string): string {
  * Formatea una fecha en formato UTC (YYYY-MM-DD)
  */
 function formatDateUTC(date: Date): string {
-  // Convertir a UTC asegurando que sea la fecha completa
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-    .toISOString()
-    .split("T")[0];
+  // Usar date-fns-tz para manejar correctamente las zonas horarias
+  // Convertir la fecha local a UTC
+  const utcDate = fromZonedTime(date, "UTC");
+  return utcDate.toISOString().split("T")[0];
 }
 
 /**
