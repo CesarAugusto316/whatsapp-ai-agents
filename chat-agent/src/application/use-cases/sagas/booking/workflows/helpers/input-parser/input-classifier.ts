@@ -30,7 +30,7 @@ export function classifyInput(message: string): InputIntent {
     // Fechas relativas
     {
       test: () =>
-        /\b(hoy|mañana|pasad[oa]\s*mañana|este\s+fin\s+de\s+semana|fin\s+de\s+semana|viernes|sábado|domingo|lunes|martes|miércoles|jueves)\b/i.test(
+        /\b(hoy|mañana|pasad[oa]\s*mañana|este\s+fin\s+de\s+semana|fin\s+de\s+semana|viernes|sábado|domingo|lunes|martes|miércoles|jueves|tarde|noche)\b/i.test(
           m,
         ),
       weight: 8,
@@ -70,7 +70,7 @@ export function classifyInput(message: string): InputIntent {
         !/^(hola|buenos|buenas|gracias|adiós|adios|por favor|sí|si|no|vale|ok|vale|claro|perfecto)$/i.test(
           m,
         ),
-      weight: 6,
+      weight: 7, // Aumenté el peso para que tenga más relevancia
     },
 
     // Verbos de acción + datos
@@ -139,6 +139,69 @@ export function classifyInput(message: string): InputIntent {
   // === DECISIÓN CON THRESHOLDS ===
   const DIFF_THRESHOLD = 3; // Diferencia mínima para decisión clara
 
+  // Caso especial: Si hay signos de interrogación y hay tanto INPUT_DATA como CUSTOMER_QUESTION,
+  // pero la pregunta tiene palabras interrogativas explícitas, priorizar CUSTOMER_QUESTION
+  if (
+    (m.includes("¿") || m.includes("?")) &&
+    inputDataScore > 0 &&
+    questionScore > 0
+  ) {
+    // Buscar palabras interrogativas explícitas
+    const hasInterrogativeWords =
+      /\b(quién|quiénes|qué|cuál|cuáles|cómo|dónde|cuándo|por qué|para qué)\b/i.test(
+        m,
+      );
+    if (hasInterrogativeWords) {
+      return InputIntent.CUSTOMER_QUESTION;
+    }
+
+    // Si hay signos de pregunta y verbos de pregunta, priorizar CUSTOMER_QUESTION
+    const hasQuestionVerbs =
+      /\b(tienen|tenéis|hay|es|son|puedo|podemos|quisiera|me gustaría|necesito|necesitamos)\b/i.test(
+        m,
+      );
+    if (hasQuestionVerbs) {
+      return InputIntent.CUSTOMER_QUESTION;
+    }
+
+    // Si la frase comienza con una palabra interrogativa (antes de cualquier número o información de reserva), priorizar CUSTOMER_QUESTION
+    const trimmedMessage = message.trim();
+    // Buscar si alguna palabra interrogativa aparece al inicio de la frase (posiblemente después de "¿")
+    // Dividimos la frase en palabras y buscamos si alguna interrogativa está entre las primeras palabras
+    const words = trimmedMessage.replace(/[¿?]/g, "").trim().split(/\s+/);
+    if (words.length > 0) {
+      // Verificamos si alguna de las primeras palabras es interrogativa
+      const firstTwoWords = words.slice(0, 2); // Tomamos las dos primeras palabras
+      const hasQuestionWordInBeginning = firstTwoWords.some((word) =>
+        /\b(quién|quiénes|qué|cuál|cuáles|cómo|dónde|cuándo|por qué|para qué)\b/i.test(
+          word,
+        ),
+      );
+
+      if (hasQuestionWordInBeginning) {
+        return InputIntent.CUSTOMER_QUESTION;
+      }
+    }
+  }
+
+  // Caso especial adicional: Si hay signos de pregunta y la frase empieza con "¿A qué...",
+  // y hay elementos de pregunta, priorizar CUSTOMER_QUESTION
+  if (
+    m.startsWith("¿a qué") &&
+    (m.includes("personas") || m.includes("personas?"))
+  ) {
+    return InputIntent.CUSTOMER_QUESTION;
+  }
+
+  // Caso especial: Si hay signos de interrogación y palabras clave de pregunta, priorizar CUSTOMER_QUESTION
+  if ((m.includes("¿") || m.includes("?")) && questionScore > 0) {
+    // Aumentar el score de pregunta si hay signos de interrogación
+    const adjustedQuestionScore = questionScore + 3;
+    if (adjustedQuestionScore - inputDataScore >= DIFF_THRESHOLD) {
+      return InputIntent.CUSTOMER_QUESTION;
+    }
+  }
+
   // Caso 1: INPUT_DATA es mucho más fuerte
   if (inputDataScore >= 7 && inputDataScore - questionScore >= DIFF_THRESHOLD) {
     return InputIntent.INPUT_DATA;
@@ -153,7 +216,8 @@ export function classifyInput(message: string): InputIntent {
   // Si hay algún dato numérico o fecha/hora, priorizar INPUT_DATA
   if (
     inputDataScore > 0 &&
-    (/\b\d+\b/.test(m) || /\b(hoy|mañana|pasado|:\d{2}|am|pm)\b/i.test(m))
+    (/\b\d+\b/.test(m) ||
+      /\b(hoy|mañana|pasado|:\d{2}|am|pm|tarde|noche)\b/i.test(m))
   ) {
     return InputIntent.INPUT_DATA;
   }
