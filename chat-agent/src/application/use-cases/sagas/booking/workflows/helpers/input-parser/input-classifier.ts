@@ -16,21 +16,26 @@ export function classifyInput(message: string): InputIntent {
 
   // === PATRONES QUE INDICAN INPUT_DATA (reserva datos) ===
   const inputDataPatterns = [
-    // Números de personas explícitos
+    // Números de personas explícitos (incluyendo abreviaturas y errores comunes)
     {
       test: () =>
-        /\b(\d+)\s*(personas?|comensales?|somos|seremos|será?n|vamos a ser)\b/i.test(
+        /\b(\d+)\s*(personas?|pers|comensales?|somos|seremos|será?n|vamos a ser)\b/i.test(
           m,
-        ),
+        ) ||
+        // Detectar errores comunes como "persnas" como variante de "personas"
+        /\b(\d+)\s*persnas?\b/i.test(m),
       weight: 10,
     },
-    { test: () => m.length < 20 && /\bpara\s+(\d+)\b/i.test(m), weight: 9 }, // "para 2", "para 4 personas"
+    {
+      test: () => m.length < 20 && /\b(para|pa)\s+(\d+)\b/i.test(m),
+      weight: 9,
+    }, // "para 2", "pa 2", "para 4 personas"
     { test: () => /^\d+$/.test(m) && parseInt(m) <= 20, weight: 8 }, // Solo un número (asumir personas)
 
     // Fechas relativas
     {
       test: () =>
-        /\b(hoy|mañana|pasad[oa]\s*mañana|este\s+fin\s+de\s+semana|fin\s+de\s+semana|viernes|sábado|domingo|lunes|martes|miércoles|jueves|tarde|noche)\b/i.test(
+        /\b(hoy|mañana|manana|pasad[oa]\s*mañana|mañna|manña|este\s+fin\s+de\s+semana|fin\s+de\s+semana|viernes|vierne|sábado|sabado|domingo|lunes|martes|miércoles|miercoles|jueves|tarde|noche)\b/i.test(
           m,
         ),
       weight: 8,
@@ -45,10 +50,10 @@ export function classifyInput(message: string): InputIntent {
       weight: 7,
     },
 
-    // Horas explícitas
+    // Horas explícitas (incluyendo números escritos en palabras)
     {
       test: () =>
-        /\b(\d{1,2}:\d{2}(:\d{2})?|a\s+las\s+\d{1,2}|(\d{1,2})(am|pm|a\.?m\.?|p\.?m\.?))\b/i.test(
+        /\b(\d{1,2}:\d{2}(:\d{2})?|a\s+las\s+\d{1,2}|(\d{1,2})(am|pm|a\.?m\.?|p\.?m\.?)|a\s+las\s+(uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce))\b/i.test(
           m,
         ),
       weight: 7,
@@ -76,7 +81,7 @@ export function classifyInput(message: string): InputIntent {
     // Verbos de acción + datos
     {
       test: () =>
-        /\b(reservar|reserva|reservación|mesa|turno|cupo|lugar|sitio)\b/i.test(
+        /\b(reservar|reserva|res|reservación|mesa|turno|cupo|lugar|sitio)\b/i.test(
           m,
         ) &&
         (/\b\d+\b/.test(m) || /\b(hoy|mañana|pasado)\b/i.test(m)),
@@ -95,10 +100,10 @@ export function classifyInput(message: string): InputIntent {
 
   // === PATRONES QUE INDICAN CUSTOMER_QUESTION (preguntas/información) ===
   const questionPatterns = [
-    // Palabras interrogativas explícitas
+    // Palabras interrogativas explícitas (incluyendo variantes comunes con errores)
     {
       test: () =>
-        /\b(quién|quiénes|qué|cuál|cuáles|cómo|dónde|cuándo|por qué|para qué)\b/i.test(
+        /\b(quién|quiénes|qué|que|cuál|cuáles|cual|cómo|como|dónde|donde|cuándo|cuando|por qué|porque|para qué|para que)\b/i.test(
           m,
         ),
       weight: 10,
@@ -109,14 +114,14 @@ export function classifyInput(message: string): InputIntent {
       test: () =>
         /\b(tienen|tenéis|hay|es|son|puedo|podemos|quisiera|me gustaría|necesito|necesitamos)\b/i.test(
           m,
-        ) && !/\b(\d+|mañana|hoy|pasado)\b/i.test(m),
+        ) && !/\b(\d+|mañana|manana|hoy|pasado)\b/i.test(m),
       weight: 8,
     },
 
-    // Preguntas sobre disponibilidad/info
+    // Preguntas sobre disponibilidad/info (incluyendo variantes comunes)
     {
       test: () =>
-        /\b(disponibilidad|disponible|abren|cierran|horario|menú|menu|carta|opciones|precio|precios|costo|cuesta|aceptan|formas|pago)\b/i.test(
+        /\b(disponibilidad|disponible|abren|cierran|horario|menú|menu|carta|opciones|precio|precios|costo|cuesta|sale|aceptan|formas|pago)\b/i.test(
           m,
         ),
       weight: 9,
@@ -189,6 +194,17 @@ export function classifyInput(message: string): InputIntent {
   if (
     m.startsWith("¿a qué") &&
     (m.includes("personas") || m.includes("personas?"))
+  ) {
+    return InputIntent.CUSTOMER_QUESTION;
+  }
+
+  // Caso especial: Frases que contienen palabras de pregunta seguidas de palabras relacionadas con precios
+  if (
+    (m.includes("cuanto") || m.includes("cuánto")) &&
+    (m.includes("sale") ||
+      m.includes("cuesta") ||
+      m.includes("precio") ||
+      m.includes("costo"))
   ) {
     return InputIntent.CUSTOMER_QUESTION;
   }
