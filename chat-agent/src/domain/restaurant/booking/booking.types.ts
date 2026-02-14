@@ -21,7 +21,7 @@ export enum CUSTOMER_INTENT {
  */
 export enum InputIntent {
   INPUT_DATA = "INPUT_DATA",
-  CUSTOMER_QUESTION = "CUSTOMER_QUESTION",
+  NORMAL_SENTENCE = "NORMAL_SENTENCE", // QUESTIONS, ANSWERS, COMMANDS
 }
 
 export type AgentArgs = {

@@ -55,13 +55,13 @@ export const intentClassifierAgent = {
 
       const { success, data } = inputIntentSchema.safeParse(raw);
       if (success) return data;
-      return InputIntent.CUSTOMER_QUESTION; // fallback
+      return InputIntent.NORMAL_SENTENCE; // fallback
     } catch (err) {
       logger.error(
         "Error clasificando la intención del usuario:",
         err as Error,
       );
-      return InputIntent.CUSTOMER_QUESTION; // fallback en caso de error
+      return InputIntent.NORMAL_SENTENCE; // fallback en caso de error
     }
   },
 };

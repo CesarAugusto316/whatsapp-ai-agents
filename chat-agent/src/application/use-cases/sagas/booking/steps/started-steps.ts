@@ -101,16 +101,16 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
     const inputIntent =
       await intentClassifierAgent.inputIntent(customerMessage);
 
-    if (inputIntent === InputIntent.CUSTOMER_QUESTION) {
+    if (inputIntent === InputIntent.NORMAL_SENTENCE) {
       logger.info("Customer asked a question", {
         inputIntent,
       });
       return {
-        result: InputIntent.CUSTOMER_QUESTION,
+        result: InputIntent.NORMAL_SENTENCE,
         continue: false,
         metadata: {
           description: "INPUT_CLASSIFICATION_RESULT",
-          internal: InputIntent.CUSTOMER_QUESTION,
+          internal: InputIntent.NORMAL_SENTENCE,
         },
       };
     }

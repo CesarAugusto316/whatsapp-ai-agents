@@ -223,6 +223,6 @@ export const customerIntentSchema = z.enum([
 ]);
 
 export const inputIntentSchema = z.enum([
-  InputIntent.CUSTOMER_QUESTION,
+  InputIntent.NORMAL_SENTENCE,
   InputIntent.INPUT_DATA,
 ]);

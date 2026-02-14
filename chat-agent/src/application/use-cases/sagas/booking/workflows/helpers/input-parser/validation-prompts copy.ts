@@ -25,14 +25,14 @@ export const validationPrompts = {
           - Any numerical data, dates, or times
           Note: Incomplete, approximate, abbreviated, or mixed data still qualifies.
 
-      2. ${InputIntent.CUSTOMER_QUESTION} → The message is purely:
+      2. ${InputIntent.NORMAL_SENTENCE} → The message is purely:
           - An inquiry about hours, availability, menu, or policies
           - A comment, doubt, or question
           - Without ANY attempt to provide reservation details
 
       STRICT CLASSIFICATION RULES:
       - Input messages are ALWAYS in Spanish.
-      - Return ONLY this exact string: "${InputIntent.INPUT_DATA}" OR "${InputIntent.CUSTOMER_QUESTION}"
+      - Return ONLY this exact string: "${InputIntent.INPUT_DATA}" OR "${InputIntent.NORMAL_SENTENCE}"
       - NO explanations, examples, quotes, or additional text.
       - Base classification SOLELY on explicit presence of reservation data.
       - Partial/abbreviated data → ${InputIntent.INPUT_DATA}
@@ -46,7 +46,7 @@ export const validationPrompts = {
 
       USER: "¿A qué hora abre el restaurante mañana?"
       THOUGHT: The message asks about opening hours ("abre el restaurante") for tomorrow ("mañana"). There is no customer name, no reservation time being specified, no number of people, and the date reference is about the restaurant's schedule, not a reservation. This is purely an informational question.
-      OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
+      OUTPUT: ${InputIntent.NORMAL_SENTENCE}
 
       USER: "Deseo una reserva para mañana a las 7pm para dos personas, Raúl Lara"
       THOUGHT: I identify reservation data elements: date ("mañana"), time ("7pm"), number of people ("dos personas"), and customer name ("Raúl Lara"). All four key elements are present. The presence of this explicit reservation data dictates the classification.
@@ -54,7 +54,7 @@ export const validationPrompts = {
 
       USER: "Pueden acomodarnos una mesa al aire libre"
       THOUGHT: I check for reservation data elements. The message asks about accommodation ("mesa al aire libre") but provides no specific date, time, number of people, or customer name. It's a general inquiry about restaurant facilities, not an attempt to provide reservation details.
-      OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
+      OUTPUT: ${InputIntent.NORMAL_SENTENCE}
 
       USER: "Ok entonces, a las 8 para 3 personas"
       THOUGHT: I search for reservation data elements. I find specific time ("a las 8") and number of people ("3 personas"). Even though date and name are missing, the rules state partial reservation data still counts as input data. Two explicit data elements are present.
@@ -70,7 +70,7 @@ export const validationPrompts = {
 
       USER: "Tienen mesas libres mañana a las 8?"
       THOUGHT: I analyze for reservation data. The message mentions date ("mañana") and time ("a las 8"), but these are part of an availability inquiry, not data being provided for a reservation. No customer name or number of people is given, and the intent is to ask about availability rather than submit reservation details.
-      OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
+      OUTPUT: ${InputIntent.NORMAL_SENTENCE}
 
       USER: "Ya veo, entonces, Raul R. 25/12 20h 4 pers"
       THOUGHT: I check for reservation data elements in abbreviated form. I find: customer name ("Raul R."), date ("25/12"), time ("20h"), and number of people ("4 pers"). Despite the shorthand format, all four reservation data elements are explicitly present.
@@ -82,14 +82,14 @@ export const validationPrompts = {
 
       USER: "Necesitaría una mesa, tienen disponibilidad"
       THOUGHT: I analyze the message structure and content. The first part expresses need but provides no reservation data. The second part asks about availability without question marks, but the wording "tienen disponibilidad" functions as a question. Since no reservation data elements are present (no date, time, number of people, or name), this is a general inquiry.
-      OUTPUT: ${InputIntent.CUSTOMER_QUESTION}
+      OUTPUT: ${InputIntent.NORMAL_SENTENCE}
 
       USER: "Sigamos, vamos con la reserva"
       THOUGHT: I analyze the message structure and content. The first part expresses action, and the second part is a continuation of the action.
       OUTPUT: ${InputIntent.INPUT_DATA}
 
       FINAL OUTPUT REQUIREMENTS:
-      - Output ONLY: ${InputIntent.INPUT_DATA} or ${InputIntent.CUSTOMER_QUESTION}
+      - Output ONLY: ${InputIntent.INPUT_DATA} or ${InputIntent.NORMAL_SENTENCE}
       - NO explanations
       - NO additional text
       - NO quotes around the output

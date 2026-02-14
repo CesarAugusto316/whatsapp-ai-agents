@@ -157,7 +157,7 @@ export function classifyInput(message: string): InputIntent {
         m,
       );
     if (hasInterrogativeWords) {
-      return InputIntent.CUSTOMER_QUESTION;
+      return InputIntent.NORMAL_SENTENCE;
     }
 
     // Si hay signos de pregunta y verbos de pregunta, priorizar CUSTOMER_QUESTION
@@ -166,7 +166,7 @@ export function classifyInput(message: string): InputIntent {
         m,
       );
     if (hasQuestionVerbs) {
-      return InputIntent.CUSTOMER_QUESTION;
+      return InputIntent.NORMAL_SENTENCE;
     }
 
     // Si la frase comienza con una palabra interrogativa (antes de cualquier número o información de reserva), priorizar CUSTOMER_QUESTION
@@ -184,7 +184,7 @@ export function classifyInput(message: string): InputIntent {
       );
 
       if (hasQuestionWordInBeginning) {
-        return InputIntent.CUSTOMER_QUESTION;
+        return InputIntent.NORMAL_SENTENCE;
       }
     }
   }
@@ -195,7 +195,7 @@ export function classifyInput(message: string): InputIntent {
     m.startsWith("¿a qué") &&
     (m.includes("personas") || m.includes("personas?"))
   ) {
-    return InputIntent.CUSTOMER_QUESTION;
+    return InputIntent.NORMAL_SENTENCE;
   }
 
   // Caso especial: Frases que contienen palabras de pregunta seguidas de palabras relacionadas con precios
@@ -206,7 +206,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("precio") ||
       m.includes("costo"))
   ) {
-    return InputIntent.CUSTOMER_QUESTION;
+    return InputIntent.NORMAL_SENTENCE;
   }
 
   // Caso especial: Frases coloquiales y regionales que son claramente preguntas
@@ -219,7 +219,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("ubican") ||
       m.includes("páguenos"))
   ) {
-    return InputIntent.CUSTOMER_QUESTION;
+    return InputIntent.NORMAL_SENTENCE;
   }
 
   // Caso especial: Frases que empiezan con "¿Tenés", "¿Tienen", etc. seguidas de "lugar", "espacio", etc.
@@ -232,7 +232,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("pa'") ||
       m.includes("para"))
   ) {
-    return InputIntent.CUSTOMER_QUESTION;
+    return InputIntent.NORMAL_SENTENCE;
   }
 
   // Caso especial: Frases con "¿Cabemos", "¿Caben", "¿Cubre", etc.
@@ -245,7 +245,7 @@ export function classifyInput(message: string): InputIntent {
     m.startsWith("¿van a entrar") ||
     m.startsWith("¿nos ubican")
   ) {
-    return InputIntent.CUSTOMER_QUESTION;
+    return InputIntent.NORMAL_SENTENCE;
   }
 
   // Caso especial: Frases coloquiales con pronombres y verbos de capacidad/ubicación
@@ -255,7 +255,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("¿nos dan")) &&
     (m.includes("pa'") || m.includes("para"))
   ) {
-    return InputIntent.CUSTOMER_QUESTION;
+    return InputIntent.NORMAL_SENTENCE;
   }
 
   // Caso especial: Si hay signos de interrogación y palabras clave de pregunta, priorizar CUSTOMER_QUESTION
@@ -263,7 +263,7 @@ export function classifyInput(message: string): InputIntent {
     // Aumentar el score de pregunta si hay signos de interrogación
     const adjustedQuestionScore = questionScore + 3;
     if (adjustedQuestionScore - inputDataScore >= DIFF_THRESHOLD) {
-      return InputIntent.CUSTOMER_QUESTION;
+      return InputIntent.NORMAL_SENTENCE;
     }
   }
 
@@ -274,7 +274,7 @@ export function classifyInput(message: string): InputIntent {
 
   // Caso 2: CUSTOMER_QUESTION es mucho más fuerte
   if (questionScore >= 8 && questionScore - inputDataScore >= DIFF_THRESHOLD) {
-    return InputIntent.CUSTOMER_QUESTION;
+    return InputIntent.NORMAL_SENTENCE;
   }
 
   // Caso 3: Ambiguo - usar heurística de fallback
@@ -288,5 +288,5 @@ export function classifyInput(message: string): InputIntent {
   }
 
   // Caso 4: Por defecto, asumir pregunta si no hay datos claros
-  return InputIntent.CUSTOMER_QUESTION;
+  return InputIntent.NORMAL_SENTENCE;
 }
