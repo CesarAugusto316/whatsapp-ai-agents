@@ -26,7 +26,7 @@ export function classifyInput(message: string): InputIntent {
       m.replace(/[¿?]/g, ""),
     )
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Additional early detection for common question patterns without punctuation
@@ -34,7 +34,7 @@ export function classifyInput(message: string): InputIntent {
     /\b^(hay|tienen|tenés|queda|quedan)\s+(mesa|espacio|disponible)/i.test(m) &&
     /\b\d+\b/.test(m)
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Handle "hay disponibilidad para hoy" and similar patterns
@@ -43,7 +43,7 @@ export function classifyInput(message: string): InputIntent {
       m,
     )
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Enhanced question detection for informal speech without punctuation
@@ -200,7 +200,7 @@ export function classifyInput(message: string): InputIntent {
         m,
       );
     if (hasInterrogativeWords) {
-      return InputIntent.NORMAL_SENTENCE;
+      return InputIntent.INFORMATION_REQUEST;
     }
 
     // Si hay signos de pregunta y verbos de pregunta, priorizar CUSTOMER_QUESTION
@@ -209,7 +209,7 @@ export function classifyInput(message: string): InputIntent {
         m,
       );
     if (hasQuestionVerbs) {
-      return InputIntent.NORMAL_SENTENCE;
+      return InputIntent.INFORMATION_REQUEST;
     }
 
     // Si la frase comienza con una palabra interrogativa (antes de cualquier número o información de reserva), priorizar CUSTOMER_QUESTION
@@ -227,7 +227,7 @@ export function classifyInput(message: string): InputIntent {
       );
 
       if (hasQuestionWordInBeginning) {
-        return InputIntent.NORMAL_SENTENCE;
+        return InputIntent.INFORMATION_REQUEST;
       }
     }
   }
@@ -238,7 +238,7 @@ export function classifyInput(message: string): InputIntent {
     m.startsWith("¿a qué") &&
     (m.includes("personas") || m.includes("personas?"))
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases que contienen palabras de pregunta seguidas de palabras relacionadas con precios
@@ -249,7 +249,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("precio") ||
       m.includes("costo"))
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases coloquiales y regionales que son claramente preguntas
@@ -262,7 +262,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("ubican") ||
       m.includes("páguenos"))
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases que empiezan con "¿Tenés", "¿Tienen", etc. seguidas de "lugar", "espacio", etc.
@@ -275,7 +275,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("pa'") ||
       m.includes("para"))
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases con "¿Cabemos", "¿Caben", "¿Cubre", etc.
@@ -288,7 +288,7 @@ export function classifyInput(message: string): InputIntent {
     m.startsWith("¿van a entrar") ||
     m.startsWith("¿nos ubican")
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases coloquiales con pronombres y verbos de capacidad/ubicación
@@ -298,7 +298,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("¿nos dan")) &&
     (m.includes("pa'") || m.includes("para"))
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Caso especial: Si hay signos de interrogación y palabras clave de pregunta, priorizar CUSTOMER_QUESTION
@@ -306,18 +306,18 @@ export function classifyInput(message: string): InputIntent {
     // Aumentar el score de pregunta si hay signos de interrogación
     const adjustedQuestionScore = questionScore + 3;
     if (adjustedQuestionScore - inputDataScore >= DIFF_THRESHOLD) {
-      return InputIntent.NORMAL_SENTENCE;
+      return InputIntent.INFORMATION_REQUEST;
     }
   }
 
   // Caso 1: INPUT_DATA es mucho más fuerte
   if (inputDataScore >= 7 && inputDataScore - questionScore >= DIFF_THRESHOLD) {
-    return InputIntent.INPUT_DATA;
+    return InputIntent.USER_PROVIDED_DATA;
   }
 
   // Caso 2: CUSTOMER_QUESTION es mucho más fuerte
   if (questionScore >= 8 && questionScore - inputDataScore >= DIFF_THRESHOLD) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Caso 3: Ambiguo - usar heurística de fallback
@@ -327,7 +327,7 @@ export function classifyInput(message: string): InputIntent {
     (/\b\d+\b/.test(m) ||
       /\b(hoy|mañana|pasado|:\d{2}|am|pm|tarde|noche)\b/i.test(m))
   ) {
-    return InputIntent.INPUT_DATA;
+    return InputIntent.USER_PROVIDED_DATA;
   }
 
   // Enhanced check for sentences starting with question words, even with punctuation
@@ -347,20 +347,20 @@ export function classifyInput(message: string): InputIntent {
       m,
     )
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Specific fix for the issue mentioned: "caben 6 chamacos pa hoy?" should be NORMAL_SENTENCE
   // This handles the case where a question word is followed by numbers and regional terms
   if (/\b^caben\s+\d+\s+chamacos?\b/i.test(m.replace(/[¿?]/g, ""))) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Enhanced check for informal questions without punctuation
   // If we detected question-like phrasing without punctuation and the question score isn't significantly lower,
   // classify as NORMAL_SENTENCE instead of defaulting
   if (hasQuestionWithoutPunctuation && questionScore >= inputDataScore - 2) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Special case: if the message contains question words like "caben", "alcanza", etc.
@@ -374,9 +374,9 @@ export function classifyInput(message: string): InputIntent {
       m,
     )
   ) {
-    return InputIntent.NORMAL_SENTENCE;
+    return InputIntent.INFORMATION_REQUEST;
   }
 
   // Caso 4: Por defecto, asumir pregunta si no hay datos claros
-  return InputIntent.NORMAL_SENTENCE;
+  return InputIntent.INFORMATION_REQUEST;
 }

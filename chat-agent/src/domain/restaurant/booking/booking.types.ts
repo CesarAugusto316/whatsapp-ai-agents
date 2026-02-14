@@ -16,12 +16,12 @@ export enum CUSTOMER_INTENT {
 }
 
 /**
- * @todo REMOVE, since we have RAG this is unnecessary
+ *
  * @description Enum for intention classification
  */
 export enum InputIntent {
-  INPUT_DATA = "INPUT_DATA",
-  NORMAL_SENTENCE = "NORMAL_SENTENCE", // QUESTIONS, ANSWERS, COMMANDS
+  USER_PROVIDED_DATA = "USER_PROVIDED_DATA",
+  INFORMATION_REQUEST = "INFORMATION_REQUEST", // QUESTIONS, ANSWERS, COMMANDS
 }
 
 export type AgentArgs = {

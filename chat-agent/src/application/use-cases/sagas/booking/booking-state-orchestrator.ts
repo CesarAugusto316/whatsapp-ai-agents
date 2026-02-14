@@ -59,7 +59,7 @@ export const bookingStateOrchestrator = async (
       lastStepResult?.execute?.result ||
       lastStepResult?.compensate?.result ||
       "";
-    if (result && result !== InputIntent.NORMAL_SENTENCE) {
+    if (result && result !== InputIntent.INFORMATION_REQUEST) {
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return { bag, lastStepResult };
     }

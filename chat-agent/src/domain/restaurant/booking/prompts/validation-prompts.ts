@@ -17,7 +17,7 @@ export const validationPrompts = {
       TASK:
       Classify the user's Spanish input message into EXACTLY ONE of these two categories:
 
-      1. ${InputIntent.INPUT_DATA} → The message contains ANY explicit reservation information, including:
+      1. ${InputIntent.USER_PROVIDED_DATA} → The message contains ANY explicit reservation information, including:
           - Customer name
           - Reservation date (absolute or relative like "mañana", "pasado mañana")
           - Start or end time
@@ -25,71 +25,71 @@ export const validationPrompts = {
           - Any numerical data, dates, or times
           Note: Incomplete, approximate, abbreviated, or mixed data still qualifies.
 
-      2. ${InputIntent.NORMAL_SENTENCE} → The message is purely:
+      2. ${InputIntent.INFORMATION_REQUEST} → The message is purely:
           - An inquiry about hours, availability, menu, or policies
           - A comment, doubt, or question
           - Without ANY attempt to provide reservation details
 
       STRICT CLASSIFICATION RULES:
       - Input messages are ALWAYS in Spanish.
-      - Return ONLY this exact string: "${InputIntent.INPUT_DATA}" OR "${InputIntent.NORMAL_SENTENCE}"
+      - Return ONLY this exact string: "${InputIntent.USER_PROVIDED_DATA}" OR "${InputIntent.INFORMATION_REQUEST}"
       - NO explanations, examples, quotes, or additional text.
       - Base classification SOLELY on explicit presence of reservation data.
-      - Partial/abbreviated data → ${InputIntent.INPUT_DATA}
-      - Question + reservation data → ${InputIntent.INPUT_DATA} (data presence takes priority)
+      - Partial/abbreviated data → ${InputIntent.USER_PROVIDED_DATA}
+      - Question + reservation data → ${InputIntent.USER_PROVIDED_DATA} (data presence takes priority)
 
       EXAMPLE CLASSIFICATIONS (reference only - do not output these):
 
       USER: "A nombre de Sergio Rivera para el 25 de diciembre a las 8 de la noche para 4 personas"
       THOUGHT: First, I scan for reservation data elements. I find: customer name ("Sergio Rivera"), specific date ("25 de diciembre"), specific time ("8 de la noche"), and number of people ("4 personas"). Since all four data elements are present, this is clearly reservation input data.
-      OUTPUT: ${InputIntent.INPUT_DATA}
+      OUTPUT: ${InputIntent.USER_PROVIDED_DATA}
 
       USER: "¿A qué hora abre el restaurante mañana?"
       THOUGHT: The message asks about opening hours ("abre el restaurante") for tomorrow ("mañana"). There is no customer name, no reservation time being specified, no number of people, and the date reference is about the restaurant's schedule, not a reservation. This is purely an informational question.
-      OUTPUT: ${InputIntent.NORMAL_SENTENCE}
+      OUTPUT: ${InputIntent.INFORMATION_REQUEST}
 
       USER: "Deseo una reserva para mañana a las 7pm para dos personas, Raúl Lara"
       THOUGHT: I identify reservation data elements: date ("mañana"), time ("7pm"), number of people ("dos personas"), and customer name ("Raúl Lara"). All four key elements are present. The presence of this explicit reservation data dictates the classification.
-      OUTPUT: ${InputIntent.INPUT_DATA}
+      OUTPUT: ${InputIntent.USER_PROVIDED_DATA}
 
       USER: "Pueden acomodarnos una mesa al aire libre"
       THOUGHT: I check for reservation data elements. The message asks about accommodation ("mesa al aire libre") but provides no specific date, time, number of people, or customer name. It's a general inquiry about restaurant facilities, not an attempt to provide reservation details.
-      OUTPUT: ${InputIntent.NORMAL_SENTENCE}
+      OUTPUT: ${InputIntent.INFORMATION_REQUEST}
 
       USER: "Ok entonces, a las 8 para 3 personas"
       THOUGHT: I search for reservation data elements. I find specific time ("a las 8") and number of people ("3 personas"). Even though date and name are missing, the rules state partial reservation data still counts as input data. Two explicit data elements are present.
-      OUTPUT: ${InputIntent.INPUT_DATA}
+      OUTPUT: ${InputIntent.USER_PROVIDED_DATA}
 
       USER: "Para 2"
       THOUGHT: I examine for reservation data. The message contains number of people ("2"). This is abbreviated and minimal, but according to the rules, even partial or abbreviated data qualifies as reservation input. One explicit data element is present.
-      OUTPUT: ${InputIntent.INPUT_DATA}
+      OUTPUT: ${InputIntent.USER_PROVIDED_DATA}
 
       USER: "Quisiera reservar para pasado mañana a las 6"
       THOUGHT: I scan for reservation data elements. I identify date ("pasado mañana") and time ("a las 6"). The expression of intent ("Quisiera reservar") reinforces but doesn't determine classification. Two explicit reservation data elements are present.
-      OUTPUT: ${InputIntent.INPUT_DATA}
+      OUTPUT: ${InputIntent.USER_PROVIDED_DATA}
 
       USER: "Tienen mesas libres mañana a las 8?"
       THOUGHT: I analyze for reservation data. The message mentions date ("mañana") and time ("a las 8"), but these are part of an availability inquiry, not data being provided for a reservation. No customer name or number of people is given, and the intent is to ask about availability rather than submit reservation details.
-      OUTPUT: ${InputIntent.NORMAL_SENTENCE}
+      OUTPUT: ${InputIntent.INFORMATION_REQUEST}
 
       USER: "Ya veo, entonces, Raul R. 25/12 20h 4 pers"
       THOUGHT: I check for reservation data elements in abbreviated form. I find: customer name ("Raul R."), date ("25/12"), time ("20h"), and number of people ("4 pers"). Despite the shorthand format, all four reservation data elements are explicitly present.
-      OUTPUT: ${InputIntent.INPUT_DATA}
+      OUTPUT: ${InputIntent.USER_PROVIDED_DATA}
 
       USER: "Comprendo, entonces Podemos ir 6 personas este viernes"
       THOUGHT: I examine the message structure. It's phrased as a question but contains explicit reservation data: number of people ("6 personas") and date ("este viernes"). Following the rule to prioritize presence of reservation data over interrogative form, two data elements are present.
-      OUTPUT: ${InputIntent.INPUT_DATA}
+      OUTPUT: ${InputIntent.USER_PROVIDED_DATA}
 
       USER: "Necesitaría una mesa, tienen disponibilidad"
       THOUGHT: I analyze the message structure and content. The first part expresses need but provides no reservation data. The second part asks about availability without question marks, but the wording "tienen disponibilidad" functions as a question. Since no reservation data elements are present (no date, time, number of people, or name), this is a general inquiry.
-      OUTPUT: ${InputIntent.NORMAL_SENTENCE}
+      OUTPUT: ${InputIntent.INFORMATION_REQUEST}
 
       USER: "Sigamos, vamos con la reserva"
       THOUGHT: I analyze the message structure and content. The first part expresses action, and the second part is a continuation of the action.
-      OUTPUT: ${InputIntent.INPUT_DATA}
+      OUTPUT: ${InputIntent.USER_PROVIDED_DATA}
 
       FINAL OUTPUT REQUIREMENTS:
-      - Output ONLY: ${InputIntent.INPUT_DATA} or ${InputIntent.NORMAL_SENTENCE}
+      - Output ONLY: ${InputIntent.USER_PROVIDED_DATA} or ${InputIntent.INFORMATION_REQUEST}
       - NO explanations
       - NO additional text
       - NO quotes around the output
