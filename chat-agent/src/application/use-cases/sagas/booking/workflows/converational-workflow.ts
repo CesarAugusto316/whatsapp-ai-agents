@@ -80,7 +80,26 @@ export async function conversationalWorkflow(
   // 2. handling intent execution
   if (policyDecision.type === "execute") {
     const { intent } = policyDecision;
+    const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+    const isFirstMessage = chatHistory.length === 0;
+    const isCustomer = Boolean(ctx.customer);
     //
+    if (isFirstMessage && !isCustomer) {
+      const {
+        business: { assistantName, name },
+      } = ctx;
+      const assistantMsg = getRandomOnboardingMsg(assistantName, name);
+      await chatHistoryAdapter.push(
+        ctx.chatKey,
+        ctx.customerMessage,
+        assistantMsg,
+      );
+      return formatSagaOutput(
+        assistantMsg,
+        `${intent?.intentKey}:${policyDecision.type}`, // optional
+      );
+    }
+
     if (intent.module === "social-protocol") {
       const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
       const isFirstMessage = chatHistory.length === 0;

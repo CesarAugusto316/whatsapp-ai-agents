@@ -3,115 +3,206 @@ import { WRITING_STYLE } from "./prompts";
 import { SocialProtocolIntent } from "@/application/services/pomdp";
 
 const variants = [
+  // V1 - Detallada pero fluida
   (name: string, business: string) => `
-      ¡Hola! 👋 Soy ${name} de ${business}.
+    ¡Hola! 👋 Soy ${name} de ${business}.
 
-      Puedo ayudarte con:
-      🍽️ Reservas (crear/modificar/cancelar)
-      📋 Pedidos y menú
-      📍 Horarios, dirección y más
+    Contigo puedo:
+    🍽️ Reservar mesa
+    📋 Mostrarte el menú, recomendarte platos o tomar tu pedido
+    🚶 Para llevar o para retirar en el local — tú eliges
+    📍 Darte horarios, dirección y cómo llegar
 
-      ¿En qué te ayudo hoy? 😊
-    `,
+    ¿Por dónde empezamos? 😊
+  `,
 
+  // V2 - Enfocada en flexibilidad
   (name: string, business: string) => `
-      ¡Hola! 👋 Soy ${name}, asistente de ${business}.
+    ¡Hola! 👋 Soy ${name}, asistente de ${business}.
 
-      Aquí puedes:
-      🍽️ Reservar mesa
-      📋 Ver menú y pedir
-      📍 Consultar info básica
+    Te ayudo con:
+    🍽️ Reservas: crear, cambiar cuando quieras
+    📋 Pedidos: para llevar a casa o retirar en el local
+    🔍 Buscar platos por lo que te apetece (vegetariano, picante...)
+    📍 Horarios, dirección y formas de pago
 
-      ¿Qué necesitas? 😊
-    `,
+    ¿Qué te apetece hoy? ✨
+  `,
 
+  // V3 - Cálida y completa
   (name: string, business: string) => `
-      ¡Hola mucho gusto! 👋 Soy ${name} de ${business}.
+    ¡Hola! 👋 Mucho gusto, soy ${name} de ${business}.
 
-      Te ayudo con:
-      🍽️ Reservas
-      📋 Pedidos y menú
-      📍 Información del local
+    Puedo ayudarte a:
+    🍽️ Reservar mesa (y cambiarla después si lo necesitas)
+    📋 Ver el menú completo o recomendarte algo rico
+    🛵 Pedir para llevar o para retirar en el local
+    📍 Saber horarios, dónde estamos y cómo contactarnos
 
-      ¿En qué te echo una mano? ✨
-    `,
+    ¿En qué te echo una mano? 😊
+  `,
 
+  // V4 - Directa y práctica
   (name: string, business: string) => `
-      ¡Hola! 👋 Soy ${name} de ${business}.
+    ¡Hola! 👋 Soy ${name} de ${business}.
 
-      Puedo ayudarte a:
-      🍽️ Reservar mesa
-      📋 Hacer pedidos
-      📍 Consultar horarios y ubicación
+    Aquí puedes:
+    🍽️ Hacer una reserva y ajustarla después
+    📋 Pedir comida: para llevar o para recoger aquí
+    🔍 Buscar platos según tus gustos o pedirme recomendaciones
+    📍 Ver horarios, dirección y formas de pago
 
-      ¿Qué te apetece hoy? 😊
-    `,
+    ¿Qué necesitas? 😊
+  `,
 
+  // V5 - Enfocada en personalización
   (name: string, business: string) => `
-      ¡Hola! 👋 Soy ${name}, tu asistente en ${business}.
+    ¡Hola! 👋 Soy ${name}, tu asistente en ${business}.
 
-      Aquí puedes:
-      🍽️ Gestionar reservas
-      📋 Ver menú y pedir
-      📍 Consultar información
+    Te ayudo a:
+    🍽️ Reservar mesa y modificarla cuando quieras
+    📋 Descubrir platos que te encantarán (dime tus preferencias)
+    🛵 Hacer pedidos: para llevar a casa o retirar en el local
+    📍 Consultar horarios, ubicación y más
 
-      ¿En qué te ayudo? 😊
-    `,
+    ¿Por dónde empezamos? ✨
+  `,
 
+  // V6 - Coloquial y cercana
   (name: string, business: string) => `
-      ¡Que tal! 👋 Soy ${name} de ${business}.
+    ¡Hola! 👋 Soy ${name} de ${business}.
 
-      Te ofrezco:
-      🍽️ Reservas (crear/modificar/cancelar)
-      📋 Menú y pedidos
-      📍 Info: horarios, dirección, contacto
+    Por aquí puedes:
+    🍽️ Reservar mesa y cambiarla después sin problema
+    📋 Echar un ojo al menú, pedirme recomendaciones o hacer tu pedido
+    🚶 Llevarlo a casa o pasarte a recogerlo cuando quieras
+    📍 Ver horarios, dónde estamos y cómo llegar
 
-      ¿Qué necesitas? 😊
-    `,
+    ¿Qué te apetece? 😊
+  `,
 
+  // V7 - Clara y estructurada
   (name: string, business: string) => `
-      ¡Hola que tal! 👋 Soy ${name} de ${business}.
+    ¡Hola! 👋 Soy ${name} de ${business}.
 
-      Puedo ayudarte con:
-      🍽️ Reservar mesa
-      📋 Pedidos para llevar o domicilio
-      📍 Horarios y ubicación
+    Te ayudo con:
+    🍽️ Reservas: crear, ver disponibilidad
+    📋 Pedidos: para llevar a domicilio o retirar en el local
+    🔍 Buscar platos por preferencias o pedir recomendaciones
+    📍 Información: horarios, dirección, pago y entrega
 
-      ¿En qué te ayudo hoy? ✨
-    `,
+    ¿En qué te ayudo hoy? ✨
+  `,
 
+  // V8 - Enfocada en experiencia
   (name: string, business: string) => `
-      ¡Hola! 👋 Soy ${name}, asistente de ${business}.
+    ¡Hola! 👋 Soy ${name}, asistente de ${business}.
 
-      Aquí puedes:
-      🍽️ Reservar y gestionar tu mesa
-      📋 Ver menú y hacer pedidos
-      📍 Consultar información básica
+    Puedo ayudarte a:
+    🍽️ Reservar tu mesa ideal
+    📋 Descubrir platos que te gusten o hacer tu pedido fácilmente
+    🛵 Elegir entre llevarlo a casa o recogerlo aquí mismo
+    📍 Saber cuándo abrimos, dónde estamos y cómo contactarnos
 
-      ¿Qué te apetece? 😊
-    `,
+    ¿Qué necesitas hoy? 😊
+  `,
 
+  // V9 - Breve pero completa
   (name: string, business: string) => `
-      ¡Hola! 👋 Mi nombre es ${name} de ${business}.
+    ¡Hola! 👋 Soy ${name} de ${business}.
 
-      Te ayudo con:
-      🍽️ Reservas de mesa
-      📋 Menú y pedidos
-      📍 Horarios, dirección y más
+    Conmigo puedes:
+    🍽️ Reservar, cambiar o cancelar tu mesa
+    📋 Ver menú, pedir recomendaciones o hacer tu pedido
+    🚶 Para llevar o para retirar en el local
+    📍 Horarios, dirección y más info
 
-      ¿En qué te echo una mano? 😊
-    `,
+    ¿Por dónde empezamos? 😊
+  `,
 
+  // V10 - Amigable y detallada
   (name: string, business: string) => `
-      ¡Hola! 👋 Me llamo ${name} de ${business}.
+    ¡Hola! 👋 Me llamo ${name} de ${business}.
 
-      Puedo ayudarte a:
-      🍽️ Reservar tu mesa
-      📋 Ver menú y pedir comida
-      📍 Consultar horarios y ubicación
+    Te ayudo con:
+    🍽️ Reservar mesa y ajustarla cuando necesites
+    📋 Mostrarte el menú, recomendarte platos o tomar tu pedido
+    🛵 Para llevar a casa o para recoger en el local — tú decides
+    📍 Horarios, dirección, formas de pago y entrega
 
-      ¿Qué necesitas hoy? ✨
-    `,
+    ¿En qué te echo una mano hoy? ✨
+  `,
+  // V1 - Clara y directa
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Puedo ayudarte con:
+    🍽️ Reservas (crear, modificar o cancelar)
+    📋 Pedidos y menú
+    📍 Horarios, dirección y más
+
+    ¿En qué te ayudo hoy? 😊
+  `,
+
+  // V2 - Cercana
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name}, asistente de ${business}.
+
+    Te puedo ayudar a:
+    🍽️ Reservar mesa
+    📋 Ver el menú y hacer pedidos
+    📍 Saber horarios, dirección y más
+
+    ¿Qué necesitas? 😊
+  `,
+
+  // V3 - Cálida
+  (name: string, business: string) => `
+    ¡Hola! 👋 Mucho gusto, soy ${name} de ${business}.
+
+    Conmigo puedes:
+    🍽️ Hacer reservas (y cambiarlas si lo necesitas)
+    📋 Pedir comida y ver el menú
+    📍 Ver horarios, dónde estamos y más
+
+    ¿En qué te echo una mano? ✨
+  `,
+
+  // V4 - Informal
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Te ayudo con:
+    🍽️ Reservar mesa
+    📋 Pedir algo de comer
+    📍 Ver horarios y ubicación
+
+    ¿Qué te apetece hoy? 😊
+  `,
+
+  // V5 - Amigable
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name}, tu asistente en ${business}.
+
+    Puedo ayudarte a:
+    🍽️ Reservar y cambiar tu mesa
+    📋 Ver el menú y pedir
+    📍 Consultar horarios y dónde estamos
+
+    ¿En qué te ayudo? 😊
+  `,
+
+  // V6 - Colloquial (España)
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Por aquí puedes:
+    🍽️ Reservar mesa (y modificarla cuando quieras)
+    📋 Echar un vistazo al menú y pedir
+    📍 Ver horarios, dirección y más
+
+    ¿Qué necesitas? 😊
+  `,
 ] as const;
 
 export const getRandomOnboardingMsg = (
