@@ -179,4 +179,60 @@ describe("parseBookingData", () => {
 
     expect(result.numberOfPeople).toBe(1);
   });
+
+  test("should handle 'Reserva para el próximo viernes a las 7pm para 4 personas'", () => {
+    const result = parseBookingData(
+      "Reserva para el próximo viernes a las 7pm para 4 personas",
+    );
+
+    expect(result.numberOfPeople).toBe(4);
+    expect(result.datetime.start.time).toBe("19:00:00"); // 7pm
+    // Validar que la fecha esté en formato UTC YYYY-MM-DD
+    expect(result.datetime.start.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test("should handle 'Mesa para el martes 17 de marzo a las 8:30pm para 6 personas'", () => {
+    const result = parseBookingData(
+      "Mesa para el martes 17 de marzo a las 8:30pm para 6 personas",
+    );
+
+    expect(result.numberOfPeople).toBe(6);
+    expect(result.datetime.start.time).toBe("20:30:00"); // 8:30pm
+    expect(result.datetime.start.date).toMatch(/^\d{4}-\d{2}-\d{2}$/); // Formato UTC
+    expect(result.datetime.start.date).toContain("-03-17"); // March 17
+  });
+
+  test("should handle 'Cena para 3 personas el domingo 22 de marzo de 2026 a las 8pm'", () => {
+    const result = parseBookingData(
+      "Cena para 3 personas el domingo 22 de marzo de 2026 a las 8pm",
+    );
+
+    expect(result.numberOfPeople).toBe(3);
+    expect(result.datetime.start.time).toBe("20:00:00"); // 8pm
+    expect(result.datetime.start.date).toBe("2026-03-22"); // March 22, 2026
+    expect(result.datetime.start.date).toMatch(/^\d{4}-\d{2}-\d{2}$/); // Formato UTC
+  });
+
+  test("should handle 'Reserva para sábado 4 de abril para 5 personas de 7pm a 10pm'", () => {
+    const result = parseBookingData(
+      "Reserva para sábado 4 de abril para 5 personas de 7pm a 10pm",
+    );
+
+    expect(result.numberOfPeople).toBe(5);
+    expect(result.datetime.start.time).toBe("19:00:00"); // 7pm
+    expect(result.datetime.end.time).toBe("22:00:00"); // 10pm
+    expect(result.datetime.start.date).toMatch(/^\d{4}-\d{2}-\d{2}$/); // Formato UTC
+    expect(result.datetime.start.date).toContain("-04-04"); // April 4
+  });
+
+  test("should handle 'Almuerzo para 2 personas el lunes 30 de marzo a las 1:30pm'", () => {
+    const result = parseBookingData(
+      "Almuerzo para 2 personas el lunes 30 de marzo a las 1:30pm",
+    );
+
+    expect(result.numberOfPeople).toBe(2);
+    expect(result.datetime.start.time).toBe("13:30:00"); // 1:30pm
+    expect(result.datetime.start.date).toMatch(/^\d{4}-\d{2}-\d{2}$/); // Formato UTC
+    expect(result.datetime.start.date).toContain("-03-30"); // March 30
+  });
 });

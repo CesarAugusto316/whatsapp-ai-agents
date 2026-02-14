@@ -435,9 +435,9 @@ function extractDate(
   }
 
   // También buscar "viernes 12 de abril", "viernes 20 de septiembre" u otros formatos similares
-  // Permitir palabras intermedias como "el", "del", etc.
+  // Permitir palabras intermedias como "el", "del", "de", etc.
   const weekdayMonthDayPattern =
-    /(lunes|martes|miércoles|jueves|viernes|sábado|domingo)\s*(?:el\s*)?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
+    /(lunes|martes|miércoles|jueves|viernes|sábado|domingo)[\s\S]*?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
   const weekdayMonthDayMatch = text.match(weekdayMonthDayPattern);
   if (weekdayMonthDayMatch) {
     const [, , dayStr, monthStr] = weekdayMonthDayMatch;

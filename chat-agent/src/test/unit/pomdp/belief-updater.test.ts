@@ -8,7 +8,7 @@ test("Primer mensaje → nuevo intent con isConfident calculado usando su propio
   const initialState = BeliefStateUpdater.createEmpty();
 
   const topResult: IntentPayloadWithScore = {
-    intentKey: "restaurant:ask_price",
+    intentKey: "info:ask_price",
     module: "restaurant",
     score: 0.7,
     requiresConfirmation: "never" as const,
@@ -17,7 +17,7 @@ test("Primer mensaje → nuevo intent con isConfident calculado usando su propio
   const newState = updater.update(initialState, topResult);
 
   expect(newState.current).toBeDefined();
-  expect(newState.current!.intentKey).toBe("restaurant:ask_price");
+  expect(newState.current!.intentKey).toBe("info:ask_price");
   expect(newState.current!.isConfident).toBe(true); // score 0.7 >= threshold 0.65 for 'never'
 });
 
@@ -93,7 +93,7 @@ test("Transición entre intents", () => {
 
   // Segundo intent: restaurant:ask_price (never, score=0.7) → isConfident=true (usa su propio threshold 0.65)
   const secondResult: IntentPayloadWithScore = {
-    intentKey: "restaurant:ask_price",
+    intentKey: "info:ask_price",
     module: "restaurant",
     score: 0.7,
     requiresConfirmation: "never" as const,
@@ -102,6 +102,6 @@ test("Transición entre intents", () => {
   const stateAfterSecond = updater.update(stateAfterFirst, secondResult);
 
   expect(stateAfterSecond.current).toBeDefined();
-  expect(stateAfterSecond.current!.intentKey).toBe("restaurant:ask_price");
+  expect(stateAfterSecond.current!.intentKey).toBe("info:ask_price");
   expect(stateAfterSecond.current!.isConfident).toBe(true); // score 0.7 >= threshold 0.65 for 'never'
 });
