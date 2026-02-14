@@ -1,17 +1,14 @@
-interface ParsedBookingData {
-  customerName: string;
-  datetime: {
-    start: { date: string; time: string };
-    end: { date: string; time: string };
-  };
-  numberOfPeople: number;
-}
+import { BookingSchema } from "@/domain/restaurant/booking/schemas";
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 
 export function parseBookingData(
   message: string,
-  referenceDate: Date,
-  averageDurationMinutes: number = 90,
-): ParsedBookingData {
+  timezone = "Europe/Madrid", //
+  averageDurationMinutes: number = 60,
+): BookingSchema {
+  //
+  const now = new Date();
+  const referenceDate = toZonedTime(now, timezone);
   const text = message.toLowerCase().trim();
 
   // 1. Extraer número de personas
@@ -198,7 +195,7 @@ function resolveDateTime({
   times: { start?: string; end?: string; isRange: boolean };
   referenceDate: Date;
   averageDurationMinutes: number;
-}): ParsedBookingData["datetime"] {
+}): BookingSchema["datetime"] {
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
   const formatTime = (d: Date) => d.toTimeString().slice(0, 8);
 
