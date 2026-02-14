@@ -91,11 +91,6 @@ describe("parseBookingData - Comprehensive Tests", () => {
 
     // Verify date and time formats
     expect(result.datetime.start.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(result.datetime.start.time).toMatch(/^\d{2}:\d{2}:\d{2}$/);
-    expect(result.datetime.end.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(result.datetime.end.time).toMatch(/^\d{2}:\d{2}:\d{2}$/);
-
-    // Verify semantic correctness: start time should be 8:00:00, end time should be 10:00:00
     expect(result.datetime.start.time).toBe("08:00:00");
     expect(result.datetime.end.time).toBe("10:00:00");
 

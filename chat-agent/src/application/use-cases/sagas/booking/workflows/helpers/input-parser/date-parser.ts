@@ -492,6 +492,10 @@ function extractDate(
 function extractStartTime(text: string): string {
   // Patrones para horas (formato 24h o 12h con AM/PM)
   const timePatterns = [
+    // "entre la X y las Y", "entre X y Y" - extraer la primera hora del rango
+    /entre\s+la\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+\d/i,
+    /entre\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+\d/i,
+
     // "de X a Y", "de X hasta Y" - extraer la primera hora del rango
     /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+\d/i,
     /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+\d/i,
@@ -594,6 +598,10 @@ function extractStartTime(text: string): string {
 function extractEndTime(text: string, startTime: string): string {
   // Patrones para hora de fin
   const endPatterns = [
+    // "entre la X y las Y", "entre X y Y" - extraer la segunda hora del rango
+    /entre\s+la\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
+    /entre\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
+
     // "de X a Y", "de X hasta Y", "de X a las Y" - extraer la segunda hora del rango
     /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
     /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
@@ -602,10 +610,6 @@ function extractEndTime(text: string, startTime: string): string {
 
     // "de X a Y", "de X hasta Y" - when hours are expressed in words
     /de\s+(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce).*?\s+a\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)/i,
-
-    // "entre la X y las Y", "entre X y Y"
-    /(?:entre\s+la\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-    /(?:entre\s+la\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?/i,
 
     // Regular patterns for end time
     /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
