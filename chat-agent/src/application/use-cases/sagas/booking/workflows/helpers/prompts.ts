@@ -183,12 +183,8 @@ export function generateIntentPrompt(
 
 /**
  *
- * @todo Replace for a better less mecanic approach if posible
+ * @todo DELETE
  */
-// const status = ctx.bookingState?.status;
-// const reminderMSG = status
-//   ? attachProcessReminder(assistant, status, messages)
-//   : assistant;
 export function businesInfoPrompt(business: Business) {
   const { name, general, schedule, assistantName } = business;
   const SCHEDULE_BLOCK = formatSchedule(schedule, general.timezone);

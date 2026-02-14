@@ -12,6 +12,11 @@ import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manag
 import { generateIntentPrompt } from "./helpers/prompts";
 import { businessInfoChunck } from "./helpers/business-info-chunk";
 import { handleMessageProcessing } from "./helpers/prepare-messages";
+import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
+import {
+  getRandomOnboardingMsg,
+  socialProtocolChunk,
+} from "./helpers/social-chunks";
 
 /**
  *
@@ -32,9 +37,16 @@ export async function conversationalWorkflow(
   let ragResults: IntentPayloadWithScore[] = [];
   const { skip, kind, msg } = shouldSkipProcessing(ctx.customerMessage);
 
-  // skip RAG, to save resources
+  // skip RAG, to save resources by using simple REGEX
   if (skip && kind === "social-protocol") {
-    return formatSagaOutput(msg); // saludar, despedirse, agradecer (reflejo simple)
+    ragResults = [
+      {
+        score: 1,
+        module: "social-protocol",
+        intentKey: msg as SocialProtocolIntent,
+        requiresConfirmation: "never",
+      } satisfies IntentPayloadWithScore,
+    ];
   }
   if (skip && kind === "conversational-signal") {
     //  we know exactly the form for "conversational-signal" so we can skip RAG
@@ -47,6 +59,7 @@ export async function conversationalWorkflow(
       } satisfies IntentPayloadWithScore,
     ];
   }
+  // TODO: skip RAG for "booking" | "restaurant" etc.. by user REGEX
   if (!skip) {
     const limit = 1;
     const { points } = await ragService.searchIntent(
@@ -68,25 +81,86 @@ export async function conversationalWorkflow(
   if (policyDecision.type === "execute") {
     const { intent } = policyDecision;
     //
-    if (intent.module === "informational") {
-      const key = intent.intentKey as InformationalIntentKey;
+    if (intent.module === "social-protocol") {
+      const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+      const isFirstMessage = chatHistory.length === 0;
+      //
+      if (intent.intentKey === "social:greeting" && isFirstMessage) {
+        const {
+          business: { assistantName, name },
+        } = ctx;
+        const assistantMsg = getRandomOnboardingMsg(assistantName, name);
+        await chatHistoryAdapter.push(
+          ctx.chatKey,
+          ctx.customerMessage,
+          assistantMsg,
+        );
+        return formatSagaOutput(
+          assistantMsg,
+          `${intent?.intentKey}:${policyDecision.type}`, // optional
+        );
+      }
+
+      const useAuxModel = true;
       const assistantMsg = await handleMessageProcessing(
-        () => businessInfoChunck(key, ctx.business),
-        ctx,
+        () =>
+          socialProtocolChunk(
+            intent?.intentKey as SocialProtocolIntent,
+            ctx.business,
+          ),
+        ctx.customerMessage,
+        chatHistory,
+        useAuxModel,
+      );
+      await chatHistoryAdapter.push(
+        ctx.chatKey,
+        ctx.customerMessage,
+        assistantMsg,
       );
       return formatSagaOutput(
         assistantMsg,
         `${intent?.intentKey}:${policyDecision.type}`, // optional
       );
-      // else call the execute function
+    }
+
+    if (intent.module === "informational") {
+      const key = intent.intentKey as InformationalIntentKey;
+      const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+      const assistantMsg = await handleMessageProcessing(
+        () => businessInfoChunck(key, ctx.business),
+        ctx.customerMessage,
+        chatHistory,
+        true,
+      );
+      await chatHistoryAdapter.push(
+        ctx.chatKey,
+        ctx.customerMessage,
+        assistantMsg,
+      );
+      return formatSagaOutput(
+        assistantMsg,
+        `${intent?.intentKey}:${policyDecision.type}`, // optional
+      );
+    }
+
+    if (intent.module === "booking") {
+      //
+    }
+
+    if (intent.module === "restaurant") {
+      //
     }
   }
 
   // 3. handling intent feedback
+  const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
   const assistantMsg = await handleMessageProcessing(
     () => generateIntentPrompt(ctx, policyDecision),
-    ctx,
+    ctx.customerMessage,
+    chatHistory,
   );
+  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistantMsg);
+
   return formatSagaOutput(
     assistantMsg,
     `${policyDecision.intent?.intentKey}:${policyDecision.type}`, // optional

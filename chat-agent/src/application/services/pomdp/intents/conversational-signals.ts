@@ -33,7 +33,7 @@ export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
 export function shouldSkipProcessing(msg: string): {
   skip: boolean;
   kind: "social-protocol" | "conversational-signal" | null;
-  msg: string | SocialProtocolIntent;
+  msg: SocialProtocolIntent | null;
 } {
   const text = msg.trim();
   const words = text.split(/\s+/).length;
@@ -41,7 +41,7 @@ export function shouldSkipProcessing(msg: string): {
   // Filosofía: Solo skip para mensajes MUY cortos (1-3 palabras)
   // Mensajes más largos → vectorizar (porque se cachean de todos modos)
   if (words > 3) {
-    return { skip: false, kind: null, msg: "" };
+    return { skip: false, kind: null, msg: null };
   }
 
   // Protocolos sociales
@@ -51,12 +51,11 @@ export function shouldSkipProcessing(msg: string): {
       return {
         skip: true,
         kind: "social-protocol" satisfies ModuleKind,
-        msg:
-          type === ("greeting" satisfies SocialProtocol)
-            ? "✨Hola en que puedo ayudarte?"
-            : type === ("goodbye" satisfies SocialProtocol)
-              ? "Hasta pronto✌🏽"
-              : "Gracias a ti🙏🏽",
+        msg: (type === ("greeting" satisfies SocialProtocol)
+          ? "social:greeting"
+          : type === ("goodbye" satisfies SocialProtocol)
+            ? "social:goodbye"
+            : "social:thanks") satisfies SocialProtocolIntent,
       };
     }
   }
@@ -76,5 +75,5 @@ export function shouldSkipProcessing(msg: string): {
     }
   }
 
-  return { skip: false, kind: null, msg: "" };
+  return { skip: false, kind: null, msg: null };
 }

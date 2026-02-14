@@ -9,10 +9,7 @@ import { BeliefIntent, BeliefState } from "./belief.types";
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
 
-  private readonly excludedModules: ModuleKind[] = [
-    "conversational-signal",
-    "social-protocol",
-  ];
+  private readonly excludedModules: ModuleKind[] = ["social-protocol"];
 
   static createEmpty(): BeliefState {
     return {

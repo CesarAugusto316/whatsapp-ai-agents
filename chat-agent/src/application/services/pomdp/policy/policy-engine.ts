@@ -127,6 +127,10 @@ export class PolicyEngine {
     }
 
     // Fallback seguro (no debería ocurrir si tus intents están bien definidos)
+    // ¿Te refieres a:
+    // • Las capacidades que tengo (reservas, pedidos, info)
+    // • O al menú de platos disponibles?
+    // CREO que se deberia usar la lista de rsultados del RAG (intents mas cercanos)
     return {
       type: "ask_clarification",
       intent,
