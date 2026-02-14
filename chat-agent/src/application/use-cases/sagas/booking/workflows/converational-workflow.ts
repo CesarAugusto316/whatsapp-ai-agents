@@ -17,6 +17,7 @@ import {
   getRandomOnboardingMsg,
   socialProtocolChunk,
 } from "./helpers/social-chunks";
+import { prioritizeIntents } from "./helpers/prioritize-intents";
 
 /**
  *
@@ -61,17 +62,18 @@ export async function conversationalWorkflow(
   }
   // TODO: skip RAG for "booking" | "restaurant" etc.. by user REGEX
   if (!skip) {
-    const limit = 1;
+    const limit = 2;
     const { points } = await ragService.searchIntent(
       ctx.customerMessage,
       ctx.activeModules, // ej: ["informational", "booking", "restaurant"],
       limit,
     );
-    ragResults =
+    ragResults = prioritizeIntents(
       points.map(({ payload, score }) => ({
         ...payload,
         score,
-      })) ?? [];
+      })) ?? [],
+    );
   }
 
   // 1. generating the policy decision
