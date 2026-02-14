@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { parse, isValid } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 
 // Definición del esquema de respuesta
 const BookingDataSchema = z.object({
@@ -330,32 +329,7 @@ function extractDate(
     return { date: dayAfterTomorrow, isNextWeek: false };
   }
 
-  // Días de la semana (para fechas relativas como "el viernes")
-  const daysOfWeek = [
-    "domingo",
-    "lunes",
-    "martes",
-    "miércoles",
-    "jueves",
-    "viernes",
-    "sábado",
-  ];
-  for (let i = 0; i < daysOfWeek.length; i++) {
-    if (text.includes(daysOfWeek[i])) {
-      const targetDay = i;
-      const currentDay = referenceDate.getDay(); // 0 = domingo, 1 = lunes, etc.
-
-      let daysUntilTarget = (targetDay - currentDay + 7) % 7;
-      if (daysUntilTarget === 0) daysUntilTarget = 7; // Si es el mismo día, ir al siguiente
-
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() + daysUntilTarget);
-
-      return { date: targetDate, isNextWeek: daysUntilTarget > 7 };
-    }
-  }
-
-  // Fechas específicas (DD/MM/YYYY, DD-MM-YYYY, etc.)
+  // Fechas específicas (DD/MM/YYYY, DD-MM-YYYY, etc.) - PRIORITIZED FIRST
   const datePatterns = [
     /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/, // DD/MM/YYYY o DD-MM-YYYY
     /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/, // YYYY-MM-DD o YYYY/MM/DD
@@ -401,42 +375,7 @@ function extractDate(
     }
   }
 
-  // Mes y día (sin año)
-  const monthDayPattern =
-    /(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
-  const monthDayMatch = text.match(monthDayPattern);
-  if (monthDayMatch) {
-    const [, dayStr, monthStr] = monthDayMatch;
-    const months = [
-      "enero",
-      "febrero",
-      "marzo",
-      "abril",
-      "mayo",
-      "junio",
-      "julio",
-      "agosto",
-      "septiembre",
-      "octubre",
-      "noviembre",
-      "diciembre",
-    ];
-    const monthIndex = months.findIndex(
-      (m) => m.toLowerCase() === monthStr.toLowerCase(),
-    );
-    const day = parseInt(dayStr, 10);
-
-    const parsedDate = new Date(today.getFullYear(), monthIndex, day);
-
-    // Si la fecha ya pasó este año, usar el próximo año
-    if (parsedDate < today) {
-      parsedDate.setFullYear(parsedDate.getFullYear() + 1);
-    }
-
-    return { date: parsedDate, isNextWeek: false };
-  }
-
-  // También buscar "viernes 12 de abril", "viernes 20 de septiembre" u otros formatos similares
+  // También buscar "viernes 12 de abril", "viernes 20 de septiembre" u otros formatos similares - PRIORITIZED SECOND
   // Permitir palabras intermedias como "el", "del", "de", etc.
   const weekdayMonthDayPattern =
     /(lunes|martes|miércoles|jueves|viernes|sábado|domingo)[\s\S]*?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
@@ -472,7 +411,7 @@ function extractDate(
     return { date: parsedDate, isNextWeek: false };
   }
 
-  // Buscar también patrones como "12 de abril", "20 de julio", etc. sin día de la semana
+  // Buscar también patrones como "12 de abril", "20 de julio", etc. sin día de la semana - PRIORITIZED THIRD
   const dayMonthPattern =
     /(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
   const dayMonthMatch = text.match(dayMonthPattern);
@@ -507,17 +446,44 @@ function extractDate(
     return { date: parsedDate, isNextWeek: false };
   }
 
+  // Días de la semana (para fechas relativas como "el viernes") - LEAST PRIORITIZED
+  const daysOfWeek = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+  ];
+  for (let i = 0; i < daysOfWeek.length; i++) {
+    // Check for "próximo" or "el" before the day name
+    const dayRegex = new RegExp(
+      `(?:pr[oó]ximo\\s+|el\\s+)?${daysOfWeek[i]}`,
+      "i",
+    );
+    if (dayRegex.test(text)) {
+      const targetDay = i;
+      const currentDay = today.getDay(); // 0 = domingo, 1 = lunes, etc.
+
+      let daysUntilTarget = (targetDay - currentDay + 7) % 7;
+
+      // If "próximo" is in the text, ensure we go to the next week
+      if (text.includes("próximo") || text.includes("proximo")) {
+        if (daysUntilTarget === 0) daysUntilTarget = 7; // If today is the target day, go to next week
+      } else {
+        if (daysUntilTarget === 0) daysUntilTarget = 7; // Default behavior: go to next occurrence
+      }
+
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + daysUntilTarget);
+
+      return { date: targetDate, isNextWeek: daysUntilTarget > 7 };
+    }
+  }
+
   // Si no se encuentra ninguna fecha específica, usar hoy por defecto
   return { date: today, isNextWeek: false };
-}
-
-/**
- * Convierte una fecha local a UTC manteniendo la misma fecha
- */
-function localDateToUTC(localDate: Date): Date {
-  // Para mantener la misma fecha, necesitamos ajustar la zona horaria
-  // de manera que la fecha no cambie al convertir a UTC
-  return fromZonedTime(localDate, "UTC");
 }
 
 /**
@@ -526,6 +492,11 @@ function localDateToUTC(localDate: Date): Date {
 function extractStartTime(text: string): string {
   // Patrones para horas (formato 24h o 12h con AM/PM)
   const timePatterns = [
+    // "de X a Y", "de X hasta Y" - extraer la primera hora del rango
+    /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+\d/i,
+    /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+\d/i,
+    /de\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+\d/i,
+
     // HH:MM AM/PM o HH:MM PM/AM
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
@@ -623,12 +594,22 @@ function extractStartTime(text: string): string {
 function extractEndTime(text: string, startTime: string): string {
   // Patrones para hora de fin
   const endPatterns = [
-    // "de X a Y", "de X hasta Y", "de X a las Y"
-    /(?:de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+)?(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-    /(?:de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+)?(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    // "de X a Y", "de X hasta Y", "de X a las Y" - extraer la segunda hora del rango
+    /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?/i,
+
+    // "de X a Y", "de X hasta Y" - when hours are expressed in words
+    /de\s+(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce).*?\s+a\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)/i,
+
     // "entre la X y las Y", "entre X y Y"
     /(?:entre\s+la\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
     /(?:entre\s+la\s+)?\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?/i,
+
+    // Regular patterns for end time
+    /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
   ];
 
   for (const pattern of endPatterns) {
@@ -638,6 +619,26 @@ function extractEndTime(text: string, startTime: string): string {
       const minuteStr = match[2] || "00";
 
       let hour = parseInt(hourStr, 10);
+
+      // Handle time words (for the second part of ranges like "de ocho a nueve")
+      const hourWords: Record<string, number> = {
+        una: 1,
+        dos: 2,
+        tres: 3,
+        cuatro: 4,
+        cinco: 5,
+        seis: 6,
+        siete: 7,
+        ocho: 8,
+        nueve: 9,
+        diez: 10,
+        once: 11,
+        doce: 12,
+      };
+
+      if (isNaN(hour) && hourWords[hourStr.toLowerCase()]) {
+        hour = hourWords[hourStr.toLowerCase()];
+      }
 
       // Verificar si es AM o PM
       // Primero intentar encontrar AM/PM asociado directamente con esta hora específica
@@ -661,20 +662,6 @@ function extractEndTime(text: string, startTime: string): string {
               let matchHour = parseInt(hourPart[1], 10);
               if (isNaN(matchHour)) {
                 // Si es una hora en palabras, convertirla
-                const hourWords: Record<string, number> = {
-                  una: 1,
-                  dos: 2,
-                  tres: 3,
-                  cuatro: 4,
-                  cinco: 5,
-                  seis: 6,
-                  siete: 7,
-                  ocho: 8,
-                  nueve: 9,
-                  diez: 10,
-                  once: 11,
-                  doce: 12,
-                };
                 const wordHour = hourPart[1].toLowerCase().trim();
                 matchHour = hourWords[wordHour];
               }
