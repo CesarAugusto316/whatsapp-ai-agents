@@ -205,12 +205,12 @@ const firstMessageVariants = [
   `,
 ] as const;
 
-export const getRandomOnboardingMsg = (
-  assistantName: string,
-  businessName: string,
-): string => {
+export const getRandomOnboardingMsg = (ctx: RestaurantCtx): string => {
+  const {
+    business: { assistantName, name },
+  } = ctx;
   const randomIndex = Math.floor(Math.random() * firstMessageVariants.length);
-  return firstMessageVariants[randomIndex](assistantName, businessName).trim();
+  return firstMessageVariants[randomIndex](assistantName, name).trim();
 };
 
 export function socialProtocolChunk(

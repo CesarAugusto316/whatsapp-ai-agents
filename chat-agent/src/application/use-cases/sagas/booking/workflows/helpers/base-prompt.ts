@@ -1,7 +1,7 @@
 import { RestaurantCtx } from "@/domain/restaurant";
 import { generateAgentGoals } from "./agent-goals";
 
-const WRITING_STYLE = `
+export const WRITING_STYLE = `
   - Clear, concise and friendly
   - Use emojis when appropriate 😊✨✅
   - Polite

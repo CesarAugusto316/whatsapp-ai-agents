@@ -7,7 +7,7 @@ import { generateAgentGoals } from "./agent-goals";
 /**
  * Generates a dynamic prompt based on the policy decision
  */
-export function generateIntentPrompt(
+export function intentClassifierPrompt(
   ctx: RestaurantCtx,
   policy?: PolicyDecision,
 ): string {

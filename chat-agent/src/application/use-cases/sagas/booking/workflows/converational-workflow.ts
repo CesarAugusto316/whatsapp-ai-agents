@@ -9,7 +9,7 @@ import {
 } from "@/application/services/pomdp";
 import { formatSagaOutput } from "../helpers/format-saga-output";
 import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
-import { generateIntentPrompt } from "./helpers/intent-prompt";
+import { intentClassifierPrompt } from "./helpers/intent-prompt";
 import { businessInfoChunck } from "./helpers/business-info-chunk";
 import { handleMessageProcessing } from "./helpers/prepare-messages";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
@@ -85,17 +85,14 @@ export async function conversationalWorkflow(
     const isCustomer = Boolean(ctx.customer);
     //
     if (isFirstMessage && !isCustomer) {
-      const {
-        business: { assistantName, name },
-      } = ctx;
-      const assistantMsg = getRandomOnboardingMsg(assistantName, name);
+      const ONBOARDING_MSG = getRandomOnboardingMsg(ctx);
       await chatHistoryAdapter.push(
         ctx.chatKey,
         ctx.customerMessage,
-        assistantMsg,
+        ONBOARDING_MSG,
       );
       return formatSagaOutput(
-        assistantMsg,
+        ONBOARDING_MSG,
         `${intent?.intentKey}:${policyDecision.type}`, // optional
       );
     }
@@ -105,22 +102,19 @@ export async function conversationalWorkflow(
       const isFirstMessage = chatHistory.length === 0;
       //
       if (intent.intentKey === "social:greeting" && isFirstMessage) {
-        const {
-          business: { assistantName, name },
-        } = ctx;
-        const assistantMsg = getRandomOnboardingMsg(assistantName, name);
+        const ONBOARDING_MSG = getRandomOnboardingMsg(ctx);
         await chatHistoryAdapter.push(
           ctx.chatKey,
           ctx.customerMessage,
-          assistantMsg,
+          ONBOARDING_MSG,
         );
         return formatSagaOutput(
-          assistantMsg,
+          ONBOARDING_MSG,
           `${intent?.intentKey}:${policyDecision.type}`, // optional
         );
       }
 
-      const assistantMsg = await handleMessageProcessing({
+      const ASSISTANT_MSG = await handleMessageProcessing({
         systemPrompt: socialProtocolChunk(
           intent?.intentKey as SocialProtocolIntent,
           ctx,
@@ -132,10 +126,10 @@ export async function conversationalWorkflow(
       await chatHistoryAdapter.push(
         ctx.chatKey,
         ctx.customerMessage,
-        assistantMsg,
+        ASSISTANT_MSG,
       );
       return formatSagaOutput(
-        assistantMsg,
+        ASSISTANT_MSG,
         `${intent?.intentKey}:${policyDecision.type}`, // optional
       );
     }
@@ -143,7 +137,7 @@ export async function conversationalWorkflow(
     if (intent.module === "informational") {
       const key = intent.intentKey as InformationalIntentKey;
       const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
-      const assistantMsg = await handleMessageProcessing({
+      const ASSISTANT_MSG = await handleMessageProcessing({
         systemPrompt: businessInfoChunck(key, ctx),
         msg: ctx.customerMessage,
         chatHistory,
@@ -152,10 +146,10 @@ export async function conversationalWorkflow(
       await chatHistoryAdapter.push(
         ctx.chatKey,
         ctx.customerMessage,
-        assistantMsg,
+        ASSISTANT_MSG,
       );
       return formatSagaOutput(
-        assistantMsg,
+        ASSISTANT_MSG,
         `${intent?.intentKey}:${policyDecision.type}`, // optional
       );
     }
@@ -171,15 +165,19 @@ export async function conversationalWorkflow(
 
   // 3. handling intent feedback
   const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
-  const assistantMsg = await handleMessageProcessing({
-    systemPrompt: generateIntentPrompt(ctx, policyDecision),
+  const ASSISTANT_MSG = await handleMessageProcessing({
+    systemPrompt: intentClassifierPrompt(ctx, policyDecision),
     msg: ctx.customerMessage,
     chatHistory,
   });
-  await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, assistantMsg);
+  await chatHistoryAdapter.push(
+    ctx.chatKey,
+    ctx.customerMessage,
+    ASSISTANT_MSG,
+  );
 
   return formatSagaOutput(
-    assistantMsg,
+    ASSISTANT_MSG,
     `${policyDecision.intent?.intentKey}:${policyDecision.type}`, // optional
   );
 }
