@@ -76,17 +76,29 @@ function extractNumberOfPeople(message: string): number {
     // "mesa para X", "para X personas", etc.
     /(?:mesa|reserva|cita|evento)\s+para\s+(\d+)/i,
     // "para X personas", "X personas", "mesa para X"
-    /(?:para|de|con|grupo de|somos|vamos a ser|vamos|total|reserva para)\s*(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?)/i,
+    /(?:para|de|con|grupo de|somos|vamos a ser|vamos|total|reserva para)\s*(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i,
 
     // "X adultos", "X niños", etc.
     /(\d+)\s*(?:adultos?|niños?|menores?|bebes?|bebés?)/i,
 
     // Números simples al principio o al final
-    /^(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?)/i,
-    /(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?)\s*(\d+)$/i,
+    /^(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i,
+    /(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)\s*(\d+)$/i,
 
     // "somos X", "serán X", etc.
     /(?:somos|serán|vamos a ser|vamos|va a ir|van a ir|irá|irán)\s*(\d+)/i,
+
+    // Expresiones regionales: "pa' X", "pa X", etc.
+    /(?:pa'|pa)\s*(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i,
+
+    // Expresiones regionales inversas: "X pa'", "X pa"
+    /(\d+)\s*(?:pa'|pa)\s*/i,
+
+    // Expresiones regionales específicas
+    /(\d+)\s+(?:chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?|compis?|hermano)/i,
+
+    // Expresiones regionales con palabras intermedias (por ejemplo: "Vamos pa' 2 el sábado parce")
+    /(?:vamos|somos|va a ir|van a ir)\s+p[ao]'?\s*(\d+)(?:\s+el\s+\w+\s+parce|\s+\w+\s+el\s+\w+\s+parce|\s+\w+\s+parce|\s+\w+\s+hermano|\s+\w+\s+pana)/i,
   ];
 
   for (const pattern of patterns) {
@@ -97,6 +109,60 @@ function extractNumberOfPeople(message: string): number {
         // Rango razonable
         return num;
       }
+    }
+  }
+
+  // Si no encontramos un número explícito con los patrones anteriores,
+  // intentemos un enfoque más general para detectar números en contexto regional
+  // Buscar números que estén cerca de términos regionales
+  const regionalTerms = [
+    "chamacos?",
+    "pelados?",
+    "fiambres?",
+    "tíos?",
+    "compas?",
+    "parce",
+    "panas?",
+    "muchachos?",
+    "cuates?",
+    "hermanos?",
+    "amigos?",
+    "colegas?",
+    "compadres?",
+    "quilombos?",
+    "pibes?",
+    "güeyes?",
+    "camaradas?",
+    "cuate.s?",
+    "principes?",
+    "reyes?",
+    "capos?",
+    "jefes?",
+    "compis?",
+    "hermano",
+  ];
+
+  for (const term of regionalTerms) {
+    const regionalPattern = new RegExp(
+      `(\\d+)\\s+${term}|${term}\\s+(\\d+)`,
+      "i",
+    );
+    const regionalMatch = text.match(regionalPattern);
+    if (regionalMatch) {
+      const num = parseInt(regionalMatch[1] || regionalMatch[2], 10);
+      if (!isNaN(num) && num > 0 && num <= 50) {
+        return num;
+      }
+    }
+  }
+
+  // Buscar también patrones como "vamos pa' X" o "somos X"
+  const vamosPattern = /(?:vamos|somos|va a ir|van a ir)\s+pa'?s*\s*(\d+)/i;
+  const vamosMatch = text.match(vamosPattern);
+  if (vamosMatch && vamosMatch[1]) {
+    const num = parseInt(vamosMatch[1], 10);
+    if (!isNaN(num) && num > 0 && num <= 50) {
+      return num;
     }
   }
 
@@ -115,7 +181,9 @@ function extractNumberOfPeople(message: string): number {
  */
 function extractCustomerName(message: string): string {
   // Buscar posibles nombres propios (palabras que comienzan con mayúscula)
-  const namePattern = /[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})*/g;
+  // Incluye caracteres acentuados y ñ
+  const namePattern =
+    /[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,}(?:\s+[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,})*/g;
   const matches = message.match(namePattern) || [];
 
   // Filtrar palabras comunes que no son nombres
@@ -271,7 +339,8 @@ function extractDate(
   for (const pattern of datePatterns) {
     const match = text.match(pattern);
     if (match) {
-      let [, day, month, year] = match;
+      let [, first, second, year] = match;
+      let day, month;
       let fullYear = parseInt(year, 10);
 
       // Convertir años de 2 dígitos a 4 dígitos
@@ -279,11 +348,23 @@ function extractDate(
         fullYear = fullYear + 2000;
       }
 
-      const parsedDate = new Date(
-        fullYear,
-        parseInt(month, 10) - 1,
-        parseInt(day, 10),
-      );
+      // Determinar si es DD/MM/YYYY o MM/DD/YYYY basado en el contexto
+      // En países hispanohablantes es más común DD/MM/YYYY
+      // Si el primer número es > 12, entonces es DD/MM
+      if (parseInt(first, 10) > 12) {
+        day = parseInt(first, 10);
+        month = parseInt(second, 10);
+      } else if (parseInt(second, 10) > 12) {
+        // Si el segundo número es > 12, entonces es DD/MM
+        day = parseInt(second, 10);
+        month = parseInt(first, 10);
+      } else {
+        // Si ambos son <= 12, asumimos DD/MM/YYYY para mantener coherencia con formato hispano
+        day = parseInt(first, 10);
+        month = parseInt(second, 10);
+      }
+
+      const parsedDate = new Date(fullYear, month - 1, day);
 
       // Si la fecha ya pasó, asumir que es del próximo año
       if (parsedDate < today) {
@@ -378,12 +459,22 @@ function extractStartTime(text: string): string {
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
 
+    // HH:MM AM/PM o HH:MM PM/AM (standalone)
+    /(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
+    /(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
+
     // HH:MM (formato 24h)
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})/i,
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:hrs?|horas?)/i,
 
+    // HH:MM (formato 24h standalone)
+    /(\d{1,2}):(\d{2})/i,
+
     // "a las ocho", "a las nueve treinta", etc. (horas en palabras)
     /(?:a\s+las?|desde|inicio|comienza|empieza)\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?/i,
+
+    // Horas en palabras standalone
+    /(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?\s*(?:a\.?m\.?|p\.?m\.?)/i,
   ];
 
   for (const pattern of timePatterns) {
@@ -414,13 +505,36 @@ function extractStartTime(text: string): string {
       }
 
       // Verificar si es AM o PM
-      if (pattern.source.includes("a\\.?m\\.?|p\\.?m\\.")) {
-        const ampm = (text.match(/(a\.?m\.?|p\.?m\.?)/i) ||
-          [])[0]?.toLowerCase();
-        if (ampm?.includes("p") && hour < 12) {
-          hour += 12;
-        } else if (ampm?.includes("a") && hour === 12) {
-          hour = 0;
+      // Buscar AM/PM en el texto cerca de la hora encontrada
+      const allAmpmMatches = text.match(
+        /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)\s*(a\.?m\.?|p\.?m\.?)/gi,
+      );
+      if (allAmpmMatches) {
+        // Verificar si la hora actual coincide con alguna hora en el texto que tiene AM/PM
+        for (const matchText of allAmpmMatches) {
+          const hourPart = matchText.match(
+            /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)/i,
+          );
+          if (hourPart) {
+            let matchHour = parseInt(hourPart[1], 10);
+            if (isNaN(matchHour)) {
+              // Si es una hora en palabras, convertirla
+              const wordHour = hourPart[1].toLowerCase().trim();
+              matchHour = hourWords[wordHour];
+            }
+
+            if (matchHour === hour) {
+              const ampm = matchText
+                .match(/(a\.?m\.?|p\.?m\.?)/i)?.[1]
+                ?.toLowerCase();
+              if (ampm?.includes("p") && hour < 12) {
+                hour += 12;
+              } else if (ampm?.includes("a") && hour === 12) {
+                hour = 0;
+              }
+              break;
+            }
+          }
         }
       }
 
