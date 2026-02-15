@@ -1,6 +1,5 @@
 import type { RestaurantCtx } from "@/domain/restaurant";
 import type { BookingResult } from "../booking-saga";
-import { ragService } from "@/application/services/rag";
 import { formatSagaOutput } from "../helpers/format-saga-output";
 import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
 import { handleMessageProcessing } from "../helpers/prepare-messages";
@@ -9,8 +8,6 @@ import { initialOptionsWorkflow } from "./initial-options-workflow";
 import {
   InformationalIntentKey,
   pomdpManager,
-  prioritizeIntents,
-  shouldSkipProcessing,
   SocialProtocolIntent,
 } from "@/application/services/pomdp";
 import {
@@ -36,49 +33,8 @@ export async function conversationalWorkflow(
   ctx: RestaurantCtx,
 ): Promise<BookingResult> {
   //
-  let ragResults: IntentPayloadWithScore[] = [];
-  const { skip, kind, msg } = shouldSkipProcessing(ctx.customerMessage);
-
-  // skip RAG, to save resources by using simple REGEX
-  if (skip && kind === "social-protocol") {
-    ragResults = [
-      {
-        score: 1,
-        module: "social-protocol",
-        intentKey: msg as SocialProtocolIntent,
-        requiresConfirmation: "never",
-      } satisfies IntentPayloadWithScore,
-    ];
-  }
-  if (skip && kind === "conversational-signal") {
-    //  we know exactly the form for "conversational-signal" so we can skip RAG
-    ragResults = [
-      {
-        score: 1,
-        module: "conversational-signal",
-        intentKey: msg as SocialProtocolIntent,
-        requiresConfirmation: "never",
-      } satisfies IntentPayloadWithScore,
-    ];
-  }
-  // TODO: skip RAG for "booking" | "restaurant" etc.. by REGEX
-  if (!skip) {
-    const limit = 2;
-    const { points } = await ragService.searchIntent(
-      ctx.customerMessage,
-      ctx.activeModules, // ej: ["informational", "booking", "restaurant"],
-      limit,
-    );
-    ragResults = prioritizeIntents(
-      points.map(({ payload, score }) => ({
-        ...payload,
-        score,
-      })) ?? [],
-    );
-  }
-
   // 1. generating the policy decision
-  const policy = await pomdpManager.process(ctx, ragResults);
+  const policy = await pomdpManager.process(ctx);
 
   // 2. handling intent execution
   if (policy.type === "execute") {

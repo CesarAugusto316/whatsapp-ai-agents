@@ -13,6 +13,7 @@ export class BeliefStateUpdater {
 
   static createEmpty(): BeliefState {
     return {
+      topResults: [],
       executedIntents: [],
       current: undefined,
       previous: undefined,

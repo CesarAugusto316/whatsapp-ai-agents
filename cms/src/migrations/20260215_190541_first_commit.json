@@ -1,5 +1,5 @@
 {
-  "id": "add85142-769c-4f2e-8362-a500b0b375dc",
+  "id": "db264c6d-4f5c-4244-b62d-e946b3b95d26",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1752,7 +1752,8 @@
           "type": "enum_businesses_currency",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'USD'"
         },
         "taxes": {
           "name": "taxes",
@@ -1835,11 +1836,18 @@
           "primaryKey": false,
           "notNull": false
         },
-        "schedule_average_time": {
-          "name": "schedule_average_time",
+        "schedule_min_duration_time": {
+          "name": "schedule_min_duration_time",
           "type": "numeric",
           "primaryKey": false,
           "notNull": true,
+          "default": 60
+        },
+        "schedule_max_duration_time": {
+          "name": "schedule_max_duration_time",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
           "default": 60
         },
         "updated_at": {
@@ -4031,7 +4039,8 @@
         "restaurant",
         "medical",
         "legal",
-        "real_estate"
+        "real_estate",
+        "erotic"
       ]
     },
     "public.enum_businesses_general_country": {
