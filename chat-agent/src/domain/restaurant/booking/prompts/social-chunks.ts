@@ -1,5 +1,5 @@
-import { SocialProtocolIntent } from "@/application/services/pomdp";
-import { RestaurantCtx } from "@/domain/restaurant";
+import type { SocialProtocolIntent } from "@/application/services/pomdp";
+import type { RestaurantCtx } from "@/domain/restaurant";
 import { basePrompt } from "./base-prompt";
 
 const firstMessageVariants = [

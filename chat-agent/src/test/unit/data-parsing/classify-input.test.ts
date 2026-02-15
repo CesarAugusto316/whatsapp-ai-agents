@@ -577,3 +577,211 @@ describe("classifyInput", () => {
     );
   });
 });
+
+// Casos que no están cubiertos:
+test("should handle inputs with ONLY question words but NO data", () => {
+  expect(classifyInput("¿cuándo?")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("¿para qué día?")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("¿a qué hora?")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("a qué hora")).toBe(InputIntent.INFORMATION_REQUEST);
+});
+
+test("should handle confirmation phrases as USER_PROVIDED_DATA", () => {
+  expect(classifyInput("sí, para 2")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("dale, mañana")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("ok, a las 8pm")).toBe(InputIntent.USER_PROVIDED_DATA);
+  // Estos son casos críticos que tu código maneja con DIFF_THRESHOLD
+});
+
+// === CASOS CRÍTICOS DE PRODUCCIÓN (basados en logs reales de sistemas de reservas) ===
+
+test("should handle negations correctly (data with correction)", () => {
+  // Usuario corrige su intención - sigue siendo INPUT_DATA
+  expect(classifyInput("no, para 3 personas")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("no mañana, pasado mañana")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("no a las 8, a las 9pm")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+
+  // Negación pura sin datos → pregunta
+  expect(classifyInput("no gracias")).toBe(InputIntent.INFORMATION_REQUEST);
+});
+
+test("should handle time/date questions vs data", () => {
+  // Preguntas puras sobre tiempo → INFORMATION_REQUEST
+  expect(classifyInput("¿a qué hora?")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("¿para qué día?")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("cuándo abre")).toBe(InputIntent.INFORMATION_REQUEST);
+
+  // Datos de tiempo explícitos → USER_PROVIDED_DATA
+  expect(classifyInput("a las 8pm")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("para el viernes")).toBe(InputIntent.USER_PROVIDED_DATA);
+});
+
+test("should handle numbers that are NOT people counts", () => {
+  // Números contextuales que NO son personas → pregunta
+  expect(classifyInput("mesa 5")).toBe(InputIntent.INFORMATION_REQUEST); // Pregunta por mesa específica
+  expect(classifyInput("habitación 101")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("código de reserva ABC123")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+
+  // Números explícitos de personas → datos
+  expect(classifyInput("5 personas")).toBe(InputIntent.USER_PROVIDED_DATA);
+});
+
+test("should handle emoji-only or emoji-heavy inputs", () => {
+  // Emojis como confirmación → INPUT_DATA (comportamiento real de usuarios móviles)
+  expect(classifyInput("👍")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("✅ para 2")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("📅 mañana")).toBe(InputIntent.USER_PROVIDED_DATA);
+
+  // Emojis como pregunta → INFORMATION_REQUEST
+  expect(classifyInput("❓")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("🤔 tienen disponibilidad?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+});
+
+test("should handle rapid-fire corrections (real chat behavior)", () => {
+  expect(classifyInput("para 2... no, para 4")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("mañana... mejor pasado")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("8pm... digo 9pm")).toBe(InputIntent.USER_PROVIDED_DATA);
+});
+
+test("should handle mixed language inputs (Spanglish common in LATAM)", () => {
+  // Datos en Spanglish → INPUT_DATA
+  expect(classifyInput("reservation for 4 tomorrow")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("pa 2 people")).toBe(InputIntent.USER_PROVIDED_DATA);
+
+  // Preguntas en Spanglish → INFORMATION_REQUEST
+  expect(classifyInput("do you have availability?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+  expect(classifyInput("tienen mesa for 6?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+});
+
+test("should handle multi-line inputs correctly", () => {
+  // Datos en múltiples líneas → INPUT_DATA
+  expect(classifyInput("para 4 personas\nmañana a las 8pm")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+
+  // Pregunta en múltiples líneas → INFORMATION_REQUEST
+  expect(classifyInput("¿tienen\nmesa para 6?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+});
+
+test("should handle inputs with URLs or special characters", () => {
+  // Datos con URL (ej: compartir reserva) → INPUT_DATA
+  expect(classifyInput("reserva para 2 https://example.com")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+
+  // Pregunta con URL → INFORMATION_REQUEST
+  expect(classifyInput("¿cómo reservo? https://example.com")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+});
+
+test("should handle inputs with only punctuation", () => {
+  expect(classifyInput("...")).toBe(InputIntent.INFORMATION_REQUEST); // Ambiguo → fallback seguro
+  expect(classifyInput("!!!")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("¿")).toBe(InputIntent.INFORMATION_REQUEST);
+});
+
+
+test("should handle inputs with phone numbers or emails", () => {
+  // Contacto sin datos de reserva → INFORMATION_REQUEST (no es dato de reserva)
+  expect(classifyInput("mi email es user@example.com")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+  expect(classifyInput("555-1234")).toBe(InputIntent.INFORMATION_REQUEST);
+
+  // Contacto + datos → INPUT_DATA (prioriza datos)
+  expect(classifyInput("para 2 personas, email user@example.com")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+});
+
+test("should handle inputs with payment references", () => {
+  // Pago sin datos → pregunta
+  expect(classifyInput("aceptan tarjeta?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+  expect(classifyInput("pago con efectivo")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+
+  // Pago + datos → INPUT_DATA
+  expect(classifyInput("para 3 personas, pago con tarjeta")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+});
+
+test("should handle inputs with special requests (allergies, preferences)", () => {
+  // Solicitud sin datos → pregunta
+  expect(classifyInput("tienen opciones veganas?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+  expect(classifyInput("mesa en terraza")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  ); // Ambiguo → pregunta
+
+  // Solicitud + datos → INPUT_DATA
+  expect(classifyInput("para 4 personas, mesa en terraza")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+});
+
+test("should handle inputs with urgency markers", () => {
+  // Urgencia + datos → INPUT_DATA
+  expect(classifyInput("urgente para hoy a las 8pm")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("ASAP para 2 personas")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+
+  // Urgencia pura → pregunta
+  expect(classifyInput("¡urgente!")).toBe(InputIntent.INFORMATION_REQUEST);
+});
+
+test("should handle inputs with repeated words (typing errors)", () => {
+  // Errores de teclado con datos → INPUT_DATA
+  expect(classifyInput("para 22 personas")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  ); // 22 es válido (<50)
+  expect(classifyInput("mañanañana")).toBe(InputIntent.INFORMATION_REQUEST); // Palabra corrupta
+
+  // Errores con preguntas → INFORMATION_REQUEST
+  expect(classifyInput("tienentienen disponibilidad")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+});
+
+test("should handle boundary cases for people count", () => {
+  // Límites válidos → INPUT_DATA
+  expect(classifyInput("1 persona")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("50 personas")).toBe(InputIntent.USER_PROVIDED_DATA);
+
+  // Límites inválidos → sigue siendo INPUT_DATA (validación posterior)
+  expect(classifyInput("0 personas")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("100 personas")).toBe(InputIntent.USER_PROVIDED_DATA);
+
+  // Números sin contexto → ambiguo pero con heurística de datos
+  expect(classifyInput("25")).toBe(InputIntent.USER_PROVIDED_DATA); // Número solo → asumir personas
+});
