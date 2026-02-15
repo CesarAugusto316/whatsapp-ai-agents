@@ -1,5 +1,5 @@
-import { CustomerActions, BookingOptions } from "../booking.types";
-import { WRITING_STYLE } from "./old/conversational-prompts";
+import { BookingOptions, CustomerActions } from "../../booking.types";
+import { WRITING_STYLE } from "../base-prompt";
 
 export function humanizerPrompt(originalMessage: string) {
   return `

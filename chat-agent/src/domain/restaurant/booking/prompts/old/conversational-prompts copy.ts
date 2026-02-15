@@ -18,6 +18,7 @@ export const WRITING_STYLE = `
   - ALWAYS respond in SPANISH
 `;
 
+// TO REMOVE
 export function buildInfo(business: Business) {
   const { name, general, schedule, assistantName } = business;
   const SCHEDULE_BLOCK = formatSchedule(schedule, general.timezone);
@@ -181,6 +182,7 @@ export function buildInfo(business: Business) {
   return promptV1;
 }
 
+// TO REMOVE
 export const buildHowToProceed = (business: Business) => {
   const promptV1 = `
     You are ${AGENT_NAME}, an assistant that explains how the reservation system works for

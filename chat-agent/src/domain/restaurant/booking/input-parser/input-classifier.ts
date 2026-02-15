@@ -46,6 +46,15 @@ export function classifyInput(message: string): InputIntent {
     return InputIntent.INFORMATION_REQUEST;
   }
 
+  // Handle contextual numbers that are NOT person counts (e.g., "mesa 5", "habitación 101")
+  if (
+    /\b(mesa|habitación|room|table|sala|area|sector|zona|local|lugar|posición|posicion|número|numero|código|codigo|reserva|orden)\s+\d+\b/i.test(
+      m,
+    )
+  ) {
+    return InputIntent.INFORMATION_REQUEST;
+  }
+
   // Enhanced question detection for informal speech without punctuation
   const hasQuestionWithoutPunctuation =
     // Check for question words that typically indicate a question even without punctuation
@@ -62,7 +71,7 @@ export function classifyInput(message: string): InputIntent {
     // Números de personas explícitos (incluyendo abreviaturas y términos regionales)
     {
       test: () =>
-        /\b(\d+)\s*(personas?|pers|comensales?|somos|seremos|será?n|vamos a ser|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|hermano)\b/i.test(
+        /\b(\d+)\s*(personas?|pers|comensales?|somos|seremos|será?n|vamos a ser|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|hermano|people|persons|companion|companions)\b/i.test(
           m,
         ) ||
         // Detectar errores comunes como "persnas" como variante de "personas"
@@ -73,7 +82,7 @@ export function classifyInput(message: string): InputIntent {
       test: () => m.length < 20 && /\b(para|pa)\s+(\d+)\b/i.test(m),
       weight: 9,
     }, // "para 2", "pa 2", "para 4 personas"
-    { test: () => /^\d+$/.test(m) && parseInt(m) <= 20, weight: 8 }, // Solo un número (asumir personas)
+    { test: () => /^\d+$/.test(m) && parseInt(m) <= 50, weight: 8 }, // Solo un número (asumir personas)
 
     // Fechas relativas
     {
@@ -124,10 +133,13 @@ export function classifyInput(message: string): InputIntent {
     // Verbos de acción + datos
     {
       test: () =>
-        /\b(reservar|reserva|res|reservación|mesa|turno|cupo|lugar|sitio)\b/i.test(
+        /\b(reservar|reserva|res|reservación|mesa|turno|cupo|lugar|sitio|reservation|book|booking|table|seat)\b/i.test(
           m,
         ) &&
-        (/\b\d+\b/.test(m) || /\b(hoy|mañana|pasado)\b/i.test(m)),
+        (/\b\d+\b/.test(m) ||
+          /\b(hoy|mañana|pasado|today|tomorrow|afternoon|evening|tonight)\b/i.test(
+            m,
+          )),
       weight: 7,
     },
 
@@ -138,6 +150,16 @@ export function classifyInput(message: string): InputIntent {
           m,
         ) && m.length < 15,
       weight: 5,
+    },
+
+    // Correcciones rápidas (patrones de corrección común en chats)
+    {
+      test: () =>
+        /.*\b(para|pa|a las|el|la)\s+\d+.*\.{2,}.*\b(no|pero).*\b(para|pa|a las|el|la)\s+\d+.*/i.test(
+          m,
+        ) || // "para 2... no, para 4"
+        /.*\b(\d+).*\.{2,}.*\b(no|pero).*\b(\d+).*/i.test(m), // More general pattern for corrections with numbers
+      weight: 9,
     },
   ];
 
@@ -356,11 +378,19 @@ export function classifyInput(message: string): InputIntent {
     return InputIntent.INFORMATION_REQUEST;
   }
 
+  // Check for confirmation emojis commonly used in mobile messaging
+  const hasConfirmationEmoji = /(?:👍|✅|👌|👏|🙌|🎉|✔️|☑️)/.test(message);
+
   // Enhanced check for informal questions without punctuation
   // If we detected question-like phrasing without punctuation and the question score isn't significantly lower,
   // classify as NORMAL_SENTENCE instead of defaulting
   if (hasQuestionWithoutPunctuation && questionScore >= inputDataScore - 2) {
     return InputIntent.INFORMATION_REQUEST;
+  }
+
+  // If the message contains confirmation emojis, treat as USER_PROVIDED_DATA
+  if (hasConfirmationEmoji) {
+    return InputIntent.USER_PROVIDED_DATA;
   }
 
   // Special case: if the message contains question words like "caben", "alcanza", etc.

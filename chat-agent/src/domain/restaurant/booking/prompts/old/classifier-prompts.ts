@@ -1,4 +1,4 @@
-import { CUSTOMER_INTENT } from "../booking.types";
+import { CUSTOMER_INTENT } from "../../booking.types";
 
 export const CLASSIFIER_PROMPT = `
   You are an intent classification agent.
