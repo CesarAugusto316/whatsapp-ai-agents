@@ -240,22 +240,17 @@ function extractDateTime(
   // ✅ Ahora pasamos `timezone` a `extractDate`
   const { date, isNextWeek } = extractDate(text, referenceDate, timezone);
 
-  if (date) {
-    // ✅ Convertimos correctamente la fecha local (en `timezone`) a UTC
-    const startDate = formatDateAsUTC(date, timezone);
-    const endDateObj = startTime > endTime ? addDays(date, 1) : date;
-    const endDate = formatDateAsUTC(endDateObj, timezone);
-
-    return { startDate, startTime, endDate, endTime };
-  }
-  return { startDate: "", startTime, endDate: "", endTime };
+  const startDate = formatDateAsUTC(date, timezone);
+  const endDateObj = startTime > endTime ? addDays(date, 1) : date;
+  const endDate = formatDateAsUTC(endDateObj, timezone);
+  return { startDate, startTime, endDate, endTime };
 }
 
 function extractDate(
   text: string,
   referenceDate: Date,
   timezone: string, // ✅ Añadido
-): { date: Date | null; isNextWeek: boolean } {
+): { date: Date; isNextWeek: boolean } {
   // ✅ Construimos la fecha base en la zona horaria dada
   const zonedRef = toZonedTime(referenceDate, timezone);
   const today = new Date(zonedRef);
@@ -392,7 +387,7 @@ function extractDate(
     }
   }
 
-  return { date: null, isNextWeek: false };
+  return { date: today, isNextWeek: false };
 }
 
 // === Horas (sin cambios necesarios) ===
@@ -505,42 +500,29 @@ function extractEndTime(
   startTime: string,
   averageDurationMinutes: number = 60,
 ): string {
-  // Si no hay hora de inicio, no hay hora de fin
   if (!startTime) return "";
 
-  // Solo intentar parsear endTime si hay indicadores de rango
-  const hasRangeIndicator =
-    /(?:entre|de\s+\d|a\s+(?:las?|la)\s+\d|desde|a\s+\d.*hasta|hasta|termina|finaliza)/i.test(
-      text,
-    );
+  // Solo procesar endTime si hay indicadores claros de RANGO HORARIO
+  const hasRange = /(?:entre|de\s+\d.*a\s+\d|desde\s+\d.*hasta)/i.test(text);
 
-  if (hasRangeIndicator) {
-    // Patrones para detectar rango horario explícito
-    const endPatterns = [
-      // "entre la X y las Y", "entre X y Y"
-      /entre\s+la\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
-      /entre\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
+  if (hasRange) {
+    // Patrones que EXPLÍCITAMENTE capturan la SEGUNDA hora de un rango
+    const rangePatterns = [
+      // "entre X y Y" → captura Y
+      /(?:entre\s+(?:la\s+)?\d{1,2}.*?y\s+(?:las?\s+)?)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
 
-      // "de X a Y", "de X hasta Y"
-      /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-      /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-      /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-      /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?/i,
+      // "de X a Y" → captura Y
+      /(?:de\s+\d{1,2}.*?a\s+(?:las?\s+)?)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
 
-      // "de ocho a nueve"
-      /de\s+(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce).*?\s+a\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)/i,
-
-      // "hasta 10pm", "termina a las 9"
-      /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-      /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+      // "desde X hasta Y" → captura Y
+      /(?:desde\s+\d{1,2}.*?hasta\s+(?:las?\s+)?)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
     ];
 
-    for (const pattern of endPatterns) {
+    for (const pattern of rangePatterns) {
       const match = text.match(pattern);
       if (match) {
         let hourStr = match[1];
         const minuteStr = match[2] || "00";
-
         let hour = parseInt(hourStr, 10);
 
         const hourWords: Record<string, number> = {
@@ -562,32 +544,14 @@ function extractEndTime(
           hour = hourWords[hourStr.toLowerCase()];
         }
 
-        // Detectar AM/PM
         let ampm = match[3]?.toLowerCase();
         if (!ampm) {
-          const allAmpmMatches = text.match(
-            /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)\s*(a\.?m\.?|p\.?m\.?)/gi,
-          );
-          if (allAmpmMatches) {
-            for (const matchText of allAmpmMatches) {
-              const hourPart = matchText.match(
-                /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)/i,
-              );
-              if (hourPart) {
-                let matchHour = parseInt(hourPart[1], 10);
-                if (isNaN(matchHour)) {
-                  const wordHour = hourPart[1].toLowerCase().trim();
-                  matchHour = hourWords[wordHour] ?? matchHour;
-                }
-                if (matchHour === hour) {
-                  ampm =
-                    matchText ??
-                    "".match(/(a\.?m\.?|p\.?m\.?)/i)?.[1]?.toLowerCase();
-                  break;
-                }
-              }
-            }
-          }
+          // Buscar AM/PM cerca de esta hora específica
+          const contextStart = match.index! + match[0].length - 20;
+          const context = text
+            .slice(contextStart)
+            .match(/(a\.?m\.?|p\.?m\.?)/i);
+          ampm = context?.[1]?.toLowerCase() ?? "";
         }
 
         if (ampm?.includes("p") && hour < 12) hour += 12;
@@ -596,16 +560,6 @@ function extractEndTime(
         return `${hour.toString().padStart(2, "0")}:${minuteStr.padStart(2, "0")}:00`;
       }
     }
-
-    // Si no hay rango explícito, calcular con duración promedio
-    const [h, m] = startTime.split(":").map(Number);
-    if (isNaN(h) || isNaN(m)) return ""; // protección extra
-
-    let totalMinutes = h * 60 + m + averageDurationMinutes;
-    let endH = Math.floor(totalMinutes / 60) % 24;
-    let endM = totalMinutes % 60;
-
-    return `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}:00`;
   }
 
   // Si no hay rango explícito, usar duración promedio

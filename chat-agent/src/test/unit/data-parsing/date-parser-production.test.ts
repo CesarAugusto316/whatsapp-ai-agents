@@ -117,7 +117,7 @@ describe("parseBookingData - Production Ready Timezone-aware date parsing", () =
     for (const tz of timezones.slice(0, 2)) {
       test(`parses event with duration in ${tz}`, () => {
         const message = "Evento para 10 personas de 6pm a 10pm";
-        const result = parseBookingData(message, tz);
+        const result = parseBookingData(message, tz, new Date(), 120);
         const expectedDate = getTodayInTimezone(tz);
 
         expect(result?.datetime?.start?.date).toBe(expectedDate);
@@ -128,7 +128,7 @@ describe("parseBookingData - Production Ready Timezone-aware date parsing", () =
 
       test(`parses overnight event in ${tz}`, () => {
         const message = "Fiesta para 15 personas de 11pm a 3am";
-        const result = parseBookingData(message, tz);
+        const result = parseBookingData(message, tz, new Date(), 120 * 2);
         const startDate = getTodayInTimezone(tz);
 
         expect(result?.datetime?.start?.date).toBe(startDate);
@@ -180,7 +180,7 @@ describe("parseBookingData - Production Ready Timezone-aware date parsing", () =
 
       test(`handles time ranges with different AM/PM in ${tz}`, () => {
         const message = "Sesión de trabajo de 11am a 2pm para 3 personas";
-        const result = parseBookingData(message, tz);
+        const result = parseBookingData(message, tz, new Date(), 180);
         const expectedDate = getTodayInTimezone(tz);
 
         expect(result?.datetime?.start?.date).toBe(expectedDate);
