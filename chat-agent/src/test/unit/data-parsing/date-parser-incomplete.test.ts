@@ -1,6 +1,9 @@
 import { parseBookingData } from "@/domain/restaurant/booking";
 import { describe, expect, test } from "bun:test";
-import { getTodayInTimezone } from "./date-parser-helpers";
+import {
+  getTodayInTimezone,
+  getTomorrowInTimezone,
+} from "./date-parser-helpers";
 
 describe("parseBookingData - Incomplete Information Handling", () => {
   const timezone = "America/Mexico_City";
@@ -23,6 +26,7 @@ describe("parseBookingData - Incomplete Information Handling", () => {
     const message = "A las 8pm para 2 personas";
     const result = parseBookingData(message, timezone, new Date(), 60);
     const today = getTodayInTimezone(timezone);
+
     expect(result.numberOfPeople).toBe(2);
     expect(result.datetime?.start.date).toBe(today);
     expect(result.datetime?.start.time).toBe("20:00:00");
@@ -34,11 +38,12 @@ describe("parseBookingData - Incomplete Information Handling", () => {
   test("handles message with only date", () => {
     const message = "Para mañana para 2 personas";
     const result = parseBookingData(message, timezone);
+    const tomorrow = getTomorrowInTimezone(timezone);
 
     expect(result.numberOfPeople).toBe(2);
-    expect(result.datetime?.start.date).not.toBe("");
+    expect(result.datetime?.start.date).toBe(tomorrow);
     expect(result.datetime?.start.time).toBe("");
-    expect(result.datetime?.end.date).not.toBe("");
+    expect(result.datetime?.end.date).toBe(tomorrow);
     expect(result.datetime?.end.time).toBe("");
   });
 

@@ -215,6 +215,7 @@ describe("parseBookingData - Production Ready Timezone-aware date parsing", () =
           // Just verify that it extracts the number of people and time
           expect(result.numberOfPeople).toBe(5);
           expect(result?.datetime?.start?.time).toBe("15:00:00");
+          expect(result?.datetime?.end?.time).toBe("16:00:00");
         });
       }
     }

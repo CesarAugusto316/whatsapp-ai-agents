@@ -142,6 +142,12 @@ describe("classifyInput", () => {
     expect(classifyInput("Juan y María, para el domingo")).toBe(
       InputIntent.USER_PROVIDED_DATA,
     );
+    expect(classifyInput("A nombre de carlos")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("me llamo alberto")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
     expect(classifyInput("Reserva a nombre de Carlos")).toBe(
       InputIntent.USER_PROVIDED_DATA,
     );
