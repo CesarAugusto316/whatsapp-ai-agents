@@ -1,6 +1,6 @@
 import { formatSchedule, getGoogleMapLink } from "@/domain/utilities";
 import type { InformationalIntentKey } from "@/application/services/pomdp";
-import { RestaurantCtx } from "@/domain/restaurant";
+import type { RestaurantCtx } from "@/domain/restaurant";
 import { basePrompt } from "./base-prompt";
 
 export function businessInfoChunck(

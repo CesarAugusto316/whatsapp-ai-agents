@@ -1,5 +1,5 @@
-import { PolicyDecision } from "@/application/services/pomdp";
-import { RestaurantCtx } from "@/domain/restaurant";
+import type { PolicyDecision } from "@/application/services/pomdp";
+import type { RestaurantCtx } from "@/domain/restaurant";
 import { attachProcessReminder } from "@/application/patterns";
 import { basePrompt } from "./base-prompt";
 import { generateAgentGoals } from "./agent-goals";
