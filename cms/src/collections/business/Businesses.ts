@@ -225,6 +225,7 @@ export const Business: CollectionConfig = {
           type: "text",
           required: true,
           admin: {
+            width: "50%",
             placeholder: {
               en: "Enter Business Name",
               es: "Ingrese el nombre del Negocio",
@@ -245,6 +246,7 @@ export const Business: CollectionConfig = {
             es: "Nombre del Asistente de IA",
           },
           admin: {
+            width: "50%",
             placeholder: {
               en: "Enter AI Assistant's Name",
               es: "Ingrese el nombre del Asistente de IA",
@@ -280,6 +282,9 @@ export const Business: CollectionConfig = {
             en: "Currency",
             es: "Moneda",
           },
+          admin: {
+            width: "50%",
+          },
         },
         {
           name: "taxes",
@@ -289,6 +294,7 @@ export const Business: CollectionConfig = {
             es: "Impuestos/IVA",
           },
           admin: {
+            width: "50%",
             placeholder: {
               en: "Enter Taxes",
               es: "Ingrese los impuestos/IVA",
@@ -321,6 +327,7 @@ export const Business: CollectionConfig = {
                   label: { en: "Active", es: "Activo" },
                   defaultValue: true,
                   admin: {
+                    width: "50%",
                     description: {
                       en: "Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here.",
                       es: "Indica si el negocio está activo o no. Dile al chatbot que te lo desabilite o hazlo aqui manualmente.",
@@ -353,6 +360,9 @@ export const Business: CollectionConfig = {
                   defaultValue: "+34",
                   minLength: 7,
                   maxLength: 20,
+                  admin: {
+                    width: "50%",
+                  },
                   label: {
                     en: "Phone Number",
                     es: "Número de teléfono",
@@ -364,6 +374,9 @@ export const Business: CollectionConfig = {
                   required: true,
                   label: { en: "Business Type", es: "Tipo de Negocio" },
                   defaultValue: "restaurant",
+                  admin: {
+                    width: "50%",
+                  },
                   options: [
                     {
                       label: { en: "Restaurant", es: "Restaurante" },
@@ -395,6 +408,7 @@ export const Business: CollectionConfig = {
                   defaultValue: 10,
                   required: true,
                   admin: {
+                    width: "50%",
                     condition: (data) =>
                       data?.general?.businessType === "restaurant",
                   },
@@ -423,6 +437,7 @@ export const Business: CollectionConfig = {
                     }
                   },
                   admin: {
+                    width: "50%",
                     allowEdit: false,
                     allowCreate: true,
                   },
@@ -499,6 +514,7 @@ export const Business: CollectionConfig = {
                     es: "URL de Google Maps",
                   },
                   admin: {
+                    width: "50%",
                     placeholder: {
                       en: "Paste your google map url to generate coordinates",
                       es: "Pega tu url de google maps aquí para generar coordenadas",
@@ -511,6 +527,9 @@ export const Business: CollectionConfig = {
                   required: true,
                   label: { en: "Timezone", es: "Zona Horaria" },
                   defaultValue: "Europe/Madrid",
+                  admin: {
+                    width: "50%",
+                  },
                   options: [
                     {
                       label: { en: "Madrid (UTC+1)", es: "Madrid (UTC+1)" },
@@ -612,6 +631,7 @@ export const Business: CollectionConfig = {
                       required: true,
                       defaultValue: () => new Date().toISOString(),
                       admin: {
+                        width: "50%",
                         date: {
                           pickerAppearance: "dayOnly",
                         },
@@ -627,6 +647,7 @@ export const Business: CollectionConfig = {
                       required: true,
                       defaultValue: () => new Date().toISOString(),
                       admin: {
+                        width: "50%",
                         date: {
                           pickerAppearance: "dayOnly",
                         },
@@ -659,6 +680,9 @@ export const Business: CollectionConfig = {
                     en: "Minimal booking duration (minutes)",
                     es: "Duración mínima de la reserva (minutos)",
                   },
+                  admin: {
+                    width: "50%",
+                  },
                 },
                 {
                   name: "maxDurationTime",
@@ -669,6 +693,9 @@ export const Business: CollectionConfig = {
                   label: {
                     en: "Maximum booking duration (minutes)",
                     es: "Duración máxima de la reserva (minutos)",
+                  },
+                  admin: {
+                    width: "50%",
                   },
                 },
               ],

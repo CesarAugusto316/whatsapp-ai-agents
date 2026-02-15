@@ -178,71 +178,98 @@ export const Appointments: CollectionConfig = {
   fields: [
     // businessId
     {
-      name: "business",
-      type: "relationship",
-      index: true,
-      label: {
-        en: "Business",
-        es: "Negocio",
-      },
-      admin: {
-        readOnly: true,
-      },
-      required: true,
-      relationTo: "businesses",
-      access: {
-        update: ({ req }) => {
-          if (req?.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
-          );
+      type: "row",
+      fields: [
+        {
+          name: "business",
+          type: "relationship",
+          index: true,
+          label: {
+            en: "Business",
+            es: "Negocio",
+          },
+          admin: {
+            readOnly: true,
+          },
+          required: true,
+          relationTo: "businesses",
+          access: {
+            update: ({ req }) => {
+              if (req?.user?.collection === "third-party-access") {
+                return true;
+              }
+              return (
+                req?.user?.collection === "users" && req?.user?.role === "admin"
+              );
+            },
+          },
         },
-      },
+        // customerId
+        {
+          name: "customer",
+          index: true,
+          type: "relationship",
+          admin: {
+            width: "50%",
+            readOnly: true,
+          },
+          label: {
+            en: "Customer",
+            es: "Cliente",
+          },
+          required: true,
+          relationTo: "customers",
+          access: {
+            update: ({ req }) => {
+              if (req.user?.collection === "third-party-access") {
+                return true;
+              }
+              return (
+                req?.user?.collection === "users" && req?.user?.role === "admin"
+              );
+            },
+          },
+        },
+      ],
     },
-    // customerId
+
     {
-      name: "customer",
-      index: true,
-      type: "relationship",
-      admin: {
-        readOnly: true,
-      },
-      label: {
-        en: "Customer",
-        es: "Cliente",
-      },
-      required: true,
-      relationTo: "customers",
-      access: {
-        update: ({ req }) => {
-          if (req.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
-          );
+      type: "row",
+      fields: [
+        // customerName
+        {
+          name: "customerName",
+          access: {
+            update: ({ req }) => {
+              if (req?.user?.collection === "third-party-access") {
+                return true;
+              }
+              return (
+                req?.user?.collection === "users" &&
+                (req?.user?.role === "admin" || req?.user?.role === "business")
+              );
+            },
+          },
+          type: "text",
+          label: { en: "Customer Name", es: "A nombre de" },
+          admin: { width: "50%" },
         },
-      },
-    },
-    // customerName
-    {
-      name: "customerName",
-      access: {
-        update: ({ req }) => {
-          if (req?.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" &&
-            (req?.user?.role === "admin" || req?.user?.role === "business")
-          );
+        // number of people
+        {
+          type: "number",
+          name: "numberOfPeople",
+          defaultValue: 1,
+          admin: {
+            width: "50%",
+            readOnly: true,
+          },
+          label: { en: "Number of People", es: "Número de Personas" },
+          min: 1,
+          max: 100,
         },
-      },
-      type: "text",
-      label: { en: "Customer Name", es: "A nombre de" },
+      ],
     },
+
     // time-zone
     {
       name: "timezone",
@@ -289,6 +316,7 @@ export const Appointments: CollectionConfig = {
             },
           },
           admin: {
+            width: "50%",
             readOnly: true,
             date: {
               displayFormat: "d MMM yyy HH:mm", // Formato de 24 horas
@@ -318,6 +346,7 @@ export const Appointments: CollectionConfig = {
             },
           },
           admin: {
+            width: "50%",
             readOnly: true,
             date: {
               displayFormat: "d MMM yyy HH:mm", // Formato de 24 horas
@@ -356,18 +385,7 @@ export const Appointments: CollectionConfig = {
         { value: "completed", label: { en: "Completed", es: "Completada" } },
       ],
     },
-    // number of people
-    {
-      type: "number",
-      name: "numberOfPeople",
-      defaultValue: 1,
-      admin: {
-        readOnly: true,
-      },
-      label: { en: "Number of People", es: "Número de Personas" },
-      min: 1,
-      max: 100,
-    },
+
     // notes
     {
       name: "notes",

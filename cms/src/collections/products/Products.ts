@@ -107,6 +107,7 @@ export const Products: CollectionConfig = {
           name: "name",
           type: "text",
           admin: {
+            width: "50%",
             description: {
               en: "The name of the product",
               es: "El nombre del producto",
@@ -126,6 +127,7 @@ export const Products: CollectionConfig = {
           name: "price",
           type: "number",
           admin: {
+            width: "50%",
             description: {
               en: "The price of the product",
               es: "El precio del producto",
@@ -150,6 +152,7 @@ export const Products: CollectionConfig = {
           name: "inventory",
           type: "number",
           admin: {
+            width: "50%",
             description: {
               en: "The inventory of the product",
               es: "El inventario del producto",
@@ -172,6 +175,7 @@ export const Products: CollectionConfig = {
             es: "Negocio",
           },
           admin: {
+            width: "50%",
             description: {
               en: "The business that owns the product",
               es: "El negocio que posee el producto",
@@ -232,6 +236,7 @@ export const Products: CollectionConfig = {
               name: "min",
               type: "number",
               admin: {
+                width: "33.33%",
                 description: {
                   en: "The minimum estimated processing time",
                   es: "El tiempo mínimo estimado de procesamiento",
@@ -246,6 +251,7 @@ export const Products: CollectionConfig = {
               name: "max",
               type: "number",
               admin: {
+                width: "33.33%",
                 description: {
                   en: "The maximum estimated processing time",
                   es: "El tiempo máximo estimado de procesamiento",
