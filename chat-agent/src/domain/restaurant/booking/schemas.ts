@@ -27,7 +27,7 @@ const dateTime = z.object({
     }, "invalid_time"),
 });
 
-export const phase2 = z.object({
+export const bookingSchema = z.object({
   customerName: z
     .string()
     .min(3, "too_short: Mínimo 3 caracteres")
@@ -213,9 +213,9 @@ export const mapZodErrorsToCollector = (
   return filteredErrors;
 };
 
-export type BookingSchema = z.infer<typeof phase2>;
+export type BookingSchema = z.infer<typeof bookingSchema>;
 
-export const bookingSchemas = { phase2 };
+export const bookingSchemas = { phase2: bookingSchema };
 
 export const customerIntentSchema = z.enum([
   CUSTOMER_INTENT.WHAT,

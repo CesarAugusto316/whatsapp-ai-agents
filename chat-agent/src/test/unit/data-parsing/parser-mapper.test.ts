@@ -1,6 +1,6 @@
 import {
   mapZodErrorsToCollector,
-  phase2,
+  bookingSchema,
 } from "@/domain/restaurant/booking/schemas";
 import { describe, expect, test } from "bun:test";
 
@@ -20,7 +20,7 @@ describe("Esquema phase2 - Validaciones", () => {
 
   describe("Validación exitosa", () => {
     test("Datos válidos pasan la validación", () => {
-      const result = phase2.safeParse(baseData);
+      const result = bookingSchema.safeParse(baseData);
       expect(result.success).toBe(true);
     });
 
@@ -32,7 +32,7 @@ describe("Esquema phase2 - Validaciones", () => {
           end: { date: "2024-12-02", time: "01:00:00" },
         },
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
   });
@@ -40,7 +40,7 @@ describe("Esquema phase2 - Validaciones", () => {
   describe("Validaciones de customerName", () => {
     test("Nombre muy corto (too_short)", () => {
       const data = { ...baseData, customerName: "Jo" };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -59,7 +59,7 @@ describe("Esquema phase2 - Validaciones", () => {
         ...baseData,
         customerName: "Juan".repeat(10), // 40 caracteres
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -75,7 +75,7 @@ describe("Esquema phase2 - Validaciones", () => {
 
     test("Formato inválido con números (invalid_format)", () => {
       const data = { ...baseData, customerName: "Juan123" };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -91,7 +91,7 @@ describe("Esquema phase2 - Validaciones", () => {
 
     test("Nombre vacío (falta required)", () => {
       const data = { ...baseData, customerName: "" };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -115,7 +115,7 @@ describe("Esquema phase2 - Validaciones", () => {
           end: { date: "2024-12-01", time: "21:00:00" },
         },
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -137,7 +137,7 @@ describe("Esquema phase2 - Validaciones", () => {
           end: { date: "2024-12-01", time: "21:00:00" },
         },
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -160,7 +160,7 @@ describe("Esquema phase2 - Validaciones", () => {
           end: { date: "2024-12-01", time: "21:00:00" },
         },
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -182,7 +182,7 @@ describe("Esquema phase2 - Validaciones", () => {
           end: { date: "2024-12-01", time: "21:00:00" },
         },
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -204,7 +204,7 @@ describe("Esquema phase2 - Validaciones", () => {
           end: { date: "2024-12-01", time: "19:00:00" }, // Antes del inicio
         },
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -227,7 +227,7 @@ describe("Esquema phase2 - Validaciones", () => {
           end: { date: "2024-12-01", time: "20:00:00" }, // Igual
         },
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -245,7 +245,7 @@ describe("Esquema phase2 - Validaciones", () => {
   describe("Validaciones de numberOfPeople", () => {
     test("Número muy pequeño (too_small)", () => {
       const data = { ...baseData, numberOfPeople: 0 };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -261,7 +261,7 @@ describe("Esquema phase2 - Validaciones", () => {
 
     test("Número muy grande (too_large)", () => {
       const data = { ...baseData, numberOfPeople: 101 };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -277,7 +277,7 @@ describe("Esquema phase2 - Validaciones", () => {
 
     test("No es entero (not_integer)", () => {
       const data = { ...baseData, numberOfPeople: 4.5 };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -302,7 +302,7 @@ describe("Esquema phase2 - Validaciones", () => {
         },
         numberOfPeople: -1, // Muy pequeño
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -344,7 +344,7 @@ describe("Esquema phase2 - Validaciones", () => {
 
   describe("Campos faltantes", () => {
     test("Todos los campos faltantes", () => {
-      const result = phase2.safeParse({});
+      const result = bookingSchema.safeParse({});
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -377,7 +377,7 @@ describe("Esquema phase2 - Validaciones", () => {
         numberOfPeople: 4,
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -400,7 +400,7 @@ describe("Esquema phase2 - Validaciones", () => {
           end: { date: "2024-12-01", time: "21:00:00" },
         },
       };
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -428,7 +428,7 @@ describe("Casos especiales del dataParser", () => {
         numberOfPeople: 2,
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -490,7 +490,7 @@ describe("Casos especiales del dataParser", () => {
         numberOfPeople: 2,
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -531,7 +531,7 @@ describe("Casos especiales del dataParser", () => {
         numberOfPeople: 2,
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -560,7 +560,7 @@ describe("Casos especiales del dataParser", () => {
         numberOfPeople: 2,
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -601,7 +601,7 @@ describe("Casos especiales del dataParser", () => {
         numberOfPeople: 2,
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -633,7 +633,7 @@ describe("Múltiples errores por campo", () => {
       customerName: "J", // Too short (1 char < 3)
     };
 
-    const result = phase2.safeParse(data);
+    const result = bookingSchema.safeParse(data);
     expect(result.success).toBe(false);
 
     if (!result.success) {
@@ -660,7 +660,7 @@ describe("Múltiples errores por campo", () => {
       customerName: "Juan123", // Longitud OK (7) pero tiene números
     };
 
-    const result = phase2.safeParse(data);
+    const result = bookingSchema.safeParse(data);
     expect(result.success).toBe(false);
 
     if (!result.success) {
@@ -688,7 +688,7 @@ describe("Múltiples errores por campo", () => {
       },
     };
 
-    const result = phase2.safeParse(data);
+    const result = bookingSchema.safeParse(data);
     expect(result.success).toBe(false);
 
     if (!result.success) {
@@ -715,7 +715,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
@@ -728,7 +728,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
@@ -741,7 +741,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
@@ -754,7 +754,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
 
       // ¡SORPRESA! Esta fecha es VÁLIDA para JavaScript
       // porque "2023-02-29" se convierte en "2023-03-01"
@@ -775,7 +775,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -797,7 +797,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
@@ -810,7 +810,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
@@ -823,7 +823,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -843,7 +843,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -865,7 +865,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -885,7 +885,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -905,7 +905,7 @@ describe("Validaciones avanzadas de fecha y hora", () => {
         },
       };
 
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       if (!result.success) {
@@ -949,7 +949,7 @@ describe("Integración con dataParser outputs", () => {
 
   Object.entries(dataParserOutputs).forEach(([nombre, data]) => {
     test(`${nombre} del dataParser debe fallar validación`, () => {
-      const result = phase2.safeParse(data);
+      const result = bookingSchema.safeParse(data);
       expect(result.success).toBe(false);
 
       // El collector debe poder procesar estos errores

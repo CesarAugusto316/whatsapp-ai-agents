@@ -259,6 +259,9 @@ describe("classifyInput", () => {
     expect(classifyInput("mesa pa 4 el viernes")).toBe(
       InputIntent.USER_PROVIDED_DATA,
     );
+    expect(classifyInput("cita pa 4 el viernes")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
   });
 
   test("should handle mixed cases with typos and abbreviations", () => {
