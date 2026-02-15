@@ -1,4 +1,4 @@
-import { WRITING_STYLE } from "../base-prompt";
+import { WRITING_STYLE } from "./base-prompt";
 
 type ValidationError = {
   field: PropertyKey;

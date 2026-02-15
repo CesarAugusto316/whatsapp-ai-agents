@@ -1,21 +1,21 @@
 import { describe, expect, test } from "bun:test";
-import { prioritizeIntents } from "@/application/use-cases/sagas/booking/workflows/helpers/prioritize-intents";
 import {
   IntentPayloadWithScore,
   ModuleKind,
+  prioritizeIntents,
 } from "@/application/services/pomdp";
 
 describe("prioritizeIntents", () => {
   test("should prioritize booking intents over social protocol intents", () => {
     const intents: IntentPayloadWithScore[] = [
       {
-        module: "social-protocol" as ModuleKind,
+        module: "social-protocol" satisfies ModuleKind,
         intentKey: "social:greeting",
         score: 0.85,
         requiresConfirmation: "never",
       },
       {
-        module: "booking" as ModuleKind,
+        module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.78,
         requiresConfirmation: "never",
@@ -35,13 +35,13 @@ describe("prioritizeIntents", () => {
   test("should not reorder if high priority intent already comes first", () => {
     const intents: IntentPayloadWithScore[] = [
       {
-        module: "booking" as ModuleKind,
+        module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.85,
         requiresConfirmation: "never",
       },
       {
-        module: "social-protocol" as ModuleKind,
+        module: "social-protocol" satisfies ModuleKind,
         intentKey: "social:greeting",
         score: 0.78,
         requiresConfirmation: "never",
@@ -57,7 +57,7 @@ describe("prioritizeIntents", () => {
   test("should handle single intent correctly", () => {
     const intents: IntentPayloadWithScore[] = [
       {
-        module: "social-protocol" as ModuleKind,
+        module: "social-protocol" satisfies ModuleKind,
         intentKey: "social:greeting",
         score: 0.85,
         requiresConfirmation: "never",
@@ -81,13 +81,13 @@ describe("prioritizeIntents", () => {
   test("should reorder when low priority has high score but difference is small", () => {
     const intents: IntentPayloadWithScore[] = [
       {
-        module: "social-protocol" as ModuleKind,
+        module: "social-protocol" satisfies ModuleKind,
         intentKey: "social:greeting",
         score: 0.9,
         requiresConfirmation: "never",
       },
       {
-        module: "booking" as ModuleKind,
+        module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.85,
         requiresConfirmation: "never",
@@ -105,13 +105,13 @@ describe("prioritizeIntents", () => {
   test("should not reorder when score difference is too large", () => {
     const intents: IntentPayloadWithScore[] = [
       {
-        module: "social-protocol" as ModuleKind,
+        module: "social-protocol" satisfies ModuleKind,
         intentKey: "social:greeting",
         score: 0.95,
         requiresConfirmation: "never",
       },
       {
-        module: "booking" as ModuleKind,
+        module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.74,
         requiresConfirmation: "never",
@@ -128,13 +128,13 @@ describe("prioritizeIntents", () => {
   test("should handle conversational signals with low priority", () => {
     const intents: IntentPayloadWithScore[] = [
       {
-        module: "conversational-signal" as ModuleKind,
+        module: "conversational-signal" satisfies ModuleKind,
         intentKey: "signal:affirmation",
         score: 0.85,
         requiresConfirmation: "never",
       },
       {
-        module: "booking" as ModuleKind,
+        module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.78,
         requiresConfirmation: "never",
@@ -150,13 +150,13 @@ describe("prioritizeIntents", () => {
   test("should handle informational intents with medium priority", () => {
     const intents: IntentPayloadWithScore[] = [
       {
-        module: "informational" as ModuleKind,
+        module: "informational" satisfies ModuleKind,
         intentKey: "info:ask_contact",
         score: 0.85,
         requiresConfirmation: "never",
       },
       {
-        module: "booking" as ModuleKind,
+        module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.78,
         requiresConfirmation: "never",

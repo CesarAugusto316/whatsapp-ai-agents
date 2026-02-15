@@ -1,7 +1,9 @@
 import { test, expect } from "bun:test";
-import { BeliefStateUpdater } from "@/application/services/pomdp/belief/belief-updater";
-import { BeliefState } from "@/application/services/pomdp/belief/belief.types";
-import { IntentPayloadWithScore } from "@/application/services/pomdp";
+import {
+  IntentPayloadWithScore,
+  BeliefState,
+  BeliefStateUpdater,
+} from "@/application/services/pomdp";
 
 test("Primer mensaje → nuevo intent con isConfident calculado usando su propio requiresConfirmation", () => {
   const updater = new BeliefStateUpdater();
@@ -11,7 +13,7 @@ test("Primer mensaje → nuevo intent con isConfident calculado usando su propio
     intentKey: "info:ask_price",
     module: "restaurant",
     score: 0.7,
-    requiresConfirmation: "never" as const,
+    requiresConfirmation: "never",
   };
 
   const newState = updater.update(initialState, topResult);
@@ -30,7 +32,7 @@ test("Señal de confirmación sobre intent anterior", () => {
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,
-      requiresConfirmation: "always" as const,
+      requiresConfirmation: "always",
       signals: {
         isConfirmed: false,
         isRejected: false,
@@ -47,7 +49,7 @@ test("Señal de confirmación sobre intent anterior", () => {
     intentKey: "signal:affirmation",
     module: "conversational-signal",
     score: 0.85,
-    requiresConfirmation: "always" as const,
+    requiresConfirmation: "always",
   };
 
   const newState = updater.update(initialState, topResult);
@@ -63,9 +65,9 @@ test("Módulo excluido sin contexto previo", () => {
 
   const topResult: IntentPayloadWithScore = {
     intentKey: "social:greeting",
-    module: "social-protocol" as const,
+    module: "social-protocol",
     score: 0.9,
-    requiresConfirmation: "always" as const,
+    requiresConfirmation: "always",
   };
 
   const newState = updater.update(initialState, topResult);
@@ -82,7 +84,7 @@ test("Transición entre intents", () => {
     intentKey: "booking:cancel",
     module: "booking",
     score: 0.85,
-    requiresConfirmation: "always" as const,
+    requiresConfirmation: "always",
   };
 
   const stateAfterFirst = updater.update(initialState, firstResult);
@@ -96,7 +98,7 @@ test("Transición entre intents", () => {
     intentKey: "info:ask_price",
     module: "restaurant",
     score: 0.7,
-    requiresConfirmation: "never" as const,
+    requiresConfirmation: "never",
   };
 
   const stateAfterSecond = updater.update(stateAfterFirst, secondResult);

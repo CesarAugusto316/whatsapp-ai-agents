@@ -12,7 +12,7 @@ const MODULE_PRIORITY: Record<ModuleKind, number> = {
   restaurant: 3, // Pedidos → alta prioridad
   erotic: 3, // Contenido adulto → alta prioridad
   "real-state": 3, // Bienes raíces → alta prioridad
-};
+} as const;
 
 // Función para priorizar intents
 export function prioritizeIntents(

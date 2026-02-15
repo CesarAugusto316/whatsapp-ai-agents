@@ -1,4 +1,5 @@
 export { intentExamples } from "./intents/intent-examples";
+export { prioritizeIntents } from "./intents/prioritize-intents";
 export {
   conversationalSignals,
   socialProtocols,

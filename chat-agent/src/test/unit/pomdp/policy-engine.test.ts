@@ -1,6 +1,5 @@
 import { test, expect } from "bun:test";
-import { PolicyEngine } from "@/application/services/pomdp/policy/policy-engine";
-import { BeliefState } from "@/application/services/pomdp";
+import { BeliefState, PolicyEngine } from "@/application/services/pomdp";
 
 test('requiresConfirmation="never" + score=0.8 → type="execute"', () => {
   const engine = new PolicyEngine();
@@ -8,10 +7,10 @@ test('requiresConfirmation="never" + score=0.8 → type="execute"', () => {
   const state: BeliefState = {
     executedIntents: [],
     current: {
-      intentKey: "restaurant:ask_price",
+      intentKey: "info:ask_price",
       module: "restaurant",
       score: 0.8,
-      requiresConfirmation: "never" as const,
+      requiresConfirmation: "never",
       signals: {
         isConfirmed: false,
         isRejected: false,
@@ -39,7 +38,7 @@ test('requiresConfirmation="maybe" + score=0.8 → type="execute"', () => {
       intentKey: "booking:create",
       module: "booking",
       score: 0.8,
-      requiresConfirmation: "maybe" as const,
+      requiresConfirmation: "maybe",
       signals: {
         isConfirmed: false,
         isRejected: false,
@@ -67,7 +66,7 @@ test('requiresConfirmation="maybe" + score=0.6 → type="ask_clarification" (fal
       intentKey: "booking:create",
       module: "booking",
       score: 0.6,
-      requiresConfirmation: "maybe" as const,
+      requiresConfirmation: "maybe",
       signals: {
         isConfirmed: false,
         isRejected: false,
@@ -95,7 +94,7 @@ test('requiresConfirmation="always" sin signals → type="ask_confirmation"', ()
       intentKey: "booking:cancel",
       module: "booking",
       score: 0.9,
-      requiresConfirmation: "always" as const,
+      requiresConfirmation: "always",
       signals: {
         isConfirmed: false,
         isRejected: false,
@@ -123,7 +122,7 @@ test('requiresConfirmation="always" + signals.isConfirmed=true → type="execute
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,
-      requiresConfirmation: "always" as const,
+      requiresConfirmation: "always",
       signals: {
         isConfirmed: true,
         isRejected: false,
@@ -151,7 +150,7 @@ test('requiresConfirmation="always" + signals.isRejected=true → type="propose_
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,
-      requiresConfirmation: "always" as const,
+      requiresConfirmation: "always",
       signals: {
         isConfirmed: false,
         isRejected: true,
@@ -179,7 +178,7 @@ test('requiresConfirmation="always" + signals.isUncertain=true → type="clear_u
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,
-      requiresConfirmation: "always" as const,
+      requiresConfirmation: "always",
       signals: {
         isConfirmed: false,
         isRejected: false,

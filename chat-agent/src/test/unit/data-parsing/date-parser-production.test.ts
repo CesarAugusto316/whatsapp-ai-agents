@@ -1,4 +1,4 @@
-import { parseBookingData } from "@/application/use-cases/sagas/booking/workflows/helpers/input-parser/parse-booking-data";
+import { parseBookingData } from "@/domain/restaurant/booking";
 import { describe, expect, test } from "bun:test";
 import {
   getTodayInTimezone,

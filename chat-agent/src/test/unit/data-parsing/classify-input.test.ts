@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { classifyInput } from "@/application/use-cases/sagas/booking/workflows/helpers/input-parser/input-classifier";
-import { InputIntent } from "@/domain/restaurant/booking";
+import { InputIntent, classifyInput } from "@/domain/restaurant/booking";
 
 describe("classifyInput", () => {
   // Casos básicos de INPUT_DATA

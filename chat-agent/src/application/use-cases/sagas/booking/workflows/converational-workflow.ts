@@ -1,24 +1,24 @@
 import type { RestaurantCtx } from "@/domain/restaurant";
 import type { BookingResult } from "../booking-saga";
 import { ragService } from "@/application/services/rag";
+import { formatSagaOutput } from "../helpers/format-saga-output";
+import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
+import { handleMessageProcessing } from "../helpers/prepare-messages";
+import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
+import { initialOptionsWorkflow } from "./initial-options-workflow";
 import {
   InformationalIntentKey,
   pomdpManager,
+  prioritizeIntents,
   shouldSkipProcessing,
   SocialProtocolIntent,
 } from "@/application/services/pomdp";
-import { formatSagaOutput } from "../helpers/format-saga-output";
-import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
-import { intentClassifierPrompt } from "./helpers/intent-classifier-prompt";
-import { businessInfoChunck } from "./helpers/business-info-chunk";
-import { handleMessageProcessing } from "./helpers/prepare-messages";
-import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import {
+  intentClassifierPrompt,
+  businessInfoChunck,
   getRandomOnboardingMsg,
   socialProtocolChunk,
-} from "./helpers/social-chunks";
-import { prioritizeIntents } from "./helpers/prioritize-intents";
-import { initialOptionsWorkflow } from "./initial-options-workflow";
+} from "@/domain/restaurant/booking";
 
 /**
  *

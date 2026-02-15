@@ -1,5 +1,5 @@
 import { formatLocalDateTime } from "@/domain/utilities";
-import { CustomerActions, BookingState } from "../booking.types";
+import { CustomerActions, BookingState } from "../../booking.types";
 
 export type OperationMode = "create" | "update";
 
