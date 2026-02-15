@@ -119,10 +119,18 @@ describe("classifyInput", () => {
     ); // Predomina INPUT_DATA
   });
 
-  test("should handle short confirmation inputs", () => {
+  // ESTO DEBERIA SER MANEJADO POR NUESTRO POLICY ENGINE PARA INPUTS DE CONFIRMACION , DUDA, NEGACION
+  test("should handle short confirmation/negation/doubt inputs", () => {
     expect(classifyInput("Sí")).toBe(InputIntent.INFORMATION_REQUEST); // Por defecto
     expect(classifyInput("Ok")).toBe(InputIntent.INFORMATION_REQUEST); // Por defecto
     expect(classifyInput("Vale")).toBe(InputIntent.INFORMATION_REQUEST); // Por defecto
+    expect(classifyInput("No")).toBe(InputIntent.INFORMATION_REQUEST); // Por defecto
+    expect(classifyInput("TAL VEZ")).toBe(InputIntent.INFORMATION_REQUEST); // Por defecto
+    expect(classifyInput("puede ser")).toBe(InputIntent.INFORMATION_REQUEST); // Por defecto
+    expect(classifyInput("No estoy seguro")).toBe(
+      InputIntent.INFORMATION_REQUEST,
+    ); // Por defecto
+    expect(classifyInput("Ya no")).toBe(InputIntent.INFORMATION_REQUEST); // Por defecto
   });
 
   test("should handle mixed content with numbers and questions", () => {
@@ -149,6 +157,142 @@ describe("classifyInput", () => {
       InputIntent.USER_PROVIDED_DATA,
     );
     expect(classifyInput("Reserva a nombre de Carlos")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+  });
+
+  // Casos robustos de nombres
+  test("should handle various name formats with data", () => {
+    // Nombre simple con apellido
+    expect(classifyInput("Carlos Pérez para el viernes")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("María López, mesa para 4")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Varias personas con nombres
+    expect(classifyInput("Juan, María y Pedro para hoy")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres en diferentes posiciones
+    expect(classifyInput("Para el sábado a nombre de Roberto")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("Reserva el domingo para Ana")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres con acentos y caracteres especiales
+    expect(classifyInput("José María para mañana")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("María Fernández, 6 personas")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres en minúsculas
+    expect(classifyInput("a nombre de miguel ángel")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("a nombre de fabir")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+  });
+
+  // Casos borde de nombres
+  test("should handle edge cases with names", () => {
+    // Nombres muy comunes que podrían confundirse
+    expect(classifyInput("juan para 2 personas")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("maría el viernes")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres con otros datos
+    expect(classifyInput("Carlos el jueves a las 8pm")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres en frases más complejas
+    expect(classifyInput("La reserva es para Andrés y su familia")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres con apellidos largos
+    expect(classifyInput("Reserva para Juan Carlos Martínez")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+  });
+
+  // Casos donde se mencionan nombres pero no es claro que sea para reserva
+  test("should distinguish between mentioning names and using them for booking", () => {
+    // Preguntas que mencionan nombres
+    expect(
+      classifyInput("Puedo hacer una reserva a nombre de alguien más"),
+    ).toBe(InputIntent.INFORMATION_REQUEST);
+    expect(classifyInput("reservar para otra persona")).toBe(
+      InputIntent.INFORMATION_REQUEST,
+    );
+
+    // Confusiones potenciales
+    expect(classifyInput("¿Cómo se llama usted?")).toBe(
+      InputIntent.INFORMATION_REQUEST,
+    );
+
+    // Nombres en contexto de pregunta
+    expect(classifyInput("¿Tienen disponibilidad para Juan?")).toBe(
+      InputIntent.INFORMATION_REQUEST,
+    );
+  });
+
+  // Casos de nombres internacionales/comunes en LATAM
+  test("should handle international and common LATAM names", () => {
+    // Nombres hispanos comunes
+    expect(classifyInput("Antonio para 3 personas")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("Sofía el sábado")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("Diego y Valentina para hoy")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres anglosajones comunes en contextos bilingües
+    expect(classifyInput("John para 2")).toBe(InputIntent.USER_PROVIDED_DATA);
+    expect(classifyInput("Sarah, mesa para el viernes")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres compuestos
+    expect(classifyInput("María José para mañana")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("José Antonio, 4 personas")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+  });
+
+  // Casos de nombres con errores tipográficos o abreviaturas
+  test("should handle names with typos and abbreviations", () => {
+    // Nombres con errores comunes
+    expect(classifyInput("a nombre de carlos (con 2 l)")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("juan p. para hoy")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Abreviaturas de nombres
+    expect(classifyInput("C. Pérez para el viernes")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+
+    // Nombres truncados o con errores
+    expect(classifyInput("reserva para carlo")).toBe(
       InputIntent.USER_PROVIDED_DATA,
     );
   });
