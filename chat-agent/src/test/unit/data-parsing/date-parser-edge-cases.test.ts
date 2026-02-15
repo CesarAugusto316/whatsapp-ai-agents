@@ -74,7 +74,7 @@ describe("parseBookingData - Edge Cases and International Formats", () => {
 
       test(`handles negative numbers in ${tz}`, () => {
         // Test negative number of people (should probably be handled gracefully)
-        const message = "Evento para -2 personas hoy a las 7pm";
+        const message = "evento para -2 personas hoy a las 7pm";
         const result = parseBookingData(message, tz);
 
         // Parser should handle negative numbers gracefully
