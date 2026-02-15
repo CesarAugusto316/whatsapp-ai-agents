@@ -50,6 +50,37 @@ Tu dominio es **estrecho y predecible**:
 
 ---
 
+```
+  
+      ┌─────────────────────────────────────────────────────────┐
+      │  CAPA 1: BÚSQUEDA SEMÁNTICA (Embeddings)                │
+      │  User: "quiero una pizza picante"                       │
+      │    ↓                                                    │
+      │  Vector DB → Productos similares                        │
+      │    ↓                                                    │
+      │  UI: "Opciones:                                         │
+      │       1. Pizza Diabla                                   │
+      │       2. Pizza Pepperoni                                │
+      │       3. Pizza Jalapeño"                                │
+      └─────────────────────────────────────────────────────────┘
+                                    ↓
+      ┌─────────────────────────────────────────────────────────┐
+      │  CAPA 2: PARSING ESTRUCTURADO (Regex)                   │
+      │  User: "agrega la opción 1 y 3"                         │
+      │    ↓                                                    │
+      │  Regex → Extraer: action=ADD, options=[1, 3]            │
+      │    ↓                                                    │
+      │  Carrito → Agregar productos reales                     │
+      └─────────────────────────────────────────────────────────┘
+                                   ↓
+      ┌─────────────────────────────────────────────────────────────┐
+      │  CAPA 3: INTERFAZ HUMANA (LLM - opcional/minimal)           │
+      │  → Humanizar errores: "¡Claro! ¿Para cuántas personas?"     │
+      │  → Generar copy natural para confirmaciones                 │
+      │  Responsabilidad: Presentación, NO toma de decisiones       │
+      └─────────────────────────────────────────────────────────────┘
+```
+
 ### Conclusión
 
 **Sí, puedes y debes usar solo regex + lógica nativa.** Para tu dominio específico (reservas en español), es:

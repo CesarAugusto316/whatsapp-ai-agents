@@ -13,7 +13,6 @@ export class BeliefStateUpdater {
 
   static createEmpty(): BeliefState {
     return {
-      topResults: [],
       executedIntents: [],
       current: undefined,
       previous: undefined,
@@ -28,11 +27,11 @@ export class BeliefStateUpdater {
       case "always":
         return 0.8;
       case "maybe":
-        return 0.7;
+        return 0.74;
       case "never":
-        return 0.65;
+        return 0.69;
       default:
-        return 0.75;
+        return 0.74;
     }
   }
 
@@ -42,63 +41,70 @@ export class BeliefStateUpdater {
 
   public update(
     prevState: BeliefState,
-    topResult?: IntentPayloadWithScore,
+    alternativeIntents: IntentPayloadWithScore[],
+    mainIntent?: IntentPayloadWithScore,
   ): BeliefState {
     // Si no hay resultado nuevo, no cambiamos el estado (no creamos "nueva intención" artificial)
-    if (!topResult) {
+    if (!mainIntent) {
       return { ...prevState, isIntentFound: false };
     }
 
     if (prevState.current) {
       const previousIntent = prevState.current;
 
-      const isTopResultConfident = this.isConfident(
-        topResult.score,
+      const isMainItentConfident = this.isConfident(
+        mainIntent.score,
         this.getThreshold(previousIntent.requiresConfirmation), // -> mismo nivel de riesgo que la intencion principal, nunca pude ser menor
       );
 
+      // for confirmation | negation | doubt
       if (
-        topResult.module === "conversational-signal" &&
+        mainIntent.module === "conversational-signal" &&
         previousIntent.isConfident &&
-        isTopResultConfident
+        isMainItentConfident
       ) {
-        const newIntent = this.updatePreviousIntent(previousIntent, topResult);
+        // no deberiamos actualizar alternativeIntents porque solo estamos en una confirmacion
+        const newIntent = this.updatePreviousIntent(previousIntent, mainIntent);
         return this.newSnapShot(prevState, newIntent);
       }
     }
     // We never store excludedModules alone
-    if (this.excludedModules.includes(topResult.module)) {
+    if (this.excludedModules.includes(mainIntent.module)) {
       return { ...prevState };
     }
 
-    // registramos las nuevas intenciones
-    const newIntent = this.newIntent(topResult);
+    // registramos la nueva intencion por primera vez
+    const newIntent = this.newIntent(mainIntent, alternativeIntents);
     return this.newSnapShot(prevState, newIntent);
   }
 
   private updatePreviousIntent(
     prevIntent: BeliefIntent,
-    topResult: IntentPayloadWithScore,
+    mainIntent: IntentPayloadWithScore,
   ): BeliefIntent {
     //
     return {
       ...prevIntent,
       signals: {
-        isConfirmed: topResult.intentKey === "signal:affirmation",
-        isRejected: topResult.intentKey === "signal:negation",
-        isUncertain: topResult.intentKey === "signal:uncertainty",
+        isConfirmed: mainIntent.intentKey === "signal:affirmation",
+        isRejected: mainIntent.intentKey === "signal:negation",
+        isUncertain: mainIntent.intentKey === "signal:uncertainty",
       },
     };
   }
 
-  private newIntent(topResult: IntentPayloadWithScore): BeliefIntent {
+  private newIntent(
+    mainIntent: IntentPayloadWithScore,
+    alternatives: IntentPayloadWithScore[] = [],
+  ): BeliefIntent {
     const isConfident = this.isConfident(
-      topResult.score,
-      this.getThreshold(topResult.requiresConfirmation),
+      mainIntent.score,
+      this.getThreshold(mainIntent.requiresConfirmation),
     );
 
     return {
-      ...topResult,
+      ...mainIntent,
+      alternatives,
       signals: {
         isConfirmed: false,
         isRejected: false,

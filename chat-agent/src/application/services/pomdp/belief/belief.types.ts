@@ -1,4 +1,3 @@
-import { IntentPayload } from "@/infraestructure/adapters/vector-store";
 import { IntentPayloadWithScore } from "../pomdp-manager";
 
 // ============================================
@@ -11,12 +10,12 @@ export interface BeliefIntent extends IntentPayloadWithScore {
     isRejected: boolean; // true si el usuario dijo "no" explícitamente
   };
   isConfident: boolean;
+  alternatives: IntentPayloadWithScore[];
 }
 
 export interface BeliefState {
   // we use top result beacause we may need
   // the most similar intents + example text for clarification
-  topResults: IntentPayload[];
   executedIntents: BeliefIntent[];
   current?: BeliefIntent;
   previous?: BeliefIntent;

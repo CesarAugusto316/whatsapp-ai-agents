@@ -5,13 +5,15 @@ import { basePrompt } from "./base-prompt";
 import { generateAgentGoals } from "./agent-goals";
 
 /**
+ *
  * Generates a dynamic prompt based on the policy decision
  */
 export function intentClassifierPrompt(
   ctx: RestaurantCtx,
-  policy?: PolicyDecision,
+  policy: PolicyDecision,
 ): string {
-  const { intentKey } = policy?.intent || {};
+  const beliefState = policy?.state;
+  const { intentKey, alternatives = [] } = policy?.intent || {};
   const { business, activeModules } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
@@ -39,6 +41,7 @@ export function intentClassifierPrompt(
         3. Cierra con una invitación simple: "¿Por dónde empezamos?" o "¿Qué te apetece hoy?"
      `;
 
+    // TODO: use alternatives [] to recommend diferent options
     case "ask_clarification":
       return `
         ${basePrompt(ctx)}
@@ -62,6 +65,7 @@ export function intentClassifierPrompt(
         - NO menciones la ambigüedad — solo ofrece caminos claros
      `;
 
+    // podemos usar condiciones: Si el usuario esta indeciso sobre X intent, explicar pasos o proponer otros caminos
     case "clear_up_uncertainty":
       return `
         ${basePrompt(ctx)}
@@ -111,6 +115,7 @@ export function intentClassifierPrompt(
         - Para restaurant: confirma plato + cantidad
      `;
 
+    // un intent fue rechazado, proponer una alternativa relevante, maybe use alternatives []
     case "propose_alternative":
       return `
         ${basePrompt(ctx)}

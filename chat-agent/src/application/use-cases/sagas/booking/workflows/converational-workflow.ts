@@ -1,7 +1,6 @@
 import type { RestaurantCtx } from "@/domain/restaurant";
-import type { BookingResult } from "../booking-saga";
+import type { BookingSagaResult } from "../booking-saga";
 import { formatSagaOutput } from "../helpers/format-saga-output";
-import { IntentPayloadWithScore } from "@/application/services/pomdp/pomdp-manager";
 import { handleMessageProcessing } from "../helpers/prepare-messages";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { initialOptionsWorkflow } from "./initial-options-workflow";
@@ -31,7 +30,7 @@ import {
  */
 export async function conversationalWorkflow(
   ctx: RestaurantCtx,
-): Promise<BookingResult> {
+): Promise<BookingSagaResult> {
   //
   // 1. generating the policy decision
   const policy = await pomdpManager.process(ctx);

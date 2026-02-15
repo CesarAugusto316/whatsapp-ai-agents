@@ -18,7 +18,7 @@ import { IntentExample, IntentExampleKey, intentExamples } from "../pomdp";
  */
 class RagService {
   private readonly EMBED_VERSION = "qwen3-0.6b";
-  private readonly THRESHOLD = 0.65;
+  private readonly THRESHOLD = 0.6;
   private readonly CACHE_TTL = 60 * 60 * 24 * 40; // 40 días
 
   constructor(
@@ -140,7 +140,7 @@ class RagService {
   /**
    * Inserta o actualiza intenciones en el sistema
    */
-  async upsertIntents(intents: IntentExample<IntentExampleKey>[]) {
+  async upsertIntents(intents: readonly IntentExample<IntentExampleKey>[]) {
     // 1. Preparar datos para embedding en lote
     const prepared = intents.flatMap(
       ({ intentKey, module, examples, lang, requiresConfirmation }) =>

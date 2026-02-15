@@ -22,7 +22,7 @@ export function businessInfoChunck(
     INTENT DETECTED:
     ${intentKey}
 
-    RULES:
+    GENERAL RULES:
     - No menciones el intento detectado.
     - You Never invent information,
 
@@ -43,8 +43,11 @@ export function businessInfoChunck(
   const sections: Record<InformationalIntentKey, string> = {
     "info:ask_location": `
         BUSINESS LOCATION
-        - Address: ${general.address}
-        - Google Maps: ${general.location ? getGoogleMapLink(general.location[0], general.location[1]) : "Not available"}
+        - ADDRESS: ${general.address}
+        - GOOGLE MAPS URL: ${general.location ? getGoogleMapLink(general.location[0], general.location[1]) : "Not available"}
+
+        SPECIFIC RULE:
+        - SEND THE GOOGLE MAPS URL + ADDRESS TO THE USER
     `,
     "info:ask_business_hours": `
         BUSINESS SCHEDULE

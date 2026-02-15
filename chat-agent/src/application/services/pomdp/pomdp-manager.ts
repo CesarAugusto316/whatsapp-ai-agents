@@ -5,7 +5,7 @@ import { RestaurantCtx } from "@/domain/restaurant";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { IntentPayload } from "@/infraestructure/adapters/vector-store";
 import { shouldSkipProcessing } from "./intents/conversational-signals";
-import { SocialProtocolIntent } from "./intents/intent.types";
+import { ModuleKind, SocialProtocolIntent } from "./intents/intent.types";
 import { ragService } from "../rag";
 import { prioritizeIntents } from "./intents/prioritize-intents";
 
@@ -17,7 +17,7 @@ export type PomdpResult = {
 
 export interface IntentPayloadWithScore extends Pick<
   IntentPayload,
-  "intentKey" | "module" | "requiresConfirmation"
+  "intentKey" | "module" | "requiresConfirmation" | "text"
 > {
   score: number;
 }
@@ -36,54 +36,79 @@ class PomdpManager {
    */
   async process(ctx: RestaurantCtx) {
     //
-    let ragResults: IntentPayloadWithScore[] = [];
+    let mainIntent: IntentPayloadWithScore | undefined;
+    let alternativeIntents: IntentPayloadWithScore[] = [];
     const { skip, kind, msg } = shouldSkipProcessing(ctx.customerMessage);
-  
+
     // skip RAG, to save resources by using simple REGEX
     if (skip && kind === "social-protocol") {
-      ragResults = [
-        {
-          score: 1,
-          module: "social-protocol",
-          intentKey: msg as SocialProtocolIntent,
-          requiresConfirmation: "never",
-        } satisfies IntentPayloadWithScore,
-      ];
+      mainIntent = {
+        score: 1,
+        module: "social-protocol",
+        intentKey: msg as SocialProtocolIntent,
+        text: "",
+        requiresConfirmation: "never",
+      } satisfies IntentPayloadWithScore;
     }
     if (skip && kind === "conversational-signal") {
       //  we know exactly the form for "conversational-signal" so we can skip RAG
-      ragResults = [
-        {
-          score: 1,
-          module: "conversational-signal",
-          intentKey: msg as SocialProtocolIntent,
-          requiresConfirmation: "never",
-        } satisfies IntentPayloadWithScore,
-      ];
+      mainIntent = {
+        score: 1,
+        module: "conversational-signal",
+        intentKey: msg as SocialProtocolIntent,
+        text: "",
+        requiresConfirmation: "never",
+      } satisfies IntentPayloadWithScore;
     }
     // TODO: skip RAG for "booking" | "restaurant" etc.. by REGEX
     if (!skip) {
-      const limit = 2;
+      const limit = 6;
       const { points } = await ragService.searchIntent(
         ctx.customerMessage,
         ctx.activeModules, // ej: ["informational", "booking", "restaurant"],
         limit,
       );
-      ragResults = prioritizeIntents(
+      // topResults =
+      const mappedPoints =
         points.map(({ payload, score }) => ({
           ...payload,
           score,
-        })) ?? [],
+        })) ?? [];
+
+      mainIntent = prioritizeIntents(mappedPoints.slice(0, 2)).at(0); // must not be "social protocol" but can be any other
+
+      const excludedModules: ModuleKind[] = [
+        "social-protocol",
+        "conversational-signal",
+      ];
+
+      const uniqueIntents = [
+        ...new Set(
+          mappedPoints
+            .filter(
+              (item) =>
+                !excludedModules.includes(item.module) ||
+                item.intentKey !== mainIntent?.intentKey,
+            )
+            .map((item) => item.intentKey),
+        ),
+      ];
+
+      // we need at least two alternatives
+      // alternatives that are not the main intent or not excludedModules and are unique
+      alternativeIntents = mappedPoints.filter((item) =>
+        uniqueIntents.includes(item.intentKey),
       );
     }
-   
+
     const previousBeliefState =
       ctx.beliefState || BeliefStateUpdater.createEmpty();
 
     // Update belief state based on observation
     const newBeliefState = this.beliefUpdater.update(
       previousBeliefState,
-      ragResults.at(0),
+      alternativeIntents,
+      mainIntent,
     );
 
     // Decide on action based on updated belief state

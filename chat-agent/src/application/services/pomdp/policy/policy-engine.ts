@@ -135,6 +135,12 @@ export class PolicyEngine {
     };
   }
 
+  /**
+   *
+   * @todo remove when refactor is complete
+   * @param intent
+   * @returns
+   */
   private mapIntentToWorkflow(intent: IntentExampleKey): string {
     const map: Partial<Record<IntentExampleKey, string>> = {
       // Booking

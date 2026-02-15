@@ -5,7 +5,7 @@ import { BookingOptions } from "@/domain/restaurant/booking";
 import { systemMessages } from "@/domain/restaurant/booking/prompts";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
-import { BookingResult } from "../booking-saga";
+import { BookingSagaResult } from "../booking-saga";
 import { BookingIntentKey } from "@/application/services/pomdp";
 
 /**
@@ -17,7 +17,7 @@ import { BookingIntentKey } from "@/application/services/pomdp";
 export async function initialOptionsWorkflow(
   ctx: RestaurantCtx,
   option: BookingIntentKey | string, // replace in the future for CoreIntentKey
-): Promise<BookingResult | undefined> {
+): Promise<BookingSagaResult | undefined> {
   const { bookingKey, customer, business } = ctx;
 
   if (option === BookingOptions.MAKE_BOOKING) {

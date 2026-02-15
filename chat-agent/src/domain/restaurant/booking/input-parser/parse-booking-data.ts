@@ -240,17 +240,21 @@ function extractDateTime(
   // ✅ Ahora pasamos `timezone` a `extractDate`
   const { date, isNextWeek } = extractDate(text, referenceDate, timezone);
 
-  const startDate = formatDateAsUTC(date, timezone);
-  const endDateObj = startTime > endTime ? addDays(date, 1) : date;
-  const endDate = formatDateAsUTC(endDateObj, timezone);
-  return { startDate, startTime, endDate, endTime };
+  if (date) {
+    const startDate = formatDateAsUTC(date, timezone);
+    const endDateObj = startTime > endTime ? addDays(date, 1) : date;
+    const endDate = formatDateAsUTC(endDateObj, timezone);
+    return { startDate, startTime, endDate, endTime };
+  }
+
+  return { startDate: "", startTime, endDate: "", endTime };
 }
 
 function extractDate(
   text: string,
   referenceDate: Date,
   timezone: string, // ✅ Añadido
-): { date: Date; isNextWeek: boolean } {
+): { date: Date | null; isNextWeek: boolean } {
   // ✅ Construimos la fecha base en la zona horaria dada
   const zonedRef = toZonedTime(referenceDate, timezone);
   const today = new Date(zonedRef);
@@ -387,7 +391,7 @@ function extractDate(
     }
   }
 
-  return { date: today, isNextWeek: false };
+  return { date: null, isNextWeek: false };
 }
 
 // === Horas (sin cambios necesarios) ===
