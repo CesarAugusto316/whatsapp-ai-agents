@@ -45,7 +45,7 @@ describe("parseBookingData2 - Timezone-aware date parsing", () => {
 
   // Caso especial: prueba cruce de medianoche en diferentes zonas
   test("handles midnight crossing correctly across timezones", () => {
-    const message = "Evento de 10pm a 1am para 5 personas";
+    const message = "Evento de 10pm a 1am para 5 personas para hoy";
     for (const tz of timezones) {
       const result = parseBookingData(message, tz);
       expect(result?.datetime?.start?.time).toBe("22:00:00");
@@ -88,7 +88,7 @@ describe("parseBookingData2 - Timezone-aware date parsing", () => {
 
   // Test para verificar que la fecha final termina un día después después de medianoche
   test("end date extends to next day after midnight crossing", () => {
-    const message = "Evento de 11:30pm a 2am para 4 personas";
+    const message = "Evento de 11:30pm a 2am para 4 personas para hoy";
 
     for (const tz of timezones) {
       const result = parseBookingData(message, tz);
@@ -110,10 +110,14 @@ describe("parseBookingData2 - Timezone-aware date parsing", () => {
   // Test adicional para casos extremos de cruce de medianoche
   test("handles various midnight crossing scenarios", () => {
     const testCases = [
-      { message: "Reserva de 11pm a 1am", startHour: 23, endHour: 1 },
-      { message: "Evento de 12am a 3am", startHour: 0, endHour: 3 },
-      { message: "Fiesta de 10pm a 4am", startHour: 22, endHour: 4 },
-      { message: "Mesa de 11:45pm a 00:15am", startHour: 23, endHour: 0 }, // This might be parsed as 00:15 next day
+      { message: "Reserva para hoy de 11pm a 1am", startHour: 23, endHour: 1 },
+      { message: "Evento para hoy de 12am a 3am", startHour: 0, endHour: 3 },
+      { message: "Fiesta para hoy de 10pm a 4am", startHour: 22, endHour: 4 },
+      {
+        message: "Mesa para hoy de 11:45pm a 00:15am",
+        startHour: 23,
+        endHour: 0,
+      }, // This might be parsed as 00:15 next day
     ];
 
     for (const testCase of testCases) {

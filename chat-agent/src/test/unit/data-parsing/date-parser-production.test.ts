@@ -118,9 +118,8 @@ describe("parseBookingData - Production Ready Timezone-aware date parsing", () =
       test(`parses event with duration in ${tz}`, () => {
         const message = "Evento para 10 personas de 6pm a 10pm";
         const result = parseBookingData(message, tz, new Date(), 120);
-        const expectedDate = getTodayInTimezone(tz);
 
-        expect(result?.datetime?.start?.date).toBe(expectedDate);
+        expect(result?.datetime?.start?.date).toBe(""); // como la fecha no fue definida es OK que sea ""
         expect(result?.datetime?.start?.time).toBe("18:00:00");
         expect(result?.datetime?.end?.time).toBe("22:00:00");
         expect(result.numberOfPeople).toBe(10);
@@ -129,9 +128,8 @@ describe("parseBookingData - Production Ready Timezone-aware date parsing", () =
       test(`parses overnight event in ${tz}`, () => {
         const message = "Fiesta para 15 personas de 11pm a 3am";
         const result = parseBookingData(message, tz, new Date(), 120 * 2);
-        const startDate = getTodayInTimezone(tz);
 
-        expect(result?.datetime?.start?.date).toBe(startDate);
+        expect(result?.datetime?.start?.date).toBe(""); // como la fecha no fue definida es OK que sea ""
         expect(result?.datetime?.start?.time).toBe("23:00:00");
         expect(result?.datetime?.end?.time).toBe("03:00:00");
       });
@@ -181,9 +179,8 @@ describe("parseBookingData - Production Ready Timezone-aware date parsing", () =
       test(`handles time ranges with different AM/PM in ${tz}`, () => {
         const message = "Sesión de trabajo de 11am a 2pm para 3 personas";
         const result = parseBookingData(message, tz, new Date(), 180);
-        const expectedDate = getTodayInTimezone(tz);
 
-        expect(result?.datetime?.start?.date).toBe(expectedDate);
+        expect(result?.datetime?.start?.date).toBe(""); // como la fecha no fue definida es OK que sea ""
         expect(result?.datetime?.start?.time).toBe("11:00:00");
         expect(result?.datetime?.end?.time).toBe("14:00:00");
         expect(result.numberOfPeople).toBe(3);
