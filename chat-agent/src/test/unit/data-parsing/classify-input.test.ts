@@ -56,6 +56,10 @@ describe("classifyInput", () => {
     expect(classifyInput("mesa para 6 el sábado a las 8:30")).toBe(
       InputIntent.USER_PROVIDED_DATA,
     );
+    expect(classifyInput("Mesa de 11:45pm a 00:15am")).toBe(
+      InputIntent.USER_PROVIDED_DATA,
+    );
+    expect(classifyInput("de 11 a 12")).toBe(InputIntent.USER_PROVIDED_DATA);
   });
 
   // Casos básicos de CUSTOMER_QUESTION
