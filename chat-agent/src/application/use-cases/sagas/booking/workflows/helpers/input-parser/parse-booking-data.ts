@@ -6,14 +6,30 @@ const BookingDataSchema = z
   .object({
     customerName: z.string(),
     datetime: z.object({
-      start: z.object({
-        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // formato YYYY-MM-DD
-        time: z.string().regex(/^\d{2}:\d{2}:\d{2}$/), // formato HH:MM:SS
-      }),
-      end: z.object({
-        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // formato YYYY-MM-DD
-        time: z.string().regex(/^\d{2}:\d{2}:\d{2}$/), // formato HH:MM:SS
-      }),
+      start: z
+        .object({
+          date: z
+            .string()
+            // .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(), // formato YYYY-MM-DD
+          time: z
+            .string()
+            // .regex(/^\d{2}:\d{2}:\d{2}$/)
+            .optional(), // formato HH:MM:SS
+        })
+        .partial(),
+      end: z
+        .object({
+          date: z
+            .string()
+            // .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(), // formato YYYY-MM-DD
+          time: z
+            .string()
+            // .regex(/^\d{2}:\d{2}:\d{2}$/)
+            .optional(), // formato HH:MM:SS
+        })
+        .partial(),
     }),
     numberOfPeople: z.number().int().min(0).max(50),
   })
@@ -32,6 +48,7 @@ export function parseBookingData(
   message: string,
   timezone: string = "America/Mexico_City",
   referenceDate: Date = new Date(),
+  averageDurationMinutes: number = 60, // 👈 nuevo parámetro
 ): ParsedBookingData {
   const normalizedMessage = message.trim();
   const numberOfPeople = extractNumberOfPeople(normalizedMessage);
@@ -41,6 +58,7 @@ export function parseBookingData(
     normalizedMessage,
     timezone,
     referenceDate,
+    averageDurationMinutes, // 👈 pasarlo
   );
 
   const result = BookingDataSchema.parse({
@@ -212,28 +230,32 @@ function extractDateTime(
   message: string,
   timezone: string,
   referenceDate: Date,
+  averageDurationMinutes: number = 60, // 👈 nuevo parámetro
 ): { startDate: string; startTime: string; endDate: string; endTime: string } {
   const text = message.toLowerCase();
+
+  const startTime = extractStartTime(text);
+  const endTime = extractEndTime(text, startTime, averageDurationMinutes); // 👈
 
   // ✅ Ahora pasamos `timezone` a `extractDate`
   const { date, isNextWeek } = extractDate(text, referenceDate, timezone);
 
-  const startTime = extractStartTime(text);
-  const endTime = extractEndTime(text, startTime);
+  if (date) {
+    // ✅ Convertimos correctamente la fecha local (en `timezone`) a UTC
+    const startDate = formatDateAsUTC(date, timezone);
+    const endDateObj = startTime > endTime ? addDays(date, 1) : date;
+    const endDate = formatDateAsUTC(endDateObj, timezone);
 
-  // ✅ Convertimos correctamente la fecha local (en `timezone`) a UTC
-  const startDate = formatDateAsUTC(date, timezone);
-  const endDateObj = startTime > endTime ? addDays(date, 1) : date;
-  const endDate = formatDateAsUTC(endDateObj, timezone);
-
-  return { startDate, startTime, endDate, endTime };
+    return { startDate, startTime, endDate, endTime };
+  }
+  return { startDate: "", startTime, endDate: "", endTime };
 }
 
 function extractDate(
   text: string,
   referenceDate: Date,
   timezone: string, // ✅ Añadido
-): { date: Date; isNextWeek: boolean } {
+): { date: Date | null; isNextWeek: boolean } {
   // ✅ Construimos la fecha base en la zona horaria dada
   const zonedRef = toZonedTime(referenceDate, timezone);
   const today = new Date(zonedRef);
@@ -283,7 +305,9 @@ function extractDate(
       }
 
       const parsed = new Date(fullYear, month - 1, day);
-      if (parsed < today) parsed.setFullYear(parsed.getFullYear() + 1);
+      if (parsed < today) {
+        parsed.setFullYear(parsed.getFullYear() + 1);
+      }
       return { date: parsed, isNextWeek: false };
     }
   }
@@ -368,7 +392,7 @@ function extractDate(
     }
   }
 
-  return { date: today, isNextWeek: false };
+  return { date: null, isNextWeek: false };
 }
 
 // === Horas (sin cambios necesarios) ===
@@ -473,111 +497,125 @@ function extractStartTime(text: string): string {
       return `${hour.toString().padStart(2, "0")}:${minuteStr.padStart(2, "0")}:00`;
     }
   }
-  return "19:00:00";
+  return "";
 }
 
-function extractEndTime(text: string, startTime: string): string {
-  // ... (igual que antes)
-  const endPatterns = [
-    // "entre la X y las Y", "entre X y Y" - extraer la segunda hora del rango
-    /entre\s+la\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
-    /entre\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
+function extractEndTime(
+  text: string,
+  startTime: string,
+  averageDurationMinutes: number = 60,
+): string {
+  // Si no hay hora de inicio, no hay hora de fin
+  if (!startTime) return "";
 
-    // "de X a Y", "de X hasta Y", "de X a las Y" - extraer la segunda hora del rango
-    /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-    /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-    /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-    /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?/i,
+  // Solo intentar parsear endTime si hay indicadores de rango
+  const hasRangeIndicator =
+    /(?:entre|de\s+\d|a\s+(?:las?|la)\s+\d|desde|a\s+\d.*hasta|hasta|termina|finaliza)/i.test(
+      text,
+    );
 
-    // "de X a Y", "de X hasta Y" - when hours are expressed in words
-    /de\s+(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce).*?\s+a\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)/i,
+  if (hasRangeIndicator) {
+    // Patrones para detectar rango horario explícito
+    const endPatterns = [
+      // "entre la X y las Y", "entre X y Y"
+      /entre\s+la\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
+      /entre\s+\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
 
-    // Regular patterns for end time
-    /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-    /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
-  ];
-  for (const pattern of endPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      let hourStr = match[1];
-      const minuteStr = match[2] || "00";
+      // "de X a Y", "de X hasta Y"
+      /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+      /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+      /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+      /de\s+\d+(?::\d+)?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)?/i,
 
-      let hour = parseInt(hourStr, 10);
+      // "de ocho a nueve"
+      /de\s+(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce).*?\s+a\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)/i,
 
-      // Handle time words (for the second part of ranges like "de ocho a nueve")
-      const hourWords: Record<string, number> = {
-        una: 1,
-        dos: 2,
-        tres: 3,
-        cuatro: 4,
-        cinco: 5,
-        seis: 6,
-        siete: 7,
-        ocho: 8,
-        nueve: 9,
-        diez: 10,
-        once: 11,
-        doce: 12,
-      };
+      // "hasta 10pm", "termina a las 9"
+      /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+      /(?:a|a\s+las?|hasta|termina|finaliza)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?/i,
+    ];
 
-      if (isNaN(hour) && hourWords[hourStr.toLowerCase()]) {
-        hour = hourWords[hourStr.toLowerCase()];
-      }
+    for (const pattern of endPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        let hourStr = match[1];
+        const minuteStr = match[2] || "00";
 
-      // Verificar si es AM o PM
-      // Primero intentar encontrar AM/PM asociado directamente con esta hora específica
-      let ampm = null;
-      if (match[3]) {
-        // Si hay un tercer grupo de captura que podría ser AM/PM
-        ampm = match[3]?.toLowerCase();
-      }
+        let hour = parseInt(hourStr, 10);
 
-      // Si no se encontró AM/PM en el match, buscar en el texto general
-      if (!ampm) {
-        const allAmpmMatches = text.match(
-          /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)\s*(a\.?m\.?|p\.?m\.?)/gi,
-        );
-        if (allAmpmMatches) {
-          for (const matchText of allAmpmMatches) {
-            const hourPart = matchText.match(
-              /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)/i,
-            );
-            if (hourPart) {
-              let matchHour = parseInt(hourPart[1], 10);
-              if (isNaN(matchHour)) {
-                // Si es una hora en palabras, convertirla
-                const wordHour = hourPart[1].toLowerCase().trim();
-                matchHour = hourWords[wordHour];
-              }
+        const hourWords: Record<string, number> = {
+          una: 1,
+          dos: 2,
+          tres: 3,
+          cuatro: 4,
+          cinco: 5,
+          seis: 6,
+          siete: 7,
+          ocho: 8,
+          nueve: 9,
+          diez: 10,
+          once: 11,
+          doce: 12,
+        };
 
-              if (matchHour === hour) {
-                ampm = matchText
-                  .match(/(a\.?m\.?|p\.?m\.?)/i)?.[1]
-                  ?.toLowerCase();
-                break;
+        if (isNaN(hour) && hourWords[hourStr.toLowerCase()]) {
+          hour = hourWords[hourStr.toLowerCase()];
+        }
+
+        // Detectar AM/PM
+        let ampm = match[3]?.toLowerCase();
+        if (!ampm) {
+          const allAmpmMatches = text.match(
+            /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)\s*(a\.?m\.?|p\.?m\.?)/gi,
+          );
+          if (allAmpmMatches) {
+            for (const matchText of allAmpmMatches) {
+              const hourPart = matchText.match(
+                /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)/i,
+              );
+              if (hourPart) {
+                let matchHour = parseInt(hourPart[1], 10);
+                if (isNaN(matchHour)) {
+                  const wordHour = hourPart[1].toLowerCase().trim();
+                  matchHour = hourWords[wordHour] ?? matchHour;
+                }
+                if (matchHour === hour) {
+                  ampm =
+                    matchText ??
+                    "".match(/(a\.?m\.?|p\.?m\.?)/i)?.[1]?.toLowerCase();
+                  break;
+                }
               }
             }
           }
         }
-      }
 
-      if (ampm?.includes("p") && hour < 12) {
-        hour += 12;
-      } else if (ampm?.includes("a") && hour === 12) {
-        hour = 0;
-      }
+        if (ampm?.includes("p") && hour < 12) hour += 12;
+        else if (ampm?.includes("a") && hour === 12) hour = 0;
 
-      return `${hour.toString().padStart(2, "0")}:${minuteStr.padStart(2, "0")}:00`;
+        return `${hour.toString().padStart(2, "0")}:${minuteStr.padStart(2, "0")}:00`;
+      }
     }
+
+    // Si no hay rango explícito, calcular con duración promedio
+    const [h, m] = startTime.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return ""; // protección extra
+
+    let totalMinutes = h * 60 + m + averageDurationMinutes;
+    let endH = Math.floor(totalMinutes / 60) % 24;
+    let endM = totalMinutes % 60;
+
+    return `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}:00`;
   }
+
+  // Si no hay rango explícito, usar duración promedio
   const [h, m] = startTime.split(":").map(Number);
-  let endH = h,
-    endM = m + 120;
-  if (endM >= 60) {
-    endH += Math.floor(endM / 60);
-    endM %= 60;
-    if (endH >= 24) endH %= 24;
-  }
+  if (isNaN(h) || isNaN(m)) return "";
+
+  let totalMinutes = h * 60 + m + averageDurationMinutes;
+  let endH = Math.floor(totalMinutes / 60) % 24;
+  let endM = totalMinutes % 60;
+
   return `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}:00`;
 }
 
