@@ -133,7 +133,7 @@ export const validationPrompts = {
     });
 
     // Average time en minutos (mínimo 60)
-    const averageTimeMinutes = Math.max(60, schedule.averageTime || 60);
+    const minDurationTimeMinutes = Math.max(60, schedule.minDurationTime || 60);
 
     return `
           You are a deterministic parsing and normalization module for a reservation system.
@@ -170,7 +170,7 @@ export const validationPrompts = {
 
           4. *CRITICAL END TIME DEFAULT*: If the user provides ONLY a start time WITHOUT an explicit end time
              (e.g., "a las 8pm", "para las 14:30", "a la 1 de la tarde"):
-             - Calculate end time by adding ${averageTimeMinutes} minutes to the start time
+             - Calculate end time by adding ${minDurationTimeMinutes} minutes to the start time
              - This is the business's default reservation duration
              - Format must include date and time with seconds explicitly: "HH:mm:00"
              - *IMPORTANT*: This rule applies ONLY when the user DOES NOT provide a time range
@@ -216,7 +216,7 @@ export const validationPrompts = {
           ${currentDateTime}
 
           ==============================
-          EXAMPLES WITH AVERAGE TIME = ${averageTimeMinutes} MINUTES
+          EXAMPLES WITH AVERAGE TIME = ${minDurationTimeMinutes} MINUTES
           ==============================
 
           Example 1 - User provides time range:
@@ -232,12 +232,12 @@ export const validationPrompts = {
             "numberOfPeople": 2
           }
 
-          Example 2 - User provides ONLY start time (average time = ${averageTimeMinutes} min):
+          Example 2 - User provides ONLY start time (average time = ${minDurationTimeMinutes} min):
           USER: "Comprendo, Mañana a las 8pm para 3 personas, entonces"
-          THOUGHT: I identify "Mañana" as the date and extract the start time "8pm" (converted to 20:00). Since no end time is provided, I calculate it by adding the average duration of ${averageTimeMinutes} minutes to the start time. The Number of people "3 personas" is extracted directly.
-          Calculation: 20:00 + ${averageTimeMinutes} minutes = ${(() => {
-            const hours = Math.floor(averageTimeMinutes / 60);
-            const minutes = averageTimeMinutes % 60;
+          THOUGHT: I identify "Mañana" as the date and extract the start time "8pm" (converted to 20:00). Since no end time is provided, I calculate it by adding the average duration of ${minDurationTimeMinutes} minutes to the start time. The Number of people "3 personas" is extracted directly.
+          Calculation: 20:00 + ${minDurationTimeMinutes} minutes = ${(() => {
+            const hours = Math.floor(minDurationTimeMinutes / 60);
+            const minutes = minDurationTimeMinutes % 60;
             const endHour = 20 + hours;
             const endMinute = minutes.toString().padStart(2, "0");
             return `${endHour.toString().padStart(2, "0")}:${endMinute}`;
@@ -248,8 +248,8 @@ export const validationPrompts = {
             "datetime": {
               "start": { "date": "${formatDate(tomorrow)}", "time": "20:00:00" },
               "end": { "date": "${formatDate(tomorrow)}", "time": "${(() => {
-                const hours = Math.floor(averageTimeMinutes / 60);
-                const minutes = averageTimeMinutes % 60;
+                const hours = Math.floor(minDurationTimeMinutes / 60);
+                const minutes = minDurationTimeMinutes % 60;
                 const endHour = 20 + hours;
                 const endMinute = minutes.toString().padStart(2, "0");
                 return `${endHour.toString().padStart(2, "0")}:${endMinute}:00`;
@@ -273,15 +273,15 @@ export const validationPrompts = {
 
           Example 4 - User provides weekday with only start time:
           USER: "Ya veo, entonces para el viernes a las 19:30 para 4 personas"
-          THOUGHT: I identify "El viernes" and determine the next occurring Friday. The start time "19:30" is extracted. Without an end time, I calculate it by adding ${averageTimeMinutes} minutes to 19:30. Number of people "4 personas" is noted.
-          Calculation: 19:30 + ${averageTimeMinutes} minutes
+          THOUGHT: I identify "El viernes" and determine the next occurring Friday. The start time "19:30" is extracted. Without an end time, I calculate it by adding ${minDurationTimeMinutes} minutes to 19:30. Number of people "4 personas" is noted.
+          Calculation: 19:30 + ${minDurationTimeMinutes} minutes
           OUTPUT:
           {
             "customerName": "",
             "datetime": {
               "start": { "date": "${formatDate(friday)}", "time": "19:30:00" },
               "end": { "date": "${formatDate(friday)}", "time": "${(() => {
-                const totalMinutes = 19 * 60 + 30 + averageTimeMinutes;
+                const totalMinutes = 19 * 60 + 30 + minDurationTimeMinutes;
                 const endHour = Math.floor(totalMinutes / 60);
                 const endMinute = totalMinutes % 60;
                 return `${endHour.toString().padStart(2, "0")}:${endMinute.toString().padStart(2, "0")}:00`;
@@ -313,7 +313,7 @@ export const validationPrompts = {
 
           Example 6 - User provides date with only start time:
           USER: "Para el 15 de enero a las 10:00 para 6 personas"
-          THOUGHT: I parse the explicit date "15 de enero" (adjusting year if needed). Start time "10:00" is extracted. Since no end time is given, I calculate it by adding ${averageTimeMinutes} minutes to 10:00. Number of people "6 personas" is noted.
+          THOUGHT: I parse the explicit date "15 de enero" (adjusting year if needed). Start time "10:00" is extracted. Since no end time is given, I calculate it by adding ${minDurationTimeMinutes} minutes to 10:00. Number of people "6 personas" is noted.
           // Asumiendo año actual
           ${(() => {
             const jan15 = new Date(now.getFullYear(), 0, 15);
@@ -328,7 +328,7 @@ export const validationPrompts = {
             "datetime": {
               "start": { "date": "${formatDate(jan15)}", "time": "10:00:00" },
               "end": { "date": "${formatDate(jan15)}", "time": "${(() => {
-                const totalMinutes = 10 * 60 + averageTimeMinutes;
+                const totalMinutes = 10 * 60 + minDurationTimeMinutes;
                 const endHour = Math.floor(totalMinutes / 60);
                 const endMinute = totalMinutes % 60;
                 return `${endHour.toString().padStart(2, "0")}:${endMinute.toString().padStart(2, "0")}:00`;
@@ -353,15 +353,15 @@ export const validationPrompts = {
 
           Example 8 - Time WITHOUT date:
           USER: "A las 8pm para 2 personas"
-          THOUGHT: I extract the start time "8pm" (converted to 20:00) but note there's no date reference. I calculate the end time by adding ${averageTimeMinutes} minutes to 20:00. Number of people "2 personas" is extracted.
+          THOUGHT: I extract the start time "8pm" (converted to 20:00) but note there's no date reference. I calculate the end time by adding ${minDurationTimeMinutes} minutes to 20:00. Number of people "2 personas" is extracted.
           OUTPUT:
           {
             "customerName": "",
             "datetime": {
               "start": { "date": "", "time": "20:00:00" },
               "end": { "date": "", "time": "${(() => {
-                const hours = Math.floor(averageTimeMinutes / 60);
-                const minutes = averageTimeMinutes % 60;
+                const hours = Math.floor(minDurationTimeMinutes / 60);
+                const minutes = minDurationTimeMinutes % 60;
                 const endHour = 20 + hours;
                 const endMinute = minutes.toString().padStart(2, "0");
                 return `${endHour.toString().padStart(2, "0")}:${endMinute}:00`;
@@ -402,15 +402,15 @@ export const validationPrompts = {
 
           Example 11 - "Pasado mañana" (day after tomorrow):
           USER: "Pasado mañana a las 15:00 para 4 personas"
-          THOUGHT: I identify "Pasado mañana" as the day after tomorrow. Start time "15:00" is extracted. Since no end time is given, I calculate it by adding ${averageTimeMinutes} minutes to 15:00. Number of people "4 personas" is noted.
-          Calculation: 15:00 + ${averageTimeMinutes} minutes
+          THOUGHT: I identify "Pasado mañana" as the day after tomorrow. Start time "15:00" is extracted. Since no end time is given, I calculate it by adding ${minDurationTimeMinutes} minutes to 15:00. Number of people "4 personas" is noted.
+          Calculation: 15:00 + ${minDurationTimeMinutes} minutes
           OUTPUT:
           {
             "customerName": "",
             "datetime": {
               "start": { "date": "${formatDate(dayAfterTomorrow)}", "time": "15:00:00" },
               "end": { "date": "${formatDate(dayAfterTomorrow)}", "time": "${(() => {
-                const totalMinutes = 15 * 60 + averageTimeMinutes;
+                const totalMinutes = 15 * 60 + minDurationTimeMinutes;
                 const endHour = Math.floor(totalMinutes / 60);
                 const endMinute = totalMinutes % 60;
                 return `${endHour.toString().padStart(2, "0")}:${endMinute.toString().padStart(2, "0")}:00`;
@@ -421,7 +421,7 @@ export const validationPrompts = {
 
           Example 12 - "Fin de semana" (weekend):
           USER: "Para el fin de semana a las 20:00 para 5 personas"
-          THOUGHT: I interpret "fin de semana" as the upcoming Saturday. Start time "20:00" is extracted. Without an end time, I calculate it by adding ${averageTimeMinutes} minutes to 20:00. Number of people "5 personas" is noted.
+          THOUGHT: I interpret "fin de semana" as the upcoming Saturday. Start time "20:00" is extracted. Without an end time, I calculate it by adding ${minDurationTimeMinutes} minutes to 20:00. Number of people "5 personas" is noted.
           // "fin de semana" typically refers to Saturday
           OUTPUT:
           {
@@ -429,7 +429,7 @@ export const validationPrompts = {
             "datetime": {
               "start": { "date": "${formatDate(saturday)}", "time": "20:00:00" },
               "end": { "date": "${formatDate(saturday)}", "time": "${(() => {
-                const totalMinutes = 20 * 60 + averageTimeMinutes;
+                const totalMinutes = 20 * 60 + minDurationTimeMinutes;
                 const endHour = Math.floor(totalMinutes / 60);
                 const endMinute = totalMinutes % 60;
                 return `${endHour.toString().padStart(2, "0")}:${endMinute.toString().padStart(2, "0")}:00`;
@@ -440,14 +440,14 @@ export const validationPrompts = {
 
           Example 13 - 12-hour format without minutes:
           USER: "A las 5pm para 3 personas"
-          THOUGHT: I extract the start time "5pm" (converted to 17:00) but note there's no date. I calculate the end time by adding ${averageTimeMinutes} minutes to 17:00. Number of people "3 personas" is extracted.
+          THOUGHT: I extract the start time "5pm" (converted to 17:00) but note there's no date. I calculate the end time by adding ${minDurationTimeMinutes} minutes to 17:00. Number of people "3 personas" is extracted.
           OUTPUT:
           {
             "customerName": "",
             "datetime": {
               "start": { "date": "", "time": "17:00:00" },
               "end": { "date": "", "time": "${(() => {
-                const totalMinutes = 17 * 60 + averageTimeMinutes;
+                const totalMinutes = 17 * 60 + minDurationTimeMinutes;
                 const endHour = Math.floor(totalMinutes / 60);
                 const endMinute = totalMinutes % 60;
                 return `${endHour.toString().padStart(2, "0")}:${endMinute.toString().padStart(2, "0")}:00`;
@@ -471,7 +471,7 @@ export const validationPrompts = {
 
           Example 15 - Ambiguous weekday ("el próximo viernes"):
           USER: "El próximo viernes a las 19:00 para 4 personas"
-          THOUGHT: I interpret "el próximo viernes" as the next occurring Friday. Start time "19:00" is extracted. Without an end time, I calculate it by adding ${averageTimeMinutes} minutes to 19:00. Number of people "4 personas" is noted.
+          THOUGHT: I interpret "el próximo viernes" as the next occurring Friday. Start time "19:00" is extracted. Without an end time, I calculate it by adding ${minDurationTimeMinutes} minutes to 19:00. Number of people "4 personas" is noted.
           // Assuming "próximo viernes" means the next Friday
           OUTPUT:
           {
@@ -479,7 +479,7 @@ export const validationPrompts = {
             "datetime": {
               "start": { "date": "${formatDate(friday)}", "time": "19:00:00" },
               "end": { "date": "${formatDate(friday)}", "time": "${(() => {
-                const totalMinutes = 19 * 60 + averageTimeMinutes;
+                const totalMinutes = 19 * 60 + minDurationTimeMinutes;
                 const endHour = Math.floor(totalMinutes / 60);
                 const endMinute = totalMinutes % 60;
                 return `${endHour.toString().padStart(2, "0")}:${endMinute.toString().padStart(2, "0")}:00`;
@@ -500,7 +500,7 @@ export const validationPrompts = {
 
           2. Does the user mention a SINGLE START TIME?
              - Keywords: "a las X", "para las X", "a la(s) X", "X horas", "X pm/am", "X de la tarde/noche"
-             - YES → Extract start time, calculate end = start + ${averageTimeMinutes} minutes (Rule 4)
+             - YES → Extract start time, calculate end = start + ${minDurationTimeMinutes} minutes (Rule 4)
              - Convert 12-hour format to 24-hour format
              - NO → Leave both start.time and end.time empty
 
@@ -525,7 +525,7 @@ export const validationPrompts = {
           - You ONLY parse and normalize user intent
           - You DO NOT perform timezone conversion
           - You DO NOT validate other business logic
-          - When user provides ONLY start time → end = start + ${averageTimeMinutes} minutes
+          - When user provides ONLY start time → end = start + ${minDurationTimeMinutes} minutes
           - When user provides time range → use their end time exactly
           - ALWAYS include seconds as ":00" in time format
           - Date and time are INDEPENDENT: user can provide one without the other

@@ -82,6 +82,7 @@ export const script = async (config: SanitizedConfig) => {
       data: {
         name: `Pizzeria Italiana ${i + 1}`,
         assistantName: i < 2 ? "Rebeca" : "Paola",
+        currency: "EUR",
         general: {
           phoneNumber: `+3411111111${i}`,
           businessType: "restaurant",
@@ -97,7 +98,8 @@ export const script = async (config: SanitizedConfig) => {
           user: i < 2 ? businessUser.id : businessUser2.id,
         },
         schedule: {
-          averageTime: APPOINTMENT_DEFAULT,
+          minDurationTime: APPOINTMENT_DEFAULT, // 1 hour
+          maxDurationTime: APPOINTMENT_DEFAULT * 3, // 3 hours
           monday: [MORNING_BLOCK, AFTERNOON_BLOCK],
           tuesday: [MORNING_BLOCK, AFTERNOON_BLOCK],
           wednesday: [MORNING_BLOCK, AFTERNOON_BLOCK],

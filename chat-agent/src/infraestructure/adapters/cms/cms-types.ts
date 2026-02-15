@@ -1,4 +1,7 @@
-export type WeekDay = Omit<Business["schedule"], "averageTime">;
+export type WeekDay = Omit<
+  Business["schedule"],
+  "maxDurationTime" | "minDurationTime"
+>;
 
 export const WEEK_DAYS: Array<keyof WeekDay> = [
   "monday",
@@ -131,7 +134,8 @@ export interface Business {
       | null;
   };
   schedule: {
-    averageTime: number;
+    minDurationTime: number;
+    maxDurationTime: number;
     monday?: Day[] | null;
     tuesday?: Day[] | null;
     wednesday?: Day[] | null;

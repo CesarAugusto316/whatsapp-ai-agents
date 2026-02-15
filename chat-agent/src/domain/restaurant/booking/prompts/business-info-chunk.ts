@@ -36,7 +36,7 @@ export function businessInfoChunck(
 
     - Booking:
       - Approval by owner/admin required: ${general.requireAppointmentApproval ? "Yes" : "No"}
-      - Minimal booking duration: ${schedule.averageTime} minutes
+      - Minimal booking duration: ${schedule.minDurationTime} minutes
   `.trim();
 
   // Mapeo 1:1 intentKey → sección relevante

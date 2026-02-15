@@ -264,6 +264,8 @@ export const Business: CollectionConfig = {
         {
           name: "currency",
           type: "select",
+          required: true,
+          defaultValue: "USD",
           options: [
             { label: "USD", value: "USD" },
             { label: "EUR", value: "EUR" },
@@ -644,16 +646,32 @@ export const Business: CollectionConfig = {
           },
           fields: [
             {
-              name: "averageTime",
-              type: "number",
-              required: true,
-              defaultValue: APPOINTMENT_DEFAULT,
-              min: APPOINTMENT_MIN,
-              max: APPOINTMENT_MAX,
-              label: {
-                en: "Minimal appointment duration (minutes)",
-                es: "Duración mínima de la reserva (minutos)",
-              },
+              type: "row",
+              fields: [
+                {
+                  name: "minDurationTime",
+                  type: "number",
+                  required: true,
+                  defaultValue: APPOINTMENT_DEFAULT,
+                  min: APPOINTMENT_MIN,
+                  max: APPOINTMENT_MAX,
+                  label: {
+                    en: "Minimal booking duration (minutes)",
+                    es: "Duración mínima de la reserva (minutos)",
+                  },
+                },
+                {
+                  name: "maxDurationTime",
+                  type: "number",
+                  defaultValue: APPOINTMENT_DEFAULT,
+                  min: APPOINTMENT_MIN,
+                  max: APPOINTMENT_MAX,
+                  label: {
+                    en: "Maximum booking duration (minutes)",
+                    es: "Duración máxima de la reserva (minutos)",
+                  },
+                },
+              ],
             },
             {
               type: "group",

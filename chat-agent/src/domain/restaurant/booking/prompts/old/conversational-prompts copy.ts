@@ -67,7 +67,7 @@ export function buildInfo(business: Business) {
     - Business type: ${general.businessType}
     - General Description: ${general.description}
     - Timezone: ${general.timezone}
-    - Estimated dining duration: ${schedule.averageTime} minutes
+    - Estimated dining duration: ${schedule.minDurationTime} minutes
     - Reservation approval required: ${general.requireAppointmentApproval ? "Yes" : "No"}
 
     ==============================

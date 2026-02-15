@@ -24,7 +24,7 @@ export const checkAvailabilityService = async (
 
   const { startDate, endDate, numberOfPeople, ...rest1 } = validateDates(
     where,
-    business.schedule.averageTime,
+    business.schedule.minDurationTime,
   );
 
   if (!rest1.success) return rest1;
@@ -307,7 +307,7 @@ async function validateBusiness(
 /**
  *
  * @param where
- * @param averageTime
+ * @param minDurationTime
  * @returns
  */
 function validateDates(
@@ -315,7 +315,7 @@ function validateDates(
     AvailabilityRequest["where"],
     "startDateTime" | "numberOfPeople" | "endDateTime"
   >,
-  averageTime?: number,
+  minDurationTime?: number,
 ) {
   const { endDateTime, numberOfPeople, startDateTime } = where;
   if (!startDateTime?.equals) {
@@ -327,7 +327,7 @@ function validateDates(
   const startDate = new Date(startDateTime.equals);
   const endDate = endDateTime
     ? new Date(endDateTime.equals)
-    : new Date(startDate.getTime() + (averageTime || 60) * 60 * 1000); // +1 hora por defecto
+    : new Date(startDate.getTime() + (minDurationTime || 60) * 60 * 1000); // +1 hora por defecto
 
   if (startDate >= endDate) {
     return {
@@ -441,9 +441,9 @@ function generateScheduleAvailability(
     };
   }
 
-  const averageTime = business.schedule.averageTime;
+  const minDurationTime = business.schedule.minDurationTime;
   const endDate = new Date(
-    startDate.getTime() + (averageTime || 60) * 60 * 1000,
+    startDate.getTime() + (minDurationTime || 60) * 60 * 1000,
   ); // +1 hora por defecto
 
   const { daySchedule, weekDay } = getCurrentDaySchedule(business, startDate);
@@ -487,7 +487,8 @@ function generateScheduleAvailability(
   return {
     startDate: availabilityRanges[0]?.open,
     endDate: new Date(
-      availabilityRanges[0]?.open?.getTime() + (averageTime || 60) * 60 * 1000,
+      availabilityRanges[0]?.open?.getTime() +
+        (minDurationTime || 60) * 60 * 1000,
     ),
     weekDay,
     availabilityRanges,

@@ -250,7 +250,7 @@ export interface Business {
    * The name of the AI assistant
    */
   assistantName: string;
-  currency?: ('USD' | 'EUR' | 'GBP' | 'JPY' | 'CAD' | 'MXN' | 'COL' | 'PEN') | null;
+  currency: 'USD' | 'EUR' | 'GBP' | 'JPY' | 'CAD' | 'MXN' | 'COL' | 'PEN';
   /**
    * The taxes/IVA percentage
    */
@@ -265,7 +265,7 @@ export interface Business {
      */
     requireAppointmentApproval?: boolean | null;
     phoneNumber?: string | null;
-    businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
+    businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate' | 'erotic';
     maxCapacity?: number | null;
     user: string | User;
     description?: string | null;
@@ -287,7 +287,8 @@ export interface Business {
       | null;
   };
   schedule: {
-    averageTime: number;
+    minDurationTime: number;
+    maxDurationTime?: number | null;
     monday?:
       | {
           open: number;
@@ -842,7 +843,8 @@ export interface BusinessesSelect<T extends boolean = true> {
   schedule?:
     | T
     | {
-        averageTime?: T;
+        minDurationTime?: T;
+        maxDurationTime?: T;
         monday?:
           | T
           | {

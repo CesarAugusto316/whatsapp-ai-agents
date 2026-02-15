@@ -46,7 +46,10 @@ export type AppointmentSlot = Pick<
   | "id"
 >;
 
-type WeekDay = Omit<Business["schedule"], "averageTime">;
+type WeekDay = Omit<
+  Business["schedule"],
+  "minDurationTime" | "maxDurationTime"
+>;
 export type WeekDayKey = keyof WeekDay;
 
 /**
