@@ -1,4 +1,5 @@
 import payload, { SanitizedConfig } from "payload";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import {
   MORNING_BLOCK,
   AFTERNOON_BLOCK,
@@ -9,11 +10,25 @@ function nextSlot(base: Date, minutes: number) {
   return new Date(base.getTime() + minutes * 60 * 1000);
 }
 
-function makeTime(dayOffset: number, minuteOfDay: number) {
-  const d = new Date();
+function makeTime(
+  dayOffset: number,
+  minuteOfDay: number,
+  timezone: string = "Europe/Madrid",
+) {
+  // Get the current date in the specified timezone
+  const now = new Date();
+  const zonedDate = toZonedTime(now, timezone);
+
+  // Create a new date with the offset and set the time
+  const d = new Date(zonedDate);
   d.setDate(d.getDate() + dayOffset);
   d.setHours(0, 0, 0, 0);
-  return new Date(d.getTime() + minuteOfDay * 60 * 1000);
+
+  // Add the minutes of the day to get the actual time
+  const result = new Date(d.getTime() + minuteOfDay * 60 * 1000);
+
+  // Convert back to UTC for storage
+  return fromZonedTime(result, timezone);
 }
 
 export const script = async (config: SanitizedConfig) => {
@@ -185,83 +200,105 @@ export const script = async (config: SanitizedConfig) => {
   // ---- APPOINTMENTS ----
   // Generate appointments for the next 30 days
   const totalDays = 30;
-  const minAppointmentsPerDay = 10;
-  const maxAppointmentsPerDay = 20;
+  const appointmentsPerBusinessPerDay = 30; // 30 appointments per business per day
 
-  // Define popular time slots to increase overlap probability
-  const popularTimeSlots = [
-    9 * 60, // 9:00 AM
-    10 * 60, // 10:00 AM
-    11 * 60, // 11:00 AM
-    12 * 60, // 12:00 PM
-    14.5 * 60, // 2:30 PM
-    15 * 60, // 3:00 PM
-    16 * 60, // 4:00 PM
-    17 * 60, // 5:00 PM
-    18 * 60, // 6:00 PM
-    19 * 60, // 7:00 PM
-  ];
+  // Collect all appointments to be created in batches
+  const allAppointmentsToCreate = [];
 
-  for (let day = 0; day < totalDays; day++) {
-    // Determine how many appointments for this day (between 10-20)
-    const appointmentsForDay =
-      Math.floor(
-        Math.random() * (maxAppointmentsPerDay - minAppointmentsPerDay + 1),
-      ) + minAppointmentsPerDay;
+  // For each business, create appointments
+  for (const business of businesses) {
+    // Pre-calculate all valid time slots based on the business schedule
+    // @ts-ignore
+    const allTimeSlots = [];
+    const scheduleDays = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
 
-    for (let apptIndex = 0; apptIndex < appointmentsForDay; apptIndex++) {
-      // Randomly select a business
-      const business =
-        businesses[Math.floor(Math.random() * businesses.length)];
-
-      // Randomly select a customer
-      const customer = customers[Math.floor(Math.random() * customers.length)];
-
-      // Select a time slot - with higher probability of selecting popular slots to create overlaps
-      let selectedTimeSlot;
-      if (Math.random() < 0.6) {
-        // 60% chance of picking a popular time slot
-        selectedTimeSlot =
-          popularTimeSlots[Math.floor(Math.random() * popularTimeSlots.length)];
-      } else {
-        // Select from all possible time slots
-        const allTimeSlots = [];
-
-        // Add morning slots (every 30 mins from 8:00 to 11:30)
-        for (let hour = 8; hour < 12; hour += 0.5) {
-          allTimeSlots.push(Math.floor(hour * 60));
+    for (const dayName of scheduleDays) {
+      // @ts-ignore
+      const daySchedule = business?.schedule[dayName];
+      if (daySchedule && Array.isArray(daySchedule)) {
+        for (const block of daySchedule) {
+          // Add slots in 30-minute increments within each block
+          for (let time = block.open; time < block.close; time += 30) {
+            // @ts-ignore
+            if (!allTimeSlots.includes(time)) {
+              allTimeSlots.push(time);
+            }
+          }
         }
-
-        // Add afternoon slots (every 30 mins from 14:00 to 19:30)
-        for (let hour = 14; hour < 20; hour += 0.5) {
-          allTimeSlots.push(Math.floor(hour * 60));
-        }
-
-        selectedTimeSlot =
-          allTimeSlots[Math.floor(Math.random() * allTimeSlots.length)];
       }
+    }
 
-      // Create appointment at the selected time
-      const start = makeTime(day, selectedTimeSlot);
-      const duration = APPOINTMENT_DEFAULT; // 1 hour duration
-      const end = nextSlot(start, duration);
+    const timezone = business.general.timezone;
 
-      await payload.create({
-        collection: "appointments",
-        data: {
-          business: business.id,
-          customer: customer.id,
-          customerName: customer.name,
-          startDateTime: start.toISOString(),
-          endDateTime: end.toISOString(),
-          status: Math.random() < 0.3 ? "pending" : "confirmed", // 30% pending, 70% confirmed
-          numberOfPeople: Math.floor(Math.random() * 9) + 2, // Between 2-10 people
-          notes: "Seeded appointment",
-          timezone: "Europe/Madrid",
-        },
-      });
+    for (let day = 0; day < totalDays; day++) {
+      // Track capacity per hour to respect maxCapacity
+      const hourlyCapacityTracker: { [key: string]: number } = {};
+
+      for (
+        let apptIndex = 0;
+        apptIndex < appointmentsPerBusinessPerDay;
+        apptIndex++
+      ) {
+        // Randomly select a customer
+        const customer =
+          customers[Math.floor(Math.random() * customers.length)];
+
+        // Select a time slot within business hours
+        const selectedTimeSlot =
+          allTimeSlots[Math.floor(Math.random() * allTimeSlots.length)];
+
+        // Create appointment at the selected time
+        const start = makeTime(day, selectedTimeSlot, timezone);
+        const duration = APPOINTMENT_DEFAULT; // 1 hour duration
+        const end = nextSlot(start, duration);
+
+        // Format the hour key for capacity tracking (YYYY-MM-DD HH format)
+        const hourKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")} ${String(start.getHours()).padStart(2, "0")}`;
+
+        // Determine number of people (between 2-10)
+        const numberOfPeople = Math.floor(Math.random() * 9) + 2;
+
+        // Check if adding this appointment would exceed max capacity for this hour
+        const currentHourCapacity = hourlyCapacityTracker[hourKey] || 0;
+        if (
+          currentHourCapacity + numberOfPeople <=
+          business.general.maxCapacity
+        ) {
+          // Update the capacity tracker
+          hourlyCapacityTracker[hourKey] = currentHourCapacity + numberOfPeople;
+
+          // Add appointment to batch instead of creating immediately
+          allAppointmentsToCreate.push({
+            collection: "appointments",
+            data: {
+              business: business.id,
+              customer: customer.id,
+              customerName: customer.name,
+              startDateTime: start.toISOString(),
+              endDateTime: end.toISOString(),
+              status: Math.random() < 0.3 ? "pending" : "confirmed", // 30% pending, 70% confirmed
+              numberOfPeople: numberOfPeople, // Between 2-10 people
+              notes: "Seeded appointment",
+              timezone: timezone,
+            },
+          });
+        }
+      }
     }
   }
+
+  // Create all appointments at once in parallel to maximize performance in development
+  await Promise.all(
+    // @ts-ignore
+    allAppointmentsToCreate.map((appointment) => payload.create(appointment)),
+  );
 
   payload.logger.info("✅ Seed complete");
   process.exit(0);
