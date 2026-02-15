@@ -392,76 +392,183 @@ function extractDate(
 
 // === Horas (sin cambios necesarios) ===
 
+// function extractStartTime(text: string): string {
+//   // ... (igual que antes)
+//   // [Tu lógica actual de extracción de hora está bien]
+//   // Solo asegúrate de que devuelve HH:MM:SS en 24h
+//   // Si quieres, podemos refactorizar después, pero no es crítico ahora.
+//   const timePatterns = [
+//     // 👈🏼 ESPECÍFICOS para "en punto" - deben ir PRIMERO
+//     /(?:a\s+las?|a\s+la|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s+en\s+punto/i,
+//     /(?:a\s+las?|a\s+la|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\s+en\s+punto/i,
+//     /(\d{1,2})\s+en\s+punto/i,
+//     /(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\s+en\s+punto/i,
+
+//     // "entre la X y las Y", "entre X y Y" - extraer la primera hora del rango
+//     /entre\s+la\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+\d/i,
+//     /entre\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+\d/i,
+
+//     // "de X a Y", "de X hasta Y" - extraer la primera hora del rango
+//     /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+\d/i,
+//     /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+\d/i,
+//     /de\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+\d/i,
+
+//     // HH:MM AM/PM o HH:MM PM/AM con contexto
+//     /(?:a\s+las?|a\s+la|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
+//     /(?:a\s+las?|a\s+la|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
+
+//     // HH:MM AM/PM o HH:MM PM/AM (standalone)
+//     /(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
+
+//     // HH:MM (formato 24h con contexto)
+//     /(?:a\s+las?|a\s+la|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})/i,
+//     /(?:a\s+las?|a\s+la|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:hrs?|horas?)/i,
+
+//     // HH:MM (formato 24h standalone)
+//     /(\d{1,2}):(\d{2})/i,
+
+//     // Horas con AM/PM standalone (ahora después de patrones más específicos)
+//     /(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
+
+//     // "a las ocho", "a las nueve treinta", etc. (horas en palabras)
+//     /(?:a\s+las?|a\s+la|desde|inicio|comienza|empieza)\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?/i,
+
+//     // Horas en palabras standalone
+//     /(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?\s*(?:a\.?m\.?|p\.?m\.?)/i,
+//   ];
+
+//   for (const pattern of timePatterns) {
+//     const match = text.match(pattern);
+//     if (match) {
+//       let hourStr = match[1];
+//       const minuteStr = match[2] || "00";
+
+//       // Convertir horas en palabras a números si es necesario
+//       const hourWords: Record<string, number> = {
+//         una: 1,
+//         dos: 2,
+//         tres: 3,
+//         cuatro: 4,
+//         cinco: 5,
+//         seis: 6,
+//         siete: 7,
+//         ocho: 8,
+//         nueve: 9,
+//         diez: 10,
+//         once: 11,
+//         doce: 12,
+//       };
+
+//       let hour = parseInt(hourStr, 10);
+//       if (isNaN(hour) && hourWords[hourStr.toLowerCase()]) {
+//         hour = hourWords[hourStr.toLowerCase()];
+//       }
+
+//       // Verificar si es AM o PM
+//       // Buscar AM/PM en el texto cerca de la hora encontrada
+//       const allAmpmMatches = text.match(
+//         /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)\s*(a\.?m\.?|p\.?m\.?)/gi,
+//       );
+//       if (allAmpmMatches) {
+//         // Verificar si la hora actual coincide con alguna hora en el texto que tiene AM/PM
+//         for (const matchText of allAmpmMatches) {
+//           const hourPart = matchText.match(
+//             /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)/i,
+//           );
+//           if (hourPart) {
+//             let matchHour = parseInt(hourPart[1], 10);
+//             if (isNaN(matchHour)) {
+//               // Si es una hora en palabras, convertirla
+//               const wordHour = hourPart[1].toLowerCase().trim();
+//               matchHour = hourWords[wordHour];
+//             }
+
+//             if (matchHour === hour) {
+//               const ampm = matchText
+//                 .match(/(a\.?m\.?|p\.?m\.?)/i)?.[1]
+//                 ?.toLowerCase();
+//               if (ampm?.includes("p") && hour < 12) {
+//                 hour += 12;
+//               } else if (ampm?.includes("a") && hour === 12) {
+//                 hour = 0;
+//               }
+//               break;
+//             }
+//           }
+//         }
+//       }
+
+//       return `${hour.toString().padStart(2, "0")}:${minuteStr.padStart(2, "0")}:00`;
+//     }
+//   }
+//   return "";
+// }
+
 function extractStartTime(text: string): string {
-  // ... (igual que antes)
-  // [Tu lógica actual de extracción de hora está bien]
-  // Solo asegúrate de que devuelve HH:MM:SS en 24h
-  // Si quieres, podemos refactorizar después, pero no es crítico ahora.
   const timePatterns = [
-    // "entre la X y las Y", "entre X y Y" - extraer la primera hora del rango
+    // 👈🏼 PATRONES MINIMALES PARA "EN PUNTO" (agregar ESTAS 2 líneas al inicio)
+    /(\d{1,2})\s+en\s+punto/i,
+    /(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\s+en\s+punto/i,
+
+    // ... resto de tus patrones existentes SIN CAMBIOS ...
     /entre\s+la\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+\d/i,
     /entre\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+\d/i,
-
-    // "de X a Y", "de X hasta Y" - extraer la primera hora del rango
     /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+\d/i,
     /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+hasta\s+\d/i,
     /de\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+\d/i,
-
-    // HH:MM AM/PM o HH:MM PM/AM
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
-
-    // HH:MM AM/PM o HH:MM PM/AM (standalone)
     /(\d{1,2}):(\d{2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
-    /(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
-
-    // HH:MM (formato 24h)
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2}):(\d{2})/i,
     /(?:a\s+las?|desde|inicio|comienza|empieza|reunión|cita|reserva|entrada)\s+(\d{1,2})\s*(?:hrs?|horas?)/i,
-
-    // HH:MM (formato 24h standalone)
     /(\d{1,2}):(\d{2})/i,
-
-    // "a las ocho", "a las nueve treinta", etc. (horas en palabras)
+    /(\d{1,2})\s*(?:a\.?m\.?|p\.?m\.?)/i,
     /(?:a\s+las?|desde|inicio|comienza|empieza)\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?/i,
-
-    // Horas en palabras standalone
     /(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?\s*(?:a\.?m\.?|p\.?m\.?)/i,
   ];
+
+  // ... resto de tu función SIN CAMBIOS (incluyendo hourWords y lógica de AM/PM) ...
+  const hourWords: Record<string, number> = {
+    una: 1,
+    dos: 2,
+    tres: 3,
+    cuatro: 4,
+    cinco: 5,
+    seis: 6,
+    siete: 7,
+    ocho: 8,
+    nueve: 9,
+    diez: 10,
+    once: 11,
+    doce: 12,
+  };
+
   for (const pattern of timePatterns) {
     const match = text.match(pattern);
     if (match) {
       let hourStr = match[1];
       const minuteStr = match[2] || "00";
 
-      // Convertir horas en palabras a números si es necesario
-      const hourWords: Record<string, number> = {
-        una: 1,
-        dos: 2,
-        tres: 3,
-        cuatro: 4,
-        cinco: 5,
-        seis: 6,
-        siete: 7,
-        ocho: 8,
-        nueve: 9,
-        diez: 10,
-        once: 11,
-        doce: 12,
-      };
-
       let hour = parseInt(hourStr, 10);
       if (isNaN(hour) && hourWords[hourStr.toLowerCase()]) {
         hour = hourWords[hourStr.toLowerCase()];
       }
 
-      // Verificar si es AM o PM
-      // Buscar AM/PM en el texto cerca de la hora encontrada
+      // 👈🏼 HEURÍSTICA MÍNIMA para "en punto" SIN AM/PM: asumir PM (7 → 19)
+      if (
+        text.includes("en punto") &&
+        !text.match(/a\.?m\.?|p\.?m\.?/i) &&
+        hour >= 1 &&
+        hour <= 11
+      ) {
+        hour += 12;
+      }
+
+      // ... tu lógica existente de detección AM/PM SIN CAMBIOS ...
       const allAmpmMatches = text.match(
         /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)\s*(a\.?m\.?|p\.?m\.?)/gi,
       );
       if (allAmpmMatches) {
-        // Verificar si la hora actual coincide con alguna hora en el texto que tiene AM/PM
         for (const matchText of allAmpmMatches) {
           const hourPart = matchText.match(
             /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)/i,
@@ -469,7 +576,6 @@ function extractStartTime(text: string): string {
           if (hourPart) {
             let matchHour = parseInt(hourPart[1], 10);
             if (isNaN(matchHour)) {
-              // Si es una hora en palabras, convertirla
               const wordHour = hourPart[1].toLowerCase().trim();
               matchHour = hourWords[wordHour];
             }
