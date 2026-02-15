@@ -622,57 +622,6 @@ test("should handle time/date questions vs data", () => {
   expect(classifyInput("para el viernes")).toBe(InputIntent.USER_PROVIDED_DATA);
 });
 
-test("should handle numbers that are NOT people counts", () => {
-  // Números contextuales que NO son personas → pregunta
-  expect(classifyInput("mesa 5")).toBe(InputIntent.INFORMATION_REQUEST); // Pregunta por mesa específica
-  expect(classifyInput("habitación 101")).toBe(InputIntent.INFORMATION_REQUEST);
-  expect(classifyInput("código de reserva ABC123")).toBe(
-    InputIntent.INFORMATION_REQUEST,
-  );
-
-  // Números explícitos de personas → datos
-  expect(classifyInput("5 personas")).toBe(InputIntent.USER_PROVIDED_DATA);
-});
-
-test("should handle emoji-only or emoji-heavy inputs", () => {
-  // Emojis como confirmación → INPUT_DATA (comportamiento real de usuarios móviles)
-  expect(classifyInput("👍")).toBe(InputIntent.USER_PROVIDED_DATA);
-  expect(classifyInput("✅ para 2")).toBe(InputIntent.USER_PROVIDED_DATA);
-  expect(classifyInput("📅 mañana")).toBe(InputIntent.USER_PROVIDED_DATA);
-
-  // Emojis como pregunta → INFORMATION_REQUEST
-  expect(classifyInput("❓")).toBe(InputIntent.INFORMATION_REQUEST);
-  expect(classifyInput("🤔 tienen disponibilidad?")).toBe(
-    InputIntent.INFORMATION_REQUEST,
-  );
-});
-
-test("should handle rapid-fire corrections (real chat behavior)", () => {
-  expect(classifyInput("para 2... no, para 4")).toBe(
-    InputIntent.USER_PROVIDED_DATA,
-  );
-  expect(classifyInput("mañana... mejor pasado")).toBe(
-    InputIntent.USER_PROVIDED_DATA,
-  );
-  expect(classifyInput("8pm... digo 9pm")).toBe(InputIntent.USER_PROVIDED_DATA);
-});
-
-test("should handle mixed language inputs (Spanglish common in LATAM)", () => {
-  // Datos en Spanglish → INPUT_DATA
-  expect(classifyInput("reservation for 4 tomorrow")).toBe(
-    InputIntent.USER_PROVIDED_DATA,
-  );
-  expect(classifyInput("pa 2 people")).toBe(InputIntent.USER_PROVIDED_DATA);
-
-  // Preguntas en Spanglish → INFORMATION_REQUEST
-  expect(classifyInput("do you have availability?")).toBe(
-    InputIntent.INFORMATION_REQUEST,
-  );
-  expect(classifyInput("tienen mesa for 6?")).toBe(
-    InputIntent.INFORMATION_REQUEST,
-  );
-});
-
 test("should handle multi-line inputs correctly", () => {
   // Datos en múltiples líneas → INPUT_DATA
   expect(classifyInput("para 4 personas\nmañana a las 8pm")).toBe(
@@ -702,7 +651,6 @@ test("should handle inputs with only punctuation", () => {
   expect(classifyInput("!!!")).toBe(InputIntent.INFORMATION_REQUEST);
   expect(classifyInput("¿")).toBe(InputIntent.INFORMATION_REQUEST);
 });
-
 
 test("should handle inputs with phone numbers or emails", () => {
   // Contacto sin datos de reserva → INFORMATION_REQUEST (no es dato de reserva)
@@ -758,6 +706,57 @@ test("should handle inputs with urgency markers", () => {
 
   // Urgencia pura → pregunta
   expect(classifyInput("¡urgente!")).toBe(InputIntent.INFORMATION_REQUEST);
+});
+
+test("should handle numbers that are NOT people counts", () => {
+  // Números contextuales que NO son personas → pregunta
+  expect(classifyInput("mesa 5")).toBe(InputIntent.INFORMATION_REQUEST); // Pregunta por mesa específica
+  expect(classifyInput("habitación 101")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("código de reserva ABC123")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+
+  // Números explícitos de personas → datos
+  expect(classifyInput("5 personas")).toBe(InputIntent.USER_PROVIDED_DATA);
+});
+
+test("should handle emoji-only or emoji-heavy inputs", () => {
+  // Emojis como confirmación → INPUT_DATA (comportamiento real de usuarios móviles)
+  expect(classifyInput("👍")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("✅ para 2")).toBe(InputIntent.USER_PROVIDED_DATA);
+  expect(classifyInput("📅 mañana")).toBe(InputIntent.USER_PROVIDED_DATA);
+
+  // Emojis como pregunta → INFORMATION_REQUEST
+  expect(classifyInput("❓")).toBe(InputIntent.INFORMATION_REQUEST);
+  expect(classifyInput("🤔 tienen disponibilidad?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+});
+
+test("should handle mixed language inputs (Spanglish common in LATAM)", () => {
+  // Datos en Spanglish → INPUT_DATA
+  expect(classifyInput("reservation for 4 tomorrow")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("pa 2 people")).toBe(InputIntent.USER_PROVIDED_DATA);
+
+  // Preguntas en Spanglish → INFORMATION_REQUEST
+  expect(classifyInput("do you have availability?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+  expect(classifyInput("tienen mesa for 6?")).toBe(
+    InputIntent.INFORMATION_REQUEST,
+  );
+});
+
+test("should handle rapid-fire corrections (real chat behavior)", () => {
+  expect(classifyInput("para 2... no, para 4")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("mañana... mejor pasado")).toBe(
+    InputIntent.USER_PROVIDED_DATA,
+  );
+  expect(classifyInput("8pm... digo 9pm")).toBe(InputIntent.USER_PROVIDED_DATA);
 });
 
 test("should handle inputs with repeated words (typing errors)", () => {
