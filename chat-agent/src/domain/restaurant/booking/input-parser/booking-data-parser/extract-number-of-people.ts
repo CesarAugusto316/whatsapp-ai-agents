@@ -76,18 +76,18 @@ export function extractNumberOfPeople(message: string): number {
     if (!isNaN(n) && n > 0 && n <= 50) return n;
   }
 
-  // Patrones generales
+  // Patrones generales con tolerancia a errores de escritura
   const generalPatterns = [
-    /grupo de (\d+) personas/i,
-    /equipo de (\d+) personas/i,
-    /familia de (\d+) personas/i,
-    /evento de (\d+) personas/i,
-    /celebraci[oó]n de (\d+) personas/i,
-    /(\d+) personas/i,
-    /(\d+) comensales/i,
-    /(\d+) invitados/i,
-    /(\d+) huespedes/i,
-    /(\d+) huéspedes/i,
+    /grup[oe]\s+d[ei]\s+(\d+)\s+p(?:er)?s[oe]n[ae]?s?/i,
+    /equ[ií]p[oe]\s+d[ei]\s+(\d+)\s+p(?:er)?s[oe]n[ae]?s?/i,
+    /fam[ií]l[ií]a\s+d[ei]\s+(\d+)\s+p(?:er)?s[oe]n[ae]?s?/i,
+    /ev[ey][nt][oe]\s+d[ei]\s+(\d+)\s+p(?:er)?s[oe]n[ae]?s?/i,
+    /c(?:elebrac|elebr[aá]c|i[eé]lebrac|i[eé]lebr[aá]c)[oó]n\s+d[ei]\s+(\d+)\s+p(?:er)?s[oe]n[ae]?s?/i,
+    /(\d+)\s+p(?:er)?s[oe]n[ae]?s?/i,
+    /(\d+)\s+c[oe]m[es]ns[ae]l[es]?s?/i,
+    /(\d+)\s+[ií]nv[ií]t[ae]d[oe]?s?/i,
+    /(\d+)\s+huesp[ed][es]?/i,
+    /(\d+)\s+hu[ée]sp[ed][es]?/i,
   ];
 
   for (const p of generalPatterns) {
