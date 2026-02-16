@@ -133,16 +133,27 @@ function checkWeekdayPatterns(
   text: string,
   today: Date,
 ): { date: Date | null; isNextWeek: boolean } {
-  // Check "la semana que viene X dia" with misspelling tolerance
+  // Check "la semana que viene X dia"
   for (let i = 0; i < DAYS.length; i++) {
     const day = DAYS[i];
-    // Create variants of the day name to handle common misspellings
-    const dayVariant = day.replace(/([aeiou])/g, "$1{0,2}"); // Allow repeated vowels
+    const dayVariants = day.replace(/([aeiou])/g, "$1{0,2}"); // Allow repeated vowels
     const nextWeekPatterns = [
-      new RegExp(`la semana que viene ${dayVariant}`, "i"),
-      new RegExp(`la pr[oó]xim[ae] semana ${dayVariant}`, "i"), // Allow 'a' in addition to 'o'
-      new RegExp(`el ${dayVariant} de la semana que viene`, "i"),
-      new RegExp(`el ${dayVariant} de la pr[oó]xim[ae] semana`, "i"),
+      new RegExp(
+        `l[ae]?\s+sem[aá]n[ae]?\s+qu[ei]\s+vien[es]?\s+${dayVariants}`,
+        "i",
+      ),
+      new RegExp(
+        `l[ae]?\s+pr[oó]xim[ae]?\s+sem[aá]n[ae]?\s+${dayVariants}`,
+        "i",
+      ),
+      new RegExp(
+        `el\s+${dayVariants}\s+d[ei]\s+l[ae]?\s+sem[aá]n[ae]?\s+qu[ei]\s+vien[es]?`,
+        "i",
+      ),
+      new RegExp(
+        `el\s+${dayVariants}\s+d[ei]\s+l[ae]?\s+pr[oó]xim[ae]?\s+sem[aá]n[ae]?`,
+        "i",
+      ),
     ];
 
     for (const pattern of nextWeekPatterns) {
@@ -185,16 +196,14 @@ function checkWeekdayPatterns(
     }
   }
 
-  // Check "el X dia del mes proximo" with misspelling tolerance
+  // Check "el X dia del mes proximo"
   for (let i = 0; i < DAYS.length; i++) {
     const day = DAYS[i];
-    // Create variants of the day name to handle common misspellings
-    const dayVariant = day.replace(/([aeiou])/g, "$1{0,2}"); // Allow repeated vowels
     const nextMonthPatterns = [
-      new RegExp(`el ${dayVariant} del mes pr[oó]xim[oe]`, "i"),
-      new RegExp(`el ${dayVariant} del mes siguient[ei]`, "i"),
-      new RegExp(`el ${dayVariant} del mes qu[ei] vien[es]`, "i"),
-      new RegExp(`el ${dayVariant} del pr[oó]xim[oe] mes`, "i"),
+      new RegExp(`el ${day} del mes pr[oó]ximo`, "i"),
+      new RegExp(`el ${day} del mes siguiente`, "i"),
+      new RegExp(`el ${day} del mes que viene`, "i"),
+      new RegExp(`el ${day} del pr[oó]ximo mes`, "i"),
     ];
 
     if (nextMonthPatterns.some((pattern) => pattern.test(text))) {
@@ -219,21 +228,14 @@ function checkWeekdayPatterns(
     }
   }
 
-  // Check general weekdays: "el lunes", "próximo lunes" with misspelling tolerance
+  // Check general weekdays: "el lunes", "próximo lunes"
   for (let i = 0; i < DAYS.length; i++) {
-    const day = DAYS[i];
-    // Create variants of the day name to handle common misspellings
-    const dayVariant = day.replace(/([aeiou])/g, "$1{0,2}"); // Allow repeated vowels
-    const re = new RegExp(`(?:pr[oó]xim[oe]\\s+|l[ae]\\s+)?${dayVariant}`, "i");
+    const re = new RegExp(`(?:pr[oó]ximo\\s+|el\\s+)?${DAYS[i]}`, "i");
     if (re.test(text)) {
       const target = i;
       const current = today.getDay();
       let diff = (target - current + 7) % 7;
-      if (
-        text.includes("próximo") ||
-        text.includes("proximo") ||
-        text.includes("proxim")
-      ) {
+      if (text.includes("próximo") || text.includes("proximo")) {
         if (diff === 0) diff = 7;
       } else {
         if (diff === 0) diff = 7;
