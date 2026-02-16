@@ -8,7 +8,7 @@ import {
 import { ChatMessage } from "@/infraestructure/adapters/ai";
 import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
 
-export interface StateTransition {
+export interface BookingStateTransition {
   nextState: FMStatus;
   suggestedActions: string[];
   messageHint?: string;
@@ -18,7 +18,7 @@ export interface StateTransition {
 /**
  * Manager para el estado del proceso de reserva
  */
-export class BookingStateManager {
+class BookingStateManager {
   //
   private static readonly STATE_MESSAGES: Record<FMStatus, string> = {
     [BookingStatuses.MAKE_STARTED]:
@@ -45,7 +45,10 @@ export class BookingStateManager {
   /**
    * Deriva el siguiente estado basado en el estado actual y la acción del usuario
    */
-  nextState(status: FMStatus, action?: CustomerActionValue): StateTransition {
+  nextState(
+    status: FMStatus,
+    action?: CustomerActionValue,
+  ): BookingStateTransition {
     const condition = status + (action ?? "");
 
     switch (condition) {
@@ -199,3 +202,5 @@ export class BookingStateManager {
     return `${originalMessage.trim()}\n\n${reminder}`;
   }
 }
+
+export const bookingStateManager = new BookingStateManager();

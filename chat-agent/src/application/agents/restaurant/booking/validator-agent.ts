@@ -1,17 +1,15 @@
-import z from "zod";
 import { validationPrompts } from "@/domain/restaurant/booking/prompts";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import type { Business } from "@/infraestructure/adapters/cms";
 import { logger } from "@/infraestructure/logging";
-import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import { parseBookingData } from "@/domain/restaurant/booking";
 import {
   bookingSchema,
   BookingSchema,
   mapZodErrorsToCollector,
 } from "@/domain/restaurant/booking/input-parser/booking-schemas";
-
-const bookingStateManager = new BookingStateManager();
+import { bookingStateManager } from "@/application/services/state-managers";
+import z from "zod";
 
 export const validatorAgent = {
   /**
@@ -30,13 +28,13 @@ export const validatorAgent = {
         success: parsedData.success,
         errors: (parsedData.error?.issues ?? []).map(
           (
-            issue: z.ZodIssue,
+            issue: z.core.$ZodIssue,
           ): { path: PropertyKey[]; code: string; message: string } => ({
             path: issue.path as PropertyKey[],
             code: issue.code,
             message: issue.message,
           }),
-        ),
+        ) as z.core.$ZodIssue[],
       },
       mergedData,
     };

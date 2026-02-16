@@ -15,7 +15,6 @@ import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import {
   humanizerAgent,
   validatorAgent,
@@ -28,8 +27,7 @@ import {
 } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
-
-const bookingStateManager = new BookingStateManager();
+import { bookingStateManager } from "@/application/services/state-managers";
 
 export const ATTEMPTS = 4;
 
@@ -168,10 +166,7 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
         ...mergedData,
       } satisfies Partial<BookingState>);
 
-      const result = await validatorAgent.collectMissingData(
-        business,
-        errors as any,
-      );
+      const result = await validatorAgent.collectMissingData(business, errors);
       return {
         result,
         continue: false,

@@ -11,7 +11,6 @@ import {
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import { humanizerAgent } from "@/application/agents/restaurant";
 import {
   ISagaStep,
@@ -27,8 +26,7 @@ import type {
 } from "@/infraestructure/adapters/cms";
 import { toUTC } from "@/domain/utilities";
 import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
-
-const bookingStateManager = new BookingStateManager();
+import { bookingStateManager } from "@/application/services/state-managers";
 
 export const ATTEMPTS = 4;
 

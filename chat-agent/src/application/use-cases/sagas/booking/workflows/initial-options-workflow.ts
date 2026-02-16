@@ -1,5 +1,4 @@
 import { humanizerAgent } from "@/application/agents/restaurant";
-import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { BookingOptions } from "@/domain/restaurant/booking";
 import { systemMessages } from "@/domain/restaurant/booking/prompts";
@@ -7,8 +6,7 @@ import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
 import { BookingSagaResult } from "../booking-saga";
 import { BookingIntentKey } from "@/application/services/pomdp";
-
-const bookingStateManager = new BookingStateManager();
+import { bookingStateManager } from "@/application/services/state-managers";
 
 /**
  *

@@ -1,10 +1,7 @@
 import type { PolicyDecision } from "@/application/services/pomdp";
 import type { RestaurantCtx } from "@/domain/restaurant";
-import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import { basePrompt } from "./base-prompt";
 import { generateAgentGoals } from "./agent-goals";
-
-const bookingStateManager = new BookingStateManager();
 
 /**
  *

@@ -5,12 +5,10 @@ import {
 } from "@/domain/restaurant/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { Business, cmsAdapter, Customer } from "@/infraestructure/adapters/cms";
-import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import { humanizerAgent } from "@/application/agents/restaurant";
 import { toLocalDateTime } from "@/domain/utilities";
 import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
-
-const bookingStateManager = new BookingStateManager();
+import { bookingStateManager } from "@/application/services/state-managers";
 
 type Args = {
   customer?: Customer;
