@@ -11,6 +11,17 @@ const DAYS = [
   "sábado",
 ];
 
+// Misspelling-tolerant regex patterns for days of the week
+const DAY_VARIANTS = [
+  /d[oó]?m[ií]?ng[oó]?/, // "domingo" with potential misspellings: "domgo", "domingo", "domingoo", etc.
+  /l[eu]?n[ae]?s?/, // "lunes" with potential misspellings: "lun", "lunes", "luness", etc.
+  /m[ae]?rt[ae]?s?/, // "martes" with potential misspellings: "mart", "martes", "martess", etc.
+  /m[ií]?[eé]?rc[oe]?s?|m[ií]?[eé]?rcole[sz]?|m[ií]?[eé]?rcoled?/, // "miércoles" with potential misspellings: "miercoles", "miercoless", "mircoles", etc.
+  /j[eu]?[eé]?v[ae]?s?/, // "jueves" with potential misspellings: "juev", "jueves", "juevess", etc.
+  /v[ií]?[eé]?rn[ae]?s?/, // "viernes" with potential misspellings: "viern", "viernes", "vierness", etc.
+  /s[ae]?b[aá]?d[oó]?/, // "sábado" with potential misspellings: "sabad", "sabadoo", "sabado", etc.
+];
+
 const MONTHS = [
   "enero",
   "febrero",
@@ -415,6 +426,89 @@ function checkWeekdayPatterns(
       date.setDate(today.getDate() + diff);
       date.setHours(0, 0, 0, 0);
       return { date, isNextWeek: diff > 7 };
+    }
+  }
+
+  // Fallback: Check for misspelled day names using DAY_VARIANTS as a last resort
+  for (let i = 0; i < DAY_VARIANTS.length; i++) {
+    const dayRegex = DAY_VARIANTS[i];
+
+    // Check for "la semana que viene X dia" with misspelled day names
+    const nextWeekPatterns = [
+      new RegExp(`la semana que viene ${dayRegex.source}`, "i"),
+      new RegExp(`la pr[oó]xima semana ${dayRegex.source}`, "i"),
+      new RegExp(`el ${dayRegex.source} de la semana que viene`, "i"),
+      new RegExp(`el ${dayRegex.source} de la pr[oó]xima semana`, "i"),
+    ];
+
+    for (const pattern of nextWeekPatterns) {
+      if (pattern.test(text)) {
+        const target = i;
+        const current = today.getDay();
+        let diff = (target - current + 7) % 7;
+        if (diff === 0) diff = 7; // If today is the target day, go to next week
+        diff += 7; // Add another 7 days to reach the following week
+
+        const date = new Date(today);
+        date.setDate(today.getDate() + diff);
+        date.setHours(0, 0, 0, 0);
+        return { date, isNextWeek: true };
+      }
+    }
+
+    // Check for "el proximo X dia" with misspelled day names
+    const nextDayPatterns = [
+      new RegExp(`el pr[oó]xim[oe] ${dayRegex.source}`, "i"),
+      new RegExp(`el proxim[oe] ${dayRegex.source}`, "i"),
+      new RegExp(`el ${dayRegex.source}`, "i"),
+      // Additional regional expressions
+      new RegExp(`el siguient[ei] ${dayRegex.source}`, "i"),
+      new RegExp(`el qu[ei] vien[es] ${dayRegex.source}`, "i"),
+      new RegExp(`el otr[oe] ${dayRegex.source}`, "i"), // "el otro lunes" - common in some regions
+    ];
+
+    for (const pattern of nextDayPatterns) {
+      if (pattern.test(text)) {
+        const target = i;
+        const current = today.getDay();
+        let diff = (target - current + 7) % 7;
+        // If it's the same day as today, go to the next week
+        if (diff === 0) diff = 7;
+
+        const date = new Date(today);
+        date.setDate(today.getDate() + diff);
+        date.setHours(0, 0, 0, 0);
+        return { date, isNextWeek: diff > 7 };
+      }
+    }
+
+    // Check for "el X dia del mes proximo" with misspelled day names
+    const nextMonthPatterns = [
+      new RegExp(`el ${dayRegex.source} del mes pr[oó]ximo`, "i"),
+      new RegExp(`el ${dayRegex.source} del mes siguient[ei]`, "i"),
+      new RegExp(`el ${dayRegex.source} del mes qu[ei] vien[es]`, "i"),
+      new RegExp(`el ${dayRegex.source} del pr[oó]ximo mes`, "i"),
+    ];
+
+    if (nextMonthPatterns.some((pattern) => pattern.test(text))) {
+      const targetDayIndex = i;
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+      // Find the first occurrence of the target day in the next month
+      let candidateDate = new Date(nextMonth);
+      candidateDate.setDate(1);
+
+      while (candidateDate.getDay() !== targetDayIndex) {
+        candidateDate.setDate(candidateDate.getDate() + 1);
+      }
+
+      // If the found date is before the current date, get the next occurrence
+      if (candidateDate < today) {
+        candidateDate.setDate(candidateDate.getDate() + 7);
+      }
+
+      candidateDate.setHours(0, 0, 0, 0);
+      return { date: candidateDate, isNextWeek: false };
     }
   }
 
