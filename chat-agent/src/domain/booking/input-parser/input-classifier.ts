@@ -1,4 +1,4 @@
-import { InputIntent } from "../booking.types";
+import { InputIntent } from "./booking-schemas";
 
 /**
  * @todo

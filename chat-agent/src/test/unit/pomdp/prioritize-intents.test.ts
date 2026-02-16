@@ -13,12 +13,14 @@ describe("prioritizeIntents", () => {
         intentKey: "social:greeting",
         score: 0.85,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
       {
         module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.78,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
     ];
 
@@ -39,12 +41,14 @@ describe("prioritizeIntents", () => {
         intentKey: "booking:create",
         score: 0.85,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
       {
         module: "social-protocol" satisfies ModuleKind,
         intentKey: "social:greeting",
         score: 0.78,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
     ];
 
@@ -61,6 +65,7 @@ describe("prioritizeIntents", () => {
         intentKey: "social:greeting",
         score: 0.85,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
     ];
 
@@ -85,12 +90,14 @@ describe("prioritizeIntents", () => {
         intentKey: "social:greeting",
         score: 0.9,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
       {
         module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.85,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
     ];
 
@@ -109,12 +116,14 @@ describe("prioritizeIntents", () => {
         intentKey: "social:greeting",
         score: 0.95,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
       {
         module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.74,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
     ];
 
@@ -132,12 +141,14 @@ describe("prioritizeIntents", () => {
         intentKey: "signal:affirmation",
         score: 0.85,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
       {
         module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.78,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
     ];
 
@@ -154,12 +165,14 @@ describe("prioritizeIntents", () => {
         intentKey: "info:ask_contact",
         score: 0.85,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
       {
         module: "booking" satisfies ModuleKind,
         intentKey: "booking:create",
         score: 0.78,
         requiresConfirmation: "never",
+        text: "Hello!",
       },
     ];
 

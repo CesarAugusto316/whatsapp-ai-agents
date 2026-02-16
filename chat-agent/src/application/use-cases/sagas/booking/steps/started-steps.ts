@@ -2,11 +2,9 @@ import { OperationMode, systemMessages } from "@/domain/booking/prompts";
 import {
   CustomerSignals,
   BookingOptions,
-  InputIntent,
   isWithinBusinessHours,
   isWithinHolydayRange,
   BookingState,
-  classifyInput,
 } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
@@ -23,8 +21,12 @@ import {
   stepConfig,
 } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
+import {
+  BookingSchema,
+  InputIntent,
+} from "@/domain/booking/input-parser/booking-schemas";
 import { bookingStateManager } from "@/application/services/state-managers";
+import { classifyInput } from "@/domain/booking/input-parser";
 
 export const ATTEMPTS = 4;
 

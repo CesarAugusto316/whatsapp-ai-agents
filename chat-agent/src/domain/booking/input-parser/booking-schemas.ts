@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { logger } from "@/infraestructure/logging";
-import { CUSTOMER_INTENT, InputIntent } from "../booking.types";
+import { CUSTOMER_INTENT } from "../booking.types";
 
 // Esquema mejorado con validaciones más claras
 const dateTime = z.object({
@@ -219,6 +219,15 @@ export const customerIntentSchema = z.enum([
   CUSTOMER_INTENT.WHAT,
   CUSTOMER_INTENT.HOW,
 ]);
+
+/**
+ *
+ * @description Enum for intention classification
+ */
+export enum InputIntent {
+  USER_PROVIDED_DATA = "USER_PROVIDED_DATA",
+  INFORMATION_REQUEST = "INFORMATION_REQUEST", // QUESTIONS, ANSWERS, COMMANDS
+}
 
 export const inputIntentSchema = z.enum([
   InputIntent.INFORMATION_REQUEST,

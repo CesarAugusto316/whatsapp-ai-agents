@@ -15,15 +15,6 @@ export enum CUSTOMER_INTENT {
   HOW = "HOW",
 }
 
-/**
- *
- * @description Enum for intention classification
- */
-export enum InputIntent {
-  USER_PROVIDED_DATA = "USER_PROVIDED_DATA",
-  INFORMATION_REQUEST = "INFORMATION_REQUEST", // QUESTIONS, ANSWERS, COMMANDS
-}
-
 export type AgentArgs = {
   messages: ChatMessage[];
   business: Business;

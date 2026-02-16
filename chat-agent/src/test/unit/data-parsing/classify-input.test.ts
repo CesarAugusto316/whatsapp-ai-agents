@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { InputIntent, classifyInput } from "@/domain/booking";
+import { classifyInput, InputIntent } from "@/domain/booking/input-parser";
 
 describe("classifyInput", () => {
   // Casos básicos de INPUT_DATA

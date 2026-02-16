@@ -7,6 +7,8 @@ test('requiresConfirmation="never" + score=0.8 → type="execute"', () => {
   const state: BeliefState = {
     executedIntents: [],
     current: {
+      text: "",
+      alternatives: [],
       intentKey: "info:ask_price",
       module: "restaurant",
       score: 0.8,
@@ -35,6 +37,8 @@ test('requiresConfirmation="maybe" + score=0.8 → type="execute"', () => {
   const state: BeliefState = {
     executedIntents: [],
     current: {
+      text: "",
+      alternatives: [],
       intentKey: "booking:create",
       module: "booking",
       score: 0.8,
@@ -63,6 +67,8 @@ test('requiresConfirmation="maybe" + score=0.6 → type="ask_clarification" (fal
   const state: BeliefState = {
     executedIntents: [],
     current: {
+      text: "",
+      alternatives: [],
       intentKey: "booking:create",
       module: "booking",
       score: 0.6,
@@ -91,6 +97,8 @@ test('requiresConfirmation="always" sin signals → type="ask_confirmation"', ()
   const state: BeliefState = {
     executedIntents: [],
     current: {
+      text: "",
+      alternatives: [],
       intentKey: "booking:cancel",
       module: "booking",
       score: 0.9,
@@ -119,6 +127,8 @@ test('requiresConfirmation="always" + signals.isConfirmed=true → type="execute
   const state: BeliefState = {
     executedIntents: [],
     current: {
+      text: "",
+      alternatives: [],
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,
@@ -147,6 +157,8 @@ test('requiresConfirmation="always" + signals.isRejected=true → type="propose_
   const state: BeliefState = {
     executedIntents: [],
     current: {
+      text: "",
+      alternatives: [],
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,
@@ -175,6 +187,8 @@ test('requiresConfirmation="always" + signals.isUncertain=true → type="clear_u
   const state: BeliefState = {
     executedIntents: [],
     current: {
+      text: "",
+      alternatives: [],
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,
@@ -220,6 +234,8 @@ test('requiresConfirmation con valor inválido → type="ask_clarification" (fal
   const state: BeliefState = {
     executedIntents: [],
     current: {
+      text: "",
+      alternatives: [],
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,

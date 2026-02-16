@@ -1,10 +1,11 @@
-import { FMStatus, InputIntent } from "@/domain/booking";
+import { FMStatus } from "@/domain/booking";
 import { BookingSagaResult, reservationSaga } from "./booking-saga";
 import type { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { conversationalWorkflow } from "./workflows";
 import type { StartedFuncSagaResult, ValidateFuncSagaResult } from "./steps";
 import { formatSagaOutput } from "@/application/patterns";
+import { InputIntent } from "@/domain/booking/input-parser";
 
 const MAX_WORDS = 60;
 

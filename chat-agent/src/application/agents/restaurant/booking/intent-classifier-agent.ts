@@ -1,9 +1,10 @@
 import { CLASSIFIER_PROMPT, validationPrompts } from "@/domain/booking/prompts";
-import { CUSTOMER_INTENT, InputIntent } from "@/domain/booking";
+import { CUSTOMER_INTENT } from "@/domain/booking";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { logger } from "@/infraestructure/logging";
 import {
   customerIntentSchema,
+  InputIntent,
   inputIntentSchema,
 } from "@/domain/booking/input-parser/booking-schemas";
 

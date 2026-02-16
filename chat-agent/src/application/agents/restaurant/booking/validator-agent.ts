@@ -2,7 +2,7 @@ import { validationPrompts } from "@/domain/booking/prompts";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import type { Business } from "@/infraestructure/adapters/cms";
 import { logger } from "@/infraestructure/logging";
-import { parseBookingData } from "@/domain/booking";
+import { parseBookingData } from "@/domain/booking/input-parser";
 import {
   bookingSchema,
   BookingSchema,
