@@ -1,6 +1,6 @@
 import { Business } from "@/infraestructure/adapters/cms/cms-types";
-import { InputIntent } from "../../booking.types";
 import { WRITING_STYLE } from "./conversational-prompts copy";
+import { InputIntent } from "../../input-parser";
 
 export const validationPrompts = {
   /**
