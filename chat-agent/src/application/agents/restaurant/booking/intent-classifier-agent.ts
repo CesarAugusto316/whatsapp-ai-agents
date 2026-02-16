@@ -1,14 +1,11 @@
-import {
-  CLASSIFIER_PROMPT,
-  validationPrompts,
-} from "@/domain/restaurant/booking/prompts";
-import { CUSTOMER_INTENT, InputIntent } from "@/domain/restaurant/booking";
+import { CLASSIFIER_PROMPT, validationPrompts } from "@/domain/booking/prompts";
+import { CUSTOMER_INTENT, InputIntent } from "@/domain/booking";
+import { aiAdapter } from "@/infraestructure/adapters/ai";
+import { logger } from "@/infraestructure/logging";
 import {
   customerIntentSchema,
   inputIntentSchema,
-} from "@/domain/restaurant/booking/booking-schemas";
-import { aiAdapter } from "@/infraestructure/adapters/ai";
-import { logger } from "@/infraestructure/logging";
+} from "@/domain/booking/input-parser/booking-schemas";
 
 export const intentClassifierAgent = {
   /**

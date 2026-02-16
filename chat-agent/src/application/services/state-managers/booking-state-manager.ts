@@ -1,12 +1,12 @@
 import {
   CustomerActionValue,
-  CustomerActions,
+  CustomerSignals,
   BookingOptions,
   FMStatus,
   BookingStatuses,
-} from "@/domain/restaurant/booking";
+} from "@/domain/booking";
 import { ChatMessage } from "@/infraestructure/adapters/ai";
-import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
+import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 
 export interface BookingStateTransition {
   nextState: FMStatus;
@@ -61,7 +61,7 @@ class BookingStateManager {
       case BookingStatuses.MAKE_STARTED:
         return {
           nextState: BookingStatuses.MAKE_VALIDATED,
-          suggestedActions: [CustomerActions.EXIT],
+          suggestedActions: [CustomerSignals.EXIT],
           messageHint:
             "Recordar al usuario que hay una reserva en curso y puede continuar o salir.",
         };
@@ -69,14 +69,14 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.MAKE_CONFIRMED,
           suggestedActions: [
-            CustomerActions.CONFIRM,
-            CustomerActions.RESTART,
-            CustomerActions.EXIT,
+            CustomerSignals.CONFIRM,
+            CustomerSignals.RESTART,
+            CustomerSignals.EXIT,
           ],
           messageHint:
             "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
         };
-      case BookingStatuses.MAKE_VALIDATED + CustomerActions.RESTART:
+      case BookingStatuses.MAKE_VALIDATED + CustomerSignals.RESTART:
         return {
           nextState: BookingStatuses.MAKE_STARTED,
           suggestedActions: [],
@@ -91,7 +91,7 @@ class BookingStateManager {
       case BookingStatuses.UPDATE_STARTED:
         return {
           nextState: BookingStatuses.UPDATE_VALIDATED,
-          suggestedActions: [CustomerActions.EXIT],
+          suggestedActions: [CustomerSignals.EXIT],
           messageHint:
             "Recordar al usuario que hay una actualización en curso y puede continuar o salir.",
         };
@@ -99,14 +99,14 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.UPDATE_CONFIRMED,
           suggestedActions: [
-            CustomerActions.CONFIRM,
-            CustomerActions.RESTART,
-            CustomerActions.EXIT,
+            CustomerSignals.CONFIRM,
+            CustomerSignals.RESTART,
+            CustomerSignals.EXIT,
           ],
           messageHint:
             "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
         };
-      case BookingStatuses.UPDATE_VALIDATED + CustomerActions.RESTART:
+      case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.RESTART:
         return {
           nextState: BookingStatuses.UPDATE_STARTED,
           suggestedActions: [],
@@ -121,7 +121,7 @@ class BookingStateManager {
       case BookingStatuses.CANCEL_VALIDATED:
         return {
           nextState: BookingStatuses.CANCEL_CONFIRMED,
-          suggestedActions: [CustomerActions.CONFIRM, CustomerActions.EXIT],
+          suggestedActions: [CustomerSignals.CONFIRM, CustomerSignals.EXIT],
           messageHint:
             "Recordar al usuario que hay una cancelación en curso y puede confirmar o salir.",
         };

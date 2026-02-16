@@ -1,4 +1,4 @@
-import { InputIntent } from "@/domain/restaurant/booking";
+import { InputIntent } from "../booking.types";
 
 /**
  * @todo

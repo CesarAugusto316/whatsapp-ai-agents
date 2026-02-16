@@ -1,4 +1,4 @@
-import { BookingOptions, CustomerActions } from "../../booking.types";
+import { BookingOptions, CustomerSignals } from "../../booking.types";
 import { WRITING_STYLE } from "../base-prompt";
 
 export function humanizerPrompt(originalMessage: string) {
@@ -14,7 +14,7 @@ export function humanizerPrompt(originalMessage: string) {
     STRICT CONSTRAINTS (DO NOT VIOLATE):
     1. Always Keep The original meaning, intent, and instructions MUST remain exactly the same.
     2. Do NOT remove, alter, or reinterpret any system actions, placeholders, or tokens such as:
-       ${Object.values(CustomerActions)
+       ${Object.values(CustomerSignals)
          .map((action) => `*${action}*`)
          .join(", ")},
        ${Object.values(BookingOptions)

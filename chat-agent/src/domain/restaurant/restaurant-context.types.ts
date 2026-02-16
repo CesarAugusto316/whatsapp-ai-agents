@@ -1,4 +1,4 @@
-import { BookingState } from "./booking/booking.types";
+import { BookingState } from "../booking/booking.types";
 import { ContextProps } from "../context.types";
 import { Context } from "hono";
 

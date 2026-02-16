@@ -1,4 +1,4 @@
-import { humanizerPrompt } from "@/domain/restaurant/booking/prompts";
+import { humanizerPrompt } from "@/domain/booking/prompts";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 
 export async function humanizerAgent(message: string, temp = 0) {

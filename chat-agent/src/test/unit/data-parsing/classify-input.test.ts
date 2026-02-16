@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { InputIntent, classifyInput } from "@/domain/restaurant/booking";
+import { InputIntent, classifyInput } from "@/domain/booking";
 
 describe("classifyInput", () => {
   // Casos básicos de INPUT_DATA

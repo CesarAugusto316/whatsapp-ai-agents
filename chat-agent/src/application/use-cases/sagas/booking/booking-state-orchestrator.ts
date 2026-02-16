@@ -1,4 +1,4 @@
-import { FMStatus, InputIntent } from "@/domain/restaurant/booking";
+import { FMStatus, InputIntent } from "@/domain/booking";
 import { BookingSagaResult, reservationSaga } from "./booking-saga";
 import type { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";

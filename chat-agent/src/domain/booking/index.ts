@@ -2,7 +2,7 @@ export { isWithinHolydayRange } from "./check-next-holyday";
 export { isWithinBusinessHours } from "./is-within-business-hours";
 export {
   BOOL,
-  CustomerActions,
+  CustomerSignals,
   BookingOptions,
   BookingStatuses,
   InputIntent,

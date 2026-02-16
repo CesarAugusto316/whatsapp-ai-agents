@@ -3,7 +3,7 @@ import { ModuleCtx } from "@/domain/restaurant";
 import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import type { BookingState } from "@/domain/restaurant/booking";
+import type { BookingState } from "@/domain/booking";
 import type { BeliefState, ModuleKind } from "@/application/services/pomdp";
 
 /**

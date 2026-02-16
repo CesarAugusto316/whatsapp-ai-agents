@@ -1,6 +1,6 @@
 import { MiddlewareHandler } from "hono";
 import { env } from "bun";
-import { BookingState } from "@/domain/restaurant/booking";
+import { BookingState } from "@/domain/booking";
 import { ModuleCtx } from "@/domain/restaurant";
 
 // Tipos para diferentes niveles de log

@@ -1,13 +1,10 @@
-import {
-  OperationMode,
-  systemMessages,
-} from "@/domain/restaurant/booking/prompts";
+import { OperationMode, systemMessages } from "@/domain/booking/prompts";
 import {
   CustomerActionKey,
-  CustomerActions,
+  CustomerSignals,
   BookingState,
   BookingStatuses,
-} from "@/domain/restaurant/booking";
+} from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
@@ -25,7 +22,7 @@ import type {
   Customer,
 } from "@/infraestructure/adapters/cms";
 import { toUTC } from "@/domain/utilities";
-import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
+import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { bookingStateManager } from "@/application/services/state-managers";
 
 export const ATTEMPTS = 4;
@@ -72,7 +69,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       };
     }
 
-    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
       return { continue: true };
     }
     let newCustomer = customer;
@@ -121,7 +118,7 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
     const { customerMessage, bookingKey } = ctx;
     const reservation = getStepResult("execute:CONFIRM")?.reservation;
 
-    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
       return { continue: true };
     }
     if (reservation && reservation?.id) {
@@ -161,7 +158,7 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
         continue: false,
       };
     }
-    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
       return { continue: true };
     }
     if (customer?.id && bookingState?.id) {
@@ -225,7 +222,7 @@ const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
         continue: true,
       };
     }
-    if (customerMessage?.toUpperCase() !== CustomerActions.CONFIRM) {
+    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
       return { continue: true };
     }
     const assistantMsg = systemMessages.getSuccessMsg(
@@ -240,7 +237,7 @@ const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
     );
     await cacheAdapter.delete(bookingKey);
     logger.info("Customer selected an option", {
-      customerAction: CustomerActions.CONFIRM,
+      customerAction: CustomerSignals.CONFIRM,
       customerMessage,
     });
     const result = await humanizerAgent(assistantMsg);
@@ -256,13 +253,13 @@ const exit = (): ValidateFuncSagaStep => ({
   execute: async ({ ctx }) => {
     const { customerMessage, bookingKey } = ctx;
 
-    if (customerMessage?.toUpperCase() !== CustomerActions.EXIT) {
+    if (customerMessage?.toUpperCase() !== CustomerSignals.EXIT) {
       return { continue: true };
     }
     await cacheAdapter.delete(bookingKey);
     const assistantMsg = systemMessages.getExitMsg();
     logger.info("Customer selected an option", {
-      customerAction: CustomerActions.EXIT,
+      customerAction: CustomerSignals.EXIT,
     });
     return { result: assistantMsg, continue: false };
   },
@@ -276,7 +273,7 @@ const restart = (): ValidateFuncSagaStep => ({
       ctx;
     const reservation = bookingState as BookingState;
 
-    if (customerMessage?.toUpperCase() !== CustomerActions.RESTART) {
+    if (customerMessage?.toUpperCase() !== CustomerSignals.RESTART) {
       return { continue: true };
     }
     const assistantResponse = systemMessages.getCreateMsg({
@@ -285,7 +282,7 @@ const restart = (): ValidateFuncSagaStep => ({
 
     const transition = bookingStateManager.nextState(
       reservation.status,
-      CustomerActions.RESTART,
+      CustomerSignals.RESTART,
     );
     await cacheAdapter.save(bookingKey ?? "", {
       ...reservation,
@@ -294,7 +291,7 @@ const restart = (): ValidateFuncSagaStep => ({
       status: transition.nextState,
     });
     logger.info("Customer selected an option", {
-      customerAction: CustomerActions.RESTART,
+      customerAction: CustomerSignals.RESTART,
     });
 
     const result = await humanizerAgent(assistantResponse);
@@ -325,7 +322,7 @@ const cancelConfirmed = (): ValidateFuncSagaStep => ({
           "Aún no te has registrado, por favor has tu primera reserva para registrarte",
       };
     }
-    if (customerMessage.toUpperCase() !== CustomerActions.CONFIRM) {
+    if (customerMessage.toUpperCase() !== CustomerSignals.CONFIRM) {
       return { continue: true };
     }
     const res = await cmsAdapter.updateBooking(bookingState.id!, {

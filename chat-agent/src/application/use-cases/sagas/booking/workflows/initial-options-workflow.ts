@@ -1,7 +1,7 @@
 import { humanizerAgent } from "@/application/agents/restaurant";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { BookingOptions } from "@/domain/restaurant/booking";
-import { systemMessages } from "@/domain/restaurant/booking/prompts";
+import { BookingOptions } from "@/domain/booking";
+import { systemMessages } from "@/domain/booking/prompts";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
 import { BookingSagaResult } from "../booking-saga";

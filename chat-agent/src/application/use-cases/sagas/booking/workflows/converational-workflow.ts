@@ -12,7 +12,7 @@ import {
   businessInfoChunck,
   getRandomOnboardingMsg,
   socialProtocolChunk,
-} from "@/domain/restaurant/booking";
+} from "@/domain/booking";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { formatSagaOutput } from "@/application/patterns";
 

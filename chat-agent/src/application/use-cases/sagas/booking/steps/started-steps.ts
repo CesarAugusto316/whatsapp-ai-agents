@@ -1,16 +1,13 @@
+import { OperationMode, systemMessages } from "@/domain/booking/prompts";
 import {
-  OperationMode,
-  systemMessages,
-} from "@/domain/restaurant/booking/prompts";
-import {
-  CustomerActions,
+  CustomerSignals,
   BookingOptions,
   InputIntent,
   isWithinBusinessHours,
   isWithinHolydayRange,
   BookingState,
   classifyInput,
-} from "@/domain/restaurant/booking";
+} from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
@@ -26,7 +23,7 @@ import {
   stepConfig,
 } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
+import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { bookingStateManager } from "@/application/services/state-managers";
 
 export const ATTEMPTS = 4;
@@ -56,11 +53,11 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
     const { customerMessage, bookingState, bookingKey } = ctx;
     const reservation = bookingState as BookingState;
 
-    if (customerMessage?.toUpperCase() === CustomerActions.EXIT) {
+    if (customerMessage?.toUpperCase() === CustomerSignals.EXIT) {
       await cacheAdapter.delete(bookingKey);
       const responseMsg = systemMessages.getExitMsg();
       logger.info("Customer asked a question", {
-        customerAction: CustomerActions.EXIT,
+        customerAction: CustomerSignals.EXIT,
       });
       const res = await humanizerAgent(responseMsg);
       return {
@@ -68,7 +65,7 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
         continue: false,
         metadata: {
           description: "CUSTOMER_EXITED_FLOW",
-          internal: CustomerActions.EXIT,
+          internal: CustomerSignals.EXIT,
         },
       };
     }

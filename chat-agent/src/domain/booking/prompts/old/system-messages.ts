@@ -1,12 +1,12 @@
 import { formatLocalDateTime } from "@/domain/utilities";
-import { CustomerActions, BookingState } from "../../booking.types";
+import { CustomerSignals, BookingState } from "../../booking.types";
 
 export type OperationMode = "create" | "update";
 
 /**
  *
  * @todo add in prompts together with
- * @see CustomerActions
+ * @see CustomerSignals
  */
 const ACTION_MODES = {
   create: {
@@ -99,13 +99,13 @@ export const systemMessages = {
        👥 *Número de personas*: ${data.numberOfPeople}
 
        Si los datos son correctos, escribe:
-       ✅ *${CustomerActions.CONFIRM}*
+       ✅ *${CustomerSignals.CONFIRM}*
 
        Si deseas corregirlos, escribe:
-       ✏️ *${CustomerActions.RESTART}*
+       ✏️ *${CustomerSignals.RESTART}*
 
        Si no deseas continuar, escribe:
-       🚪 *${CustomerActions.EXIT}*
+       🚪 *${CustomerSignals.EXIT}*
      `.trim();
   },
 
@@ -144,7 +144,7 @@ export const systemMessages = {
        👥 Número de personas: ${data.numberOfPeople}
 
        Si deseas cancelarla, escribe:
-       🚪 ${CustomerActions.CONFIRM}
+       🚪 ${CustomerSignals.CONFIRM}
 
        Así de simple 😉
      `.trim();

@@ -1,4 +1,4 @@
-import { isWithinBusinessHours } from "@/domain/restaurant/booking";
+import { isWithinBusinessHours } from "@/domain/booking";
 import { WeekDay } from "@/infraestructure/adapters/cms";
 import { describe, expect, test } from "bun:test";
 

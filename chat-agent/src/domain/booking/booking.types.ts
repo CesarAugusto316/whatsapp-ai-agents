@@ -69,17 +69,17 @@ export const BookingOptions = {
 // POST_BOOKING = CONVERSATIONAL + INTENTS
 
 // TODO: REMOVE
-export const CustomerActions = {
+export const CustomerSignals = {
   CONFIRM: "CONFIRMAR",
   RESTART: "REINGRESAR",
   EXIT: "SALIR",
 } as const;
 
 // TODO: REMOVE
-export type CustomerActionKey = keyof typeof CustomerActions;
+export type CustomerActionKey = keyof typeof CustomerSignals;
 
 // TODO: REMOVE
 export type CustomerActionValue =
-  | typeof CustomerActions.CONFIRM
-  | typeof CustomerActions.RESTART
-  | typeof CustomerActions.EXIT;
+  | typeof CustomerSignals.CONFIRM
+  | typeof CustomerSignals.RESTART
+  | typeof CustomerSignals.EXIT;

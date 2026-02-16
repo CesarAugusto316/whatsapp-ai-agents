@@ -1,5 +1,5 @@
 import { BeliefIntent, BeliefState } from "../belief/belief.types";
-import { BookingOptions } from "@/domain/restaurant/booking";
+import { BookingOptions } from "@/domain/booking";
 import { IntentExampleKey } from "../intents/intent.types";
 
 // ============================================

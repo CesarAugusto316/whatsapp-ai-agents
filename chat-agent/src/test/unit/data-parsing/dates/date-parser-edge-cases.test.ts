@@ -1,4 +1,4 @@
-import { parseBookingData } from "@/domain/restaurant/booking";
+import { parseBookingData } from "@/domain/booking";
 import { describe, expect, test } from "bun:test";
 import {
   getTodayInTimezone,
