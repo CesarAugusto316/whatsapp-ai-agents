@@ -1,11 +1,14 @@
 // === Funciones auxiliares de parsing ===
 
-export function extractNumberOfPeople(message: string): number {
+export function extractNumberOfPeople(
+  message: string,
+  maxNumber: number = 100,
+): number {
   const text = message.toLowerCase();
 
   // Helper para validar números (1-50)
   const isValidNumber = (num: number): boolean => {
-    return !isNaN(num) && num > 0 && num <= 50;
+    return !isNaN(num) && num > 0 && num <= maxNumber;
   };
 
   // Helper para extraer número de un match con verificaciones adicionales

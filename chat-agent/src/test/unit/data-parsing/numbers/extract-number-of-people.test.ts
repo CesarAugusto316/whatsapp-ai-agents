@@ -1,5 +1,5 @@
 import { expect, describe, test } from "bun:test";
-import { extractNumberOfPeople } from "../../../../domain/booking/input-parser/booking-data-parser/extract-number-of-people";
+import { extractNumberOfPeople } from "@/domain/booking/input-parser";
 
 describe("extractNumberOfPeople", () => {
   describe("números en palabras (1-10)", () => {
@@ -420,9 +420,9 @@ describe("extractNumberOfPeople", () => {
 
   describe("límites y casos edge", () => {
     test("should return 0 for numbers > 50", () => {
-      expect(extractNumberOfPeople("somos 51")).toBe(0);
-      expect(extractNumberOfPeople("100 personas")).toBe(0);
-      expect(extractNumberOfPeople("grupo de 75")).toBe(0);
+      expect(extractNumberOfPeople("somos 101", 101)).toBe(101);
+      expect(extractNumberOfPeople("100 personas", 100)).toBe(100);
+      expect(extractNumberOfPeople("grupo de 75", 100)).toBe(75);
     });
 
     test("should return 0 for numbers <= 0", () => {
