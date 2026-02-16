@@ -1,5 +1,9 @@
 import { env, fetch } from "bun";
-import { ChatCompletionResponse, MessagesBasedRequest } from "./index";
+import {
+  ChatCompletionResponse,
+  ChatMessage,
+  MessagesBasedRequest,
+} from "./index";
 import {
   CircuitBreaker,
   resilientQuery,
@@ -43,6 +47,20 @@ const embeddingConfig = {
     intervalSeconds: 2,
   },
 } satisfies ResilientQueryOptions;
+
+type HandleMessageSendArgs = {
+  readonly systemPrompt: string;
+  readonly msg: string;
+  readonly chatHistory?: ChatMessage[];
+  readonly useAuxModel?: boolean;
+};
+
+const defaultConfig: HandleMessageSendArgs = {
+  chatHistory: [],
+  msg: "",
+  useAuxModel: false,
+  systemPrompt: "",
+};
 
 /**
  *
@@ -208,6 +226,32 @@ class AiAdapter implements IAiAdapter {
       }
       return result.data;
     }, embeddingConfig);
+  }
+
+  /**
+   *
+   * @param promptGen
+   * @param customerMessage
+   * @param chatHistory
+   * @returns
+   */
+  handleChatMessage({
+    systemPrompt,
+    msg,
+    chatHistory = [],
+    useAuxModel = false,
+  }: HandleMessageSendArgs = defaultConfig) {
+    //
+    const messages: ChatMessage[] = [
+      { role: "system", content: systemPrompt },
+      ...chatHistory,
+      { role: "user", content: msg },
+    ];
+
+    return this.generateText({
+      messages,
+      useAuxModel,
+    });
   }
 }
 

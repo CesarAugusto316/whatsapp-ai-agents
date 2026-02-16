@@ -1,5 +1,5 @@
 import { humanizerAgent } from "@/application/agents/restaurant";
-import { resolveNextState } from "@/application/patterns";
+import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { BookingOptions } from "@/domain/restaurant/booking";
 import { systemMessages } from "@/domain/restaurant/booking/prompts";
@@ -7,6 +7,8 @@ import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
 import { BookingSagaResult } from "../booking-saga";
 import { BookingIntentKey } from "@/application/services/pomdp";
+
+const bookingStateManager = new BookingStateManager();
 
 /**
  *
@@ -22,7 +24,9 @@ export async function initialOptionsWorkflow(
 
   if (option === BookingOptions.MAKE_BOOKING) {
     // choice 2
-    const transition = resolveNextState(BookingOptions.MAKE_BOOKING);
+    const transition = bookingStateManager.nextState(
+      BookingOptions.MAKE_BOOKING,
+    );
     await cacheAdapter.save(bookingKey, {
       businessId: business?.id,
       customerId: customer?.id,

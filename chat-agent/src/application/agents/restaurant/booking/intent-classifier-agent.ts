@@ -6,7 +6,7 @@ import { CUSTOMER_INTENT, InputIntent } from "@/domain/restaurant/booking";
 import {
   customerIntentSchema,
   inputIntentSchema,
-} from "@/domain/restaurant/booking/schemas";
+} from "@/domain/restaurant/booking/booking-schemas";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { logger } from "@/infraestructure/logging";
 

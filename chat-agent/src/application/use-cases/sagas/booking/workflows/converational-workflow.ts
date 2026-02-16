@@ -1,7 +1,5 @@
 import type { RestaurantCtx } from "@/domain/restaurant";
 import type { BookingSagaResult } from "../booking-saga";
-import { formatSagaOutput } from "../helpers/format-saga-output";
-import { handleMessageProcessing } from "../helpers/prepare-messages";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { initialOptionsWorkflow } from "./initial-options-workflow";
 import {
@@ -15,6 +13,8 @@ import {
   getRandomOnboardingMsg,
   socialProtocolChunk,
 } from "@/domain/restaurant/booking";
+import { aiAdapter } from "@/infraestructure/adapters/ai";
+import { formatSagaOutput } from "@/application/patterns";
 
 /**
  *
@@ -72,7 +72,7 @@ export async function conversationalWorkflow(
         );
       }
 
-      const ASSISTANT_MSG = await handleMessageProcessing({
+      const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
         systemPrompt: socialProtocolChunk(
           intent?.intentKey as SocialProtocolIntent,
           ctx,
@@ -95,7 +95,7 @@ export async function conversationalWorkflow(
     if (intent.module === "informational") {
       const key = intent.intentKey as InformationalIntentKey;
       const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
-      const ASSISTANT_MSG = await handleMessageProcessing({
+      const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
         systemPrompt: businessInfoChunck(key, ctx),
         msg: ctx.customerMessage,
         chatHistory,
@@ -125,7 +125,7 @@ export async function conversationalWorkflow(
 
   // 3. handling intent feedback
   const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
-  const ASSISTANT_MSG = await handleMessageProcessing({
+  const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
     systemPrompt: intentClassifierPrompt(ctx, policy),
     msg: ctx.customerMessage,
     chatHistory,

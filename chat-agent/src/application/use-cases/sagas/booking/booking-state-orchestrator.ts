@@ -2,9 +2,9 @@ import { FMStatus, InputIntent } from "@/domain/restaurant/booking";
 import { BookingSagaResult, reservationSaga } from "./booking-saga";
 import type { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
-import { conversationalWorkflow, initialOptionsWorkflow } from "./workflows";
+import { conversationalWorkflow } from "./workflows";
 import type { StartedFuncSagaResult, ValidateFuncSagaResult } from "./steps";
-import { formatSagaOutput } from "./helpers/format-saga-output";
+import { formatSagaOutput } from "../../helpers";
 
 const MAX_WORDS = 60;
 

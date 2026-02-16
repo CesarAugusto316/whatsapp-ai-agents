@@ -3,23 +3,20 @@ import { extractNumberOfPeople } from "./extract-number-of-people";
 import { extractDateTime } from "./extract-date-time";
 import { extractCustomerName } from "./extract-customer-name";
 
+const dateTime = z
+  .object({
+    date: z.string().optional(), // formato YYYY-MM-DD
+    time: z.string().optional(), // formato HH:MM:SS
+  })
+  .partial();
+
 // Definición del esquema de respuesta
 const BookingDataSchema = z
   .object({
     customerName: z.string(),
     datetime: z.object({
-      start: z
-        .object({
-          date: z.string().optional(), // formato YYYY-MM-DD
-          time: z.string().optional(), // formato HH:MM:SS
-        })
-        .partial(),
-      end: z
-        .object({
-          date: z.string().optional(), // formato YYYY-MM-DD
-          time: z.string().optional(), // formato HH:MM:SS
-        })
-        .partial(),
+      start: dateTime,
+      end: dateTime,
     }),
     numberOfPeople: z.number().int().min(0).max(50),
   })

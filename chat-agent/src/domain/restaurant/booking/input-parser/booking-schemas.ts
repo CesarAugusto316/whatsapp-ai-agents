@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { CUSTOMER_INTENT, InputIntent } from "./booking.types";
 import { logger } from "@/infraestructure/logging";
+import { CUSTOMER_INTENT, InputIntent } from "../booking.types";
 
 // Esquema mejorado con validaciones más claras
 const dateTime = z.object({
@@ -69,7 +69,7 @@ export const bookingSchema = z.object({
     .number()
     .int("not_integer: Debe ser un número entero")
     .min(1, "too_small: Mínimo 1 persona")
-    .max(100, "too_large: Máximo 100 personas"),
+    .max(50, "too_large: Máximo 100 personas"),
 });
 
 // Función de mapeo mejorada con filtrado de errores humanos
@@ -214,8 +214,6 @@ export const mapZodErrorsToCollector = (
 };
 
 export type BookingSchema = z.infer<typeof bookingSchema>;
-
-export const bookingSchemas = { phase2: bookingSchema };
 
 export const customerIntentSchema = z.enum([
   CUSTOMER_INTENT.WHAT,

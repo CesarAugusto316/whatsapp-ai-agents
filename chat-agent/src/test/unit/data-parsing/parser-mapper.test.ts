@@ -1,7 +1,7 @@
 import {
   mapZodErrorsToCollector,
   bookingSchema,
-} from "@/domain/restaurant/booking/schemas";
+} from "@/domain/restaurant/booking/booking-schemas";
 import { describe, expect, test } from "bun:test";
 
 /**

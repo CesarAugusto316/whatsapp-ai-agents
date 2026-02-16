@@ -11,7 +11,7 @@ import {
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import { resolveNextState } from "@/application/patterns";
+import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import { humanizerAgent } from "@/application/agents/restaurant";
 import {
   ISagaStep,
@@ -20,13 +20,15 @@ import {
   stepConfig,
 } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { BookingSchema } from "@/domain/restaurant/booking/schemas";
 import type {
   Booking,
   CreateBooking,
   Customer,
 } from "@/infraestructure/adapters/cms";
 import { toUTC } from "@/domain/utilities";
+import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
+
+const bookingStateManager = new BookingStateManager();
 
 export const ATTEMPTS = 4;
 
@@ -283,7 +285,7 @@ const restart = (): ValidateFuncSagaStep => ({
       userName: customer?.name,
     });
 
-    const transition = resolveNextState(
+    const transition = bookingStateManager.nextState(
       reservation.status,
       CustomerActions.RESTART,
     );

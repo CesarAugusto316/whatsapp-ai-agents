@@ -1,4 +1,4 @@
-import { BookingSchema } from "./schemas";
+import { BookingSchema } from "./input-parser/booking-schemas";
 import { Business } from "@/infraestructure/adapters/cms";
 import { ChatMessage } from "@/infraestructure/adapters/ai";
 

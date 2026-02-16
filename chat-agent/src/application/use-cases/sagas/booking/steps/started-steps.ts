@@ -9,15 +9,15 @@ import {
   isWithinBusinessHours,
   isWithinHolydayRange,
   BookingState,
+  classifyInput,
 } from "@/domain/restaurant/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import { resolveNextState } from "@/application/patterns";
+import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import {
   humanizerAgent,
-  intentClassifierAgent,
   validatorAgent,
 } from "@/application/agents/restaurant";
 import {
@@ -27,8 +27,9 @@ import {
   stepConfig,
 } from "@/application/patterns";
 import { RestaurantCtx } from "@/domain/restaurant";
-import { BookingSchema } from "@/domain/restaurant/booking/schemas";
-import { mergeReservationData } from "../helpers/merge-state";
+import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
+
+const bookingStateManager = new BookingStateManager();
 
 export const ATTEMPTS = 4;
 
@@ -98,8 +99,7 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
       };
     }
     // OPTION: 3. CLASSIFY INPUT
-    const inputIntent =
-      await intentClassifierAgent.inputIntent(customerMessage);
+    const inputIntent = classifyInput(customerMessage);
 
     if (inputIntent === InputIntent.INFORMATION_REQUEST) {
       logger.info("Customer asked a question", {
@@ -130,18 +130,14 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
     const { customerMessage, bookingState, bookingKey, business, customer } =
       ctx;
     const reservation = bookingState as BookingState;
-    const previousState = mergeReservationData(reservation, {
+    const previousState = bookingStateManager.mergeState(reservation, {
       customerName: customer?.name || "",
     });
 
-    const agentResult = await validatorAgent.parseData(
-      business,
-      customerMessage,
-      previousState,
-    );
+    const dataSchema = validatorAgent.parseData(customerMessage, previousState);
 
     // DATA VALIDATION
-    if (!agentResult) {
+    if (!dataSchema) {
       logger.info("Failed to parse customer data", {
         customerMessage,
       });
@@ -153,11 +149,11 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
         continue: false,
         metadata: {
           description: "NO_PARSING_RESULT",
-          internal: agentResult,
+          internal: dataSchema,
         },
       };
     }
-    const { parsedData, mergedData } = agentResult;
+    const { parsedData, mergedData } = dataSchema;
     const { success, data, errors } = parsedData;
 
     // OPTION: 5. ASK FOR MISSING DATA
@@ -172,7 +168,10 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
         ...mergedData,
       } satisfies Partial<BookingState>);
 
-      const result = await validatorAgent.collectMissingData(business, errors);
+      const result = await validatorAgent.collectMissingData(
+        business,
+        errors as any,
+      );
       return {
         result,
         continue: false,
@@ -309,7 +308,7 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
       }
 
       // FINAL: ✅ INPUT DATA VALIDATED
-      const transition = resolveNextState(reservation.status);
+      const transition = bookingStateManager.nextState(reservation.status);
       await cacheAdapter.save(bookingKey, {
         ...reservation,
         ...data,

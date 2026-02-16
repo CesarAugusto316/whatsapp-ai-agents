@@ -5,10 +5,12 @@ import {
 } from "@/domain/restaurant/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { Business, cmsAdapter, Customer } from "@/infraestructure/adapters/cms";
-import { resolveNextState } from "@/application/patterns";
+import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
 import { humanizerAgent } from "@/application/agents/restaurant";
-import { BookingSchema } from "@/domain/restaurant/booking/schemas";
 import { toLocalDateTime } from "@/domain/utilities";
+import { BookingSchema } from "@/domain/restaurant/booking/input-parser/booking-schemas";
+
+const bookingStateManager = new BookingStateManager();
 
 type Args = {
   customer?: Customer;
@@ -51,7 +53,7 @@ export const initChangeSteps = async ({
     );
   }
   const timezone = business.general.timezone;
-  const transition = resolveNextState(flowOption);
+  const transition = bookingStateManager.nextState(flowOption);
   const start = toLocalDateTime(reservation.startDateTime, timezone);
   const end = toLocalDateTime(reservation?.endDateTime ?? "", timezone);
   const previousState = {

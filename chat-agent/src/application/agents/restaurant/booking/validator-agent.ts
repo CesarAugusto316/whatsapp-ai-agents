@@ -1,47 +1,42 @@
 import z from "zod";
 import { validationPrompts } from "@/domain/restaurant/booking/prompts";
-import {
-  mapZodErrorsToCollector,
-  BookingSchema,
-  bookingSchemas,
-} from "@/domain/restaurant/booking/schemas";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import type { Business } from "@/infraestructure/adapters/cms";
 import { logger } from "@/infraestructure/logging";
-import { mergeReservationData } from "@/application/use-cases/sagas/booking/helpers/merge-state";
-import { ChatMessage } from "@/infraestructure/adapters/ai";
+import { BookingStateManager } from "@/application/services/state-managers/booking-state-manager";
+import { parseBookingData } from "@/domain/restaurant/booking";
+import {
+  bookingSchema,
+  BookingSchema,
+  mapZodErrorsToCollector,
+} from "@/domain/restaurant/booking/input-parser/booking-schemas";
+
+const bookingStateManager = new BookingStateManager();
 
 export const validatorAgent = {
   /**
    *
    * @description Validates the customer's input and returns a parsed object
    */
-  async parseData(
-    business: Business,
-    customerMessage: string,
-    previousState: BookingSchema,
-  ) {
-    const PARSER_PROMPT = validationPrompts.dataParser(business);
-    const messages: ChatMessage[] = [
-      { role: "system", content: PARSER_PROMPT },
-      { role: "user", content: customerMessage },
-    ];
-    const aiValidator: string = await aiAdapter.generateText({ messages });
-
+  parseData(customerMessage: string, previousState: BookingSchema) {
+    const rawObj = parseBookingData(customerMessage);
+    const partial = bookingSchema.partial().parse(rawObj);
+    const mergedData = bookingStateManager.mergeState(partial, previousState);
     // ✅ Required fields
-    const rawObj = JSON.parse(aiValidator || "{}");
-    const mergedData = mergeReservationData(rawObj, previousState);
-    const parsedData = bookingSchemas.phase2.safeParse(mergedData);
-
+    const parsedData = bookingSchema.safeParse(mergedData);
     return {
       parsedData: {
         data: parsedData.data as BookingSchema,
         success: parsedData.success,
-        errors: (parsedData.error?.issues ?? []).map((issue) => ({
-          path: issue.path as PropertyKey[],
-          code: issue.code,
-          message: issue.message,
-        })),
+        errors: (parsedData.error?.issues ?? []).map(
+          (
+            issue: z.ZodIssue,
+          ): { path: PropertyKey[]; code: string; message: string } => ({
+            path: issue.path as PropertyKey[],
+            code: issue.code,
+            message: issue.message,
+          }),
+        ),
       },
       mergedData,
     };
