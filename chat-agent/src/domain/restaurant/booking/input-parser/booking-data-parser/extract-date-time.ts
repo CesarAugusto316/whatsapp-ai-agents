@@ -1,5 +1,46 @@
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
+// Constants
+const DAYS = [
+  "domingo",
+  "lunes",
+  "martes",
+  "miércoles",
+  "jueves",
+  "viernes",
+  "sábado",
+];
+
+const MONTHS = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+
+const HOUR_WORDS: Record<string, number> = {
+  una: 1,
+  dos: 2,
+  tres: 3,
+  cuatro: 4,
+  cinco: 5,
+  seis: 6,
+  siete: 7,
+  ocho: 8,
+  nueve: 9,
+  diez: 10,
+  once: 11,
+  doce: 12,
+};
+
 // === Extracción de fecha/hora ===
 
 export function extractDateTime(
@@ -34,37 +75,67 @@ function extractDate(
   const today = new Date(zonedRef);
   today.setHours(0, 0, 0, 0);
 
-  // Manejo de fechas relativas básicas
+  // Check relative dates first
+  const relativeResult = checkRelativeDates(text, today);
+  if (relativeResult.date) {
+    return relativeResult;
+  }
+
+  // Check weekday patterns
+  const weekdayResult = checkWeekdayPatterns(text, today);
+  if (weekdayResult.date) {
+    return weekdayResult;
+  }
+
+  // Check month patterns
+  const monthResult = checkMonthPatterns(text, today);
+  if (monthResult.date) {
+    return monthResult;
+  }
+
+  // Check absolute dates
+  const absoluteResult = checkAbsoluteDates(text, today);
+  if (absoluteResult.date) {
+    return absoluteResult;
+  }
+
+  return { date: null, isNextWeek: false };
+}
+
+// Check relative dates: "hoy", "mañana", "pasado mañana"
+function checkRelativeDates(
+  text: string,
+  today: Date,
+): { date: Date | null; isNextWeek: boolean } {
   if (text.includes("pasado mañana")) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + 2);
-    return { date: d, isNextWeek: false };
+    const date = new Date(today);
+    date.setDate(today.getDate() + 2);
+    date.setHours(0, 0, 0, 0);
+    return { date, isNextWeek: false };
   }
 
   if (text.includes("mañana")) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + 1);
-    return { date: d, isNextWeek: false };
+    const date = new Date(today);
+    date.setDate(today.getDate() + 1);
+    date.setHours(0, 0, 0, 0);
+    return { date, isNextWeek: false };
   }
 
   if (text.includes("hoy")) {
     return { date: today, isNextWeek: false };
   }
 
-  // Manejo de fechas semanales y mensuales
-  const days = [
-    "domingo",
-    "lunes",
-    "martes",
-    "miércoles",
-    "jueves",
-    "viernes",
-    "sábado",
-  ];
+  return { date: null, isNextWeek: false };
+}
 
-  // Patrones para "la semana que viene X dia"
-  for (let i = 0; i < days.length; i++) {
-    const day = days[i];
+// Check weekday patterns: "la semana que viene lunes", "el proximo martes", etc.
+function checkWeekdayPatterns(
+  text: string,
+  today: Date,
+): { date: Date | null; isNextWeek: boolean } {
+  // Check "la semana que viene X dia"
+  for (let i = 0; i < DAYS.length; i++) {
+    const day = DAYS[i];
     const nextWeekPatterns = [
       new RegExp(`la semana que viene ${day}`, "i"),
       new RegExp(`la pr[oó]xima semana ${day}`, "i"),
@@ -77,19 +148,20 @@ function extractDate(
         const target = i;
         const current = today.getDay();
         let diff = (target - current + 7) % 7;
-        if (diff === 0) diff = 7; // Si hoy es el día objetivo, ir a la próxima semana
-        diff += 7; // Agregar otros 7 días para llegar a la semana siguiente
+        if (diff === 0) diff = 7; // If today is the target day, go to next week
+        diff += 7; // Add another 7 days to reach the following week
 
-        const d = new Date(today);
-        d.setDate(today.getDate() + diff);
-        return { date: d, isNextWeek: true };
+        const date = new Date(today);
+        date.setDate(today.getDate() + diff);
+        date.setHours(0, 0, 0, 0);
+        return { date, isNextWeek: true };
       }
     }
   }
 
-  // Manejo de "el proximo X dia"
-  for (let i = 0; i < days.length; i++) {
-    const day = days[i];
+  // Check "el proximo X dia"
+  for (let i = 0; i < DAYS.length; i++) {
+    const day = DAYS[i];
     const nextDayPatterns = [
       new RegExp(`el pr[oó]ximo ${day}`, "i"),
       new RegExp(`el proximo ${day}`, "i"),
@@ -100,28 +172,20 @@ function extractDate(
         const target = i;
         const current = today.getDay();
         let diff = (target - current + 7) % 7;
-        // Si es el mismo día que hoy, ir a la próxima semana
+        // If it's the same day as today, go to the next week
         if (diff === 0) diff = 7;
 
-        const d = new Date(today);
-        d.setDate(today.getDate() + diff);
-        return { date: d, isNextWeek: diff > 7 };
+        const date = new Date(today);
+        date.setDate(today.getDate() + diff);
+        date.setHours(0, 0, 0, 0);
+        return { date, isNextWeek: diff > 7 };
       }
     }
   }
 
-  // Manejo de "el X dia del mes proximo"
-  const weekDays = [
-    "domingo",
-    "lunes",
-    "martes",
-    "miércoles",
-    "jueves",
-    "viernes",
-    "sábado",
-  ];
-  for (let i = 0; i < weekDays.length; i++) {
-    const day = weekDays[i];
+  // Check "el X dia del mes proximo"
+  for (let i = 0; i < DAYS.length; i++) {
+    const day = DAYS[i];
     const nextMonthPatterns = [
       new RegExp(`el ${day} del mes pr[oó]ximo`, "i"),
       new RegExp(`el ${day} del mes siguiente`, "i"),
@@ -133,7 +197,7 @@ function extractDate(
       const targetDayIndex = i;
       const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
-      // Encontrar la primera ocurrencia del día objetivo en el próximo mes
+      // Find the first occurrence of the target day in the next month
       let candidateDate = new Date(nextMonth);
       candidateDate.setDate(1);
 
@@ -141,16 +205,79 @@ function extractDate(
         candidateDate.setDate(candidateDate.getDate() + 1);
       }
 
-      // Si la fecha encontrada es anterior a la fecha actual, obtener la siguiente ocurrencia
+      // If the found date is before the current date, get the next occurrence
       if (candidateDate < today) {
         candidateDate.setDate(candidateDate.getDate() + 7);
       }
 
+      candidateDate.setHours(0, 0, 0, 0);
       return { date: candidateDate, isNextWeek: false };
     }
   }
 
-  // Fechas absolutas (DD/MM/YYYY, etc.)
+  // Check general weekdays: "el lunes", "próximo lunes"
+  for (let i = 0; i < DAYS.length; i++) {
+    const re = new RegExp(`(?:pr[oó]ximo\\s+|el\\s+)?${DAYS[i]}`, "i");
+    if (re.test(text)) {
+      const target = i;
+      const current = today.getDay();
+      let diff = (target - current + 7) % 7;
+      if (text.includes("próximo") || text.includes("proximo")) {
+        if (diff === 0) diff = 7;
+      } else {
+        if (diff === 0) diff = 7;
+      }
+      const date = new Date(today);
+      date.setDate(today.getDate() + diff);
+      date.setHours(0, 0, 0, 0);
+      return { date, isNextWeek: diff > 7 };
+    }
+  }
+
+  return { date: null, isNextWeek: false };
+}
+
+// Check month patterns: "viernes 12 de abril", "12 de abril"
+function checkMonthPatterns(
+  text: string,
+  today: Date,
+): { date: Date | null; isNextWeek: boolean } {
+  // Check "viernes 12 de abril"
+  const weekdayMonthDayPattern =
+    /(lunes|martes|miércoles|jueves|viernes|sábado|domingo)[\s\S]*?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
+  const wmdMatch = text.match(weekdayMonthDayPattern);
+  if (wmdMatch) {
+    const [, , dayStr, monthStr] = wmdMatch;
+    const monthIndex = MONTHS.findIndex((m) => m === monthStr.toLowerCase());
+    const day = parseInt(dayStr, 10);
+    let date = new Date(today.getFullYear(), monthIndex, day);
+    if (date < today) date.setFullYear(date.getFullYear() + 1);
+    date.setHours(0, 0, 0, 0);
+    return { date, isNextWeek: false };
+  }
+
+  // Check "12 de abril"
+  const dayMonthPattern =
+    /(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
+  const dmMatch = text.match(dayMonthPattern);
+  if (dmMatch) {
+    const [, dayStr, monthStr] = dmMatch;
+    const monthIndex = MONTHS.findIndex((m) => m === monthStr.toLowerCase());
+    const day = parseInt(dayStr, 10);
+    let date = new Date(today.getFullYear(), monthIndex, day);
+    if (date < today) date.setFullYear(date.getFullYear() + 1);
+    date.setHours(0, 0, 0, 0);
+    return { date, isNextWeek: false };
+  }
+
+  return { date: null, isNextWeek: false };
+}
+
+// Check absolute dates: DD/MM/YYYY, YYYY/MM/DD, etc.
+function checkAbsoluteDates(
+  text: string,
+  today: Date,
+): { date: Date | null; isNextWeek: boolean } {
   const datePatterns = [
     /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/,
     /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/,
@@ -180,78 +307,8 @@ function extractDate(
       if (parsed < today) {
         parsed.setFullYear(parsed.getFullYear() + 1);
       }
+      parsed.setHours(0, 0, 0, 0);
       return { date: parsed, isNextWeek: false };
-    }
-  }
-
-  // "viernes 12 de abril"
-  const weekdayMonthDayPattern =
-    /(lunes|martes|miércoles|jueves|viernes|sábado|domingo)[\s\S]*?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i;
-  const wmdMatch = text.match(weekdayMonthDayPattern);
-  if (wmdMatch) {
-    const [, , dayStr, monthStr] = wmdMatch;
-    const months = [
-      "enero",
-      "febrero",
-      "marzo",
-      "abril",
-      "mayo",
-      "junio",
-      "julio",
-      "agosto",
-      "septiembre",
-      "octubre",
-      "noviembre",
-      "diciembre",
-    ];
-    const mi = months.findIndex((m) => m === monthStr.toLowerCase());
-    const day = parseInt(dayStr, 10);
-    let d = new Date(today.getFullYear(), mi, day);
-    if (d < today) d.setFullYear(d.getFullYear() + 1);
-    return { date: d, isNextWeek: false };
-  }
-
-  // "12 de abril"
-  const dayMonthPattern = /(\d{1,2})\s+de\s+(enero|...|diciembre)/i;
-  const dmMatch = text.match(dayMonthPattern);
-  if (dmMatch) {
-    const [, dayStr, monthStr] = dmMatch;
-    const months = [
-      "enero",
-      "febrero",
-      "marzo",
-      "abril",
-      "mayo",
-      "junio",
-      "julio",
-      "agosto",
-      "septiembre",
-      "octubre",
-      "noviembre",
-      "diciembre",
-    ];
-    const mi = months.findIndex((m) => m === monthStr.toLowerCase());
-    const day = parseInt(dayStr, 10);
-    let d = new Date(today.getFullYear(), mi, day);
-    if (d < today) d.setFullYear(d.getFullYear() + 1);
-    return { date: d, isNextWeek: false };
-  }
-
-  // Días de la semana (casos generales como "el lunes", "próximo lunes")
-  for (let i = 0; i < days.length; i++) {
-    const re = new RegExp(`(?:pr[oó]ximo\\s+|el\\s+)?${days[i]}`, "i");
-    if (re.test(text)) {
-      const target = i;
-      const current = today.getDay();
-      let diff = (target - current + 7) % 7;
-      if (text.includes("próximo") || text.includes("proximo")) {
-        if (diff === 0) diff = 7;
-      } else {
-        if (diff === 0) diff = 7;
-      }
-      const d = new Date(today);
-      d.setDate(today.getDate() + diff);
-      return { date: d, isNextWeek: diff > 7 };
     }
   }
 
@@ -281,21 +338,6 @@ function extractStartTime(text: string): string {
     /(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?\s*(?:a\.?m\.?|p\.?m\.?)/i,
   ];
 
-  const hourWords: Record<string, number> = {
-    una: 1,
-    dos: 2,
-    tres: 3,
-    cuatro: 4,
-    cinco: 5,
-    seis: 6,
-    siete: 7,
-    ocho: 8,
-    nueve: 9,
-    diez: 10,
-    once: 11,
-    doce: 12,
-  };
-
   for (const pattern of timePatterns) {
     const match = text.match(pattern);
     if (match) {
@@ -303,8 +345,8 @@ function extractStartTime(text: string): string {
       const minuteStr = match[2] || "00";
 
       let hour = parseInt(hourStr, 10);
-      if (isNaN(hour) && hourWords[hourStr.toLowerCase()]) {
-        hour = hourWords[hourStr.toLowerCase()];
+      if (isNaN(hour) && HOUR_WORDS[hourStr.toLowerCase()]) {
+        hour = HOUR_WORDS[hourStr.toLowerCase()];
       }
 
       // Heurística para "en punto" sin AM/PM: asumir PM (7 → 19)
@@ -330,7 +372,7 @@ function extractStartTime(text: string): string {
             let matchHour = parseInt(hourPart[1], 10);
             if (isNaN(matchHour)) {
               const wordHour = hourPart[1].toLowerCase().trim();
-              matchHour = hourWords[wordHour];
+              matchHour = HOUR_WORDS[wordHour];
             }
 
             if (matchHour === hour) {
@@ -379,23 +421,8 @@ function extractEndTime(
         const minuteStr = match[2] || "00";
         let hour = parseInt(hourStr, 10);
 
-        const hourWords: Record<string, number> = {
-          una: 1,
-          dos: 2,
-          tres: 3,
-          cuatro: 4,
-          cinco: 5,
-          seis: 6,
-          siete: 7,
-          ocho: 8,
-          nueve: 9,
-          diez: 10,
-          once: 11,
-          doce: 12,
-        };
-
-        if (isNaN(hour) && hourWords[hourStr.toLowerCase()]) {
-          hour = hourWords[hourStr.toLowerCase()];
+        if (isNaN(hour) && HOUR_WORDS[hourStr.toLowerCase()]) {
+          hour = HOUR_WORDS[hourStr.toLowerCase()];
         }
 
         let ampm = match[3]?.toLowerCase();

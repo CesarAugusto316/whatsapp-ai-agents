@@ -49,6 +49,9 @@ export function extractCustomerName(message: string): string {
     "Ellas",
     "Usted",
     "Ustedes",
+    "Vos",
+    "Vosotros",
+    "Os",
   ];
 
   const names = matches.filter((n) => !commonWords.includes(n));
