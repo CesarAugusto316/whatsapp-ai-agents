@@ -170,6 +170,42 @@ function checkWeekdayPatterns(
         return { date, isNextWeek: true };
       }
     }
+
+    // Additional patterns with misspelling tolerance (preserving original functionality)
+    const dayVariantTolerant = day.replace(/([aeiou])/g, "$1{0,1}"); // Allow one extra vowel at most
+    const tolerantPatterns = [
+      new RegExp(
+        `l[ae]?\s*sem[aá]?n[ae]?\s*qu[ei]?\s*vien[es]?s?\s*${dayVariantTolerant}`,
+        "i",
+      ), // "la semana que viene" with misspellings
+      new RegExp(
+        `l[ae]?\s*pr[oó]?xim[ae]?\s*sem[aá]?n[ae]?\s*${dayVariantTolerant}`,
+        "i",
+      ), // "la proxima semana" with misspellings
+      new RegExp(
+        `el\s*${dayVariantTolerant}\s*d[ei]?\s*l[ae]?\s*sem[aá]?n[ae]?\s*qu[ei]?\s*vien[es]?s?`,
+        "i",
+      ), // "el X de la semana que viene" with misspellings
+      new RegExp(
+        `el\s*${dayVariantTolerant}\s*d[ei]?\s*l[ae]?\s*pr[oó]?xim[ae]?\s*sem[aá]?n[ae]?`,
+        "i",
+      ), // "el X de la proxima semana" with misspellings
+    ];
+
+    for (const pattern of tolerantPatterns) {
+      if (pattern.test(text)) {
+        const target = i;
+        const current = today.getDay();
+        let diff = (target - current + 7) % 7;
+        if (diff === 0) diff = 7; // If today is the target day, go to next week
+        diff += 7; // Add another 7 days to reach the following week
+
+        const date = new Date(today);
+        date.setDate(today.getDate() + diff);
+        date.setHours(0, 0, 0, 0);
+        return { date, isNextWeek: true };
+      }
+    }
   }
 
   // Check "el proximo X dia" with misspelling tolerance
@@ -211,6 +247,64 @@ function checkWeekdayPatterns(
         return { date, isNextWeek: diff > 7 };
       }
     }
+
+    // Additional patterns with enhanced misspelling tolerance (preserving original functionality)
+    const dayVariantTolerant = day.replace(/([aeiou])/g, "$1{0,1}"); // Allow one extra vowel at most
+    const tolerantNextDayPatterns = [
+      new RegExp(`el\s*pr[oó]?xim[oe]?\s*${dayVariantTolerant}`, "i"),
+      new RegExp(`el\s*proxim[oe]?\s*${dayVariantTolerant}`, "i"),
+      // Additional regional expressions with misspelling tolerance
+      new RegExp(`el\s*sigui[ei]?nt[ei]?s?\s*${dayVariantTolerant}`, "i"),
+      new RegExp(`el\s*qu[ei]?\s*s[ií]?g[ue]?\s*${dayVariantTolerant}`, "i"),
+      new RegExp(`el\s*qu[ei]?\s*vien[es]?\s*${dayVariantTolerant}`, "i"),
+      new RegExp(`el\s*otr[oe]?\s*${dayVariantTolerant}`, "i"), // "el otro lunes" with misspelling tolerance
+      new RegExp(
+        `el\s*pr[oó]?xim[oe]?\s*d[ií]?[ae]?s?\s*${dayVariantTolerant}`,
+        "i",
+      ),
+      new RegExp(
+        `el\s*d[ií]?[ae]?s?\s*pr[oó]?xim[oe]?\s*${dayVariantTolerant}`,
+        "i",
+      ),
+      new RegExp(
+        `el\s*d[ií]?[ae]?s?\s*sigui[ei]?nt[ei]?s?\s*${dayVariantTolerant}`,
+        "i",
+      ),
+      new RegExp(
+        `el\s*d[ií]?[ae]?s?\s*qu[ei]?\s*vien[es]?\s*${dayVariantTolerant}`,
+        "i",
+      ),
+      new RegExp(
+        `el\s*d[ií]?[ae]?s?\s*d[ei]?spu[eé]?s?\s*${dayVariantTolerant}`,
+        "i",
+      ),
+      new RegExp(`el\s*${dayVariantTolerant}\s*pr[oó]?xim[oe]?`, "i"),
+      new RegExp(`el\s*${dayVariantTolerant}\s*sigui[ei]?nt[ei]?`, "i"),
+      new RegExp(`el\s*${dayVariantTolerant}\s*qu[ei]?\s*vien[es]?`, "i"),
+      new RegExp(`el\s*${dayVariantTolerant}\s*qu[ei]?\s*s[ií]?g[ue]?`, "i"),
+      new RegExp(`el\s*${dayVariantTolerant}\s*d[ei]?spu[eé]?s?`, "i"),
+      // Even more misspelling tolerant versions
+      new RegExp(`el\s*[sz]igui[ei]?ent[ei]?s?\s*${dayVariantTolerant}`, "i"), // "siguiente" with potential 'z' instead of 'c'
+      new RegExp(
+        `el\s*d[ií]?[ae]?s?\s*[sz]igui[ei]?ent[ei]?s?\s*${dayVariantTolerant}`,
+        "i",
+      ), // "día siguiente" with potential 'z' instead of 'c'
+    ];
+
+    for (const pattern of tolerantNextDayPatterns) {
+      if (pattern.test(text)) {
+        const target = i;
+        const current = today.getDay();
+        let diff = (target - current + 7) % 7;
+        // If it's the same day as today, go to the next week
+        if (diff === 0) diff = 7;
+
+        const date = new Date(today);
+        date.setDate(today.getDate() + diff);
+        date.setHours(0, 0, 0, 0);
+        return { date, isNextWeek: diff > 7 };
+      }
+    }
   }
 
   // Check "el X dia del mes proximo" with misspelling tolerance
@@ -226,6 +320,57 @@ function checkWeekdayPatterns(
     ];
 
     if (nextMonthPatterns.some((pattern) => pattern.test(text))) {
+      const targetDayIndex = i;
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+      // Find the first occurrence of the target day in the next month
+      let candidateDate = new Date(nextMonth);
+      candidateDate.setDate(1);
+
+      while (candidateDate.getDay() !== targetDayIndex) {
+        candidateDate.setDate(candidateDate.getDate() + 1);
+      }
+
+      // If the found date is before the current date, get the next occurrence
+      if (candidateDate < today) {
+        candidateDate.setDate(candidateDate.getDate() + 7);
+      }
+
+      candidateDate.setHours(0, 0, 0, 0);
+      return { date: candidateDate, isNextWeek: false };
+    }
+
+    // Additional patterns with enhanced misspelling tolerance (preserving original functionality)
+    const dayVariantTolerant = day.replace(/([aeiou])/g, "$1{0,1}"); // Allow one extra vowel at most
+    const tolerantNextMonthPatterns = [
+      new RegExp(
+        `el\s*${dayVariantTolerant}\s*d[ei]l?\s*m[ei]s?\s*pr[oó]?xim[oe]?`,
+        "i",
+      ),
+      new RegExp(
+        `el\s*${dayVariantTolerant}\s*d[ei]l?\s*m[ei]s?\s*sigui[ei]?nt[ei]?`,
+        "i",
+      ),
+      new RegExp(
+        `el\s*${dayVariantTolerant}\s*d[ei]l?\s*m[ei]s?\s*qu[ei]?\s*vien[es]?`,
+        "i",
+      ),
+      new RegExp(
+        `el\s*${dayVariantTolerant}\s*d[ei]l?\s*pr[oó]?xim[oe]?\s*m[ei]s?`,
+        "i",
+      ),
+      // Even more misspelling tolerant versions
+      new RegExp(
+        `el\s*${dayVariantTolerant}\s*d[ei]?\s*m[ei]s?\s*[sz]iguient[ei]?`,
+        "i",
+      ), // "siguiente" with potential 'z' instead of 'c'
+      new RegExp(
+        `el\s*${dayVariantTolerant}\s*[sz]iguient[ei]?\s*m[ei]s?`,
+        "i",
+      ), // "siguiente mes" with potential 'z' instead of 'c'
+    ];
+
+    if (tolerantNextMonthPatterns.some((pattern) => pattern.test(text))) {
       const targetDayIndex = i;
       const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
