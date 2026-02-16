@@ -12,6 +12,7 @@ export function intentClassifierPrompt(
   policy: PolicyDecision,
 ): string {
   const beliefState = policy?.state;
+  // use alternatives array for ask_clarification or propose_alternative
   const { intentKey, alternatives = [] } = policy?.intent || {};
   const { business, activeModules } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
