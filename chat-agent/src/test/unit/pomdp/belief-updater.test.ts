@@ -14,9 +14,10 @@ test("Primer mensaje → nuevo intent con isConfident calculado usando su propio
     module: "restaurant",
     score: 0.7,
     requiresConfirmation: "never",
+    text: "",
   };
 
-  const newState = updater.update(initialState, topResult);
+  const newState = updater.update(initialState, [], topResult);
 
   expect(newState.current).toBeDefined();
   expect(newState.current!.intentKey).toBe("info:ask_price");
@@ -29,6 +30,8 @@ test("Señal de confirmación sobre intent anterior", () => {
   const initialState: BeliefState = {
     executedIntents: [],
     current: {
+      alternatives: [],
+      text: "",
       intentKey: "booking:create",
       module: "booking",
       score: 0.9,
@@ -50,9 +53,10 @@ test("Señal de confirmación sobre intent anterior", () => {
     module: "conversational-signal",
     score: 0.85,
     requiresConfirmation: "always",
+    text: "",
   };
 
-  const newState = updater.update(initialState, topResult);
+  const newState = updater.update(initialState, [], topResult);
 
   expect(newState.current).toBeDefined();
   expect(newState.current!.signals.isConfirmed).toBe(true);
@@ -68,9 +72,10 @@ test("Módulo excluido sin contexto previo", () => {
     module: "social-protocol",
     score: 0.9,
     requiresConfirmation: "always",
+    text: "",
   };
 
-  const newState = updater.update(initialState, topResult);
+  const newState = updater.update(initialState, [], topResult);
 
   expect(newState.current).toBeUndefined();
 });
@@ -85,9 +90,10 @@ test("Transición entre intents", () => {
     module: "booking",
     score: 0.85,
     requiresConfirmation: "always",
+    text: "",
   };
 
-  const stateAfterFirst = updater.update(initialState, firstResult);
+  const stateAfterFirst = updater.update(initialState, [], firstResult);
 
   expect(stateAfterFirst.current).toBeDefined();
   expect(stateAfterFirst.current!.intentKey).toBe("booking:cancel");
@@ -99,9 +105,10 @@ test("Transición entre intents", () => {
     module: "restaurant",
     score: 0.7,
     requiresConfirmation: "never",
+    text: "",
   };
 
-  const stateAfterSecond = updater.update(stateAfterFirst, secondResult);
+  const stateAfterSecond = updater.update(stateAfterFirst, [], secondResult);
 
   expect(stateAfterSecond.current).toBeDefined();
   expect(stateAfterSecond.current!.intentKey).toBe("info:ask_price");

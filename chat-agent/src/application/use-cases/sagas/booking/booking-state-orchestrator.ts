@@ -4,7 +4,7 @@ import type { RestaurantCtx } from "@/domain/restaurant";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { conversationalWorkflow } from "./workflows";
 import type { StartedFuncSagaResult, ValidateFuncSagaResult } from "./steps";
-import { formatSagaOutput } from "../../helpers";
+import { formatSagaOutput } from "@/application/patterns";
 
 const MAX_WORDS = 60;
 
