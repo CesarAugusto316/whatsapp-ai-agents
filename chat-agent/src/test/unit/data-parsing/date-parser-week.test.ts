@@ -1,9 +1,6 @@
 import { parseBookingData } from "@/domain/restaurant/booking";
 import { describe, expect, test } from "bun:test";
 import {
-  getTodayInTimezone,
-  getTomorrowInTimezone,
-  getDayAfterTomorrowInTimezone,
   getNextWeekSpecificDayInTimezone,
   getNextSpecificDayInTimezone,
 } from "./date-parser-helpers";

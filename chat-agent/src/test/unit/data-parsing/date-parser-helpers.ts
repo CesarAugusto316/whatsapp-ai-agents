@@ -110,3 +110,24 @@ export function getNextMonthSpecificDayInTimezone(
 
   return candidateDate;
 }
+
+// Helper: obtiene el día específico del mes siguiente basado en día de la semana
+export function getNextMonthDayOfWeekInTimezone(
+  dayOfWeek: number, // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  timezone: string,
+): string {
+  const now = new Date();
+  const zoned = toZonedTime(now, timezone);
+
+  // Start from the first day of the next month
+  const nextMonth = new Date(zoned.getFullYear(), zoned.getMonth() + 1, 1);
+
+  // Find the first occurrence of the target day of the week in the next month
+  let targetDate = new Date(nextMonth);
+  while (targetDate.getDay() !== dayOfWeek) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  }
+
+  // Convert back to the proper timezone date string
+  return fromZonedTime(targetDate, timezone).toISOString().split("T")[0];
+}
