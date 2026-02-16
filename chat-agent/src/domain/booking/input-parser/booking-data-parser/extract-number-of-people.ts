@@ -3,6 +3,60 @@
 export function extractNumberOfPeople(message: string): number {
   const text = message.toLowerCase();
 
+  // Helper para validar números (1-50)
+  const isValidNumber = (num: number): boolean => {
+    return !isNaN(num) && num > 0 && num <= 50;
+  };
+
+  // Helper para extraer número de un match con verificaciones adicionales
+  const extractFromMatch = (
+    match: RegExpMatchArray | null,
+    fullText: string = text,
+  ): number => {
+    if (!match || !match[1]) return 0;
+    const numStr = match[1].trim();
+    const num = parseInt(numStr, 10);
+
+    if (!isValidNumber(num)) return 0;
+
+    // Verificar si el número es parte de un número más grande o tiene signo negativo
+    // Buscamos el número en el texto completo para verificar el contexto
+    const numInText = fullText.match(new RegExp(`(-?)(\\d+)`));
+    if (numInText && numInText[2] === numStr) {
+      // Si hay un signo negativo antes, retornar 0
+      if (numInText[1] === "-") return 0;
+    }
+
+    return num;
+  };
+
+  // === PRIORIDAD 1: Patrones específicos de "grupo de X" ===
+  // Estos deben ir antes para evitar que patrones más genéricos los capturen mal
+  const grupoDePattern =
+    /grup[oe]\s+d[ei]\s+(\d+)(?:\s+(?:personas?|pers|comensales?|amigos?|chamacos?|pelados?|tíos?|compas?|panas?|muchachos?|cuates?|hermanos?|colegas?|compadres?|pibes?|güeyes?|huéspedes?|camaradas?|principes?|reyes?|capos?|jefes?))?/i;
+  const grupoMatch = text.match(grupoDePattern);
+  if (grupoMatch) {
+    const num = extractFromMatch(grupoMatch);
+    if (num > 0) return num;
+  }
+
+  // === PRIORIDAD 1b: "grupo de X" con números en palabras (1-10) ===
+  const grupoDeNumberWords = [
+    { pattern: /grup[oe]\s+d[ei]\s+un[oa]?$/i, value: 1 },
+    { pattern: /grup[oe]\s+d[ei]\s+dos$/i, value: 2 },
+    { pattern: /grup[oe]\s+d[ei]\s+tres$/i, value: 3 },
+    { pattern: /grup[oe]\s+d[ei]\s+cuatr[oe]$/i, value: 4 },
+    { pattern: /grup[oe]\s+d[ei]\s+cinc[oe]$/i, value: 5 },
+    { pattern: /grup[oe]\s+d[ei]\s+seis$/i, value: 6 },
+    { pattern: /grup[oe]\s+d[ei]\s+siet[ey]$/i, value: 7 },
+    { pattern: /grup[oe]\s+d[ei]\s+och[oe]$/i, value: 8 },
+    { pattern: /grup[oe]\s+d[ei]\s+nuev[ey]$/i, value: 9 },
+    { pattern: /grup[oe]\s+d[ei]\s+diez$/i, value: 10 },
+  ];
+  for (const { pattern, value } of grupoDeNumberWords) {
+    if (pattern.test(text)) return value;
+  }
+
   // Patrones principales con ligera tolerancia a errores de escritura
   const patterns = [
     /(?:mes[ae]?|reserv[ae]?|cit[ae]?|event[oe]?)\s+par[ae]?\s+(\d+)/i, // "mesa/reserva/cita/evento para X" with slight misspelling tolerance
@@ -16,7 +70,7 @@ export function extractNumberOfPeople(message: string): number {
     /(\d+)\s+(?:chamacos?|pelados?|...)/i,
     /(?:vam[oe]s|som[oe]s|...)\s+p[ao]'?\s*(\d+)(?:\s+el\s+\w+\s+parce|...)/i, // "vamos/somos" with slight tolerance
     // Additional patterns for common booking expressions in chat apps
-    /(?:estamos|estamos\s+en|vamos\s+a\s+ser|vamos\s+ser|vamos\s+en)\s*(\d+)\s+(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i, // "estamos 4 personas", "vamos a ser 6"
+    /(?:estamos|estamos\s+en|vamos\s+a\s+ser|vamos\s+ser|vamo\s+ser|vamos\s+en)\s*(\d+)\s+(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i, // "estamos 4 personas", "vamos a ser 6"
     /(?:total\s+de|en\s+total|contamos\s+con|sumamos|llevamos)\s*(\d+)\s+(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i, // "total de 5 personas", "contamos con 3"
     /(?:nosotros\s+somos|somos\s+en\s+total|somos\s+un\s+grupo\s+de|grupo\s+total\s+de)\s*(\d+)\s+(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i, // "nosotros somos 4", "grupo total de 8"
     /(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)\s+para\s+(?:reservar|mesa|cita|evento|alojamiento|hotel)/i, // "4 personas para reservar", "2 personas para mesa"
@@ -24,17 +78,25 @@ export function extractNumberOfPeople(message: string): number {
     /(?:conformamos|formamos\s+grupo|armamos\s+grupo)\s+(?:un\s+)?(?:grupo\s+de)?\s*(\d+)\s+(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i, // "conformamos grupo de 5", "armamos grupo 4"
     /(?:reserv[ae]\s+para|cita\s+para|evento\s+para|alojamiento\s+para|hotel\s+para)\s*(\d+)\s+(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i, // "reserva para 4 personas", "cita para 2"
     /(?:llegamos\s+a\s+ser|llegaremos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser)\s*(\d+)\s+(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i, // "llegamos a ser 6", "terminamos siendo 4"
+    // Patrones adicionales para casos específicos sin "personas"
+    /(?:queremos|necesitamos|requerimos|solicitamos)\s+(\d+)/i, // "queremos 6", "necesitamos 8"
+    /(?:en\s+total|contamos\s+con|sumamos)\s+(\d+)/i, // "en total 6", "contamos con 8", "sumamos 5"
+    /(?:vamos\s+a\s+ser|vamos\s+ser|vamo\s+ser|vamos\s+en)\s+(\d+)/i, // "vamos a ser 8", "vamos ser 8", "vamo ser 2", "vamos en 5"
+    /(?:estamos\s+en)\s+(\d+)/i, // "estamos en 3"
+    /(?:llegamos\s+a\s+ser|llegaremos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser)\s+(\d+)/i, // "llegamos a ser 6" sin "personas"
+    /(?:formamos\s+grupo|armamos\s+grupo)\s+(\d+)/i, // "formamos grupo 4", "armamos grupo 8"
+    /(?:somos\s+en\s+total|grupo\s+total\s+de)\s+(\d+)/i, // "somos en total 6", "grupo total de 10"
+    /(?:alojamiento\s+para)\s+(\d+)/i, // "alojamiento para 8"
+    /(?:reserv[ée]\s+para)\s+(\d+)/i, // "reservé para 5" con acento
   ];
 
   for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      const num = parseInt(match[1], 10);
-      if (!isNaN(num) && num > 0 && num <= 50) return num;
-    }
+    const num = extractFromMatch(text.match(pattern));
+    if (num > 0) return num;
   }
 
   // Términos regionales con tolerancia a errores de escritura
+  // NOTA: Estos patrones son más propensos a falsos positivos, van después
   const regionalTerms = [
     "ch[aá]?m[aá]?c[oe]?s?",
     "p[el][el]?ad[oe]?s?",
@@ -124,10 +186,23 @@ export function extractNumberOfPeople(message: string): number {
     const m = text.match(reg);
     if (m) {
       const n = parseInt(m[1] || m[2], 10);
-      if (!isNaN(n) && n > 0 && n <= 50) {
+      if (isValidNumber(n)) {
         // Special check to avoid matching "amiguitos" when looking for "amigos"
         if (term.includes("amig") && text.includes("amiguit")) {
           continue; // Skip this match and continue to next term
+        }
+        // Verify the number is not part of a larger number (e.g., "75" should not match "7")
+        const matchedNumStr = (m[1] || m[2] || "").trim();
+        const fullMatch = m[0];
+        // Check if there are more digits adjacent to the matched number
+        const numIndex = fullMatch.indexOf(matchedNumStr);
+        const beforeChar = numIndex > 0 ? fullMatch[numIndex - 1] : "";
+        const afterChar =
+          numIndex + matchedNumStr.length < fullMatch.length
+            ? fullMatch[numIndex + matchedNumStr.length]
+            : "";
+        if (/\d/.test(beforeChar) || /\d/.test(afterChar)) {
+          continue; // Skip this match, it's part of a larger number
         }
         return n;
       }
@@ -139,7 +214,7 @@ export function extractNumberOfPeople(message: string): number {
   const vm = text.match(vamosPattern);
   if (vm?.[1]) {
     const n = parseInt(vm[1], 10);
-    if (!isNaN(n) && n > 0 && n <= 50) return n;
+    if (isValidNumber(n)) return n;
   }
 
   // Patrones generales con tolerancia a errores de escritura
@@ -178,11 +253,8 @@ export function extractNumberOfPeople(message: string): number {
   ];
 
   for (const p of generalPatterns) {
-    const m = text.match(p);
-    if (m?.[1]) {
-      const n = parseInt(m[1], 10);
-      if (!isNaN(n) && n > 0 && n <= 50) return n;
-    }
+    const num = extractFromMatch(text.match(p));
+    if (num > 0) return num;
   }
 
   // Casos especiales con tolerancia a errores de escritura
@@ -195,103 +267,103 @@ export function extractNumberOfPeople(message: string): number {
   const numberWordPatterns = [
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+o?n[eo]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+un[oa]$/i,
       value: 1,
     }, // "uno", "un", etc.
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+d[oe]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+dos?$/i,
       value: 2,
     }, // "dos"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+tr[ie]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+tres?$/i,
       value: 3,
     }, // "tres"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+cuatr[oe]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+cuatr[oe]$/i,
       value: 4,
     }, // "cuatro"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+cinc[oe]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+cinc[oe]$/i,
       value: 5,
     }, // "cinco"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+se[ií]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+seis$/i,
       value: 6,
     }, // "seis"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+s[ií]+et[ey]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+siete$/i,
       value: 7,
     }, // "siete"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+och[oe]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+ocho$/i,
       value: 8,
     }, // "ocho"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+nuev[ey]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+nueve$/i,
       value: 9,
     }, // "nueve"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+d[ií]+ez?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+diez$/i,
       value: 10,
     }, // "diez"
     // Additional patterns for LatAm and Spain - extended context
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+un[oa]?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+un[oa]$/i,
       value: 1,
     }, // "un", "una" - more contexts
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+do[cs]/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+dos?$/i,
       value: 2,
     }, // "dos" with potential misspelling
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+tre[cs]/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+tres?$/i,
       value: 3,
     }, // "tres" with potential misspelling
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+cuatr[oe]/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+cuatr[oe]$/i,
       value: 4,
     }, // "cuatro" - more precise
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+cinc[oe]/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+cinc[oe]$/i,
       value: 5,
     }, // "cinco" - more precise
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+sei[cs]/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+seis$/i,
       value: 6,
     }, // "seis" with potential misspelling
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+siet[es]/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+siete$/i,
       value: 7,
     }, // "siete" with potential misspelling
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+och[oe]/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+ocho$/i,
       value: 8,
     }, // "ocho" - more precise
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+nuev[es]/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+nueve$/i,
       value: 9,
     }, // "nueve" with potential misspelling
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+d[ií]z/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos\s+a\s+ser|terminamos\s+siendo|quedamos\s+en\s+ser|confirmamos|queremos|necesitamos)\s+diez$/i,
       value: 10,
     }, // "diez" with potential misspelling
   ];
