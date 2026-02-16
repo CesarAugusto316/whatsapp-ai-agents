@@ -93,7 +93,8 @@ class AiAdapter implements IAiAdapter {
     if (envName === "development") {
       return {
         url: `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
-        primaryModel: "@cf/qwen/qwen3-30b-a3b-fp8",
+        // primaryModel: "@cf/qwen/qwen3-30b-a3b-fp8",
+        primaryModel: "@cf/ibm-granite/granite-4.0-h-micro",
         auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
         embedding: "@cf/qwen/qwen3-embedding-0.6b",
         headers: {

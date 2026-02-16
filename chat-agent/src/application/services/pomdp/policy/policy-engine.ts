@@ -27,7 +27,7 @@ export type PolicyDecision =
   | {
       type: "execute";
       intent: BeliefIntent;
-      action: string;
+      action: IntentExampleKey;
       state: BeliefState;
     };
 
@@ -141,7 +141,7 @@ export class PolicyEngine {
    * @param intent
    * @returns
    */
-  private mapIntentToWorkflow(intent: IntentExampleKey): string {
+  private mapIntentToWorkflow(intent: IntentExampleKey): IntentExampleKey {
     const map: Partial<Record<IntentExampleKey, string>> = {
       // Booking
       "booking:create": BookingOptions.MAKE_BOOKING,
@@ -167,7 +167,10 @@ export class PolicyEngine {
       "info:ask_delivery_time": "info:ask_delivery_time",
     };
 
-    return map[intent] ?? "unknown_intent";
+    const value = map[intent];
+    if (!value) throw new Error(`Unknown intent: ${intent}`);
+    console.log({ intent, value });
+    return value as IntentExampleKey;
   }
 
   private markAsExecuted(
