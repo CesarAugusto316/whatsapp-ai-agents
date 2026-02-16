@@ -60,6 +60,63 @@ export function extractNumberOfPeople(message: string): number {
     "j[ef]?[es]?",
     "c[oe]?mp[ií]?s?",
     "h[er]?m[aá]?n[oe]?",
+    // Additional regional terms for LatAm and Spain
+    "compañ[ei]r[eo]?s?",
+    "compañ[ei]r[ei]t[oe]?s?",
+    "soci[oe]?s?",
+    "colegi[ae]?ld[ae]?s?",
+    "vecin[oe]?s?",
+    "conocid[oe]?s?",
+    "famili[ae]?r[es]?",
+    "parient[es]?",
+    "tios?",
+    "prim[oe]?s?",
+    "cuñ[ae]?d[es]?",
+    "suegr[es]?",
+    "cuñ[ae]?d[es]?",
+    "yern[es]?",
+    "nuer[ae]?s?",
+    "abuel[es]?",
+    "niet[es]?",
+    "bisabuel[es]?",
+    "tatarabuel[es]?",
+    "hermanastr[es]?",
+    "medios? herman[es]?",
+    "primos?",
+    "sobrin[es]?",
+    "cuñ[ae]?d[es]?",
+    "compinches?",
+    "coguerrill[es]?",
+    "paisan[es]?",
+    "chav[es]?",
+    "moroch[es]?",
+    "polol[es]?",
+    "cracks?",
+    "mates?",
+    "compas?",
+    "cachorros?",
+    "cucas?",
+    "cogorrones?",
+    "corajes?",
+    "cotorritos?",
+    "cucarachitas?",
+    "cangrejitos?",
+    "cachetes?",
+    "cachullos?",
+    "cangrejuelos?",
+    "cachimbos?",
+    "cachureos?",
+    "cachureas?",
+    "cachurens?",
+    "cachullos?",
+    "cachulitos?",
+    "cachulotes?",
+    "cachulines?",
+    "cachulengos?",
+    "cachuchas?",
+    "cachuchitas?",
+    "cachuchuelos?",
+    "cachuchones?",
   ];
 
   for (const term of regionalTerms) {
@@ -97,6 +154,27 @@ export function extractNumberOfPeople(message: string): number {
     /(\d+)\s+[ií]nv[ií]t[ae]d[oe]?s?/i,
     /(\d+)\s+huesp[ed][es]?/i,
     /(\d+)\s+hu[ée]sp[ed][es]?/i,
+    // Additional patterns for LatAm and Spain
+    /(\d+)\s+pax/i, // Common abbreviation for passengers/personas
+    /(\d+)\s+huésped/i, // Singular form
+    /(\d+)\s+conv[ei]d[ae]d[oe]s?/i, // "convidados" - common in some regions
+    /(\d+)\s+participantes/i, // "participants" - formal alternative
+    /(\d+)\s+asistentes/i, // "attendees" - for events
+    /(\d+)\s+miembros\s+del\s+grupo/i, // "group members"
+    /(\d+)\s+viajeros?/i, // "travelers" - for hotels/travel bookings
+    /(\d+)\s+ocupantes/i, // "occupants" - for rooms/bookings
+    /(\d+)\s+comensales?\s+adultos/i, // "adult diners" - specific to restaurants
+    /(\d+)\s+niños?\s+acompañantes/i, // "accompanying children" - for family bookings
+    /(\d+)\s+peques?/i, // "peques" - colloquial for "pequeños/niños"
+    /(\d+)\s+jóvenes/i, // "young people" - for youth groups
+    /(\d+)\s+mayores\s+de\s+edad/i, // "adults over age" - for age-specific bookings
+    /(\d+)\s+clientes/i, // "customers" - business context
+    /(\d+)\s+huéspedes?\s+registrados/i, // "registered guests" - hotel context
+    /(\d+)\s+personas?\s+mayores/i, // "older persons" - senior bookings
+    /(\d+)\s+compañeros?\s+de\s+viaje/i, // "travel companions"
+    /(\d+)\s+pasajeros?/i, // "passengers" - travel context
+    /(\d+)\s+miembros/i, // "members" - for member bookings
+    /(\d+)\s+asociados/i, // "associates" - for group bookings
   ];
 
   for (const p of generalPatterns) {
@@ -117,54 +195,105 @@ export function extractNumberOfPeople(message: string): number {
   const numberWordPatterns = [
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+o?n[eo]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+o?n[eo]+s?/i,
       value: 1,
     }, // "uno", "un", etc.
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+d[oe]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+d[oe]+s?/i,
       value: 2,
     }, // "dos"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+tr[ie]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+tr[ie]+s?/i,
       value: 3,
     }, // "tres"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+cuatr[oe]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+cuatr[oe]+s?/i,
       value: 4,
     }, // "cuatro"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+cinc[oe]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+cinc[oe]+s?/i,
       value: 5,
     }, // "cinco"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+se[ií]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+se[ií]+s?/i,
       value: 6,
     }, // "seis"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+s[ií]+et[ey]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+s[ií]+et[ey]+s?/i,
       value: 7,
     }, // "siete"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+och[oe]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+och[oe]+s?/i,
       value: 8,
     }, // "ocho"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+nuev[ey]+s?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+nuev[ey]+s?/i,
       value: 9,
     }, // "nueve"
     {
       pattern:
-        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+d[ií]+ez?/i,
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita)\s+d[ií]+ez?/i,
       value: 10,
     }, // "diez"
+    // Additional patterns for LatAm and Spain - extended context
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+un[oa]?/i,
+      value: 1,
+    }, // "un", "una" - more contexts
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+do[cs]/i,
+      value: 2,
+    }, // "dos" with potential misspelling
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+tre[cs]/i,
+      value: 3,
+    }, // "tres" with potential misspelling
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+cuatr[oe]/i,
+      value: 4,
+    }, // "cuatro" - more precise
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+cinc[oe]/i,
+      value: 5,
+    }, // "cinco" - more precise
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+sei[cs]/i,
+      value: 6,
+    }, // "seis" with potential misspelling
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+siet[es]/i,
+      value: 7,
+    }, // "siete" with potential misspelling
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+och[oe]/i,
+      value: 8,
+    }, // "ocho" - more precise
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+nuev[es]/i,
+      value: 9,
+    }, // "nueve" with potential misspelling
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de|total|reservamos|cita|llegamos|terminamos|quedamos|confirmamos|queremos|necesitamos)\s+d[ií]z/i,
+      value: 10,
+    }, // "diez" with potential misspelling
   ];
 
   // Buscar números en palabras en el contexto de personas
