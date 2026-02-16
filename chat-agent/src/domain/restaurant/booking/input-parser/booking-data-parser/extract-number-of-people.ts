@@ -3,18 +3,18 @@
 export function extractNumberOfPeople(message: string): number {
   const text = message.toLowerCase();
 
-  // Patrones principales
+  // Patrones principales con ligera tolerancia a errores de escritura
   const patterns = [
-    /(?:mesa|reserva|cita|evento)\s+para\s+(\d+)/i,
-    /(?:para|de|con|grupo de|somos|vamos a ser|vamos|total|reserva para)\s*(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i,
+    /(?:mes[ae]?|reserv[ae]?|cit[ae]?|event[oe]?)\s+par[ae]?\s+(\d+)/i, // "mesa/reserva/cita/evento para X" with slight misspelling tolerance
+    /(?:par[ae]?|d[ei]|c[eo]n|grup[oe]\s+d[ei]|som[oe]s|vam[oe]s\s+a\s+s[er]|vam[oe]s|tot[ae]l|reserv[ae]\s+par[ae])\s*(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i, // With slight tolerance for common misspellings
     /(\d+)\s*(?:adultos?|niños?|menores?|bebes?|bebés?)/i,
     /^(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i,
     /(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)\s*(\d+)$/i,
-    /(?:somos|serán|vamos a ser|vamos|va a ir|van a ir|irá|irán)\s*(\d+)/i,
+    /(?:som[oe]s|ser[aá]n|vam[oe]s\s+a\s+s[er]|vam[oe]s|va\s+a\s+ir|van\s+a\s+ir|ir[aá]|ir[aá]n)\s*(\d+)/i, // "somos/vamos" with slight tolerance
     /(?:pa'|pa)\s*(\d+)\s*(?:personas?|pers|...)/i,
     /(\d+)\s*(?:pa'|pa)\s*/i,
     /(\d+)\s+(?:chamacos?|pelados?|...)/i,
-    /(?:vamos|somos|...)\s+p[ao]'?\s*(\d+)(?:\s+el\s+\w+\s+parce|...)/i,
+    /(?:vam[oe]s|som[oe]s|...)\s+p[ao]'?\s*(\d+)(?:\s+el\s+\w+\s+parce|...)/i, // "vamos/somos" with slight tolerance
   ];
 
   for (const pattern of patterns) {
