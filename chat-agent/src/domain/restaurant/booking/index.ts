@@ -29,5 +29,5 @@ export {
 } from "./prompts/social-chunks";
 
 export { classifyInput } from "./input-parser/input-classifier";
-export { parseBookingData } from "./input-parser/parse-booking-data";
-export type { ParsedBookingData } from "./input-parser/parse-booking-data";
+export { parseBookingData } from "./input-parser/booking-data-parser/parse-booking-data";
+export type { ParsedBookingData } from "./input-parser/booking-data-parser/parse-booking-data";
