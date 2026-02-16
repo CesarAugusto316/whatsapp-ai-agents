@@ -143,6 +143,17 @@ function checkWeekdayPatterns(
       new RegExp(`la pr[oó]xim[ae] semana ${dayVariant}`, "i"), // Allow 'a' in addition to 'o'
       new RegExp(`el ${dayVariant} de la semana que viene`, "i"),
       new RegExp(`el ${dayVariant} de la pr[oó]xim[ae] semana`, "i"),
+      // Additional regional expressions for LatAm and Spain
+      new RegExp(`la pr[oó]xim[ae] semana que viene ${dayVariant}`, "i"),
+      new RegExp(`la semana pr[oó]xim[ae] ${dayVariant}`, "i"),
+      new RegExp(`la semana entrante ${dayVariant}`, "i"),
+      new RegExp(`la semana siguiente ${dayVariant}`, "i"),
+      new RegExp(`la semana despu[eé]s ${dayVariant}`, "i"),
+      new RegExp(`el ${dayVariant} que viene en la semana`, "i"),
+      new RegExp(`el ${dayVariant} de la semana siguiente`, "i"),
+      new RegExp(`el ${dayVariant} de la semana entrante`, "i"),
+      new RegExp(`el ${dayVariant} de la semana despu[eé]s`, "i"),
+      new RegExp(`el ${dayVariant} de la semana pr[oó]xim[ae]`, "i"),
     ];
 
     for (const pattern of nextWeekPatterns) {
@@ -161,12 +172,29 @@ function checkWeekdayPatterns(
     }
   }
 
-  // Check "el proximo X dia"
+  // Check "el proximo X dia" with misspelling tolerance
   for (let i = 0; i < DAYS.length; i++) {
     const day = DAYS[i];
+    // Create variants of the day name to handle common misspellings
+    const dayVariant = day.replace(/([aeiou])/g, "$1{0,2}"); // Allow repeated vowels
     const nextDayPatterns = [
-      new RegExp(`el pr[oó]ximo ${day}`, "i"),
-      new RegExp(`el proximo ${day}`, "i"),
+      new RegExp(`el pr[oó]xim[oe] ${dayVariant}`, "i"),
+      new RegExp(`el proxim[oe] ${dayVariant}`, "i"),
+      // Additional regional expressions for LatAm and Spain
+      new RegExp(`el siguiente ${dayVariant}`, "i"),
+      new RegExp(`el que sigue ${dayVariant}`, "i"),
+      new RegExp(`el que viene ${dayVariant}`, "i"),
+      new RegExp(`el otro ${dayVariant}`, "i"), // "el otro lunes" - common in some regions
+      new RegExp(`el pr[oó]xim[oe] d[ií]a ${dayVariant}`, "i"),
+      new RegExp(`el d[ií]a pr[oó]xim[oe] ${dayVariant}`, "i"),
+      new RegExp(`el d[ií]a siguiente ${dayVariant}`, "i"),
+      new RegExp(`el d[ií]a que viene ${dayVariant}`, "i"),
+      new RegExp(`el d[ií]a despu[eé]s ${dayVariant}`, "i"),
+      new RegExp(`el ${dayVariant} pr[oó]xim[oe]`, "i"),
+      new RegExp(`el ${dayVariant} siguiente`, "i"),
+      new RegExp(`el ${dayVariant} que viene`, "i"),
+      new RegExp(`el ${dayVariant} que sigue`, "i"),
+      new RegExp(`el ${dayVariant} despu[eé]s`, "i"),
     ];
 
     for (const pattern of nextDayPatterns) {
