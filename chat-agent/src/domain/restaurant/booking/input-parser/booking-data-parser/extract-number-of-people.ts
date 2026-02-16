@@ -25,32 +25,32 @@ export function extractNumberOfPeople(message: string): number {
     }
   }
 
-  // Términos regionales
+  // Términos regionales con tolerancia a errores de escritura
   const regionalTerms = [
-    "chamacos?",
-    "pelados?",
-    "fiambres?",
-    "tíos?",
-    "compas?",
-    "parce",
-    "panas?",
-    "muchachos?",
-    "cuates?",
-    "hermanos?",
-    "amigos?",
-    "colegas?",
-    "compadres?",
-    "quilombos?",
-    "pibes?",
-    "güeyes?",
-    "camaradas?",
-    "cuate.s?",
-    "principes?",
-    "reyes?",
-    "capos?",
-    "jefes?",
-    "compis?",
-    "hermano",
+    "ch[aá]?m[aá]?c[oe]?s?",
+    "p[el][el]?ad[oe]?s?",
+    "f[ií]?[aá]?mbres?",
+    "t[ií]?[oe]?s?",
+    "c[oe]?mp[ae]?s?",
+    "parc[ae]?",
+    "p[ae]?n[ae]?s?",
+    "muchach[oe]?s?",
+    "c[uú]?[ae]?t[es]?",
+    "h[er]?m[aá]?n[oe]?s?",
+    "amig[oe]?s?",
+    "c[oe]?l[ey]?g[ae]?s?",
+    "c[oe]?mpadr[es]?",
+    "qu[ií]?l[em]?b[oe]?s?",
+    "p[ií]?b[es]?",
+    "g[uü]?[ey]?[ey]?s?",
+    "c[aá]?m[ae]?r[ae]?d[ae]?s?",
+    "c[uú]?[ae]?t[es]\.?s?",
+    "pr[ií]?ncip[es]?",
+    "r[ey]?y[es]?",
+    "c[aá]?p[oe]?s?",
+    "j[ef]?[es]?",
+    "c[oe]?mp[ií]?s?",
+    "h[er]?m[aá]?n[oe]?",
   ];
 
   for (const term of regionalTerms) {
@@ -58,7 +58,13 @@ export function extractNumberOfPeople(message: string): number {
     const m = text.match(reg);
     if (m) {
       const n = parseInt(m[1] || m[2], 10);
-      if (!isNaN(n) && n > 0 && n <= 50) return n;
+      if (!isNaN(n) && n > 0 && n <= 50) {
+        // Special check to avoid matching "amiguitos" when looking for "amigos"
+        if (term.includes("amig") && text.includes("amiguit")) {
+          continue; // Skip this match and continue to next term
+        }
+        return n;
+      }
     }
   }
 
