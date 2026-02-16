@@ -1,9 +1,9 @@
-import { parseBookingData } from "@/domain/booking";
 import { describe, expect, test } from "bun:test";
 import {
   getNextWeekSpecificDayInTimezone,
   getNextSpecificDayInTimezone,
 } from "./date-parser-helpers";
+import { parseBookingData } from "@/domain/booking/input-parser";
 
 describe("parseBookingData - Week-relative date parsing", () => {
   const timezones = [

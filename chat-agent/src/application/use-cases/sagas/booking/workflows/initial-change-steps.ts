@@ -1,7 +1,7 @@
 import { BookingOption, BookingOptions, BookingState } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { Business, cmsAdapter, Customer } from "@/infraestructure/adapters/cms";
-import { humanizerAgent } from "@/application/agents/restaurant";
+import { humanizerAgent } from "@/application/agents";
 import { toLocalDateTime } from "@/domain/utilities";
 import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { bookingStateManager } from "@/application/services/state-managers";

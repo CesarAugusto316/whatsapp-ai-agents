@@ -8,7 +8,7 @@ import {
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import { humanizerAgent } from "@/application/agents/restaurant";
+import { humanizerAgent } from "@/application/agents";
 import {
   ISagaStep,
   SagaBag,

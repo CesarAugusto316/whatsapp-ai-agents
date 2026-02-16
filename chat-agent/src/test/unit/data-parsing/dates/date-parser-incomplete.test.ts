@@ -1,9 +1,6 @@
-import { parseBookingData } from "@/domain/booking";
 import { describe, expect, test } from "bun:test";
-import {
-  getTodayInTimezone,
-  getTomorrowInTimezone,
-} from "./date-parser-helpers";
+import { getTomorrowInTimezone } from "./date-parser-helpers";
+import { parseBookingData } from "@/domain/booking/input-parser";
 
 describe("parseBookingData - Incomplete Information Handling", () => {
   const timezone = "America/Mexico_City";

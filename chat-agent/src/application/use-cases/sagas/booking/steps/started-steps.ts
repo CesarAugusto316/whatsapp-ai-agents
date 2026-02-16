@@ -10,10 +10,7 @@ import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
-import {
-  humanizerAgent,
-  validatorAgent,
-} from "@/application/agents/restaurant";
+import { humanizerAgent, validatorAgent } from "@/application/agents";
 import {
   ISagaStep,
   SagaBag,

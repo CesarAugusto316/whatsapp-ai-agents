@@ -1,4 +1,4 @@
-import { humanizerAgent } from "@/application/agents/restaurant";
+import { humanizerAgent } from "@/application/agents";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { BookingOptions } from "@/domain/booking";
 import { systemMessages } from "@/domain/booking/prompts";

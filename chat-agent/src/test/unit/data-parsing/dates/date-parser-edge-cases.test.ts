@@ -1,10 +1,10 @@
-import { parseBookingData } from "@/domain/booking";
 import { describe, expect, test } from "bun:test";
 import {
   getTodayInTimezone,
   getTomorrowInTimezone,
   getYesterdayInTimezone,
 } from "./date-parser-helpers";
+import { parseBookingData } from "@/domain/booking/input-parser";
 
 describe("parseBookingData - Edge Cases and International Formats", () => {
   const timezones = [
