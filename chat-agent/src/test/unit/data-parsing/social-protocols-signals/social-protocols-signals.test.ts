@@ -5,7 +5,7 @@ import {
   socialProtocols,
   conversationalSignals,
   shouldSkipProcessing,
-} from "@/application/services/pomdp/intents/conversational-signals";
+} from "@/application/services/pomdp";
 
 const DATA_DIR = __dirname;
 
@@ -25,7 +25,6 @@ function readDataFile(filePath: string): string[] {
  */
 function getDataFiles(category: string): string[] {
   const files = readdirSync(DATA_DIR);
-  console.log({ files });
   return files
     .filter((file) => file.startsWith(`${category}.`))
     .map((file) => join(DATA_DIR, file));
