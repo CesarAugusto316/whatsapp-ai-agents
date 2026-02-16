@@ -8,26 +8,14 @@ const BookingDataSchema = z
     datetime: z.object({
       start: z
         .object({
-          date: z
-            .string()
-            // .regex(/^\d{4}-\d{2}-\d{2}$/)
-            .optional(), // formato YYYY-MM-DD
-          time: z
-            .string()
-            // .regex(/^\d{2}:\d{2}:\d{2}$/)
-            .optional(), // formato HH:MM:SS
+          date: z.string().optional(), // formato YYYY-MM-DD
+          time: z.string().optional(), // formato HH:MM:SS
         })
         .partial(),
       end: z
         .object({
-          date: z
-            .string()
-            // .regex(/^\d{4}-\d{2}-\d{2}$/)
-            .optional(), // formato YYYY-MM-DD
-          time: z
-            .string()
-            // .regex(/^\d{2}:\d{2}:\d{2}$/)
-            .optional(), // formato HH:MM:SS
+          date: z.string().optional(), // formato YYYY-MM-DD
+          time: z.string().optional(), // formato HH:MM:SS
         })
         .partial(),
     }),
@@ -48,7 +36,7 @@ export function parseBookingData(
   message: string,
   timezone: string = "America/Mexico_City",
   referenceDate: Date = new Date(),
-  averageDurationMinutes: number = 60, // 👈 nuevo parámetro
+  averageDurationMinutes: number = 60,
 ): ParsedBookingData {
   const normalizedMessage = message.trim();
   const numberOfPeople = extractNumberOfPeople(normalizedMessage);
@@ -58,7 +46,7 @@ export function parseBookingData(
     normalizedMessage,
     timezone,
     referenceDate,
-    averageDurationMinutes, // 👈 pasarlo
+    averageDurationMinutes,
   );
 
   const result = BookingDataSchema.parse({
@@ -73,11 +61,12 @@ export function parseBookingData(
   return result;
 }
 
-// === Funciones auxiliares de parsing (sin cambios funcionales) ===
+// === Funciones auxiliares de parsing ===
 
 function extractNumberOfPeople(message: string): number {
-  // ... (igual que antes, sin cambios necesarios aquí)
   const text = message.toLowerCase();
+
+  // Patrones principales
   const patterns = [
     /(?:mesa|reserva|cita|evento)\s+para\s+(\d+)/i,
     /(?:para|de|con|grupo de|somos|vamos a ser|vamos|total|reserva para)\s*(\d+)\s*(?:personas?|pers|comensales?|chamacos?|pelados?|fiambres?|tíos?|compas?|parce|panas?|muchachos?|cuates?|hermanos?|amigos?|colegas?|compadres?|quilombos?|pibes?|huespedes?|huéspedes?|güeyes?|huev.es?|camaradas?|cuate.s?|principes?|reyes?|capos?|jefes?)/i,
@@ -99,6 +88,7 @@ function extractNumberOfPeople(message: string): number {
     }
   }
 
+  // Términos regionales
   const regionalTerms = [
     "chamacos?",
     "pelados?",
@@ -125,6 +115,7 @@ function extractNumberOfPeople(message: string): number {
     "compis?",
     "hermano",
   ];
+
   for (const term of regionalTerms) {
     const reg = new RegExp(`(\\d+)\\s+${term}|${term}\\s+(\\d+)`, "i");
     const m = text.match(reg);
@@ -134,6 +125,7 @@ function extractNumberOfPeople(message: string): number {
     }
   }
 
+  // Patrón específico
   const vamosPattern = /(?:vamos|somos|...)\s+pa'?s*\s*(\d+)/i;
   const vm = text.match(vamosPattern);
   if (vm?.[1]) {
@@ -141,6 +133,7 @@ function extractNumberOfPeople(message: string): number {
     if (!isNaN(n) && n > 0 && n <= 50) return n;
   }
 
+  // Patrones generales
   const generalPatterns = [
     /grupo de (\d+) personas/i,
     /equipo de (\d+) personas/i,
@@ -153,6 +146,7 @@ function extractNumberOfPeople(message: string): number {
     /(\d+) huespedes/i,
     /(\d+) huéspedes/i,
   ];
+
   for (const p of generalPatterns) {
     const m = text.match(p);
     if (m?.[1]) {
@@ -161,6 +155,7 @@ function extractNumberOfPeople(message: string): number {
     }
   }
 
+  // Casos especiales
   if (text.includes("solo") || text.includes("solos")) {
     if (text.includes("dos") || text.includes("2")) return 2;
     if (text.includes("uno") || text.includes("1")) return 1;
@@ -173,6 +168,7 @@ function extractCustomerName(message: string): string {
   const namePattern =
     /[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,}(?:\s+[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,})*/g;
   const matches = message.match(namePattern) || [];
+
   const commonWords = [
     "Hola",
     "Buen",
@@ -220,25 +216,25 @@ function extractCustomerName(message: string): string {
     "Usted",
     "Ustedes",
   ];
+
   const names = matches.filter((n) => !commonWords.includes(n));
   return names.length > 0 ? names[0] : "";
 }
 
-// === Extracción de fecha/hora (CORREGIDA) ===
+// === Extracción de fecha/hora ===
 
 function extractDateTime(
   message: string,
   timezone: string,
   referenceDate: Date,
-  averageDurationMinutes: number = 60, // 👈 nuevo parámetro
+  averageDurationMinutes: number = 60,
 ): { startDate: string; startTime: string; endDate: string; endTime: string } {
   const text = message.toLowerCase();
 
   const startTime = extractStartTime(text);
-  const endTime = extractEndTime(text, startTime, averageDurationMinutes); // 👈
+  const endTime = extractEndTime(text, startTime, averageDurationMinutes);
 
-  // ✅ Ahora pasamos `timezone` a `extractDate`
-  const { date, isNextWeek } = extractDate(text, referenceDate, timezone);
+  const { date } = extractDate(text, referenceDate, timezone);
 
   if (date) {
     const startDate = formatDateAsUTC(date, timezone);
@@ -253,14 +249,13 @@ function extractDateTime(
 function extractDate(
   text: string,
   referenceDate: Date,
-  timezone: string, // ✅ Añadido
+  timezone: string,
 ): { date: Date | null; isNextWeek: boolean } {
-  // ✅ Construimos la fecha base en la zona horaria dada
   const zonedRef = toZonedTime(referenceDate, timezone);
   const today = new Date(zonedRef);
   today.setHours(0, 0, 0, 0);
 
-  // ✅ Corregimos precedencia: "pasado mañana" ANTES que "mañana"
+  // Manejo de fechas relativas básicas
   if (text.includes("pasado mañana")) {
     const d = new Date(today);
     d.setDate(d.getDate() + 2);
@@ -277,7 +272,7 @@ function extractDate(
     return { date: today, isNextWeek: false };
   }
 
-  // Handle "la semana que viene X dia" and "el proximo X dia"
+  // Manejo de fechas semanales y mensuales
   const days = [
     "domingo",
     "lunes",
@@ -288,7 +283,7 @@ function extractDate(
     "sábado",
   ];
 
-  // Patterns for next week: "la semana que viene X dia", "la próxima semana X dia"
+  // Patrones para "la semana que viene X dia"
   for (let i = 0; i < days.length; i++) {
     const day = days[i];
     const nextWeekPatterns = [
@@ -302,10 +297,9 @@ function extractDate(
       if (pattern.test(text)) {
         const target = i;
         const current = today.getDay();
-        // Find the next occurrence of this day, then add 7 more days for next week
         let diff = (target - current + 7) % 7;
-        if (diff === 0) diff = 7; // If today is the target day, go to next week
-        diff += 7; // Add another 7 days to get to the following week
+        if (diff === 0) diff = 7; // Si hoy es el día objetivo, ir a la próxima semana
+        diff += 7; // Agregar otros 7 días para llegar a la semana siguiente
 
         const d = new Date(today);
         d.setDate(today.getDate() + diff);
@@ -314,7 +308,7 @@ function extractDate(
     }
   }
 
-  // Enhanced handling for "el proximo X dia" - ensure it goes to the next occurrence even if it's today
+  // Manejo de "el proximo X dia"
   for (let i = 0; i < days.length; i++) {
     const day = days[i];
     const nextDayPatterns = [
@@ -327,7 +321,7 @@ function extractDate(
         const target = i;
         const current = today.getDay();
         let diff = (target - current + 7) % 7;
-        // If it's the same day as today, go to the next week's occurrence
+        // Si es el mismo día que hoy, ir a la próxima semana
         if (diff === 0) diff = 7;
 
         const d = new Date(today);
@@ -337,9 +331,18 @@ function extractDate(
     }
   }
 
-  // Handle "el X dia del mes proximo" (the X day of next month)
-  for (let i = 0; i < days.length; i++) {
-    const day = days[i];
+  // Manejo de "el X dia del mes proximo"
+  const weekDays = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+  ];
+  for (let i = 0; i < weekDays.length; i++) {
+    const day = weekDays[i];
     const nextMonthPatterns = [
       new RegExp(`el ${day} del mes pr[oó]ximo`, "i"),
       new RegExp(`el ${day} del mes siguiente`, "i"),
@@ -348,23 +351,19 @@ function extractDate(
     ];
 
     if (nextMonthPatterns.some((pattern) => pattern.test(text))) {
-      // Find the next occurrence of this day in the next month
       const targetDayIndex = i;
       const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
-      // Find the first occurrence of the target day in the next month
+      // Encontrar la primera ocurrencia del día objetivo en el próximo mes
       let candidateDate = new Date(nextMonth);
-      // Adjust to the first day of the month
       candidateDate.setDate(1);
 
-      // Find the first occurrence of the target day of the week
       while (candidateDate.getDay() !== targetDayIndex) {
         candidateDate.setDate(candidateDate.getDate() + 1);
       }
 
-      // If the found date is before the current date, get the next occurrence
+      // Si la fecha encontrada es anterior a la fecha actual, obtener la siguiente ocurrencia
       if (candidateDate < today) {
-        // Add 7 days to get the next occurrence
         candidateDate.setDate(candidateDate.getDate() + 7);
       }
 
@@ -459,7 +458,7 @@ function extractDate(
     return { date: d, isNextWeek: false };
   }
 
-  // Días de la semana (fallback for simple cases like "el lunes", "próximo lunes")
+  // Días de la semana (casos generales como "el lunes", "próximo lunes")
   for (let i = 0; i < days.length; i++) {
     const re = new RegExp(`(?:pr[oó]ximo\\s+|el\\s+)?${days[i]}`, "i");
     if (re.test(text)) {
@@ -480,15 +479,13 @@ function extractDate(
   return { date: null, isNextWeek: false };
 }
 
-// === Horas (sin cambios necesarios) ===
-
 function extractStartTime(text: string): string {
   const timePatterns = [
-    // 👈🏼 PATRONES MINIMALES PARA "EN PUNTO" (agregar ESTAS 2 líneas al inicio)
+    // Patrones para "en punto"
     /(\d{1,2})\s+en\s+punto/i,
     /(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\s+en\s+punto/i,
 
-    // ... resto de tus patrones existentes SIN CAMBIOS ...
+    // Otros patrones de tiempo
     /entre\s+la\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+\d/i,
     /entre\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+y\s+las?\s+\d/i,
     /de\s+(\d{1,2})(?::(\d{2}))?\s*(?:a\.?m\.?|p\.?m\.?)?\s+a\s+\d/i,
@@ -505,7 +502,6 @@ function extractStartTime(text: string): string {
     /(una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)(?:\s+(?:treinta|media))?\s*(?:a\.?m\.?|p\.?m\.?)/i,
   ];
 
-  // ... resto de tu función SIN CAMBIOS (incluyendo hourWords y lógica de AM/PM) ...
   const hourWords: Record<string, number> = {
     una: 1,
     dos: 2,
@@ -532,7 +528,7 @@ function extractStartTime(text: string): string {
         hour = hourWords[hourStr.toLowerCase()];
       }
 
-      // 👈🏼 HEURÍSTICA MÍNIMA para "en punto" SIN AM/PM: asumir PM (7 → 19)
+      // Heurística para "en punto" sin AM/PM: asumir PM (7 → 19)
       if (
         text.includes("en punto") &&
         !text.match(/a\.?m\.?|p\.?m\.?/i) &&
@@ -542,7 +538,7 @@ function extractStartTime(text: string): string {
         hour += 12;
       }
 
-      // ... tu lógica existente de detección AM/PM SIN CAMBIOS ...
+      // Lógica de detección AM/PM
       const allAmpmMatches = text.match(
         /(\d{1,2}(?::\d{2})?|\b(?:una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\b)\s*(a\.?m\.?|p\.?m\.?)/gi,
       );
@@ -590,15 +586,10 @@ function extractEndTime(
   const hasRange = /(?:entre|de\s+\d.*a\s+\d|desde\s+\d.*hasta)/i.test(text);
 
   if (hasRange) {
-    // Patrones que EXPLÍCITAMENTE capturan la SEGUNDA hora de un rango
+    // Patrones que capturan la SEGUNDA hora de un rango
     const rangePatterns = [
-      // "entre X y Y" → captura Y
       /(?:entre\s+(?:la\s+)?\d{1,2}.*?y\s+(?:las?\s+)?)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
-
-      // "de X a Y" → captura Y
       /(?:de\s+\d{1,2}.*?a\s+(?:las?\s+)?)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
-
-      // "desde X hasta Y" → captura Y
       /(?:desde\s+\d{1,2}.*?hasta\s+(?:las?\s+)?)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i,
     ];
 
@@ -657,11 +648,9 @@ function extractEndTime(
   return `${endH.toString().padStart(2, "0")}:${endM.toString().padStart(2, "0")}:00`;
 }
 
-// === NUEVA función de formateo UTC (correcta) ===
+// === Funciones auxiliares ===
 
 function formatDateAsUTC(date: Date, timezone: string): string {
-  // `date` representa una fecha en `timezone` (ej. "2026-02-15" en México)
-  // Queremos el día UTC correspondiente → convertimos a UTC
   const utcDate = fromZonedTime(date, timezone);
   return utcDate.toISOString().split("T")[0];
 }
