@@ -98,10 +98,77 @@ export function extractNumberOfPeople(message: string): number {
     }
   }
 
-  // Casos especiales
-  if (text.includes("solo") || text.includes("solos")) {
-    if (text.includes("dos") || text.includes("2")) return 2;
-    if (text.includes("uno") || text.includes("1")) return 1;
+  // Casos especiales con tolerancia a errores de escritura
+  if (text.match(/s[oó]?l[oe]?|s[oó]?l[oe]?s?/)) {
+    if (text.match(/d[oe]?s?|2/) && !text.match(/n[oó]?|n[oe]?/)) return 2; // avoid "no dos"
+    if (text.match(/un[oe]?|1/)) return 1;
+  }
+
+  // Manejo robusto de números en palabras (hasta 10) con tolerancia a errores
+  const numberWordPatterns = [
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+o?n[eo]+s?/i,
+      value: 1,
+    }, // "uno", "un", etc.
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+d[oe]+s?/i,
+      value: 2,
+    }, // "dos"
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+tr[ie]+s?/i,
+      value: 3,
+    }, // "tres"
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+cuatr[oe]+s?/i,
+      value: 4,
+    }, // "cuatro"
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+cinc[oe]+s?/i,
+      value: 5,
+    }, // "cinco"
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+se[ií]+s?/i,
+      value: 6,
+    }, // "seis"
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+s[ií]+et[ey]+s?/i,
+      value: 7,
+    }, // "siete"
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+och[oe]+s?/i,
+      value: 8,
+    }, // "ocho"
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+nuev[ey]+s?/i,
+      value: 9,
+    }, // "nueve"
+    {
+      pattern:
+        /(?:somos|vamos|grupo|equipo|familia|evento|para|con|de)\s+d[ií]+ez?/i,
+      value: 10,
+    }, // "diez"
+  ];
+
+  // Buscar números en palabras en el contexto de personas
+  for (const { pattern, value } of numberWordPatterns) {
+    const match = text.match(pattern);
+    if (match && value > 0 && value <= 50) {
+      // Verificar que no sea parte de una frase como "no uno" o "no un"
+      const matchStartIndex = match.index || 0;
+      const precedingText = text.substring(0, matchStartIndex).trim();
+      if (!precedingText.endsWith("no")) {
+        return value;
+      }
+    }
   }
 
   return 0;
