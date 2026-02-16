@@ -277,6 +277,101 @@ function extractDate(
     return { date: today, isNextWeek: false };
   }
 
+  // Handle "la semana que viene X dia" and "el proximo X dia"
+  const days = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado",
+  ];
+
+  // Patterns for next week: "la semana que viene X dia", "la próxima semana X dia"
+  for (let i = 0; i < days.length; i++) {
+    const day = days[i];
+    const nextWeekPatterns = [
+      new RegExp(`la semana que viene ${day}`, "i"),
+      new RegExp(`la pr[oó]xima semana ${day}`, "i"),
+      new RegExp(`el ${day} de la semana que viene`, "i"),
+      new RegExp(`el ${day} de la pr[oó]xima semana`, "i"),
+    ];
+
+    for (const pattern of nextWeekPatterns) {
+      if (pattern.test(text)) {
+        const target = i;
+        const current = today.getDay();
+        // Find the next occurrence of this day, then add 7 more days for next week
+        let diff = (target - current + 7) % 7;
+        if (diff === 0) diff = 7; // If today is the target day, go to next week
+        diff += 7; // Add another 7 days to get to the following week
+
+        const d = new Date(today);
+        d.setDate(today.getDate() + diff);
+        return { date: d, isNextWeek: true };
+      }
+    }
+  }
+
+  // Enhanced handling for "el proximo X dia" - ensure it goes to the next occurrence even if it's today
+  for (let i = 0; i < days.length; i++) {
+    const day = days[i];
+    const nextDayPatterns = [
+      new RegExp(`el pr[oó]ximo ${day}`, "i"),
+      new RegExp(`el proximo ${day}`, "i"),
+    ];
+
+    for (const pattern of nextDayPatterns) {
+      if (pattern.test(text)) {
+        const target = i;
+        const current = today.getDay();
+        let diff = (target - current + 7) % 7;
+        // If it's the same day as today, go to the next week's occurrence
+        if (diff === 0) diff = 7;
+
+        const d = new Date(today);
+        d.setDate(today.getDate() + diff);
+        return { date: d, isNextWeek: diff > 7 };
+      }
+    }
+  }
+
+  // Handle "el X dia del mes proximo" (the X day of next month)
+  for (let i = 0; i < days.length; i++) {
+    const day = days[i];
+    const nextMonthPatterns = [
+      new RegExp(`el ${day} del mes pr[oó]ximo`, "i"),
+      new RegExp(`el ${day} del mes siguiente`, "i"),
+      new RegExp(`el ${day} del mes que viene`, "i"),
+      new RegExp(`el ${day} del pr[oó]ximo mes`, "i"),
+    ];
+
+    if (nextMonthPatterns.some((pattern) => pattern.test(text))) {
+      // Find the next occurrence of this day in the next month
+      const targetDayIndex = i;
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+      // Find the first occurrence of the target day in the next month
+      let candidateDate = new Date(nextMonth);
+      // Adjust to the first day of the month
+      candidateDate.setDate(1);
+
+      // Find the first occurrence of the target day of the week
+      while (candidateDate.getDay() !== targetDayIndex) {
+        candidateDate.setDate(candidateDate.getDate() + 1);
+      }
+
+      // If the found date is before the current date, get the next occurrence
+      if (candidateDate < today) {
+        // Add 7 days to get the next occurrence
+        candidateDate.setDate(candidateDate.getDate() + 7);
+      }
+
+      return { date: candidateDate, isNextWeek: false };
+    }
+  }
+
   // Fechas absolutas (DD/MM/YYYY, etc.)
   const datePatterns = [
     /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/,
@@ -364,16 +459,7 @@ function extractDate(
     return { date: d, isNextWeek: false };
   }
 
-  // Días de la semana
-  const days = [
-    "domingo",
-    "lunes",
-    "martes",
-    "miércoles",
-    "jueves",
-    "viernes",
-    "sábado",
-  ];
+  // Días de la semana (fallback for simple cases like "el lunes", "próximo lunes")
   for (let i = 0; i < days.length; i++) {
     const re = new RegExp(`(?:pr[oó]ximo\\s+|el\\s+)?${days[i]}`, "i");
     if (re.test(text)) {
