@@ -75,8 +75,8 @@ export function businessInfoChunck(
       renderConditionalBlock(
         [
           renderField(general.address, "Address"),
-          general.location
-            ? `- Google Maps: ${getGoogleMapLink(general.location[0], general.location[1])}\n`
+          general.location?.length == 2
+            ? `- Google Maps: ${getGoogleMapLink(general.location[0], general.location[1])} \n`
             : "",
         ],
         "\nBUSINESS LOCATION",

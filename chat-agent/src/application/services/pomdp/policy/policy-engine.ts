@@ -168,7 +168,7 @@ export class PolicyEngine {
       "info:ask_delivery_time": "info:ask_delivery_time",
     };
 
-    const value = map[intent];
+    const value = map[intent] ?? intent;
     if (!value) throw new Error(`Unknown intent: ${intent}`);
     console.log({ intent, value });
     return value as IntentExampleKey;

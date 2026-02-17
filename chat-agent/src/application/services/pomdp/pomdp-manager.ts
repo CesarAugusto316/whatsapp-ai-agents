@@ -49,8 +49,8 @@ class PomdpManager {
         text: "",
         requiresConfirmation: "never",
       } satisfies IntentPayloadWithScore;
-    }
-    if (skip && kind === "conversational-signal") {
+    } //
+    else if (skip && kind === "conversational-signal") {
       //  we know exactly the form for "conversational-signal" so we can skip RAG
       mainIntent = {
         score: 1,
@@ -61,8 +61,8 @@ class PomdpManager {
       } satisfies IntentPayloadWithScore;
     }
     // TODO: skip RAG for "booking" | "restaurant" etc.. by REGEX
-    if (!skip) {
-      const limit = 6;
+    else if (!skip) {
+      const limit = 4;
       const { points } = await ragService.searchIntent(
         ctx.customerMessage,
         ctx.activeModules, // ej: ["informational", "booking", "restaurant"],

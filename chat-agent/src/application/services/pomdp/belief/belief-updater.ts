@@ -25,13 +25,13 @@ export class BeliefStateUpdater {
     const base = Key.trim() as RequiredConfirmation;
     switch (base) {
       case "always":
-        return 0.8;
+        return 0.76;
       case "maybe":
-        return 0.74;
+        return 0.7;
       case "never":
-        return 0.69;
+        return 0.63;
       default:
-        return 0.74;
+        return 0.7;
     }
   }
 
@@ -52,10 +52,12 @@ export class BeliefStateUpdater {
     if (prevState.current) {
       const previousIntent = prevState.current;
 
-      const isMainItentConfident = this.isConfident(
-        mainIntent.score,
-        this.getThreshold(previousIntent.requiresConfirmation), // -> mismo nivel de riesgo que la intencion principal, nunca pude ser menor
-      );
+      const isMainItentConfident = previousIntent.requiresConfirmation
+        ? this.isConfident(
+            mainIntent.score,
+            this.getThreshold(previousIntent.requiresConfirmation), // -> mismo nivel de riesgo que la intencion principal, nunca pude ser menor
+          )
+        : false;
 
       // for confirmation | negation | doubt
       if (
@@ -69,9 +71,9 @@ export class BeliefStateUpdater {
       }
     }
     // We never store excludedModules alone
-    if (this.excludedModules.includes(mainIntent.module)) {
-      return { ...prevState };
-    }
+    // if (this.excludedModules.includes(mainIntent.module)) {
+    //   return { ...prevState };
+    // }
 
     // registramos la nueva intencion por primera vez
     const newIntent = this.newIntent(mainIntent, alternativeIntents);

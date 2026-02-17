@@ -10,7 +10,6 @@ import type {
 } from "@/application/services/pomdp";
 import type { RestaurantCtx } from "@/domain/restaurant";
 import { basePrompt } from "./base-prompt";
-import { generateAgentGoals } from "./agent-goals";
 
 /**
  * Generates a dynamic prompt based on the PolicyEngine decision.
@@ -282,7 +281,7 @@ export function intentClassifierPrompt(
        ${index}. INFORMACIÓN:
           - Horarios: "a qué hora abren"
           - Ubicación: "dónde queda el local"
-          - Pago: "aceptan tarjeta"
+          - Pago: "metodos de pago"
           - Contacto: "cómo los contacto"`);
     }
 

@@ -52,7 +52,7 @@ export async function conversationalWorkflow(
       );
       return formatSagaOutput(
         ONBOARDING_MSG,
-        `${intent?.intentKey}:${policy.type}`, // optional
+        `${intent?.intentKey}-${policy.type}`, // optional
         policy,
       );
     }
@@ -91,7 +91,7 @@ export async function conversationalWorkflow(
       );
       return formatSagaOutput(
         ASSISTANT_MSG,
-        `${intent?.intentKey}:${policy.type}`, // optional
+        `${intent?.intentKey}-${policy.type}`, // optional
         policy,
       );
     }
@@ -99,8 +99,9 @@ export async function conversationalWorkflow(
     if (intent.module === "informational") {
       const key = intent.intentKey as InformationalIntentKey;
       const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+      const systemPrompt = businessInfoChunck(key, ctx);
       const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
-        systemPrompt: businessInfoChunck(key, ctx),
+        systemPrompt,
         msg: ctx.customerMessage,
         chatHistory,
         useAuxModel: true,
@@ -112,8 +113,8 @@ export async function conversationalWorkflow(
       );
       return formatSagaOutput(
         ASSISTANT_MSG,
-        `${intent?.intentKey}:${policy.type}`, // optional
-        policy,
+        `${intent?.intentKey}-${policy.type}`, // optional
+        { policy, systemPrompt },
       );
     }
 
@@ -156,7 +157,7 @@ export async function conversationalWorkflow(
 
   return formatSagaOutput(
     ASSISTANT_MSG,
-    `${policy.intent?.intentKey}:${policy.type}`, // optional
+    `${policy.intent?.intentKey}-${policy.type}`, // optional
     { policy, systemPrompt },
   );
 }
