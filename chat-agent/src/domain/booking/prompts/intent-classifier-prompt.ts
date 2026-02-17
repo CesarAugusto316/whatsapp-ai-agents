@@ -40,15 +40,17 @@ export function intentClassifierPrompt(
   const intentScore = currentIntent?.score || 0;
 
   // Helper: get module name in Spanish
-  const getModuleName = (module: string) => {
-    const map: Record<string, string> = {
+  const getModuleName = (module: ModuleKind) => {
+    const map: Record<ModuleKind, string> = {
       booking: "Reservas",
       restaurant: "Pedidos",
       informational: "Información",
       "social-protocol": "Saludos",
       "conversational-signal": "Respuestas",
+      erotic: "Citas, venta de contenido",
+      "real-state": "Propiedades",
     };
-    return map[module] || module;
+    return map[module];
   };
 
   // Helper: get action verb for intentKey
@@ -84,7 +86,7 @@ export function intentClassifierPrompt(
 
        MÓDULOS ACTIVOS: ${activeModules.join(", ")}
 
-       CAPACIDADES DEL NEGOCIO (type="restaurant"):
+       CAPACIDADES DEL NEGOCIO (type="${business.general.businessType}"):
        ${
          activeModules.includes("booking")
            ? `
@@ -124,13 +126,12 @@ export function intentClassifierPrompt(
         - Presenta capacidades de forma cálida y específica al negocio
 
        HOW TO RESPOND:
-        1. Reconocimiento cálido: "¡Hola! Soy ${assistantName} de ${businessName} 👋"
-        2. Menciona los 2 módulos principales activos:
-           • "Puedo ayudarte con [módulo1] y [módulo2]"
-        3. Cierra con CTA específico: "¿Qué prefieres hoy?"
+        1. Menciona los módulos principales activos:
+           • "Puedo ayudarte con (${activeModules.join(", ")})"
+        2. Cierra con CTA específico: "¿Qué prefieres hoy?"
 
        EJEMPLO:
-       "¡Hola! Soy ${assistantName} de ${businessName} 👋 Puedo ayudarte a reservar mesa o hacer un pedido para llevar/recoger. ¿Qué prefieres hoy?"
+       "Puedo ayudarte a reservar mesa o hacer un pedido para llevar/recoger. ¿Qué prefieres hoy?"
      `;
 
     case "ask_clarification": {
@@ -282,35 +283,42 @@ export function intentClassifierPrompt(
            - Si hay sameModuleAlts[]: usa la primera (menor compromiso, mismo módulo)
            - Si no hay: genera una alternativa contextual basada en intentKey
         2. Usa lenguaje de sugerencia suave, no de venta
-        3. Cierra con "¿Te funciona? 😊"
+        3. Cierra con pregunta amable (variar naturalmente)
 
         RESPONSE FORMAT (obligatorio):
-        [Alternativa concreta] ¿Te funciona? 😊
+        [Alternativa concreta] + [Pregunta de cierre amable]
+
+        EJEMPLOS DE CIERRE (variar, no siempre el mismo):
+        • "¿Te funciona? 😊"
+        • "¿Qué opinas? ✨"
+        • "¿Te late? 👋"
+        • "¿Cómo lo ves? 😄"
+        • "¿Te parece bien? ✅"
 
         EJEMPLOS POR ESCENARIO:
         ${
           intentModule === "booking"
             ? `
         BOOKING RECHAZADO (intentKey=${intentKey}):
-        • Usuario rechazó horario: "¿Y si cambiamos a otro horario? ¿Que te parece? 😊"
-        • Usuario rechazó fecha: "¿Te viene mejor otro día de esta semana? ¿Te funciona? 😊"
-        • Usuario rechazó party size: "¿O prefieres una mesa más pequeña? ¿Que opinas? 😊"
-        • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey) : "otra opción de reserva"}? ¿Te funciona? 😊"`
+        • Usuario rechazó horario: "¿Y si cambiamos a otro horario? ¿Qué opinas? ✨"
+        • Usuario rechazó fecha: "¿Te viene mejor otro día de esta semana? ¿Cómo lo ves? 😄"
+        • Usuario rechazó party size: "¿O prefieres una mesa más pequeña? ¿Te parece bien? ✅"
+        • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey) : "otra opción de reserva"}? ¿Te late? 👋"`
             : ""
         }
         ${
           intentModule === "restaurant"
             ? `
         PRODUCT ORDER RECHAZADO (intentKey=${intentKey}):
-        • Usuario rechazó plato: "¿O probamos con otro plato del menú? ¿Te parece? 😊"
+        • Usuario rechazó plato: "¿O probamos con otro plato del menú? ¿Qué opinas? ✨"
         • Usuario rechazó orderType: "¿Prefieres recoger en local en vez de delivery? ¿Te funciona? 😊"
-        • Usuario rechazó cantidad: "¿O pedimos media ración para probar? ¿Te funciona? 😊"
-        • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey) : "otra opción de pedido"}? ¿Te funciona? 😊"`
+        • Usuario rechazó cantidad: "¿O pedimos media ración para probar? ¿Vamos con eso? 🙌"
+        • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey) : "otra opción de pedido"}? ¿Cómo lo ves? 😄"`
             : ""
         }
 
         RULES:
-        - Usa "¿Te funciona?" (no "¿qué te parece?" → demasiado abierto)
+        - Preguntas de cierre amables: variar naturalmente, no siempre la misma frase
         - UNA alternativa por mensaje (no "o también podrías...")
         - Mismo módulo: si rechazó booking → booking alternativo (no cambies a menú)
         - Menor compromiso: menos personas, horario alternativo, plato más simple

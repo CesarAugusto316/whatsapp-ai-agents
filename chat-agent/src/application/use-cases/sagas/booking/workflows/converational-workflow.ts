@@ -52,6 +52,7 @@ export async function conversationalWorkflow(
       return formatSagaOutput(
         ONBOARDING_MSG,
         `${intent?.intentKey}:${policy.type}`, // optional
+        policy,
       );
     }
 
@@ -69,6 +70,7 @@ export async function conversationalWorkflow(
         return formatSagaOutput(
           ONBOARDING_MSG,
           `${intent?.intentKey}:${policy.type}`, // optional
+          policy,
         );
       }
 
@@ -89,6 +91,7 @@ export async function conversationalWorkflow(
       return formatSagaOutput(
         ASSISTANT_MSG,
         `${intent?.intentKey}:${policy.type}`, // optional
+        policy,
       );
     }
 
@@ -109,6 +112,7 @@ export async function conversationalWorkflow(
       return formatSagaOutput(
         ASSISTANT_MSG,
         `${intent?.intentKey}:${policy.type}`, // optional
+        policy,
       );
     }
 
@@ -139,5 +143,6 @@ export async function conversationalWorkflow(
   return formatSagaOutput(
     ASSISTANT_MSG,
     `${policy.intent?.intentKey}:${policy.type}`, // optional
+    policy,
   );
 }

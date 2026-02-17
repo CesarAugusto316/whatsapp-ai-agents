@@ -50,7 +50,7 @@ Usage:
       const tests = [
         { query: "quiero reservar", expected: "booking:create" },
         { query: "ver el menú", expected: "restaurant:view_menu" },
-        { query: "cuánto cuesta", expected: "restaurant:ask_price" },
+        { query: "cuánto cuesta", expected: "info:ask_price" },
       ];
 
       let passed = 0;

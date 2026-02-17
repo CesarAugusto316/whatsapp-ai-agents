@@ -631,9 +631,11 @@ describe("intentClassifierPrompt - propose_alternative", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    // Debe contener la instrucción de usar "¿Te funciona?"
-    expect(prompt).toContain('Cierra con "¿Te funciona?');
-    expect(prompt).toContain("¿Te funciona? 😊");
+    // Debe contener ejemplos de preguntas de cierre amables (variar naturalmente)
+    expect(prompt).toContain("Pregunta de cierre amable");
+    expect(prompt).toContain("¿Te funciona?");
+    expect(prompt).toContain("¿Qué opinas?");
+    expect(prompt).toContain("variar naturalmente");
   });
 });
 
