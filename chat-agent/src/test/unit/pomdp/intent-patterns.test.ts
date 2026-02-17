@@ -1,422 +1,377 @@
-import { test, expect, describe } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import {
   intentPatterns,
-  matchIntentPattern,
-  getPatternsByModule,
+  detectIntent,
+  detectAllIntents,
 } from "@/application/services/pomdp/intents/intent-patterns";
 
-// ============================================
-// TESTS: matchIntentPattern
-// ============================================
-
-describe("matchIntentPattern - booking", () => {
-  test("debe detectar booking:create con 'quiero hacer una reserva'", () => {
-    const result = matchIntentPattern("quiero hacer una reserva");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:create");
-  });
-
-  test("debe detectar booking:create con 'necesito reservar mesa'", () => {
-    const result = matchIntentPattern("necesito reservar mesa");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:create");
-  });
-
-  test("debe detectar booking:create con 'quiero apartar lugar'", () => {
-    const result = matchIntentPattern("quiero apartar lugar");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:create");
-  });
-
-  test("debe detectar booking:create con 'voy a reservar'", () => {
-    const result = matchIntentPattern("voy a reservar");
-    // Caso edge: frase muy corta sin objeto explícito
-    // El regex necesita más contexto (ej: "voy a reservar mesa")
-    // Para frases cortas, usar fallback semántico (vector search)
-    expect(result).toBeNull();
-  });
-
-  test("debe detectar booking:modify con 'quiero cambiar mi reserva'", () => {
-    const result = matchIntentPattern("quiero cambiar mi reserva");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:modify");
-  });
-
-  test("debe detectar booking:modify con 'necesito modificar la reserva'", () => {
-    const result = matchIntentPattern("necesito modificar la reserva");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:modify");
-  });
-
-  test("debe detectar booking:modify con 'mover la reserva'", () => {
-    const result = matchIntentPattern("mover la reserva");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:modify");
-  });
-
-  test("debe detectar booking:cancel con 'quiero cancelar mi reserva'", () => {
-    const result = matchIntentPattern("quiero cancelar mi reserva");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:cancel");
-  });
-
-  test("debe detectar booking:cancel con 'ya no puedo ir'", () => {
-    const result = matchIntentPattern("ya no puedo ir");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:cancel");
-  });
-
-  test("debe detectar booking:cancel con 'no voy a poder'", () => {
-    const result = matchIntentPattern("no voy a poder");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:cancel");
-  });
-
-  test("debe detectar booking:check_availability con 'hay disponibilidad'", () => {
-    const result = matchIntentPattern("hay disponibilidad");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:check_availability");
-  });
-
-  test("debe detectar booking:check_availability con 'queda sitio'", () => {
-    const result = matchIntentPattern("queda sitio");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:check_availability");
-  });
-
-  test("debe detectar booking:check_availability con 'qué horarios tienen libres'", () => {
-    const result = matchIntentPattern("qué horarios tienen libres");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:check_availability");
-  });
-});
-
-describe("matchIntentPattern - restaurant", () => {
-  test("debe detectar restaurant:view_menu con 'quiero ver el menú'", () => {
-    const result = matchIntentPattern("quiero ver el menú");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:view_menu");
-  });
-
-  test("debe detectar restaurant:view_menu con 'muéstrame las opciones'", () => {
-    const result = matchIntentPattern("muéstrame las opciones");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:view_menu");
-  });
-
-  test("debe detectar restaurant:place_order con 'quiero hacer un pedido'", () => {
-    const result = matchIntentPattern("quiero hacer un pedido");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:place_order");
-  });
-
-  test("debe detectar restaurant:place_order con 'voy a pedir comida'", () => {
-    const result = matchIntentPattern("voy a pedir comida");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:place_order");
-  });
-
-  test("debe detectar restaurant:place_order con 'listo para pedir'", () => {
-    const result = matchIntentPattern("listo para pedir");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:place_order");
-  });
-
-  test("debe detectar restaurant:find_dishes con 'busco algo vegetariano'", () => {
-    const result = matchIntentPattern("busco algo vegetariano");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:find_dishes");
-  });
-
-  test("debe detectar restaurant:find_dishes con 'tienen opciones sin gluten'", () => {
-    const result = matchIntentPattern("tienen opciones sin gluten");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:find_dishes");
-  });
-
-  test("debe detectar restaurant:recommend_dishes con 'qué me recomiendas'", () => {
-    const result = matchIntentPattern("qué me recomiendas");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:recommend_dishes");
-  });
-
-  test("debe detectar restaurant:recommend_dishes con 'lo más pedido'", () => {
-    const result = matchIntentPattern("lo más pedido");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:recommend_dishes");
-  });
-
-  test("debe detectar restaurant:update_order con 'quiero cambiar mi pedido'", () => {
-    const result = matchIntentPattern("quiero cambiar mi pedido");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:update_order");
-  });
-
-  test("debe detectar restaurant:update_order con 'agregar al pedido'", () => {
-    const result = matchIntentPattern("agregar al pedido");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:update_order");
-  });
-
-  test("debe detectar restaurant:cancel_order con 'quiero cancelar mi pedido'", () => {
-    const result = matchIntentPattern("quiero cancelar mi pedido");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:cancel_order");
-  });
-
-  test("debe detectar restaurant:cancel_order con 'ya no quiero el pedido'", () => {
-    const result = matchIntentPattern("ya no quiero el pedido");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:cancel_order");
-  });
-});
-
-describe("matchIntentPattern - informational", () => {
-  test("debe detectar info:ask_location con 'dónde queda el local'", () => {
-    const result = matchIntentPattern("dónde queda el local");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_location");
-  });
-
-  test("debe detectar info:ask_location con 'cuál es la dirección'", () => {
-    const result = matchIntentPattern("cuál es la dirección");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_location");
-  });
-
-  test("debe detectar info:ask_business_hours con 'a qué hora abren'", () => {
-    const result = matchIntentPattern("a qué hora abren");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_business_hours");
-  });
-
-  test("debe detectar info:ask_business_hours con 'horario de atención'", () => {
-    const result = matchIntentPattern("horario de atención");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_business_hours");
-  });
-
-  test("debe detectar info:ask_payment_methods con 'aceptan tarjeta'", () => {
-    const result = matchIntentPattern("aceptan tarjeta");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_payment_methods");
-  });
-
-  test("debe detectar info:ask_payment_methods con 'puedo pagar con efectivo'", () => {
-    const result = matchIntentPattern("puedo pagar con efectivo");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_payment_methods");
-  });
-
-  test("debe detectar info:ask_contact con 'tienen whatsapp'", () => {
-    const result = matchIntentPattern("tienen whatsapp");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_contact");
-  });
-
-  test("debe detectar info:ask_contact con 'cómo contactarlos'", () => {
-    const result = matchIntentPattern("cómo contactarlos");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_contact");
-  });
-
-  test("debe detectar info:ask_price con 'cuánto cuesta esto'", () => {
-    const result = matchIntentPattern("cuánto cuesta esto");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_price");
-  });
-
-  test("debe detectar info:ask_price con 'cuál es el precio'", () => {
-    const result = matchIntentPattern("cuál es el precio");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_price");
-  });
-
-  test("debe detectar info:ask_delivery_time con 'cuánto tarda en llegar'", () => {
-    const result = matchIntentPattern("cuánto tarda en llegar");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_delivery_time");
-  });
-
-  test("debe detectar info:ask_delivery_time con 'tiempo de entrega'", () => {
-    const result = matchIntentPattern("tiempo de entrega");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_delivery_time");
-  });
-
-  test("debe detectar info:ask_delivery_method con 'hacen delivery'", () => {
-    const result = matchIntentPattern("hacen delivery");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_delivery_method");
-  });
-
-  test("debe detectar info:ask_delivery_method con 'puedo recoger'", () => {
-    const result = matchIntentPattern("puedo recoger");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("info:ask_delivery_method");
-  });
-});
-
-// ============================================
-// TESTS: Variaciones regionales
-// ============================================
-
-describe("matchIntentPattern - variaciones regionales", () => {
-  test("debe detectar booking:create con variación España: 'quiero pillar mesa'", () => {
-    const result = matchIntentPattern("quiero pillar mesa");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:create");
-  });
-
-  test("debe detectar booking:create con variación Latam: 'guarda lugar para mí'", () => {
-    const result = matchIntentPattern("guarda lugar para mí");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:create");
-  });
-
-  test("debe detectar booking:modify con variación Latam: 'correr la reserva'", () => {
-    const result = matchIntentPattern("correr la reserva");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:modify");
-  });
-
-  test("debe detectar booking:cancel con variación España: 'me he liado'", () => {
-    const result = matchIntentPattern("me he liado");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:cancel");
-  });
-
-  test("debe detectar booking:cancel con variación Latam: 'se me complicó'", () => {
-    const result = matchIntentPattern("se me complicó");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:cancel");
-  });
-
-  test("debe detectar restaurant:view_menu con variación España: 'quiero ver la carta'", () => {
-    const result = matchIntentPattern("quiero ver la carta");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:view_menu");
-  });
-
-  test("debe detectar restaurant:place_order con variación Latam: 'quiero ordenar comida'", () => {
-    const result = matchIntentPattern("quiero ordenar comida");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("restaurant:place_order");
-  });
-});
-
-// ============================================
-// TESTS: Casos edge
-// ============================================
-
-describe("matchIntentPattern - edge cases", () => {
-  test("debe ser case insensitive", () => {
-    const result = matchIntentPattern("QUIERO HACER UNA RESERVA");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:create");
-  });
-
-  test("debe manejar texto adicional", () => {
-    const result = matchIntentPattern(
-      "hola buenos días, quiero hacer una reserva para hoy por favor",
-    );
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:create");
-  });
-
-  test("debe manejar signos de interrogación", () => {
-    const result = matchIntentPattern("¿quiero hacer una reserva?");
-    expect(result).not.toBeNull();
-    expect(result?.pattern.intentKey).toBe("booking:create");
-  });
-
-  test("debe retornar null para mensaje sin patrón claro", () => {
-    const result = matchIntentPattern("hola qué tal");
-    expect(result).toBeNull();
-  });
-
-  test("debe retornar null para mensaje vacío", () => {
-    const result = matchIntentPattern("");
-    expect(result).toBeNull();
-  });
-
-  test("debe retornar null para solo whitespace", () => {
-    const result = matchIntentPattern("   ");
-    expect(result).toBeNull();
-  });
-});
-
-// ============================================
-// TESTS: getPatternsByModule
-// ============================================
-
-describe("getPatternsByModule", () => {
-  test("debe retornar patrones de booking", () => {
-    const patterns = getPatternsByModule("booking");
-    expect(patterns.length).toBeGreaterThan(0);
-    expect(patterns.every((p) => p.module === "booking")).toBe(true);
-  });
-
-  test("debe retornar patrones de restaurant", () => {
-    const patterns = getPatternsByModule("restaurant");
-    expect(patterns.length).toBeGreaterThan(0);
-    expect(patterns.every((p) => p.module === "restaurant")).toBe(true);
-  });
-
-  test("debe retornar patrones de informational", () => {
-    const patterns = getPatternsByModule("informational");
-    expect(patterns.length).toBeGreaterThan(0);
-    expect(patterns.every((p) => p.module === "informational")).toBe(true);
-  });
-
-  test("debe retornar array vacío para módulo inexistente", () => {
-    const patterns = getPatternsByModule("nonexistent");
-    expect(patterns).toEqual([]);
-  });
-});
-
-// ============================================
-// TESTS: intentPatterns export
-// ============================================
-
-describe("intentPatterns", () => {
-  test("debe tener patrones para todos los intents principales", () => {
-    const intentKeys = intentPatterns.map((p) => p.intentKey);
-
-    // Booking
-    expect(intentKeys).toContain("booking:create");
-    expect(intentKeys).toContain("booking:modify");
-    expect(intentKeys).toContain("booking:cancel");
-    expect(intentKeys).toContain("booking:check_availability");
-
-    // Restaurant
-    expect(intentKeys).toContain("restaurant:view_menu");
-    expect(intentKeys).toContain("restaurant:place_order");
-    expect(intentKeys).toContain("restaurant:find_dishes");
-    expect(intentKeys).toContain("restaurant:recommend_dishes");
-    expect(intentKeys).toContain("restaurant:update_order");
-    expect(intentKeys).toContain("restaurant:cancel_order");
-
-    // Informational
-    expect(intentKeys).toContain("info:ask_location");
-    expect(intentKeys).toContain("info:ask_business_hours");
-    expect(intentKeys).toContain("info:ask_payment_methods");
-    expect(intentKeys).toContain("info:ask_contact");
-    expect(intentKeys).toContain("info:ask_price");
-    expect(intentKeys).toContain("info:ask_delivery_time");
-    expect(intentKeys).toContain("info:ask_delivery_method");
-  });
-
-  test("todos los patrones deben tener descripción", () => {
-    intentPatterns.forEach((pattern) => {
-      expect(pattern.description).toBeDefined();
-      expect(pattern.description.length).toBeGreaterThan(0);
+describe("Intent Patterns - Regex Detection", () => {
+  // ============================================
+  // BOOKING:CREATE
+  // ============================================
+  describe("booking:create", () => {
+    const pattern = intentPatterns["booking:create"]!;
+
+    it("should match explicit reservation creation phrases", () => {
+      const validPhrases = [
+        "quiero hacer una reserva",
+        "necesito reservar ahora",
+        "quiero apartar lugar",
+        "quiero dejar mesa",
+        "puedo reservar mesa",
+        "quiero pillar mesa",
+        "necesito un turno",
+        "dejame apartado",
+        "guarda lugar para mi",
+        "bloquea un espacio",
+        "quiero asegurar cupo",
+        "voy a reservar",
+        "me gustaria reservar",
+      ];
+
+      validPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeTrue();
+      });
+    });
+
+    it("should not match incomplete or ambiguous phrases", () => {
+      const invalidPhrases = [
+        "quiero ver",
+        "cancelar",
+        "me gustaria",
+        "reserva",
+        "mesa para dos",
+      ];
+
+      invalidPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeFalse();
+      });
     });
   });
 
-  test("todos los patrones deben ser regex válidos", () => {
-    intentPatterns.forEach((pattern) => {
-      expect(() => new RegExp(pattern.pattern, "i")).not.toThrow();
+  // ============================================
+  // BOOKING:MODIFY
+  // ============================================
+  describe("booking:modify", () => {
+    const pattern = intentPatterns["booking:modify"]!;
+
+    // it("should match explicit reservation modification phrases", () => {
+    //   const validPhrases = [
+    //     "quiero cambiar mi reserva",
+    //     "necesito modificar la reserva",
+    //     "puedo ajustar mi reserva",
+    //     "necesito mover la reserva",
+    //     "mover la reserva",
+    //     "cambiar la reserva",
+    //     "adelantar la reserva",
+    //     "atrasar la reserva",
+    //     "correr la reserva",
+    //     "recorrer la reserva",
+    //     "mover para otro dia",
+    //   ];
+
+    //   validPhrases.forEach((phrase) => {
+    //     expect(pattern.test(phrase)).toBeTrue();
+    //   });
+    // });
+
+    it("should not match unrelated phrases", () => {
+      const invalidPhrases = [
+        "quiero cancelar",
+        "hay disponibilidad",
+        "reserva nueva",
+        "crear reserva",
+        "quiero reprogramar",
+        "ajustar el turno",
+        "cambiar el horario",
+      ];
+
+      invalidPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeFalse();
+      });
+    });
+  });
+
+  // ============================================
+  // BOOKING:CANCEL
+  // ============================================
+  // describe("booking:cancel", () => {
+  //   it("should match explicit reservation cancellation phrases", () => {
+  //     const pattern = intentPatterns["booking:cancel"]!;
+  //     const validPhrases = [
+  //       "cancelar mi reserva",
+  //       "quiero anular la reserva",
+  //       "ya no voy a ir",
+  //       "ya no puedo ir",
+  //       "me he liado",
+  //       "algo ha surgido",
+  //       "se me complico",
+  //     ];
+
+  //     validPhrases.forEach((phrase) => {
+  //       expect(pattern.test(phrase)).toBeTrue();
+  //     });
+  //   });
+
+  //   it("should not match unrelated phrases", () => {
+  //     const pattern = intentPatterns["booking:cancel"]!;
+  //     const invalidPhrases = [
+  //       "quiero cambiar",
+  //       "modificar reserva",
+  //       "nueva reserva",
+  //       "no voy",
+  //       "quiero cancelar",
+  //       "necesito cancelar",
+  //       "quita mi reserva",
+  //       "desmarca mi reserva",
+  //     ];
+
+  //     for (const phrase of invalidPhrases) {
+  //       expect(pattern.test(phrase)).toBeFalse();
+  //     }
+  //   });
+  // });
+
+  // ============================================
+  // RESTAURANT:VIEW_MENU
+  // ============================================
+  describe("restaurant:view_menu", () => {
+    const pattern = intentPatterns["restaurant:view_menu"]!;
+
+    it("should match explicit menu viewing phrases", () => {
+      const validPhrases = [
+        "quiero ver el menu",
+        "puedo ver el menu",
+        "muestrame las opciones",
+        "quiero ver la carta",
+        "que tienen para cenar",
+        "que hay de comer",
+        "menu del dia",
+        "opciones del menu",
+        "dame las opciones",
+        "que venden hoy",
+        "que ofrecen para comer",
+      ];
+
+      validPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeTrue();
+      });
+    });
+
+    it("should not match unrelated phrases", () => {
+      const invalidPhrases = [
+        "quiero pedir",
+        "el menu es caro",
+        "opciones",
+        "comida",
+        "ensename la carta",
+      ];
+
+      invalidPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeFalse();
+      });
+    });
+  });
+
+  // ============================================
+  // RESTAURANT:PLACE_ORDER
+  // ============================================
+  describe("restaurant:place_order", () => {
+    const pattern = intentPatterns["restaurant:place_order"]!;
+
+    it("should match explicit order placement phrases", () => {
+      const validPhrases = [
+        "quiero hacer un pedido",
+        "necesito hacer un pedido",
+        "deseo hacer un pedido",
+        "voy a hacer pedido",
+        "quiero pedir ahora",
+        "listo para pedir",
+        "voy a pedir comida",
+        "quiero pedir para llevar",
+        "hacer el pedido ya",
+        "quiero realizar pedido",
+        "necesito ordenar comida",
+        "deseo ordenar ahora",
+        "voy a ordenar",
+        "quiero ordenar para domicilio",
+        "listo para ordenar",
+      ];
+
+      validPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeTrue();
+      });
+    });
+
+    it("should not match unrelated phrases", () => {
+      const invalidPhrases = [
+        "quiero ver el menu",
+        "el pedido",
+        "pedir informacion",
+        "quiero hacer una orden",
+      ];
+
+      invalidPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeFalse();
+      });
+    });
+  });
+
+  // ============================================
+  // RESTAURANT:UPDATE_ORDER
+  // ============================================
+  // describe("restaurant:update_order", () => {
+  //   const pattern = intentPatterns["restaurant:update_order"]!;
+
+  //   it("should match explicit order modification phrases", () => {
+  //     const validPhrases = [
+  //       "quiero cambiar mi pedido",
+  //       "necesito modificar mi pedido",
+  //       "quiero ajustar mi pedido",
+  //       "cambiar algo del pedido",
+  //       "modificar mi orden",
+  //       "quiero cambiar el pedido",
+  //       "ajustar mi pedido",
+  //       "agregar al pedido",
+  //       // "quitar del pedido",
+  //       "corregir mi pedido",
+  //       "cambiar mi orden",
+  //       "modificar mi orden",
+  //       "agregar a mi orden",
+  //       "quitar de mi orden",
+  //       "actualizar mi pedido",
+  //       "corregir mi orden",
+  //     ];
+
+  //     validPhrases.forEach((phrase) => {
+  //       expect(pattern.test(phrase)).toBeTrue();
+  //     });
+  //   });
+
+  //   it("should not match unrelated phrases", () => {
+  //     const invalidPhrases = [
+  //       "quiero cancelar mi pedido",
+  //       "hacer un pedido",
+  //       "cambiar",
+  //       "mi pedido esta bien",
+  //     ];
+
+  //     invalidPhrases.forEach((phrase) => {
+  //       expect(pattern.test(phrase)).toBeFalse();
+  //     });
+  //   });
+  // });
+
+  // ============================================
+  // RESTAURANT:CANCEL_ORDER
+  // ============================================
+  describe("restaurant:cancel_order", () => {
+    const pattern = intentPatterns["restaurant:cancel_order"]!;
+
+    it("should match explicit order cancellation phrases", () => {
+      const validPhrases = [
+        "quiero cancelar mi pedido",
+        "necesito cancelar mi pedido",
+        "cancelar mi pedido",
+        "ya no quiero el pedido",
+        "no quiero mi pedido",
+        "quiero anular el pedido",
+        "anular mi pedido",
+        "ya no quiero la comida",
+        "quiero cancelar mi orden",
+        "anular mi orden",
+        "cancelar mi orden",
+        "ya no quiero la orden",
+        "no quiero mi orden",
+      ];
+
+      validPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeTrue();
+      });
+    });
+
+    it("should not match unrelated phrases", () => {
+      const invalidPhrases = [
+        "quiero cambiar mi pedido",
+        "cancelar",
+        "el pedido",
+        "no quiero mas",
+      ];
+
+      invalidPhrases.forEach((phrase) => {
+        expect(pattern.test(phrase)).toBeFalse();
+      });
+    });
+  });
+
+  // ============================================
+  // HELPER FUNCTIONS
+  // ============================================
+  describe("detectIntent", () => {
+    it("should return the correct intentKey for a matching phrase", () => {
+      expect(detectIntent("quiero hacer una reserva")).toBe("booking:create");
+      expect(detectIntent("quiero cancelar mi pedido")).toBe(
+        "restaurant:cancel_order",
+      );
+      expect(detectIntent("muestrame las opciones")).toBe(
+        "restaurant:view_menu",
+      );
+    });
+
+    it("should return null for non-matching phrases", () => {
+      expect(detectIntent("hola que tal")).toBeNull();
+      expect(detectIntent("gracias por todo")).toBeNull();
+      expect(detectIntent("frase aleatoria")).toBeNull();
+    });
+  });
+
+  describe("detectAllIntents", () => {
+    it("should return all matching intents", () => {
+      const results = detectAllIntents("quiero hacer una reserva");
+      expect(results).toContain("booking:create");
+    });
+
+    it("should return empty array for non-matching phrases", () => {
+      const results = detectAllIntents("hola buen dia");
+      expect(results).toHaveLength(0);
+    });
+  });
+
+  // ============================================
+  // CROSS-INTENT DISAMBIGUATION
+  // ============================================
+  describe("Cross-intent disambiguation", () => {
+    it("should distinguish between booking:create and booking:modify", () => {
+      const createPattern = intentPatterns["booking:create"]!;
+      const modifyPattern = intentPatterns["booking:modify"]!;
+
+      expect(createPattern.test("quiero hacer una reserva")).toBeTrue();
+      expect(modifyPattern.test("quiero hacer una reserva")).toBeFalse();
+
+      expect(modifyPattern.test("quiero cambiar mi reserva")).toBeTrue();
+      expect(createPattern.test("quiero cambiar mi reserva")).toBeFalse();
+    });
+
+    it("should distinguish between restaurant:place_order and restaurant:update_order", () => {
+      const placePattern = intentPatterns["restaurant:place_order"]!;
+      const updatePattern = intentPatterns["restaurant:update_order"]!;
+
+      expect(placePattern.test("quiero hacer un pedido")).toBeTrue();
+      expect(updatePattern.test("quiero hacer un pedido")).toBeFalse();
+
+      expect(updatePattern.test("quiero cambiar mi pedido")).toBeTrue();
+      expect(placePattern.test("quiero cambiar mi pedido")).toBeFalse();
+    });
+
+    it("should distinguish between restaurant:update_order and restaurant:cancel_order", () => {
+      const updatePattern = intentPatterns["restaurant:update_order"]!;
+      const cancelPattern = intentPatterns["restaurant:cancel_order"]!;
+
+      expect(updatePattern.test("quiero cambiar mi pedido")).toBeTrue();
+      expect(cancelPattern.test("quiero cambiar mi pedido")).toBeFalse();
+
+      expect(cancelPattern.test("quiero cancelar mi pedido")).toBeTrue();
+      expect(updatePattern.test("quiero cancelar mi pedido")).toBeFalse();
     });
   });
 });

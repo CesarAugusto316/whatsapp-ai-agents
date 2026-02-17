@@ -202,23 +202,21 @@ const booking: IntentExample<BookingIntentKey>[] = [
       "quiero cambiar mi reserva",
       "necesito modificar la reserva",
       "puedo ajustar mi reserva",
-      "quiero reprogramar",
+      "quiero reprogramar mi reserva",
       "necesito mover la reserva",
 
       // España
-      "mover la reserva",
-      "cambiar la reserva",
+      "mover la reserva para otro día",
+      "cambiar la fecha de la reserva",
       "adelantar la reserva",
       "atrasar la reserva",
-      "ajustar el turno",
-      "cambiar la hora",
+      "cambiar el horario de la reserva",
 
       // Latam (CO/EC/MX)
-      "correr la reserva",
+      "correr la reserva para otra fecha",
       "recorrer la reserva",
-      "empujar la reserva",
-      "mover para otro día",
-      "cambiar el horario",
+      "mover la reserva para otro día",
+      "cambiar el día de la reserva",
     ],
   },
   {
@@ -227,40 +225,34 @@ const booking: IntentExample<BookingIntentKey>[] = [
     requiresConfirmation: "always",
     lang: "es",
     examples: [
-      // Universal
-      "quiero cancelar",
-      "necesito cancelar",
-      "ya no puedo ir",
-      "no voy a poder",
+      // Universal - SOLO verbos explícitos
+      "quiero cancelar mi reserva",
+      "necesito cancelar la reserva",
       "cancelar mi reserva",
 
       // España
       "quiero anular la reserva",
-      "dame de baja",
+      "anular mi reserva",
+      "dame de baja la reserva",
       "quita mi reserva",
-      "me he liado",
-      "algo ha surgido",
-      "ya no voy a ir",
 
       // Latam (CO/EC/MX)
       "desmarca mi reserva",
-      "echar para atrás",
-      "me cancelaron planes",
-      "ya no voy",
-      "se me complicó",
-      "no voy a llegar",
+      "ya no voy a ir a la reserva",
+      "ya no puedo ir a la reserva",
+      "no voy a poder asistir",
     ],
   },
   {
     intentKey: "booking:check_availability",
     module: "booking",
-    requiresConfirmation: "never", // ← Corregido: no modifica estado
+    requiresConfirmation: "never",
     lang: "es",
     examples: [
       // Universal
       "hay disponibilidad",
       "qué horarios tienen libres",
-      "días fechas disponibles",
+      "qué días tienen disponibles",
       "hay para hoy",
       "pueden atenderme",
 
@@ -290,8 +282,7 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
     lang: "es",
     examples: [
       // Universal
-      "qué venden hoy",
-      "qué ofrecen para comer",
+      "quiero ver el menú",
       "puedo ver el menú",
       "tienen menú disponible",
       "dame las opciones",
@@ -300,8 +291,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
 
       // España (auténtico)
       "quiero ver la carta",
-      "qué hay en carta",
-      "enseñame la carta",
+      "qué hay en la carta",
+      "enséñame la carta",
       "qué tienen para cenar",
       "opciones de la carta",
 
@@ -310,7 +301,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
       "menú del día",
       "qué tienen para almorzar",
       "opciones del menú",
-      "qué recomiendan comer",
+      "qué venden hoy",
+      "qué ofrecen para comer",
     ],
   },
   {
@@ -323,16 +315,15 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
       "quiero hacer un pedido",
       "necesito hacer un pedido",
       "deseo hacer un pedido",
-      "voy a hacer pedido",
+      "voy a hacer un pedido",
       "quiero pedir ahora",
       "listo para pedir",
 
       // España
-      "quiero hacer un pedido",
       "voy a pedir comida",
       "quiero pedir para llevar",
       "hacer el pedido ya",
-      "quiero realizar pedido",
+      "quiero realizar el pedido",
 
       // Latam (CO/EC/MX)
       "quiero hacer una orden",
@@ -392,12 +383,10 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
       "lo más típico",
       "qué piden los clientes",
       "vuestra especialidad",
-      "qué es lo más rico",
 
       // Latam (CO/EC/MX)
       "qué me recomiendan",
       "lo más pedido",
-      "qué es lo más rico",
       "sus recomendaciones",
       "qué piden usualmente",
       "lo más famoso",
@@ -470,7 +459,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
-      // Universal (4-7 palabras exactas)
+      // Universal
       "dónde queda el local",
       "dime la dirección exacta",
       "cuál es su ubicación",
@@ -507,7 +496,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
       "cuál es el horario",
       "horario de atención hoy",
       "están abiertos ahora",
-      "hasta qué hora abiertos",
+      "hasta qué hora están abiertos",
 
       // España
       "a qué hora abrís",
@@ -533,7 +522,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
     lang: "es",
     examples: [
       // Universal
-      "qué formas de pago",
+      "qué formas de pago aceptan",
       "métodos de pago aceptados",
       "aceptan tarjeta de crédito",
       "puedo pagar con efectivo",
@@ -541,7 +530,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
 
       // España
       "aceptáis tarjeta",
-      "pagar con tarjeta",
+      "puedo pagar con tarjeta",
       "aceptáis efectivo",
       "pagos con bizum",
       "aceptáis transferencia",
@@ -621,10 +610,6 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
       "cuánto cuesta todo",
     ],
   },
-  // ---------------------------------------------------------------
-  // TODO: this two intentKeys can be more general
-  // and maybe checked again
-  // ---------------------------------------------------------------
   {
     intentKey: "info:ask_delivery_time",
     module: "informational",
