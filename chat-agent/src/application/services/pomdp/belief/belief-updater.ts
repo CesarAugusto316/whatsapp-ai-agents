@@ -70,10 +70,15 @@ export class BeliefStateUpdater {
         return this.newSnapShot(prevState, newIntent);
       }
     }
-    // We never store excludedModules alone
-    // if (this.excludedModules.includes(mainIntent.module)) {
-    //   return { ...prevState };
-    // }
+    // We store excludedModules itents just once
+    if (
+      prevState.executedIntents.some((item) =>
+        this.excludedModules.includes(item.module),
+      ) &&
+      this.excludedModules.some((item) => item === mainIntent.module)
+    ) {
+      return { ...prevState };
+    }
 
     // registramos la nueva intencion por primera vez
     const newIntent = this.newIntent(mainIntent, alternativeIntents);
