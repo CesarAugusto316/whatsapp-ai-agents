@@ -10,7 +10,7 @@ test('requiresConfirmation="never" + score=0.8 → type="execute"', () => {
       text: "",
       alternatives: [],
       intentKey: "info:ask_price",
-      module: "restaurant",
+      module: "products",
       score: 0.8,
       requiresConfirmation: "never",
       signals: {

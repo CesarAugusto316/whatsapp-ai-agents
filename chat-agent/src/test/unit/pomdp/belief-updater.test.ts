@@ -11,7 +11,7 @@ test("Primer mensaje → nuevo intent con isConfident calculado usando su propio
 
   const topResult: IntentPayloadWithScore = {
     intentKey: "info:ask_price",
-    module: "restaurant",
+    module: "products",
     score: 0.7,
     requiresConfirmation: "never",
     text: "",
@@ -102,7 +102,7 @@ test("Transición entre intents", () => {
   // Segundo intent: restaurant:ask_price (never, score=0.7) → isConfident=true (usa su propio threshold 0.65)
   const secondResult: IntentPayloadWithScore = {
     intentKey: "info:ask_price",
-    module: "restaurant",
+    module: "products",
     score: 0.7,
     requiresConfirmation: "never",
     text: "",

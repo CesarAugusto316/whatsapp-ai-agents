@@ -138,7 +138,7 @@ describe("intentClassifierPrompt - unknown_intent", () => {
   });
 
   test("debe generar prompt para unknown_intent solo con restaurant activo", () => {
-    const ctx = createMockCtx({ activeModules: ["restaurant"] });
+    const ctx = createMockCtx({ activeModules: ["products"] });
     const policy = createPolicy("unknown_intent", undefined);
 
     const prompt = intentClassifierPrompt(ctx, policy);
@@ -196,7 +196,7 @@ describe("intentClassifierPrompt - ask_clarification", () => {
     const alternatives: BeliefIntent["alternatives"] = [
       {
         intentKey: "restaurant:place_order",
-        module: "restaurant",
+        module: "products",
         score: 0.7,
         text: "",
         requiresConfirmation: "always",
@@ -307,7 +307,7 @@ describe("intentClassifierPrompt - clear_up_uncertainty", () => {
       },
       {
         intentKey: "restaurant:view_menu",
-        module: "restaurant",
+        module: "products",
         score: 0.7,
         text: "",
         requiresConfirmation: "always",
@@ -428,7 +428,7 @@ describe("intentClassifierPrompt - ask_confirmation", () => {
   });
 
   test("debe generar prompt para ask_confirmation con restaurant", () => {
-    const intent = createBeliefIntent("restaurant:place_order", "restaurant", {
+    const intent = createBeliefIntent("restaurant:place_order", "products", {
       requiresConfirmation: "always",
       signals: { isConfirmed: false, isRejected: false, isUncertain: false },
     });
@@ -545,7 +545,7 @@ describe("intentClassifierPrompt - propose_alternative", () => {
     const alternatives: BeliefIntent["alternatives"] = [
       {
         intentKey: "restaurant:view_menu",
-        module: "restaurant",
+        module: "products",
         score: 0.8,
         text: "",
         requiresConfirmation: "always",
@@ -577,14 +577,14 @@ describe("intentClassifierPrompt - propose_alternative", () => {
     const alternatives: BeliefIntent["alternatives"] = [
       {
         intentKey: "restaurant:view_menu",
-        module: "restaurant",
+        module: "products",
         score: 0.75,
         text: "",
         requiresConfirmation: "always",
       },
     ];
 
-    const intent = createBeliefIntent("restaurant:place_order", "restaurant", {
+    const intent = createBeliefIntent("restaurant:place_order", "products", {
       alternatives,
       signals: { isConfirmed: false, isRejected: true, isUncertain: false },
     });
@@ -694,7 +694,7 @@ describe("intentClassifierPrompt - execute", () => {
   });
 
   test("debe generar prompt para execute con restaurant", () => {
-    const intent = createBeliefIntent("restaurant:place_order", "restaurant", {
+    const intent = createBeliefIntent("restaurant:place_order", "products", {
       requiresConfirmation: "always",
       signals: { isConfirmed: true, isRejected: false, isUncertain: false },
     });
