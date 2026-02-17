@@ -46,7 +46,7 @@ const createMockCtx = (overrides?: Partial<RestaurantCtx>): RestaurantCtx =>
         sunday: { open: "12:00", close: "23:00" },
       },
     },
-    activeModules: ["booking", "restaurant", "informational"],
+    activeModules: ["booking", "products", "orders", "informational"],
     beliefState: undefined,
     ...overrides,
   }) as RestaurantCtx;
@@ -117,10 +117,10 @@ describe("intentClassifierPrompt - unknown_intent", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("POLICY DECISION: unknown_intent");
-    expect(prompt).toContain("booking, restaurant, informational");
-    expect(prompt).toContain("BOOKING (Reservas de mesa)");
-    expect(prompt).toContain("PRODUCT ORDERS (Pedidos de comida)");
-    expect(prompt).toContain("INFORMATIONAL");
+    expect(prompt).toContain("booking, products, orders, informational");
+    expect(prompt).toContain("RESERVAS");
+    expect(prompt).toContain("PRODUCTOS");
+    expect(prompt).toContain("INFORMACIÓN");
     expect(prompt).toContain('NO digas "no entendí"');
     expect(prompt).toContain("TestBot");
     expect(prompt).toContain("Test Restaurant");
@@ -132,9 +132,9 @@ describe("intentClassifierPrompt - unknown_intent", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    expect(prompt).toContain("BOOKING (Reservas de mesa)");
-    expect(prompt).not.toContain("PRODUCT ORDERS");
-    expect(prompt).not.toContain("INFORMATIONAL");
+    expect(prompt).toContain("RESERVAS");
+    expect(prompt).not.toContain("PRODUCTOS");
+    expect(prompt).not.toContain("INFORMACIÓN");
   });
 
   test("debe generar prompt para unknown_intent solo con restaurant activo", () => {
@@ -143,8 +143,9 @@ describe("intentClassifierPrompt - unknown_intent", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    expect(prompt).toContain("PRODUCT ORDERS (Pedidos de comida)");
-    expect(prompt).not.toContain("BOOKING (Reservas de mesa)");
+    expect(prompt).toContain("PRODUCTOS");
+    expect(prompt).toContain("PEDIDOS");
+    expect(prompt).not.toContain("RESERVAS");
   });
 
   test("debe generar prompt para unknown_intent solo con informational activo", () => {
@@ -153,11 +154,11 @@ describe("intentClassifierPrompt - unknown_intent", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    expect(prompt).toContain("INFORMATIONAL");
+    expect(prompt).toContain("INFORMACIÓN");
     expect(prompt).toContain("Horarios");
     expect(prompt).toContain("Ubicación");
     expect(prompt).toContain("Pago");
-    expect(prompt).toContain("Entrega");
+    expect(prompt).toContain("Contacto");
   });
 });
 
@@ -213,7 +214,7 @@ describe("intentClassifierPrompt - ask_clarification", () => {
 
     expect(prompt).toContain("booking:create");
     expect(prompt).toContain("orders:create");
-    expect(prompt).toContain("restaurant");
+    expect(prompt).toContain("Restaurante");
   });
 
   test("debe generar prompt para ask_clarification sin alternativas", () => {
@@ -368,8 +369,8 @@ describe("intentClassifierPrompt - clear_up_uncertainty", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("No hay alternativas");
-    expect(prompt).toContain("ver el menú");
-    expect(prompt).toContain("hacer un pedido");
+    expect(prompt).toContain("ver opciones");
+    expect(prompt).toContain("otra opción");
   });
 
   test("debe filtrar alternativas que coinciden con intentKey", () => {
@@ -439,7 +440,7 @@ describe("intentClassifierPrompt - ask_confirmation", () => {
 
     expect(prompt).toContain("orders:create");
     expect(prompt).toContain("Hacer pedido");
-    expect(prompt).toContain("PRODUCT ORDERS");
+    expect(prompt).toContain("PRODUCTOS");
   });
 
   test("debe incluir ejemplos específicos por módulo", () => {
@@ -593,9 +594,9 @@ describe("intentClassifierPrompt - propose_alternative", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    expect(prompt).toContain("PRODUCT ORDER RECHAZADO");
+    expect(prompt).toContain("PRODUCTOS RECHAZADO");
     expect(prompt).toContain("orders:create");
-    expect(prompt).toContain("Ver menú");
+    expect(prompt).toContain("Buscar productos");
   });
 
   test("debe manejar caso sin alternativas", () => {
@@ -687,7 +688,7 @@ describe("intentClassifierPrompt - execute", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    expect(prompt).toContain("ACCIÓN DE NEGOCIO (booking/restaurant)");
+    expect(prompt).toContain("ACCIÓN DE NEGOCIO");
     expect(prompt).toContain("booking:create");
     expect(prompt).toContain("Crear reserva");
     expect(prompt).toContain("NO pidas confirmación");
@@ -735,7 +736,7 @@ describe("intentClassifierPrompt - default fallback", () => {
     expect(prompt).toContain("ERROR: PolicyDecision no manejada");
     expect(prompt).toContain("FALLBACK");
     // Debe listar los módulos activos en el fallback
-    expect(prompt).toContain("booking, restaurant, informational");
+    expect(prompt).toContain("booking, products, orders, informational");
   });
 });
 

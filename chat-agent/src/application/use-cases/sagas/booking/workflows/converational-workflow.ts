@@ -15,6 +15,7 @@ import {
 } from "@/domain/booking";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { formatSagaOutput } from "@/application/patterns";
+import { logger } from "@/infraestructure/logging";
 
 /**
  *
@@ -132,8 +133,18 @@ export async function conversationalWorkflow(
 
   // 3. handling intent feedback
   const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+  // Agregar este log mínimo para validar en producción
+  const systemPrompt = intentClassifierPrompt(ctx, policy);
+  logger.info("PROMPT_GENERATED", {
+    systemPrompt,
+    businessType: ctx.business.general.businessType,
+    activeModules: ctx.activeModules,
+    policyType: policy.type,
+    intentKey: policy.intent?.intentKey,
+    timestamp: Date.now(),
+  });
   const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
-    systemPrompt: intentClassifierPrompt(ctx, policy),
+    systemPrompt,
     msg: ctx.customerMessage,
     chatHistory,
   });
@@ -146,6 +157,6 @@ export async function conversationalWorkflow(
   return formatSagaOutput(
     ASSISTANT_MSG,
     `${policy.intent?.intentKey}:${policy.type}`, // optional
-    policy,
+    { policy, systemPrompt },
   );
 }

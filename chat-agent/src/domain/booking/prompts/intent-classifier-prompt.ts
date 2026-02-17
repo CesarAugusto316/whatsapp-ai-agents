@@ -1,8 +1,11 @@
 import type {
   BookingIntentKey,
+  DomainKind,
   IntentExampleKey,
   ModuleKind,
+  OrderIntentKey,
   PolicyDecision,
+  ProductIntentKey,
   ProductOrderIntentKey,
 } from "@/application/services/pomdp";
 import type { RestaurantCtx } from "@/domain/restaurant";
@@ -17,10 +20,17 @@ import { generateAgentGoals } from "./agent-goals";
  * - requiresConfirmation: "never" → execute | "maybe" → execute if confident | "always" → ask confirmation
  * - User signals: isConfirmed (sí) | isRejected (no) | isUncertain (no sé/talvez)
  *
- * BUSINESS CONTEXT (type="restaurant"):
- * - MODULE 1: BOOKING (reservas) → booking:create | booking:modify | booking:cancel | booking:check_availability
- * - MODULE 2: PRODUCT ORDERS (pedidos) → products:find | orders:create | products:find | products:recommend | orders:modify | orders:cancel
- * - MODULE 3: INFORMATIONAL → info:ask_* (horarios, ubicación, pago, entrega)
+ * DOMAIN + MODULE ARCHITECTURE:
+ * - businessType determina el dominio (restaurant, real-estate, erotic, retail, medical)
+ * - Modules son condicionales según el dominio
+ * - Vocabulario específico por dominio + módulo activo
+ *
+ * DOMAIN MODULES:
+ * - restaurant: booking (reservas), products (menú), orders (pedidos), delivery (entrega)
+ * - real-estate: booking (visitas/citas)
+ * - erotic: booking (citas), products (catálogo), orders (pedidos)
+ * - retail: products (catálogo), orders (pedidos), delivery (entrega)
+ * - medical: booking (citas médicas)
  */
 export function intentClassifierPrompt(
   ctx: RestaurantCtx,
@@ -29,7 +39,7 @@ export function intentClassifierPrompt(
   const beliefState = policy?.state;
   const currentIntent = policy?.intent;
   const { business, activeModules } = ctx;
-  const businessType = business.general.businessType
+  const businessType = business.general.businessType as DomainKind;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
 
@@ -40,42 +50,243 @@ export function intentClassifierPrompt(
   const alternatives = currentIntent?.alternatives || [];
   const intentScore = currentIntent?.score || 0;
 
-  // Helper: get module name in Spanish
-  const getModuleName = (module: ModuleKind) => {
-    const map: Record<ModuleKind, string> = {
+  // Helper: get module name in Spanish (domain-aware)
+  const getModuleName = (module: ModuleKind, domain: DomainKind) => {
+    const coreModules: Partial<Record<ModuleKind, string>> = {
+      informational: "Información",
+      "social-protocol": "Saludos",
+      "conversational-signal": "Respuestas",
+    };
+
+    const domainModules: Record<string, Partial<Record<ModuleKind, string>>> = {
+      restaurant: {
+        booking: "Reservas de mesa",
+        products: "Menú y platos",
+        orders: "Pedidos de comida",
+        delivery: "Entrega a domicilio",
+      },
+      "real-estate": {
+        booking: "Visitas y citas",
+      },
+      erotic: {
+        booking: "Citas",
+        products: "Catálogo",
+        orders: "Pedidos",
+      },
+      retail: {
+        products: "Catálogo de productos",
+        orders: "Pedidos",
+        delivery: "Entrega",
+      },
+      medical: {
+        booking: "Citas médicas",
+      },
+    };
+
+    if (coreModules[module]) return coreModules[module]!;
+    if (
+      domain &&
+      domainModules[domain]?.[module as keyof (typeof domainModules)[string]]
+    ) {
+      return domainModules[domain][
+        module as keyof (typeof domainModules)[string]
+      ]!;
+    }
+
+    // Fallback genérico
+    const fallback: Record<ModuleKind, string> = {
       booking: "Reservas",
-      products: "Menu ver opciones",
+      products: "Productos",
       orders: "Pedidos",
       delivery: "Entrega",
       informational: "Información",
       "social-protocol": "Saludos",
       "conversational-signal": "Respuestas",
     };
-    return map[module];
+    return fallback[module];
   };
 
-  // Helper: get action verb for intentKey
-  const getActionVerb = (key: string) => {
-    const map: Record<BookingIntentKey | ProductOrderIntentKey, string> = {
+  // Helper: get action verb for intentKey (domain-aware)
+  const getActionVerb = (key: IntentExampleKey, domain: DomainKind) => {
+    // Booking verbs varían por dominio
+    const bookingVerbs: Record<string, Record<BookingIntentKey, string>> = {
+      restaurant: {
+        "booking:create": "Crear reserva",
+        "booking:modify": "Modificar reserva",
+        "booking:cancel": "Cancelar reserva",
+        "booking:check_availability": "Consultar disponibilidad",
+      },
+      "real-estate": {
+        "booking:create": "Agendar visita",
+        "booking:modify": "Modificar visita",
+        "booking:cancel": "Cancelar visita",
+        "booking:check_availability": "Consultar disponibilidad",
+      },
+      erotic: {
+        "booking:create": "Reservar cita",
+        "booking:modify": "Modificar cita",
+        "booking:cancel": "Cancelar cita",
+        "booking:check_availability": "Consultar disponibilidad",
+      },
+      medical: {
+        "booking:create": "Agendar cita médica",
+        "booking:modify": "Modificar cita",
+        "booking:cancel": "Cancelar cita",
+        "booking:check_availability": "Consultar disponibilidad",
+      },
+    };
+
+    // Product verbs varían por dominio
+    const productVerbs: Record<string, Record<ProductIntentKey, string>> = {
+      restaurant: {
+        "products:view": "Ver menú",
+        "products:find": "Buscar platos",
+        "products:recommend": "Recomendar platos",
+      },
+      erotic: {
+        "products:view": "Ver catálogo",
+        "products:find": "Buscar servicios",
+        "products:recommend": "Recomendar servicios",
+      },
+      retail: {
+        "products:view": "Ver catálogo",
+        "products:find": "Buscar productos",
+        "products:recommend": "Recomendar productos",
+      },
+    };
+
+    // Order verbs varían por dominio
+    const orderVerbs: Record<string, Record<OrderIntentKey, string>> = {
+      restaurant: {
+        "orders:create": "Hacer pedido de comida",
+        "orders:modify": "Modificar pedido",
+        "orders:cancel": "Cancelar pedido",
+      },
+      erotic: {
+        "orders:create": "Hacer pedido",
+        "orders:modify": "Modificar pedido",
+        "orders:cancel": "Cancelar pedido",
+      },
+      retail: {
+        "orders:create": "Hacer pedido",
+        "orders:modify": "Modificar pedido",
+        "orders:cancel": "Cancelar pedido",
+      },
+    };
+
+    // Buscar en el diccionario específico del dominio
+    if (domain) {
+      // @ts-ignore
+      const booking = bookingVerbs[domain]?.[key];
+      if (booking) return booking;
+
+      // @ts-ignore
+      const product = productVerbs[domain]?.[key];
+      if (product) return product;
+
+      // @ts-ignore
+      const order = orderVerbs[domain]?.[key];
+      if (order) return order;
+    }
+
+    // Fallback genérico
+    const fallbackVerbs: Record<
+      BookingIntentKey | ProductOrderIntentKey,
+      string
+    > = {
       "booking:create": "Crear reserva",
       "booking:modify": "Modificar reserva",
       "booking:cancel": "Cancelar reserva",
       "booking:check_availability": "Consultar disponibilidad",
-
-      "products:view": "Ver menú",
-      "products:find": "Buscar platos",
-      "products:recommend": "Recomendar platos",
-
+      "products:view": "Ver productos",
+      "products:find": "Buscar productos",
+      "products:recommend": "Recomendar productos",
       "orders:create": "Hacer pedido",
       "orders:modify": "Modificar pedido",
       "orders:cancel": "Cancelar pedido",
     };
-    return map[key as BookingIntentKey | ProductOrderIntentKey] || "Gestionar";
+    return (
+      fallbackVerbs[key as BookingIntentKey | ProductOrderIntentKey] ||
+      "Gestionar"
+    );
   };
 
   // Helper: get alternatives excluding current intentKey
   const getFilteredAlternatives = () => {
     return alternatives.filter((alt) => alt.intentKey !== intentKey);
+  };
+
+  // Helper: get domain-specific capabilities description
+  const getDomainCapabilities = () => {
+    const capabilities: string[] = [];
+    let index = 1;
+
+    if (activeModules.includes("booking")) {
+      const bookingLabel = getModuleName("booking", businessType);
+      const createVerb = getActionVerb("booking:create", businessType);
+      const modifyVerb = getActionVerb("booking:modify", businessType);
+      const cancelVerb = getActionVerb("booking:cancel", businessType);
+      const checkVerb = getActionVerb(
+        "booking:check_availability",
+        businessType,
+      );
+
+      capabilities.push(`
+       ${index}. ${bookingLabel.toUpperCase()}:
+          - Crear: "${createVerb.toLowerCase()}"
+          - Modificar: "${modifyVerb.toLowerCase()}"
+          - Cancelar: "${cancelVerb.toLowerCase()}"
+          - Consultar: "${checkVerb.toLowerCase()}"`);
+      index++;
+    }
+
+    if (activeModules.includes("products")) {
+      const productsLabel = getModuleName("products", businessType);
+      const viewVerb = getActionVerb("products:view", businessType);
+      const findVerb = getActionVerb("products:find", businessType);
+      const recommendVerb = getActionVerb("products:recommend", businessType);
+
+      capabilities.push(`
+       ${index}. ${productsLabel.toUpperCase()}:
+          - Ver: "${viewVerb.toLowerCase()}"
+          - Buscar: "${findVerb.toLowerCase()}"
+          - Recomendaciones: "${recommendVerb.toLowerCase()}"`);
+      index++;
+    }
+
+    if (activeModules.includes("orders")) {
+      const ordersLabel = getModuleName("orders", businessType);
+      const createVerb = getActionVerb("orders:create", businessType);
+      const modifyVerb = getActionVerb("orders:modify", businessType);
+      const cancelVerb = getActionVerb("orders:cancel", businessType);
+
+      capabilities.push(`
+       ${index}. ${ordersLabel.toUpperCase()}:
+          - Crear: "${createVerb.toLowerCase()}"
+          - Modificar: "${modifyVerb.toLowerCase()}"
+          - Cancelar: "${cancelVerb.toLowerCase()}"`);
+      index++;
+    }
+
+    if (activeModules.includes("delivery")) {
+      const deliveryLabel = getModuleName("delivery", businessType);
+      capabilities.push(`
+       ${index}. ${deliveryLabel.toUpperCase()}:
+          - Consultar tiempo: "cuánto tarda en llegar"
+          - Consultar método: "cómo hacen la entrega"`);
+      index++;
+    }
+
+    if (activeModules.includes("informational")) {
+      capabilities.push(`
+       ${index}. INFORMACIÓN:
+          - Horarios: "a qué hora abren"
+          - Ubicación: "dónde queda el local"
+          - Pago: "aceptan tarjeta"
+          - Contacto: "cómo los contacto"`);
+    }
+
+    return capabilities.join("\n");
   };
 
   switch (policy?.type) {
@@ -87,41 +298,11 @@ export function intentClassifierPrompt(
        - El usuario escribió algo que no coincide con ninguna intención conocida
        - NO es un error — es una oportunidad para presentar capacidades
 
+       DOMINIO: ${businessType || "general"}
        MÓDULOS ACTIVOS: ${activeModules.join(", ")}
 
-       CAPACIDADES DEL NEGOCIO (type="${business.general.businessType}"):
-       ${
-         activeModules.includes("booking")
-           ? `
-       1. BOOKING (Reservas de mesa):
-          - Crear: "quiero reservar mesa"
-          - Modificar: "cambiar mi reserva"
-          - Cancelar: "cancelar mi reserva"
-          - Consultar: "hay disponibilidad"`
-           : ""
-       }
-       ${
-         activeModules.includes("products")
-           ? `
-       2. PRODUCT ORDERS (Pedidos de comida):
-          - Ver menú: "qué venden hoy"
-          - Hacer pedido: "quiero hacer un pedido" (delivery o pickup)
-          - Buscar platos: "busco algo vegetariano"
-          - Recomendaciones: "qué me recomiendas"
-          - Modificar: "cambiar mi pedido"
-          - Cancelar: "cancelar mi pedido"`
-           : ""
-       }
-       ${
-         activeModules.includes("informational")
-           ? `
-       3. INFORMATIONAL:
-          - Horarios: "a qué hora abren"
-          - Ubicación: "dónde queda el local"
-          - Pago: "aceptan tarjeta"
-          - Entrega: "cuánto tarda en llegar"`
-           : ""
-       }
+       CAPACIDADES DEL NEGOCIO (type="${businessType}"):
+       ${getDomainCapabilities()}
 
        RULES:
         - NO digas "no entendí", "no sé qué quieres" o "intento desconocido"
@@ -129,12 +310,20 @@ export function intentClassifierPrompt(
         - Presenta capacidades de forma cálida y específica al negocio
 
        HOW TO RESPOND:
-        1. Menciona los módulos principales activos:
-           • "Puedo ayudarte con (${activeModules.join(", ")})"
-        2. Cierra con CTA específico: "¿Qué prefieres hoy?"
+        1. Menciona los módulos principales activos de forma natural
+        2. Usa vocabulario específico del dominio (${businessType})
+        3. Cierra con CTA específico: "¿Qué prefieres hoy?"
 
        EJEMPLO:
-       "Puedo ayudarte a reservar mesa o hacer un pedido para llevar/recoger. ¿Qué prefieres hoy?"
+       "Puedo ayudarte con ${activeModules
+         .filter(
+           (m) =>
+             m !== "informational" &&
+             m !== "social-protocol" &&
+             m !== "conversational-signal",
+         )
+         .map((m) => getModuleName(m, businessType))
+         .join(" y ")}. ¿Qué prefieres hoy?"
      `;
 
     case "ask_clarification": {
@@ -144,31 +333,32 @@ export function intentClassifierPrompt(
 
         POLICY DECISION: ${policy?.type}
         - Intención más probable: ${intentKey} (score: ${intentScore.toFixed(2)})
-        - Módulo: ${getModuleName(intentModule)}
+        - Módulo: ${getModuleName(intentModule, businessType)}
+        - Dominio: ${businessType || "general"}
         - El usuario fue ambiguo — hay 2-3 intents posibles con scores similares
 
         ALTERNATIVAS DISPONIBLES (excluyendo intentKey actual):
-        ${filteredAlts.length > 0 ? filteredAlts.map((alt, i) => `${i + 1}. ${alt.intentKey} (${alt.module}) - score: ${alt.score.toFixed(2)}`).join("\n        ") : "No hay alternativas en BeliefState"}
+        ${filteredAlts.length > 0 ? filteredAlts.map((alt, i) => `${i + 1}. ${alt.intentKey} (${getModuleName(alt.module, businessType)}) - score: ${alt.score.toFixed(2)}`).join("\n        ") : "No hay alternativas en BeliefState"}
 
         HOW TO RESPOND:
         1. Reconocimiento breve: "Vale, para ayudarte mejor:"
         2. Ofrece 2-3 opciones ESPECÍFICAS basadas en filteredAlts:
-           • Mismo módulo: "¿Quieres ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey) : "una opción"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey) : "otra opción"}?"
-           • Módulos diferentes: "¿Prefieres ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey) : "ver el menú"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey) : "hacer un pedido"}?"
+           • Mismo módulo: "¿Quieres ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey, businessType) : "una opción"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey, businessType) : "otra opción"}?"
+           • Módulos diferentes: "¿Prefieres ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey, businessType) : "ver opciones"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey, businessType) : "otra opción"}?"
         3. Cierra con CTA simple: "Dime cuál y te ayudo 😊"
 
         RULES:
         - Máximo 3-4 líneas (WhatsApp mobile)
         - Usa "o" para conectar opciones, NO bullets
-        - Sé específico: usa verbos de acción (reservar, pedir, cancelar)
+        - Sé específico: usa verbos de acción del dominio (${businessType})
         - NO menciones la ambigüedad ni scores — solo ofrece caminos claros
         - Prioriza alternativas del MISMO módulo si es posible
         - Usa filteredAlts (excluyendo intentKey actual)
 
         EJEMPLOS:
-        • intentKey="booking:create" + filteredAlts=["booking:modify"]: "¿Quieres crear una reserva nueva o modificar una existente?"
-        • intentKey="orders:create" + filteredAlts=["products:find"]: "¿Prefieres hacer un pedido directo o ver el menú primero?"
-        • intentKey="booking:create" + filteredAlts=["orders:create"]: "¿Quieres reservar mesa o pedir comida para llevar?"
+        • intentKey="booking:create" + filteredAlts=["booking:modify"]: "¿Quieres ${getActionVerb("booking:create", businessType).toLowerCase()} o ${getActionVerb("booking:modify", businessType).toLowerCase()}?"
+        • intentKey="orders:create" + filteredAlts=["products:view"]: "¿Prefieres ${getActionVerb("orders:create", businessType).toLowerCase()} o ${getActionVerb("products:view", businessType).toLowerCase()} primero?"
+        • intentKey="booking:create" + filteredAlts=["orders:create"]: "¿Quieres ${getActionVerb("booking:create", businessType).toLowerCase()} o ${getActionVerb("orders:create", businessType).toLowerCase()}?"
       `;
     }
 
@@ -177,28 +367,29 @@ export function intentClassifierPrompt(
       return `
         ${basePrompt(ctx)}
 
-        POLICY DECISION: clear_up_uncertainty
+        POLICY DECISION: ${policy?.type}
         - Intención detectada: ${intentKey}
+        - Dominio: ${businessType || "general"}
         - Usuario mostró señal: isUncertain=true ("no sé", "talvez", "puede ser", "déjame pensarlo")
         - El usuario está indeciso — NO ofrezcas la intención actual que está dudando
 
         ALTERNATIVAS (excluyendo intentKey actual):
-        ${filteredAlts.length > 0 ? filteredAlts.map((alt, i) => `${i + 1}. ${alt.intentKey} (${alt.module})`).join("\n        ") : "No hay alternativas — usa opciones genéricas del mismo módulo"}
+        ${filteredAlts.length > 0 ? filteredAlts.map((alt, i) => `${i + 1}. ${alt.intentKey} (${getModuleName(alt.module, businessType)})`).join("\n        ") : "No hay alternativas — usa opciones genéricas del mismo módulo"}
 
         HOW TO RESPOND:
         1. Reconocimiento empático: "Vale" / "Tranquilo" / "Sin prisa" + emoji
         2. Ofrece EXACTAMENTE 2 opciones de las ALTERNATIVAS (NO la intentKey actual):
-           • Opción A: ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey) : "ver el menú"}
-           • Opción B: ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey) : "hacer un pedido"}
+           • Opción A: ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey, businessType) : "ver opciones"}
+           • Opción B: ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey, businessType) : "otra opción"}
         3. Conecta con "o" + emoji final
 
         RESPONSE FORMAT (obligatorio):
         [Reconocimiento] + [Opción A] o [Opción B]? + [Emoji]
 
         EJEMPLOS VÁLIDOS:
-        • "Vale 😊 ¿${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey) : "ver el menú"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey) : "hacer un pedido"}?"
-        • "Tranquilo ✨ ¿Prefieres ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey) : "ver opciones"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey) : "otra cosa"}?"
-        • "Sin prisa 👋 ¿Te apetece ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey) : "algo"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey) : "otra opción"}?"
+        • "Vale 😊 ¿${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey, businessType) : "ver opciones"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey, businessType) : "otra opción"}?"
+        • "Tranquilo ✨ ¿Prefieres ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey, businessType) : "ver opciones"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey, businessType) : "otra cosa"}?"
+        • "Sin prisa 👋 ¿Te apetece ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey, businessType) : "algo"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey, businessType) : "otra opción"}?"
 
         RULES:
         - Máximo 1 línea (WhatsApp mobile)
@@ -216,7 +407,8 @@ export function intentClassifierPrompt(
 
         POLICY DECISION: ${policy?.type}
         - Intención a confirmar: ${intentKey}
-        - Módulo: ${getModuleName(intentModule)}
+        - Módulo: ${getModuleName(intentModule, businessType)}
+        - Dominio: ${businessType || "general"}
         - requiresConfirmation: "${requiresConfirmation}" (PolicyEngine decidió pedir confirmación)
         - Usuario NO ha dicho "sí" explícitamente (isConfirmed=false)
 
@@ -226,30 +418,30 @@ export function intentClassifierPrompt(
         - Debes pedir confirmación ANTES de ejecutar la acción
 
         HOW TO RESPOND:
-        1. Usa ${getActionVerb(intentKey)} como base de la confirmación
+        1. Usa ${getActionVerb(intentKey, businessType)} como base de la confirmación
         2. Sé conciso: máximo 1 pregunta + señal visual ✅
         3. NO repitas slots/detalles a menos que sean críticos
 
         RESPONSE FORMAT:
-        ¿${getActionVerb(intentKey)}? + EMOJI
+        ¿${getActionVerb(intentKey, businessType)}? + EMOJI
 
-        EJEMPLOS POR MÓDULO:
+        EJEMPLOS POR MÓDULO (dominio=${businessType}):
         ${
           intentModule === "booking"
             ? `
         BOOKING:
-        • intentKey="booking:create": "¿${getActionVerb("booking:create")}? ✅"
-        • intentKey="booking:modify": "¿${getActionVerb("booking:modify")}? 🔄"
-        • intentKey="booking:cancel": "¿${getActionVerb("booking:cancel")}? ❌"`
+        • intentKey="booking:create": "¿${getActionVerb("booking:create", businessType)}? ✅"
+        • intentKey="booking:modify": "¿${getActionVerb("booking:modify", businessType)}? 🔄"
+        • intentKey="booking:cancel": "¿${getActionVerb("booking:cancel", businessType)}? ❌"`
             : ""
         }
         ${
-          intentModule === "products"
+          intentModule === "products" || intentModule === "orders"
             ? `
-        PRODUCT ORDERS:
-        • intentKey="orders:create": "¿${getActionVerb("orders:create")}? ✅"
-        • intentKey="orders:modify": "¿${getActionVerb("orders:modify")}? 🔄"
-        • intentKey="orders:cancel": "¿${getActionVerb("orders:cancel")}? ❌"`
+        ${intentModule === "products" ? "PRODUCTOS" : "PEDIDOS"}:
+        • intentKey="orders:create": "¿${getActionVerb("orders:create", businessType)}? ✅"
+        • intentKey="orders:modify": "¿${getActionVerb("orders:modify", businessType)}? 🔄"
+        • intentKey="orders:cancel": "¿${getActionVerb("orders:cancel", businessType)}? ❌"`
             : ""
         }
 
@@ -271,12 +463,13 @@ export function intentClassifierPrompt(
 
         POLICY DECISION: ${policy?.type}
         - Intención rechazada: ${intentKey}
-        - Módulo: ${getModuleName(intentModule)}
+        - Módulo: ${getModuleName(intentModule, businessType)}
+        - Dominio: ${businessType || "general"}
         - Usuario mostró señal: isRejected=true ("no", "no quiero", "mejor no")
         - PolicyEngine decidió proponer alternativa en vez de insistir
 
         ALTERNATIVAS DISPONIBLES (excluyendo intentKey rechazada):
-        ${filteredAlts.length > 0 ? filteredAlts.map((alt, i) => `${i + 1}. ${alt.intentKey} (${alt.module}) - score: ${alt.score.toFixed(2)}`).join("\n        ") : "No hay alternativas en BeliefState — usa tu criterio"}
+        ${filteredAlts.length > 0 ? filteredAlts.map((alt, i) => `${i + 1}. ${alt.intentKey} (${getModuleName(alt.module, businessType)}) - score: ${alt.score.toFixed(2)}`).join("\n        ") : "No hay alternativas en BeliefState — usa tu criterio"}
 
         ALTERNATIVAS DEL MISMO MÓDULO (prioritarias):
         ${sameModuleAlts.length > 0 ? sameModuleAlts.map((alt, i) => `${i + 1}. ${alt.intentKey}`).join("\n        ") : "No hay alternativas del mismo módulo"}
@@ -298,7 +491,7 @@ export function intentClassifierPrompt(
         • "¿Cómo lo ves? 😄"
         • "¿Te parece bien? ✅"
 
-        EJEMPLOS POR ESCENARIO:
+        EJEMPLOS POR ESCENARIO (dominio=${businessType}):
         ${
           intentModule === "booking"
             ? `
@@ -306,17 +499,17 @@ export function intentClassifierPrompt(
         • Usuario rechazó horario: "¿Y si cambiamos a otro horario? ¿Qué opinas? ✨"
         • Usuario rechazó fecha: "¿Te viene mejor otro día de esta semana? ¿Cómo lo ves? 😄"
         • Usuario rechazó party size: "¿O prefieres una mesa más pequeña? ¿Te parece bien? ✅"
-        • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey) : "otra opción de reserva"}? ¿Te late? 👋"`
+        • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey, businessType) : "otra opción"}? ¿Te late? 👋"`
             : ""
         }
         ${
-          intentModule === "products"
+          intentModule === "products" || intentModule === "orders"
             ? `
-        PRODUCT ORDER RECHAZADO (intentKey=${intentKey}):
-        • Usuario rechazó plato: "¿O probamos con otro plato del menú? ¿Qué opinas? ✨"
+        ${intentModule === "products" ? "PRODUCTOS" : "PEDIDOS"} RECHAZADO (intentKey=${intentKey}):
+        • Usuario rechazó producto/plato: "¿O probamos con otro ${intentModule === "products" ? "plato" : "producto"} del menú? ¿Qué opinas? ✨"
         • Usuario rechazó orderType: "¿Prefieres recoger en local en vez de delivery? ¿Te funciona? 😊"
         • Usuario rechazó cantidad: "¿O pedimos media ración para probar? ¿Vamos con eso? 🙌"
-        • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey) : "otra opción de pedido"}? ¿Cómo lo ves? 😄"`
+        • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey, businessType) : "otra opción"}? ¿Cómo lo ves? 😄"`
             : ""
         }
 
@@ -337,7 +530,8 @@ export function intentClassifierPrompt(
 
         POLICY DECISION: ${policy?.type}
         - Intención a ejecutar: ${intentKey}
-        - Módulo: ${getModuleName(intentModule)}
+        - Módulo: ${getModuleName(intentModule, businessType)}
+        - Dominio: ${businessType || "general"}
         - Action: ${policy.action}
         - requiresConfirmation: "${requiresConfirmation}"
         - PolicyEngine decidió ejecutar inmediatamente
@@ -376,16 +570,18 @@ export function intentClassifierPrompt(
             : ""
         }
         ${
-          intentModule === "booking" || intentModule === "products"
+          intentModule === "booking" ||
+          intentModule === "products" ||
+          intentModule === "orders"
             ? `
-        ACCIÓN DE NEGOCIO (booking/restaurant):
-        1. Confirma que vas a proceder con ${getActionVerb(intentKey)}
+        ACCIÓN DE NEGOCIO (${getModuleName(intentModule, businessType)}):
+        1. Confirma que vas a proceder con ${getActionVerb(intentKey, businessType)}
         2. Menciona el siguiente paso (ej: "te muestro opciones", "procesando tu pedido")
         3. NO pidas confirmación adicional (ya fue confirmada por PolicyEngine)
 
         EJEMPLO:
-        • intentKey="booking:create": "¡Perfecto! Voy a ${getActionVerb("booking:create").toLowerCase()}. ¿Para cuántas personas?"
-        • intentKey="orders:create": "¡Excelente! Voy a ${getActionVerb("orders:create").toLowerCase()}. ¿Qué te gustaría pedir?"`
+        • intentKey="booking:create": "¡Perfecto! Voy a ${getActionVerb("booking:create", businessType).toLowerCase()}. ¿Para cuántas personas?"
+        • intentKey="orders:create": "¡Excelente! Voy a ${getActionVerb("orders:create", businessType).toLowerCase()}. ¿Qué te gustaría pedir?"`
             : ""
         }
 
@@ -393,6 +589,7 @@ export function intentClassifierPrompt(
         - NO pidas confirmación (PolicyEngine ya la gestionó)
         - Procede directamente con la acción
         - Sé útil y orientado a la tarea
+        - Usa vocabulario específico del dominio (${businessType})
         - Usa intentKey para saber QUÉ acción ejecutar
       `;
 
@@ -408,10 +605,19 @@ export function intentClassifierPrompt(
         FALLBACK:
         - Responde de forma genérica y útil
         - Ofrece ayuda con los módulos activos: ${activeModules.join(", ")}
+        - Usa vocabulario específico del dominio (${businessType})
         - NO menciones el error técnico
 
         EJEMPLO:
-        "Soy ${assistantName} de ${businessName}. Puedo ayudarte con ${generateAgentGoals(activeModules)}. ¿En qué te ayudo?"
+        "Soy ${assistantName} de ${businessName}. Puedo ayudarte con ${activeModules
+          .filter(
+            (m) =>
+              m !== "informational" &&
+              m !== "social-protocol" &&
+              m !== "conversational-signal",
+          )
+          .map((m) => getModuleName(m, businessType))
+          .join(", ")}. ¿En qué te ayudo?"
       `;
   }
 }

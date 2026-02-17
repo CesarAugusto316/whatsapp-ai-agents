@@ -3,6 +3,7 @@ import type {
   BookingIntentKey,
   InformationalIntentKey,
   IntentExample,
+  IntentExampleKey,
   OrderIntentKey,
   ProductIntentKey,
   SocialProtocolIntent,
@@ -707,4 +708,4 @@ export const intentExamples = [
   ...restaurantProducts,
   ...restaurantOrders,
   ...erotic,
-] as const;
+] as readonly IntentExample<IntentExampleKey>[];

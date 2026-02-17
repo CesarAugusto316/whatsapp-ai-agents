@@ -49,7 +49,7 @@ Usage:
 
       const tests = [
         { query: "quiero reservar", expected: "booking:create" },
-        { query: "ver el menú", expected: "products:find" },
+        { query: "ver el menú", expected: "products:view" },
         { query: "cuánto cuesta", expected: "info:ask_price" },
       ];
 
@@ -57,7 +57,7 @@ Usage:
       for (const test of tests) {
         const { points } = await ragService.searchIntent(test.query, [
           "booking",
-          "restaurant",
+          "products",
           "informational",
         ]);
 

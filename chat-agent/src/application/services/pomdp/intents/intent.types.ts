@@ -84,7 +84,8 @@ export type IntentExampleKey =
   | SocialProtocolIntent
   | InformationalIntentKey
   | BookingIntentKey
-  | ProductOrderIntentKey;
+  | ProductIntentKey
+  | OrderIntentKey;
 
 // ============================================
 // 2. CONVERSATIONAL SIGNALS (no son intents, do not need vectorize)
