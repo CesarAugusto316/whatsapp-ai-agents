@@ -1,6 +1,10 @@
+import { CONVERSATION_BEHAVIOR } from "./global-rules";
+
 /**
  * Genera las metas del agente basadas en los módulos activos
- * Excluye módulos de soporte (informational, social-protocol, conversational-signal)
+ * Excluye módulos de soporte (social-protocol, conversational-signal)
+ *
+ * NOTA: CONVERSATION_BEHAVIOR ahora está en global-rules.ts para evitar duplicación
  */
 export function generateAgentGoals(activeModules: string[]): string {
   const coreModules = activeModules.filter(
@@ -26,7 +30,6 @@ export function generateAgentGoals(activeModules: string[]): string {
     goals.push("- Procesar pedidos de comida");
     goals.push("- Buscar platos específicos por preferencias");
     goals.push("- Recomendar platos populares");
-    goals.push("- Gestionar entregas y tiempos de espera");
   }
 
   if (coreModules.includes("erotic")) {
@@ -41,20 +44,13 @@ export function generateAgentGoals(activeModules: string[]): string {
     goals.push("- Ayudar con información básica");
   }
 
-  // Agregar reglas de comportamiento por policy type (siempre activas)
-  goals.push("");
-  goals.push("CONVERSATION BEHAVIOR:");
-  goals.push(
-    "- Si el usuario duda: ofrecer 2 opciones claras, NO preguntar abierto",
-  );
-  goals.push(
-    "- Si el usuario rechaza: proponer 1 alternativa relevante, NO insistir",
-  );
-  goals.push(
-    "- Si el usuario confirma: proceder directamente, NO volver a pedir confirmación",
-  );
-  goals.push("- Si el usuario está indeciso: ser empático, NO juzgar");
-  goals.push("- Si no entiendes: presentar capacidades, NO decir 'no entendí'");
-
+  // NOTA: CONVERSATION_BEHAVIOR se inyecta desde global-rules.ts
+  // No lo agregamos aquí para evitar duplicación
   return goals.join("\n");
 }
+
+/**
+ * Exporta CONVERSATION_BEHAVIOR para que pueda usarse directamente
+ * @link global-rules.ts
+ */
+export { CONVERSATION_BEHAVIOR } from "./global-rules";
