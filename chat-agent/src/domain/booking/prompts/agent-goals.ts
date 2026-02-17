@@ -41,5 +41,20 @@ export function generateAgentGoals(activeModules: string[]): string {
     goals.push("- Ayudar con información básica");
   }
 
+  // Agregar reglas de comportamiento por policy type (siempre activas)
+  goals.push("");
+  goals.push("CONVERSATION BEHAVIOR:");
+  goals.push(
+    "- Si el usuario duda: ofrecer 2 opciones claras, NO preguntar abierto",
+  );
+  goals.push(
+    "- Si el usuario rechaza: proponer 1 alternativa relevante, NO insistir",
+  );
+  goals.push(
+    "- Si el usuario confirma: proceder directamente, NO volver a pedir confirmación",
+  );
+  goals.push("- Si el usuario está indeciso: ser empático, NO juzgar");
+  goals.push("- Si no entiendes: presentar capacidades, NO decir 'no entendí'");
+
   return goals.join("\n");
 }

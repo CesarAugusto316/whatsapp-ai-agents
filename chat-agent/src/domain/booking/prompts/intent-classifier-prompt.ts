@@ -234,18 +234,18 @@ export function intentClassifierPrompt(
           intentModule === "booking"
             ? `
         BOOKING:
-        • intentKey="booking:create": "¿${getActionVerb("booking:create")}? EMOJI"
-        • intentKey="booking:modify": "¿${getActionVerb("booking:modify")}? EMOJI"
-        • intentKey="booking:cancel": "¿${getActionVerb("booking:cancel")}? EMOJI"`
+        • intentKey="booking:create": "¿${getActionVerb("booking:create")}? ✅"
+        • intentKey="booking:modify": "¿${getActionVerb("booking:modify")}? 🔄"
+        • intentKey="booking:cancel": "¿${getActionVerb("booking:cancel")}? ❌"`
             : ""
         }
         ${
           intentModule === "restaurant"
             ? `
         PRODUCT ORDERS:
-        • intentKey="restaurant:place_order": "¿${getActionVerb("restaurant:place_order")}? EMOJI"
-        • intentKey="restaurant:update_order": "¿${getActionVerb("restaurant:update_order")}? EMOJI"
-        • intentKey="restaurant:cancel_order": "¿${getActionVerb("restaurant:cancel_order")}? EMOJI"`
+        • intentKey="restaurant:place_order": "¿${getActionVerb("restaurant:place_order")}? ✅"
+        • intentKey="restaurant:update_order": "¿${getActionVerb("restaurant:update_order")}? 🔄"
+        • intentKey="restaurant:cancel_order": "¿${getActionVerb("restaurant:cancel_order")}? ❌"`
             : ""
         }
 
@@ -292,9 +292,9 @@ export function intentClassifierPrompt(
           intentModule === "booking"
             ? `
         BOOKING RECHAZADO (intentKey=${intentKey}):
-        • Usuario rechazó horario: "¿Y si cambiamos a otro horario? ¿Te funciona? 😊"
+        • Usuario rechazó horario: "¿Y si cambiamos a otro horario? ¿Que te parece? 😊"
         • Usuario rechazó fecha: "¿Te viene mejor otro día de esta semana? ¿Te funciona? 😊"
-        • Usuario rechazó party size: "¿O prefieres una mesa más pequeña? ¿Te funciona? 😊"
+        • Usuario rechazó party size: "¿O prefieres una mesa más pequeña? ¿Que opinas? 😊"
         • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey) : "otra opción de reserva"}? ¿Te funciona? 😊"`
             : ""
         }
@@ -302,7 +302,7 @@ export function intentClassifierPrompt(
           intentModule === "restaurant"
             ? `
         PRODUCT ORDER RECHAZADO (intentKey=${intentKey}):
-        • Usuario rechazó plato: "¿O probamos con otro plato del menú? ¿Te funciona? 😊"
+        • Usuario rechazó plato: "¿O probamos con otro plato del menú? ¿Te parece? 😊"
         • Usuario rechazó orderType: "¿Prefieres recoger en local en vez de delivery? ¿Te funciona? 😊"
         • Usuario rechazó cantidad: "¿O pedimos media ración para probar? ¿Te funciona? 😊"
         • Alternativa desde sameModuleAlts[0]: "¿O prefieres ${sameModuleAlts[0] ? getActionVerb(sameModuleAlts[0].intentKey) : "otra opción de pedido"}? ¿Te funciona? 😊"`

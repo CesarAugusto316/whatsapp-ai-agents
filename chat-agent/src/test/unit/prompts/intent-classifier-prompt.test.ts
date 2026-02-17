@@ -930,7 +930,7 @@ describe("intentClassifierPrompt - edge cases", () => {
         businessType: "Cafetería",
         assistantName: "CaféBot",
         general: {
-          businessType: "restaurant",
+          businessType: "Cafetería",
           // name: "El Rinconcito",
           description: "Test",
           timezone: "America/Lima",
@@ -963,5 +963,6 @@ describe("intentClassifierPrompt - edge cases", () => {
 
     expect(prompt).toContain("CaféBot");
     expect(prompt).toContain("Cafetería El Rinconcito");
+    expect(prompt).toContain("CONVERSATION BEHAVIOR");
   });
 });
