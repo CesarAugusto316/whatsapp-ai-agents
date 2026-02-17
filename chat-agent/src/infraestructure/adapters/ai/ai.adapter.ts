@@ -230,11 +230,23 @@ class AiAdapter implements IAiAdapter {
   }
 
   /**
+   * Sends a chat message with a TRANSIENT system prompt and persistent chat history.
    *
-   * @param promptGen
-   * @param customerMessage
-   * @param chatHistory
-   * @returns
+   * ARCHITECTURAL DECISION:
+   * - systemPrompt: Volatile, per-iteration instructions (RAG context, POMDP state, etc.)
+   * - chatHistory: Persistent conversation (user/assistant messages ONLY, NO system prompts)
+   *
+   * The system prompt is injected fresh on each iteration and NEVER accumulates in history.
+   * This prevents:
+   * - Contradictory system instructions piling up
+   * - Token explosion from repeated RAG contexts
+   * - Context pollution from outdated business logic
+   *
+   * @param systemPrompt - Fresh instructions for THIS iteration only (RAG + POMDP state)
+   * @param msg - Current user message
+   * @param chatHistory - Persistent conversation history (filtered: no system prompts)
+   * @param useAuxModel - Use cheaper/faster model for simple tasks
+   * @returns Assistant response string
    */
   handleChatMessage({
     systemPrompt,
@@ -243,9 +255,22 @@ class AiAdapter implements IAiAdapter {
     useAuxModel = false,
   }: HandleMessageSendArgs = defaultConfig) {
     //
+    // Defense in depth: Ensure no system prompts leaked into chat history
+    const cleanHistory = chatHistory.filter((m) => m.role !== "system");
+    if (cleanHistory.length !== chatHistory.length) {
+      // Log the anomaly for debugging
+      console.warn(
+        "[AiAdapter] System prompt leaked into chat history - filtered out",
+        {
+          originalCount: chatHistory.length,
+          filteredCount: cleanHistory.length,
+        },
+      );
+    }
+
     const messages: ChatMessage[] = [
-      { role: "system", content: systemPrompt },
-      ...chatHistory,
+      { role: "system", content: systemPrompt }, // ← Transient: recreated each iteration
+      ...cleanHistory, // ← Persistent: user/assistant only
       { role: "user", content: msg },
     ];
 

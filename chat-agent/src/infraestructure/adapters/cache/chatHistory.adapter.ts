@@ -1,6 +1,7 @@
 import { redisClient } from "./redis.client";
 import type { ChatMessage } from "../ai";
 import { env } from "bun";
+import { logger } from "@/infraestructure/logging";
 
 type StoredMessage = {
   role: "user" | "assistant" | "system";
@@ -22,32 +23,49 @@ class ChatHistory {
    * LRANGE chatKey 0 -1
    * @description
    * @param chatKey chat:businesID:customerPhone
-   * @returns
+   * @returns ChatMessage[] - ONLY user/assistant messages (NO system prompts)
    */
   async get(chatKey: string) {
     const rawHistory =
       (await redisClient.lrange(chatKey, -this.MAX_MESSAGES, -1)) ?? [];
-    return rawHistory.map((item) => {
-      const msg: StoredMessage = JSON.parse(item);
-      return {
-        role: msg.role,
-        content: msg.content,
-      };
-    }) satisfies ChatMessage[];
-    // .filter((msg) => msg.role === "user");
+
+    const messages = rawHistory
+      .map((item) => {
+        const msg: StoredMessage = JSON.parse(item);
+        return {
+          role: msg.role,
+          content: msg.content,
+        };
+      })
+      .filter((msg) => msg.role !== "system"); // ← CRITICAL: Never persist system prompts
+
+    // Log context size for monitoring token usage
+    if (env.NODE_ENV === "production") {
+      logger.info("CHAT_HISTORY_RETRIEVED", {
+        chatKey,
+        messageCount: messages.length,
+        maxMessages: this.MAX_MESSAGES,
+        timestamp: Date.now(),
+      });
+    }
+
+    return messages satisfies ChatMessage[];
   }
 
   /**
+   * Pushes ONLY user/assistant messages to chat history.
+   * System prompts are NEVER persisted - they're transient per-iteration instructions.
    *
-   * @param chatKey
-   * @param customerMessage
-   * @param assistantResponse
+   * @param chatKey chat:businessID:customerPhone
+   * @param customerMessage - user message content
+   * @param assistantResponse - assistant message content
    */
   async push(
     chatKey: string,
     customerMessage: string,
     assistantResponse: string,
   ) {
+    // Validate: Never store system prompts
     await redisClient.rpush(
       chatKey,
       JSON.stringify({
@@ -63,6 +81,17 @@ class ChatHistory {
     );
     await redisClient.ltrim(chatKey, -this.MAX_MESSAGES, -1);
     await redisClient.expire(chatKey, this.EXPIRATION_TIME);
+
+    // Log for monitoring
+    if (env.NODE_ENV === "production") {
+      logger.info("CHAT_HISTORY_UPDATED", {
+        chatKey,
+        operation: "push",
+        maxMessages: this.MAX_MESSAGES,
+        expirationHours: this.hours,
+        timestamp: Date.now(),
+      });
+    }
   }
 }
 
