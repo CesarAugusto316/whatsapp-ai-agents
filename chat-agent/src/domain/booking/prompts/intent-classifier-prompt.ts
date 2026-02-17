@@ -1,5 +1,7 @@
 import type {
   BookingIntentKey,
+  IntentExampleKey,
+  ModuleKind,
   PolicyDecision,
   RestaurantIntentKey,
 } from "@/application/services/pomdp";
@@ -31,9 +33,9 @@ export function intentClassifierPrompt(
   const assistantName = business.assistantName;
 
   // Extract intent data for dynamic prompts
-  const intentKey = (currentIntent?.intentKey as string) || "unknown";
+  const intentKey = (currentIntent?.intentKey as IntentExampleKey) || "unknown";
   const requiresConfirmation = currentIntent?.requiresConfirmation || "always";
-  const intentModule = currentIntent?.module || "unknown";
+  const intentModule = (currentIntent?.module as ModuleKind) || "unknown";
   const alternatives = currentIntent?.alternatives || [];
   const intentScore = currentIntent?.score || 0;
 
@@ -76,7 +78,7 @@ export function intentClassifierPrompt(
       return `
        ${basePrompt(ctx)}
 
-       POLICY DECISION: unknown_intent
+       POLICY DECISION: ${policy?.type}
        - El usuario escribió algo que no coincide con ninguna intención conocida
        - NO es un error — es una oportunidad para presentar capacidades
 
@@ -136,7 +138,7 @@ export function intentClassifierPrompt(
       return `
         ${basePrompt(ctx)}
 
-        POLICY DECISION: ask_clarification
+        POLICY DECISION: ${policy?.type}
         - Intención más probable: ${intentKey} (score: ${intentScore.toFixed(2)})
         - Módulo: ${getModuleName(intentModule)}
         - El usuario fue ambiguo — hay 2-3 intents posibles con scores similares
@@ -208,7 +210,7 @@ export function intentClassifierPrompt(
       return `
         ${basePrompt(ctx)}
 
-        POLICY DECISION: ask_confirmation
+        POLICY DECISION: ${policy?.type}
         - Intención a confirmar: ${intentKey}
         - Módulo: ${getModuleName(intentModule)}
         - requiresConfirmation: "${requiresConfirmation}" (PolicyEngine decidió pedir confirmación)
@@ -224,31 +226,31 @@ export function intentClassifierPrompt(
         2. Sé conciso: máximo 1 pregunta + señal visual ✅
         3. NO repitas slots/detalles a menos que sean críticos
 
-        RESPONSE FORMAT (obligatorio):
-        ¿${getActionVerb(intentKey)}? ✅
+        RESPONSE FORMAT:
+        ¿${getActionVerb(intentKey)}? + EMOJI
 
         EJEMPLOS POR MÓDULO:
         ${
           intentModule === "booking"
             ? `
         BOOKING:
-        • intentKey="booking:create": "¿${getActionVerb("booking:create")}? ✅"
-        • intentKey="booking:modify": "¿${getActionVerb("booking:modify")}? ✅"
-        • intentKey="booking:cancel": "¿${getActionVerb("booking:cancel")}? ✅"`
+        • intentKey="booking:create": "¿${getActionVerb("booking:create")}? EMOJI"
+        • intentKey="booking:modify": "¿${getActionVerb("booking:modify")}? EMOJI"
+        • intentKey="booking:cancel": "¿${getActionVerb("booking:cancel")}? EMOJI"`
             : ""
         }
         ${
           intentModule === "restaurant"
             ? `
         PRODUCT ORDERS:
-        • intentKey="restaurant:place_order": "¿${getActionVerb("restaurant:place_order")}? ✅"
-        • intentKey="restaurant:update_order": "¿${getActionVerb("restaurant:update_order")}? ✅"
-        • intentKey="restaurant:cancel_order": "¿${getActionVerb("restaurant:cancel_order")}? ✅"`
+        • intentKey="restaurant:place_order": "¿${getActionVerb("restaurant:place_order")}? EMOJI"
+        • intentKey="restaurant:update_order": "¿${getActionVerb("restaurant:update_order")}? EMOJI"
+        • intentKey="restaurant:cancel_order": "¿${getActionVerb("restaurant:cancel_order")}? EMOJI"`
             : ""
         }
 
         RULES:
-        - SIEMPRE termina con ✅ (señal visual de acción)
+        - SIEMPRE termina con EMOJI (señal visual de acción)
         - NO uses "¿Estás seguro?" (genera ansiedad)
         - NO añadas explicaciones largas
         - Usa intentKey para saber QUÉ acción confirmar
@@ -263,7 +265,7 @@ export function intentClassifierPrompt(
       return `
         ${basePrompt(ctx)}
 
-        POLICY DECISION: propose_alternative
+        POLICY DECISION: ${policy?.type}
         - Intención rechazada: ${intentKey}
         - Módulo: ${getModuleName(intentModule)}
         - Usuario mostró señal: isRejected=true ("no", "no quiero", "mejor no")
@@ -322,7 +324,7 @@ export function intentClassifierPrompt(
       return `
         ${basePrompt(ctx)}
 
-        POLICY DECISION: execute
+        POLICY DECISION: ${policy?.type}
         - Intención a ejecutar: ${intentKey}
         - Módulo: ${getModuleName(intentModule)}
         - Action: ${policy.action}
