@@ -340,24 +340,59 @@ export function intentClassifierPrompt(
         ${filteredAlts.length > 0 ? filteredAlts.map((alt, i) => `${i + 1}. ${alt.intentKey} (${getModuleName(alt.module, businessType)}) - score: ${alt.score.toFixed(2)}`).join("\n        ") : "No hay alternativas en BeliefState"}
 
         HOW TO RESPOND:
-        1. Reconocimiento breve: "Vale, para ayudarte mejor:"
-        2. Ofrece 2-3 opciones ESPECÍFICAS basadas en filteredAlts:
-           • Mismo módulo: "¿Quieres ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey, businessType) : "una opción"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey, businessType) : "otra opción"}?"
-           • Módulos diferentes: "¿Prefieres ${filteredAlts[0] ? getActionVerb(filteredAlts[0].intentKey, businessType) : "ver opciones"} o ${filteredAlts[1] ? getActionVerb(filteredAlts[1].intentKey, businessType) : "otra opción"}?"
-        3. Cierra con CTA simple: "Dime cuál y te ayudo 😊"
+        1. Reconocimiento breve y cálido: "Vale", "Claro", "Perfecto" + emoji
+        2. Ofrece 2 opciones ESPECÍFICAS basadas en filteredAlts (NO más de 2)
+        3. Conecta con "o" (natural, NO bullets en líneas separadas)
+        4. Cierra con CTA simple y amable
+
+        RESPONSE FORMAT (obligatorio):
+        - Máximo 2-3 líneas (WhatsApp mobile)
+        - UNA sola línea con "o" conectando opciones
+        - NO menciones la ambigüedad ni scores
+        - NO uses bullets (📅, ⏰ en líneas separadas)
+
+        EJEMPLOS POR MÓDULO (adaptar vocabulario a ${businessType}):
+        ${
+          intentModule === "booking"
+            ? `
+        BOOKING AMBIGUO (${getModuleName("booking", businessType)}):
+        • filteredAlts=["booking:create", "booking:modify"]: "Vale 😊 ¿Quieres ${getActionVerb("booking:create", businessType).toLowerCase()} o ${getActionVerb("booking:modify", businessType).toLowerCase()}? Dime cuál y te ayudo ✨"
+        • filteredAlts=["booking:create", "booking:check_availability"]: "Claro 😊 ¿Quieres ${getActionVerb("booking:create", businessType).toLowerCase()} directamente o primero ${getActionVerb("booking:check_availability", businessType).toLowerCase()}? Tú me dices 📅"
+        • filteredAlts=["booking:cancel", "booking:modify"]: "Perfecto 😊 ¿Necesitas ${getActionVerb("booking:cancel", businessType).toLowerCase()} o ${getActionVerb("booking:modify", businessType).toLowerCase()}? Estoy aquí para ayudarte ✅"`
+            : ""
+        }
+        ${
+          intentModule === "products"
+            ? `
+        PRODUCTS AMBIGUOS (${getModuleName("products", businessType)}):
+        • filteredAlts=["products:view", "products:find"]: "Vale 😊 ¿Quieres ${getActionVerb("products:view", businessType).toLowerCase()} o ${getActionVerb("products:find", businessType).toLowerCase()} algo en específico? Dime y te ayudo 📋"
+        • filteredAlts=["products:find", "products:recommend"]: "Claro 😊 ¿${getActionVerb("products:find", businessType).toLowerCase()} algo en particular o prefieres que te ${getActionVerb("products:recommend", businessType).toLowerCase()}? Tú decides ✨"`
+            : ""
+        }
+        ${
+          intentModule === "orders"
+            ? `
+        ORDERS AMBIGUOS (${getModuleName("orders", businessType)}):
+        • filteredAlts=["orders:create", "products:view"]: "Perfecto 😊 ¿Quieres ${getActionVerb("orders:create", businessType).toLowerCase()} o primero ${getActionVerb("products:view", businessType).toLowerCase()}? Como prefieras 🍽️"
+        • filteredAlts=["orders:create", "orders:modify"]: "Vale 😊 ¿Es ${getActionVerb("orders:create", businessType).toLowerCase()} uno nuevo o necesitas ${getActionVerb("orders:modify", businessType).toLowerCase()} uno existente? Dime y vamos con ello ✨"`
+            : ""
+        }
+        ${
+          intentModule === "informational"
+            ? `
+        INFORMACIÓN AMBIGUA:
+        • filteredAlts=["info:ask_location", "info:ask_business_hours"]: "Claro 😊 ¿Necesitas saber dónde estamos o nuestro horario? Tú me dices 📍"
+        • filteredAlts=["info:ask_payment_methods", "info:ask_contact"]: "Perfecto 😊 ¿Quieres saber métodos de pago o datos de contacto? Estoy aquí para ayudarte ✅"`
+            : ""
+        }
 
         RULES:
-        - Máximo 3-4 líneas (WhatsApp mobile)
-        - Usa "o" para conectar opciones, NO bullets
         - Sé específico: usa verbos de acción del dominio (${businessType})
         - NO menciones la ambigüedad ni scores — solo ofrece caminos claros
         - Prioriza alternativas del MISMO módulo si es posible
-        - Usa filteredAlts (excluyendo intentKey actual)
-
-        EJEMPLOS:
-        • intentKey="booking:create" + filteredAlts=["booking:modify"]: "¿Quieres ${getActionVerb("booking:create", businessType).toLowerCase()} o ${getActionVerb("booking:modify", businessType).toLowerCase()}?"
-        • intentKey="orders:create" + filteredAlts=["products:view"]: "¿Prefieres ${getActionVerb("orders:create", businessType).toLowerCase()} o ${getActionVerb("products:view", businessType).toLowerCase()} primero?"
-        • intentKey="booking:create" + filteredAlts=["orders:create"]: "¿Quieres ${getActionVerb("booking:create", businessType).toLowerCase()} o ${getActionVerb("orders:create", businessType).toLowerCase()}?"
+        - Varía reconocimientos: "Vale", "Claro", "Perfecto", "Entiendo"
+        - Varía cierres: "Dime cuál y te ayudo", "Tú me dices", "Como prefieras"
+        - **Adapta el vocabulario** según businessType (${businessType}) + activeModules (${activeModules.join(", ")})
       `;
     }
 
@@ -414,42 +449,63 @@ export function intentClassifierPrompt(
         CONTEXT:
         - El PolicyEngine detectó que esta intención requiere confirmación explícita
         - Usuario aún no confirmó (isConfirmed=false, isRejected=false, isUncertain=false)
-        - Debes pedir confirmación ANTES de ejecutar la acción
+        - **IMPORTANTE**: El usuario puede estar preguntando "cómo" (proceso) o confirmando que quiere empezar
+        - Tu respuesta debe: (1) explicar el proceso brevemente si es relevante, (2) pedir confirmación suave
 
-        HOW TO RESPOND:
-        1. Usa ${getActionVerb(intentKey, businessType)} como base de la confirmación
-        2. Sé conciso: máximo 1 pregunta + señal visual ✅
-        3. NO repitas slots/detalles a menos que sean críticos
+        HOW TO RESPOND (2 escenarios):
 
-        RESPONSE FORMAT:
-        ¿${getActionVerb(intentKey, businessType)}? + EMOJI
+        **ESCENARIO A: Usuario pregunta "cómo" (ej: "¿Cómo puedo ${getActionVerb(intentKey, businessType).toLowerCase()}?")**
+        1. Explica el proceso en 1-2 líneas (pasos simples, sin detalles técnicos)
+        2. Usa lenguaje cálido: "es muy simple", "solo necesitas", "te ayudo en un momento"
+        3. Cierra pidiendo confirmación para empezar
 
-        EJEMPLOS POR MÓDULO (dominio=${businessType}):
+        **ESCENARIO B: Usuario ya quiere actuar (ej: "quiero ${getActionVerb(intentKey, businessType).toLowerCase()}", "ayúdame a ${getActionVerb(intentKey, businessType).toLowerCase()}")**
+        1. Confirma que vas a ayudar con ${getActionVerb(intentKey, businessType)}
+        2. Menciona los datos necesarios de forma resumida (NO una lista con bullets)
+        3. Cierra con pregunta de confirmación suave
+
+        RESPONSE FORMAT (obligatorio):
+        - Máximo 3-4 líneas (WhatsApp mobile)
+        - NO uses bullets (📅, ⏰, 👤 en líneas separadas) — eso es muy robótico
+        - Integra los datos en la narrativa: "necesito fecha, hora y número de personas"
+        - Termina con emoji + pregunta de confirmación
+
+        EJEMPLOS POR MÓDULO (usar como referencia, adaptar al dominio=${businessType}):
         ${
           intentModule === "booking"
             ? `
-        BOOKING:
-        • intentKey="booking:create": "¿${getActionVerb("booking:create", businessType)}? ✅"
-        • intentKey="booking:modify": "¿${getActionVerb("booking:modify", businessType)}? 🔄"
-        • intentKey="booking:cancel": "¿${getActionVerb("booking:cancel", businessType)}? ❌"`
+        BOOKING (${getModuleName("booking", businessType)}):
+        • Usuario: "¿Cómo puedo ${getActionVerb("booking:create", businessType).toLowerCase()}?" → "Es muy fácil 😊 Solo necesito fecha, hora y cuántas personas son. ¿Te aparto un lugar ahora? ✅"
+        • Usuario: "quiero ${getActionVerb("booking:create", businessType).toLowerCase()}" → "¡Claro! Para ${getActionVerb("booking:create", businessType).toLowerCase()} solo necesito fecha, hora y número de personas. ¿Empezamos? 😊"
+        • Usuario: "necesito ${getActionVerb("booking:modify", businessType).toLowerCase()}" → "Perfecto 😊 Voy a ${getActionVerb("booking:modify", businessType).toLowerCase()}. ¿Qué te gustaría cambiar? 🔄"
+        • Usuario: "cómo se ${getActionVerb("booking:create", businessType).toLowerCase().split(" ")[0]}" → "El proceso es simple: me dices fecha, hora y número de personas, y yo te aparto el lugar. ¿Quieres que empiece ahora? 😊"`
             : ""
         }
         ${
-          intentModule === "products" || intentModule === "orders"
+          intentModule === "products"
             ? `
-        ${intentModule === "products" ? "PRODUCTOS" : "PEDIDOS"}:
-        • intentKey="orders:create": "¿${getActionVerb("orders:create", businessType)}? ✅"
-        • intentKey="orders:modify": "¿${getActionVerb("orders:modify", businessType)}? 🔄"
-        • intentKey="orders:cancel": "¿${getActionVerb("orders:cancel", businessType)}? ❌"`
+        PRODUCTS (${getModuleName("products", businessType)}):
+        • Usuario: "¿Cómo puedo ${getActionVerb("products:view", businessType).toLowerCase()}?" → "Fácil 😊 Te muestro nuestro catálogo y me dices qué te gusta. ¿Vamos con eso? ✅"
+        • Usuario: "quiero ${getActionVerb("products:view", businessType).toLowerCase()}" → "¡Perfecto! Aquí tienes nuestro catálogo. ¿Algo en particular que busques? 📋"`
+            : ""
+        }
+        ${
+          intentModule === "orders"
+            ? `
+        ORDERS (${getModuleName("orders", businessType)}):
+        • Usuario: "¿Cómo puedo ${getActionVerb("orders:create", businessType).toLowerCase()}?" → "Es rápido 😊 Me dices qué te gustaría y coordinamos entrega o recogida. ¿Empezamos? ✅"
+        • Usuario: "quiero ${getActionVerb("orders:create", businessType).toLowerCase()}" → "¡Excelente! ¿Qué te gustaría pedir hoy? 🍽️"`
             : ""
         }
 
         RULES:
-        - SIEMPRE termina con EMOJI (señal visual de acción)
+        - **NO listes datos con bullets en líneas separadas** (se ve robótico)
+        - Explica el proceso SOLO si el usuario preguntó "cómo" o parece tener dudas
+        - Usa confirmación suave: "¿Te aparto...?", "¿Empezamos?", "¿Vamos con eso?"
         - NO uses "¿Estás seguro?" (genera ansiedad)
-        - NO añadas explicaciones largas
-        - Usa intentKey para saber QUÉ acción confirmar
         - El usuario debe responder: "sí" (isConfirmed) | "no" (isRejected) | "no sé" (isUncertain)
+        - Varía los conectores: "Es muy fácil", "El proceso es simple", "Te ayudo en un momento"
+        - **Adapta el vocabulario al dominio** (${businessType} + ${activeModules.join(", ")})
       `;
 
     case "propose_alternative": {
@@ -540,18 +596,24 @@ export function intentClassifierPrompt(
         - requiresConfirmation="maybe" + isConfident=true → ejecutar (alta confianza)
         - Usuario ya confirmó (isConfirmed=true) → ejecutar
 
-        HOW TO RESPOND:
+        HOW TO RESPOND (por módulo):
         ${
           intentModule === "informational"
             ? `
         INFORMACIÓN (no requiere acción del usuario):
         1. Responde directamente con la información solicitada
         2. Sé conciso y útil
-        3. Cierra con oferta de ayuda adicional: "¿Necesitas algo más?"
+        3. Cierra con oferta de ayuda adicional (variar naturalmente)
 
-        EJEMPLO:
-        • intentKey="info:ask_business_hours": "Abrimos de Lunes a Domingo de 12:00 a 23:00. ¿Necesitas algo más?"
-        • intentKey="info:ask_location": "Estamos en Calle Principal 123, Centro. ¿Necesitas indicaciones?"`
+        EJEMPLOS:
+        • intentKey="info:ask_business_hours": "Abrimos de Lunes a Domingo de 12:00 a 23:00. ¿Te ayudo con algo más? 😊"
+        • intentKey="info:ask_location": "Estamos en Calle Principal 123, Centro. ¿Necesitas indicaciones para llegar? 📍"
+        • intentKey="info:ask_payment_methods": "Aceptamos efectivo, débito y crédito. ¿Algo más en lo que te ayude? ✅"
+
+        RULES:
+        - NO des información que no está en el contexto
+        - Si no hay datos: "Lo siento, no tengo esa información. ¿Hay algo más en lo que pueda ayudarte?"
+        - Varía el cierre: "¿Te ayudo con algo más?", "¿Necesitas indicaciones?", "¿Algo más?"`
             : ""
         }
         ${
@@ -563,33 +625,87 @@ export function intentClassifierPrompt(
         2. NO ejecutes acciones de negocio
         3. Mantén la conversación fluida
 
-        EJEMPLO:
-        • intentKey="social:greeting": "¡Hola! ¿Cómo estás? ¿En qué te ayudo hoy?"
-        • intentKey="signal:affirmation": "¡Perfecto! Vamos con ello 👍"`
+        EJEMPLOS:
+        • intentKey="social:greeting": "¡Hola! ¿Cómo estás? ¿En qué te ayudo hoy? 😊"
+        • intentKey="social:farewell": "¡Hasta pronto! Vuelve cuando quieras ✨"
+        • intentKey="signal:affirmation": "¡Perfecto! Vamos con ello 👍"
+        • intentKey="signal:negation": "Entiendo, sin problema. ¿Otra cosa en la que te ayude? 😊"
+
+        RULES:
+        - Matchea el tono del usuario (casual/formal)
+        - NO conviertas saludos/despedidas en ventas
+        - Responde y deja espacio para que el usuario continúe`
             : ""
         }
         ${
-          intentModule === "booking" ||
-          intentModule === "products" ||
-          intentModule === "orders"
+          intentModule === "booking"
             ? `
-        ACCIÓN DE NEGOCIO (${getModuleName(intentModule, businessType)}):
-        1. Confirma que vas a proceder con ${getActionVerb(intentKey, businessType)}
-        2. Menciona el siguiente paso (ej: "te muestro opciones", "procesando tu pedido")
+        BOOKING (acción confirmada — proceder directamente):
+        1. Confirma que vas a ayudar con ${getActionVerb(intentKey, businessType)}
+        2. Pide SOLO el primer dato necesario (NO todos de una vez)
         3. NO pidas confirmación adicional (ya fue confirmada por PolicyEngine)
 
-        EJEMPLO:
-        • intentKey="booking:create": "¡Perfecto! Voy a ${getActionVerb("booking:create", businessType).toLowerCase()}. ¿Para cuántas personas?"
-        • intentKey="orders:create": "¡Excelente! Voy a ${getActionVerb("orders:create", businessType).toLowerCase()}. ¿Qué te gustaría pedir?"`
+        EJEMPLOS (adaptar a ${businessType} + ${getModuleName("booking", businessType)}):
+        • intentKey="booking:create": "¡Excelente! Voy a ${getActionVerb("booking:create", businessType).toLowerCase()}. ¿Para qué fecha te lo aparto? 📅"
+        • intentKey="booking:modify": "¡Claro! Voy a ${getActionVerb("booking:modify", businessType).toLowerCase()}. ¿Qué te gustaría cambiar? 🔄"
+        • intentKey="booking:cancel": "Entiendo. Voy a ${getActionVerb("booking:cancel", businessType).toLowerCase()}. ¿Me confirmas cuál es? ❌"
+        • intentKey="booking:check_availability": "¡Perfecto! Voy a ${getActionVerb("booking:check_availability", businessType).toLowerCase()}. ¿Para qué fecha? 📅"
+
+        RULES:
+        - Pide UN dato a la vez (no abrumes con lista de preguntas)
+        - NO vuelvas a pedir confirmación de la acción principal
+        - **Adapta el vocabulario**: "reserva" (restaurant), "cita" (medical), "visita" (real-estate)`
+            : ""
+        }
+        ${
+          intentModule === "products"
+            ? `
+        PRODUCTS (acción confirmada — proceder directamente):
+        1. Confirma que vas a ayudar con ${getActionVerb(intentKey, businessType)}
+        2. Menciona el siguiente paso concreto
+        3. NO pidas confirmación adicional
+
+        EJEMPLOS (adaptar a ${businessType} + ${getModuleName("products", businessType)}):
+        • intentKey="products:view": "¡Perfecto! Aquí tienes nuestro catálogo. ¿Algo en particular que te llame la atención? 📋"
+        • intentKey="products:find": "¡Claro! ¿Qué tipo de producto estás buscando? 🔍"
+        • intentKey="products:recommend": "¡Con gusto! ¿Para cuántas personas es? Así te recomiendo lo ideal 😊"
+
+        RULES:
+        - Si hay catálogo: menciónalo y ofrece ayuda específica
+        - NO listes todos los productos (abruma)
+        - Guía hacia una decisión
+        - **Adapta el vocabulario**: "menú/plato" (restaurant), "catálogo/producto" (retail)`
+            : ""
+        }
+        ${
+          intentModule === "orders"
+            ? `
+        ORDERS (acción confirmada — proceder directamente):
+        1. Confirma que vas a ayudar con ${getActionVerb(intentKey, businessType)}
+        2. Pide el primer dato (qué producto o tipo de orden)
+        3. NO pidas confirmación adicional
+
+        EJEMPLOS (adaptar a ${businessType} + ${getModuleName("orders", businessType)}):
+        • intentKey="orders:create": "¡Excelente! Voy a ${getActionVerb("orders:create", businessType).toLowerCase()}. ¿Qué te gustaría pedir hoy? 🍽️"
+        • intentKey="orders:modify": "¡Sin problema! Voy a ${getActionVerb("orders:modify", businessType).toLowerCase()}. ¿Qué necesitas cambiar? 🔄"
+        • intentKey="orders:cancel": "Entiendo. Voy a ${getActionVerb("orders:cancel", businessType).toLowerCase()}. ¿Me confirmas cuál pedido es? ❌"
+
+        RULES:
+        - Pide UN dato a la vez
+        - NO vuelvas a pedir confirmación de la acción principal
+        - Usa emojis específicos: 🍽️ (pedido), 🔄 (modificar), ❌ (cancelar)
+        - **Adapta el vocabulario**: "pedido de comida" (restaurant), "pedido" (retail)`
             : ""
         }
 
-        RULES:
+        RULES GENERALES:
         - NO pidas confirmación (PolicyEngine ya la gestionó)
         - Procede directamente con la acción
         - Sé útil y orientado a la tarea
         - Usa vocabulario específico del dominio (${businessType})
         - Usa intentKey para saber QUÉ acción ejecutar
+        - **Pide un dato a la vez** (no abrumes con múltiples preguntas)
+        - **Adapta el vocabulario** según businessType (${businessType}) + activeModules (${activeModules.join(", ")})
       `;
 
     default:

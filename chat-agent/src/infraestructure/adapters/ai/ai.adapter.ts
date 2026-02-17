@@ -173,7 +173,13 @@ class AiAdapter implements IAiAdapter {
      */
     temperature = 0.5,
     response_format,
-    max_tokens = 256,
+    /**
+     * Max tokens for response generation.
+     * - 512: sufficient for most conversational responses (~2-3 short paragraphs)
+     * - 1024: for complex responses with multiple sections
+     * Default: 512 (balanced for WhatsApp mobile responses)
+     */
+    max_tokens = 512,
     enable_thinking = false,
     useAuxModel = false,
   }: MessagesBasedRequest): Promise<string> {
