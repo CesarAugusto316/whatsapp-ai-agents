@@ -1,4 +1,5 @@
 import { DomainKind, ModuleKind } from "@/application/services/pomdp";
+import { bookingSchema } from "../../input-parser";
 
 type Guidance = {
   name: ModuleKind;
@@ -6,7 +7,9 @@ type Guidance = {
   requiredUserData: string[];
 };
 
-export const guidanceAboutCriticProcess: Guidance[] = [
+bookingSchema
+
+export const internalProcesses: Guidance[] = [
   {
     name: "booking",
     domains: ["restaurant", "medical", "real-estate"],
@@ -15,6 +18,7 @@ export const guidanceAboutCriticProcess: Guidance[] = [
       "number of people (if aplicable)",
       "start datetime",
       "end datetime (optional)",
+      "confirmacion (given by the system at the end)",
     ],
   },
   {
@@ -23,8 +27,10 @@ export const guidanceAboutCriticProcess: Guidance[] = [
     requiredUserData: [
       "name of the product",
       "quantity",
+      "total price (given at the end)",
       "delivery address (if active)",
       "recojer al local (if active)",
+      "confirmacion (given by the system at the end)",
     ],
   },
 ];

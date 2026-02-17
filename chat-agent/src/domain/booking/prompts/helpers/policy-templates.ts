@@ -12,6 +12,7 @@ import {
   getDomainCapabilities,
   getFilteredAlternatives,
 } from "./vocabulary";
+import { getProcessGuidance } from "./process-guidance";
 
 /**
  * Datos comunes para todos los policy templates
@@ -77,10 +78,15 @@ export function askClarificationTemplate(data: PolicyTemplateData): string {
   } = data;
   const filteredAlts = getFilteredAlternatives(alternatives, intentKey);
 
+  const userMessage = policy?.state?.current?.text || "";
+  const processGuidance = getProcessGuidance(intentModule, userMessage);
+
   return `
 ${basePrompt(ctx)}
 
-POLICY: ${policy?.type} — Usuario ambiguo. Intent: ${intentKey} (score: ${intentScore.toFixed(2)}). Módulo: ${getModuleName(intentModule, businessType)}.
+POLICY: ${policy?.type} — Usuario ambiguo. Intent: ${intentKey} (score: ${intentScore.toFixed(2)}). Módulo: ${getModuleName(intentModule, businessType)}
+
+${processGuidance}
 
 ALTERNATIVAS:
 ${filteredAlts.length > 0 ? filteredAlts.map((alt) => `- ${alt.intentKey} (${getModuleName(alt.module, businessType)})`).join("\n") : "Sin alternativas"}
@@ -140,6 +146,9 @@ export function askConfirmationTemplate(data: PolicyTemplateData): string {
   } = data;
   const actionVerb = getActionVerb(intentKey, businessType);
 
+  const userMessage = policy?.state?.current?.text || "";
+  const processGuidance = getProcessGuidance(intentModule, userMessage);
+
   return `
 ${basePrompt(ctx)}
 
@@ -147,6 +156,8 @@ POLICY: ${policy?.type} — Requiere confirmación (${requiresConfirmation}). Us
 
 INTENCIÓN: ${intentKey} (${getModuleName(intentModule, businessType)})
 ACCIÓN: ${actionVerb}
+
+${processGuidance}
 
 2 ESCENARIOS:
 
