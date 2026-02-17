@@ -150,12 +150,13 @@ export class PolicyEngine {
       "booking:check_availability": "booking:check_availability", // hay que implementar
 
       // Product
-      "restaurant:view_menu": "restaurant:view_menu", // hay que implementar
-      "restaurant:place_order": "restaurant:place_order",
-      "restaurant:find_dishes": "restaurant:find_dishes", // hay que implementar
-      "restaurant:recommend_dishes": "restaurant:recommend_dishes", // hay que implementar
-      "restaurant:update_order": "restaurant:update_order",
-      "restaurant:cancel_order": "restaurant:cancel_order",
+      "products:view": "products:view", // hay que implementar
+      "products:find": "products:find", // hay que implementar
+      "products:recommend": "products:recommend", // hay que implementar
+
+      "orders:create": "orders:create",
+      "orders:modify": "orders:modify",
+      "orders:cancel": "orders:cancel",
 
       // basicInformational
       "info:ask_location": "info:ask_location",

@@ -49,7 +49,7 @@ Usage:
 
       const tests = [
         { query: "quiero reservar", expected: "booking:create" },
-        { query: "ver el menú", expected: "restaurant:view_menu" },
+        { query: "ver el menú", expected: "products:find" },
         { query: "cuánto cuesta", expected: "info:ask_price" },
       ];
 

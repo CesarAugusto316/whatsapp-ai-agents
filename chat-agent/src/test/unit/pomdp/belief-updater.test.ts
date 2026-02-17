@@ -99,7 +99,7 @@ test("Transición entre intents", () => {
   expect(stateAfterFirst.current!.intentKey).toBe("booking:cancel");
   expect(stateAfterFirst.current!.isConfident).toBe(true); // score 0.85 >= threshold 0.8 for 'always'
 
-  // Segundo intent: restaurant:ask_price (never, score=0.7) → isConfident=true (usa su propio threshold 0.65)
+  // Segundo intent: info:ask_price (never, score=0.7) → isConfident=true (usa su propio threshold 0.65)
   const secondResult: IntentPayloadWithScore = {
     intentKey: "info:ask_price",
     module: "products",

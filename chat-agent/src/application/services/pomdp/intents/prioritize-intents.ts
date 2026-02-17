@@ -10,6 +10,7 @@ const MODULE_PRIORITY: Record<ModuleKind, number> = {
   informational: 3, // Información básica → media prioridad
   booking: 3, // Reservas → alta prioridad
   products: 3, // Pedidos → alta prioridad
+  orders: 3,
   delivery: 3, // Contenido adulto → alta prioridad
 } as const;
 

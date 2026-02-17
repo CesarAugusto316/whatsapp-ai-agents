@@ -133,10 +133,10 @@ describe("Intent Patterns - Regex Detection", () => {
   // });
 
   // ============================================
-  // RESTAURANT:VIEW_MENU
+  // products:find
   // ============================================
-  describe("restaurant:view_menu", () => {
-    const pattern = intentPatterns["restaurant:view_menu"]!;
+  describe("products:find", () => {
+    const pattern = intentPatterns["products:find"]!;
 
     it("should match explicit menu viewing phrases", () => {
       const validPhrases = [
@@ -174,10 +174,10 @@ describe("Intent Patterns - Regex Detection", () => {
   });
 
   // ============================================
-  // RESTAURANT:PLACE_ORDER
+  // orders:create
   // ============================================
-  describe("restaurant:place_order", () => {
-    const pattern = intentPatterns["restaurant:place_order"]!;
+  describe("orders:create", () => {
+    const pattern = intentPatterns["orders:create"]!;
 
     it("should match explicit order placement phrases", () => {
       const validPhrases = [
@@ -218,10 +218,10 @@ describe("Intent Patterns - Regex Detection", () => {
   });
 
   // ============================================
-  // RESTAURANT:UPDATE_ORDER
+  // orders:modify
   // ============================================
-  // describe("restaurant:update_order", () => {
-  //   const pattern = intentPatterns["restaurant:update_order"]!;
+  // describe("orders:modify", () => {
+  //   const pattern = intentPatterns["orders:modify"]!;
 
   //   it("should match explicit order modification phrases", () => {
   //     const validPhrases = [
@@ -263,10 +263,10 @@ describe("Intent Patterns - Regex Detection", () => {
   // });
 
   // ============================================
-  // RESTAURANT:CANCEL_ORDER
+  // orders:cancel
   // ============================================
-  describe("restaurant:cancel_order", () => {
-    const pattern = intentPatterns["restaurant:cancel_order"]!;
+  describe("orders:cancel", () => {
+    const pattern = intentPatterns["orders:cancel"]!;
 
     it("should match explicit order cancellation phrases", () => {
       const validPhrases = [
@@ -310,12 +310,8 @@ describe("Intent Patterns - Regex Detection", () => {
   describe("detectIntent", () => {
     it("should return the correct intentKey for a matching phrase", () => {
       expect(detectIntent("quiero hacer una reserva")).toBe("booking:create");
-      expect(detectIntent("quiero cancelar mi pedido")).toBe(
-        "restaurant:cancel_order",
-      );
-      expect(detectIntent("muestrame las opciones")).toBe(
-        "restaurant:view_menu",
-      );
+      expect(detectIntent("quiero cancelar mi pedido")).toBe("orders:cancel");
+      expect(detectIntent("muestrame las opciones")).toBe("products:find");
     });
 
     it("should return null for non-matching phrases", () => {
@@ -352,9 +348,9 @@ describe("Intent Patterns - Regex Detection", () => {
       expect(createPattern.test("quiero cambiar mi reserva")).toBeFalse();
     });
 
-    it("should distinguish between restaurant:place_order and restaurant:update_order", () => {
-      const placePattern = intentPatterns["restaurant:place_order"]!;
-      const updatePattern = intentPatterns["restaurant:update_order"]!;
+    it("should distinguish between orders:create and orders:modify", () => {
+      const placePattern = intentPatterns["orders:create"]!;
+      const updatePattern = intentPatterns["orders:modify"]!;
 
       expect(placePattern.test("quiero hacer un pedido")).toBeTrue();
       expect(updatePattern.test("quiero hacer un pedido")).toBeFalse();
@@ -363,9 +359,9 @@ describe("Intent Patterns - Regex Detection", () => {
       expect(placePattern.test("quiero cambiar mi pedido")).toBeFalse();
     });
 
-    it("should distinguish between restaurant:update_order and restaurant:cancel_order", () => {
-      const updatePattern = intentPatterns["restaurant:update_order"]!;
-      const cancelPattern = intentPatterns["restaurant:cancel_order"]!;
+    it("should distinguish between orders:modify and orders:cancel", () => {
+      const updatePattern = intentPatterns["orders:modify"]!;
+      const cancelPattern = intentPatterns["orders:cancel"]!;
 
       expect(updatePattern.test("quiero cambiar mi pedido")).toBeTrue();
       expect(cancelPattern.test("quiero cambiar mi pedido")).toBeFalse();

@@ -138,7 +138,7 @@ describe("intentClassifierPrompt - unknown_intent", () => {
   });
 
   test("debe generar prompt para unknown_intent solo con restaurant activo", () => {
-    const ctx = createMockCtx({ activeModules: ["products"] });
+    const ctx = createMockCtx({ activeModules: ["products", "orders"] });
     const policy = createPolicy("unknown_intent", undefined);
 
     const prompt = intentClassifierPrompt(ctx, policy);
@@ -195,7 +195,7 @@ describe("intentClassifierPrompt - ask_clarification", () => {
   test("debe generar prompt para ask_clarification con alternativas de diferente módulo", () => {
     const alternatives: BeliefIntent["alternatives"] = [
       {
-        intentKey: "restaurant:place_order",
+        intentKey: "orders:create",
         module: "products",
         score: 0.7,
         text: "",
@@ -212,7 +212,7 @@ describe("intentClassifierPrompt - ask_clarification", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("booking:create");
-    expect(prompt).toContain("restaurant:place_order");
+    expect(prompt).toContain("orders:create");
     expect(prompt).toContain("restaurant");
   });
 
@@ -306,7 +306,7 @@ describe("intentClassifierPrompt - clear_up_uncertainty", () => {
         requiresConfirmation: "always",
       },
       {
-        intentKey: "restaurant:view_menu",
+        intentKey: "products:find",
         module: "products",
         score: 0.7,
         text: "",
@@ -428,7 +428,7 @@ describe("intentClassifierPrompt - ask_confirmation", () => {
   });
 
   test("debe generar prompt para ask_confirmation con restaurant", () => {
-    const intent = createBeliefIntent("restaurant:place_order", "products", {
+    const intent = createBeliefIntent("orders:create", "products", {
       requiresConfirmation: "always",
       signals: { isConfirmed: false, isRejected: false, isUncertain: false },
     });
@@ -437,7 +437,7 @@ describe("intentClassifierPrompt - ask_confirmation", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    expect(prompt).toContain("restaurant:place_order");
+    expect(prompt).toContain("orders:create");
     expect(prompt).toContain("Hacer pedido");
     expect(prompt).toContain("PRODUCT ORDERS");
   });
@@ -544,7 +544,7 @@ describe("intentClassifierPrompt - propose_alternative", () => {
   test("debe priorizar sameModuleAlts sobre alternativas de otro módulo", () => {
     const alternatives: BeliefIntent["alternatives"] = [
       {
-        intentKey: "restaurant:view_menu",
+        intentKey: "products:find",
         module: "products",
         score: 0.8,
         text: "",
@@ -576,7 +576,7 @@ describe("intentClassifierPrompt - propose_alternative", () => {
   test("debe generar prompt para propose_alternative con restaurant", () => {
     const alternatives: BeliefIntent["alternatives"] = [
       {
-        intentKey: "restaurant:view_menu",
+        intentKey: "products:find",
         module: "products",
         score: 0.75,
         text: "",
@@ -584,7 +584,7 @@ describe("intentClassifierPrompt - propose_alternative", () => {
       },
     ];
 
-    const intent = createBeliefIntent("restaurant:place_order", "products", {
+    const intent = createBeliefIntent("orders:create", "products", {
       alternatives,
       signals: { isConfirmed: false, isRejected: true, isUncertain: false },
     });
@@ -594,7 +594,7 @@ describe("intentClassifierPrompt - propose_alternative", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("PRODUCT ORDER RECHAZADO");
-    expect(prompt).toContain("restaurant:place_order");
+    expect(prompt).toContain("orders:create");
     expect(prompt).toContain("Ver menú");
   });
 
@@ -694,7 +694,7 @@ describe("intentClassifierPrompt - execute", () => {
   });
 
   test("debe generar prompt para execute con restaurant", () => {
-    const intent = createBeliefIntent("restaurant:place_order", "products", {
+    const intent = createBeliefIntent("orders:create", "products", {
       requiresConfirmation: "always",
       signals: { isConfirmed: true, isRejected: false, isUncertain: false },
     });
@@ -703,7 +703,7 @@ describe("intentClassifierPrompt - execute", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    expect(prompt).toContain("restaurant:place_order");
+    expect(prompt).toContain("orders:create");
     expect(prompt).toContain("Hacer pedido");
     expect(prompt).toContain("¿Qué te gustaría pedir?");
   });

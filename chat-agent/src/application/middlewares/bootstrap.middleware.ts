@@ -89,14 +89,17 @@ export const bootstrapMiddleware = (): MiddlewareHandler<ModuleCtx> => {
     if (business.general.businessType === "restaurant") {
       ctx.set(
         "activeModules",
-        coreModules.concat(["products", "booking", "delivery"]),
+        coreModules.concat(["products", "orders", "booking", "delivery"]),
       );
     }
-    if (business.general.businessType === "real_estate") {
+    if (business.general.businessType === "real-estate") {
       ctx.set("activeModules", coreModules.concat(["booking"]));
     }
     if (business.general.businessType === "erotic") {
-      ctx.set("activeModules", coreModules.concat(["products", "booking"]));
+      ctx.set(
+        "activeModules",
+        coreModules.concat(["products", "orders", "booking"]),
+      );
     }
 
     // 5. NEXT HANDLER

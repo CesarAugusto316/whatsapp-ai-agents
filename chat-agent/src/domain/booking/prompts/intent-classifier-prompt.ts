@@ -3,7 +3,7 @@ import type {
   IntentExampleKey,
   ModuleKind,
   PolicyDecision,
-  ProductIntentKey,
+  ProductOrderIntentKey,
 } from "@/application/services/pomdp";
 import type { RestaurantCtx } from "@/domain/restaurant";
 import { basePrompt } from "./base-prompt";
@@ -19,7 +19,7 @@ import { generateAgentGoals } from "./agent-goals";
  *
  * BUSINESS CONTEXT (type="restaurant"):
  * - MODULE 1: BOOKING (reservas) → booking:create | booking:modify | booking:cancel | booking:check_availability
- * - MODULE 2: PRODUCT ORDERS (pedidos) → restaurant:view_menu | restaurant:place_order | restaurant:find_dishes | restaurant:recommend_dishes | restaurant:update_order | restaurant:cancel_order
+ * - MODULE 2: PRODUCT ORDERS (pedidos) → products:find | orders:create | products:find | products:recommend | orders:modify | orders:cancel
  * - MODULE 3: INFORMATIONAL → info:ask_* (horarios, ubicación, pago, entrega)
  */
 export function intentClassifierPrompt(
@@ -29,6 +29,7 @@ export function intentClassifierPrompt(
   const beliefState = policy?.state;
   const currentIntent = policy?.intent;
   const { business, activeModules } = ctx;
+  const businessType = business.general.businessType
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;
 
@@ -43,30 +44,33 @@ export function intentClassifierPrompt(
   const getModuleName = (module: ModuleKind) => {
     const map: Record<ModuleKind, string> = {
       booking: "Reservas",
-      products: "Pedidos",
+      products: "Menu ver opciones",
+      orders: "Pedidos",
+      delivery: "Entrega",
       informational: "Información",
       "social-protocol": "Saludos",
       "conversational-signal": "Respuestas",
-      delivery: "Entrega",
     };
     return map[module];
   };
 
   // Helper: get action verb for intentKey
   const getActionVerb = (key: string) => {
-    const map: Record<BookingIntentKey | ProductIntentKey, string> = {
+    const map: Record<BookingIntentKey | ProductOrderIntentKey, string> = {
       "booking:create": "Crear reserva",
       "booking:modify": "Modificar reserva",
       "booking:cancel": "Cancelar reserva",
       "booking:check_availability": "Consultar disponibilidad",
-      "restaurant:view_menu": "Ver menú",
-      "restaurant:place_order": "Hacer pedido",
-      "restaurant:find_dishes": "Buscar platos",
-      "restaurant:recommend_dishes": "Recomendar platos",
-      "restaurant:update_order": "Modificar pedido",
-      "restaurant:cancel_order": "Cancelar pedido",
+
+      "products:view": "Ver menú",
+      "products:find": "Buscar platos",
+      "products:recommend": "Recomendar platos",
+
+      "orders:create": "Hacer pedido",
+      "orders:modify": "Modificar pedido",
+      "orders:cancel": "Cancelar pedido",
     };
-    return map[key as BookingIntentKey | ProductIntentKey] || "Gestionar";
+    return map[key as BookingIntentKey | ProductOrderIntentKey] || "Gestionar";
   };
 
   // Helper: get alternatives excluding current intentKey
@@ -163,8 +167,8 @@ export function intentClassifierPrompt(
 
         EJEMPLOS:
         • intentKey="booking:create" + filteredAlts=["booking:modify"]: "¿Quieres crear una reserva nueva o modificar una existente?"
-        • intentKey="restaurant:place_order" + filteredAlts=["restaurant:view_menu"]: "¿Prefieres hacer un pedido directo o ver el menú primero?"
-        • intentKey="booking:create" + filteredAlts=["restaurant:place_order"]: "¿Quieres reservar mesa o pedir comida para llevar?"
+        • intentKey="orders:create" + filteredAlts=["products:find"]: "¿Prefieres hacer un pedido directo o ver el menú primero?"
+        • intentKey="booking:create" + filteredAlts=["orders:create"]: "¿Quieres reservar mesa o pedir comida para llevar?"
       `;
     }
 
@@ -243,9 +247,9 @@ export function intentClassifierPrompt(
           intentModule === "products"
             ? `
         PRODUCT ORDERS:
-        • intentKey="restaurant:place_order": "¿${getActionVerb("restaurant:place_order")}? ✅"
-        • intentKey="restaurant:update_order": "¿${getActionVerb("restaurant:update_order")}? 🔄"
-        • intentKey="restaurant:cancel_order": "¿${getActionVerb("restaurant:cancel_order")}? ❌"`
+        • intentKey="orders:create": "¿${getActionVerb("orders:create")}? ✅"
+        • intentKey="orders:modify": "¿${getActionVerb("orders:modify")}? 🔄"
+        • intentKey="orders:cancel": "¿${getActionVerb("orders:cancel")}? ❌"`
             : ""
         }
 
@@ -381,7 +385,7 @@ export function intentClassifierPrompt(
 
         EJEMPLO:
         • intentKey="booking:create": "¡Perfecto! Voy a ${getActionVerb("booking:create").toLowerCase()}. ¿Para cuántas personas?"
-        • intentKey="restaurant:place_order": "¡Excelente! Voy a ${getActionVerb("restaurant:place_order").toLowerCase()}. ¿Qué te gustaría pedir?"`
+        • intentKey="orders:create": "¡Excelente! Voy a ${getActionVerb("orders:create").toLowerCase()}. ¿Qué te gustaría pedir?"`
             : ""
         }
 

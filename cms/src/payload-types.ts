@@ -225,11 +225,11 @@ export interface Appointment {
   business: string | Business;
   customer: string | Customer;
   customerName?: string | null;
+  numberOfPeople?: number | null;
   timezone: string;
   startDateTime: string;
   endDateTime?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  numberOfPeople?: number | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -265,7 +265,7 @@ export interface Business {
      */
     requireAppointmentApproval?: boolean | null;
     phoneNumber?: string | null;
-    businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate' | 'erotic';
+    businessType: 'restaurant' | 'medical' | 'legal' | 'real-estate' | 'erotic';
     maxCapacity?: number | null;
     user: string | User;
     description?: string | null;
@@ -786,11 +786,11 @@ export interface AppointmentsSelect<T extends boolean = true> {
   business?: T;
   customer?: T;
   customerName?: T;
+  numberOfPeople?: T;
   timezone?: T;
   startDateTime?: T;
   endDateTime?: T;
   status?: T;
-  numberOfPeople?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;

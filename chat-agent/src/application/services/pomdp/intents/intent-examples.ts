@@ -3,6 +3,7 @@ import type {
   BookingIntentKey,
   InformationalIntentKey,
   IntentExample,
+  OrderIntentKey,
   ProductIntentKey,
   SocialProtocolIntent,
 } from "./intent.types";
@@ -168,7 +169,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
  *     Hay hamburguesas? -> dame el menú/precios de hamburguesas
  *
  */
-const booking: IntentExample<BookingIntentKey>[] = [
+const restaurantBooking: IntentExample<BookingIntentKey>[] = [
   {
     intentKey: "booking:create",
     module: "booking",
@@ -283,9 +284,9 @@ const booking: IntentExample<BookingIntentKey>[] = [
   },
 ] as const;
 
-const restaurant: IntentExample<ProductIntentKey>[] = [
+const restaurantProducts: IntentExample<ProductIntentKey>[] = [
   {
-    intentKey: "restaurant:view_menu",
+    intentKey: "products:view",
     module: "products",
     domain: "restaurant",
     requiresConfirmation: "maybe",
@@ -316,37 +317,37 @@ const restaurant: IntentExample<ProductIntentKey>[] = [
     ],
   },
   {
-    intentKey: "restaurant:place_order",
+    intentKey: "products:recommend",
     module: "products",
     domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
       // Universal
-      "quiero hacer un pedido",
-      "necesito hacer un pedido",
-      "deseo hacer un pedido",
-      "voy a hacer un pedido",
-      "quiero pedir ahora",
-      "listo para pedir",
+      "qué me recomiendas",
+      "qué es lo mejor",
+      "qué debo probar",
+      "lo más popular",
+      "lo más vendido",
 
       // España
-      "voy a pedir comida",
-      "quiero pedir para llevar",
-      "hacer el pedido ya",
-      "quiero realizar el pedido",
+      "qué me recomendáis",
+      "el plato estrella",
+      "lo más típico",
+      "qué piden los clientes",
+      "vuestra especialidad",
 
       // Latam (CO/EC/MX)
-      "quiero hacer una orden",
-      "necesito ordenar comida",
-      "deseo ordenar ahora",
-      "voy a ordenar",
-      "quiero ordenar para domicilio",
-      "listo para ordenar",
+      "qué me recomiendan",
+      "lo más pedido",
+      "sus recomendaciones",
+      "qué piden usualmente",
+      "lo más famoso",
     ],
   },
+
   {
-    intentKey: "restaurant:find_dishes",
+    intentKey: "products:find",
     module: "products",
     domain: "restaurant",
     requiresConfirmation: "always",
@@ -376,38 +377,43 @@ const restaurant: IntentExample<ProductIntentKey>[] = [
       "tienen opciones rápidas",
     ],
   },
+] as const;
+
+const restaurantOrders: IntentExample<OrderIntentKey>[] = [
   {
-    intentKey: "restaurant:recommend_dishes",
-    module: "products",
+    intentKey: "orders:create",
+    module: "orders",
     domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
       // Universal
-      "qué me recomiendas",
-      "qué es lo mejor",
-      "qué debo probar",
-      "lo más popular",
-      "lo más vendido",
+      "quiero hacer un pedido",
+      "necesito hacer un pedido",
+      "deseo hacer un pedido",
+      "voy a hacer un pedido",
+      "quiero pedir ahora",
+      "listo para pedir",
 
       // España
-      "qué me recomendáis",
-      "el plato estrella",
-      "lo más típico",
-      "qué piden los clientes",
-      "vuestra especialidad",
+      "voy a pedir comida",
+      "quiero pedir para llevar",
+      "hacer el pedido ya",
+      "quiero realizar el pedido",
 
       // Latam (CO/EC/MX)
-      "qué me recomiendan",
-      "lo más pedido",
-      "sus recomendaciones",
-      "qué piden usualmente",
-      "lo más famoso",
+      "quiero hacer una orden",
+      "necesito ordenar comida",
+      "deseo ordenar ahora",
+      "voy a ordenar",
+      "quiero ordenar para domicilio",
+      "listo para ordenar",
     ],
   },
+
   {
-    intentKey: "restaurant:update_order",
-    module: "products",
+    intentKey: "orders:modify",
+    module: "orders",
     domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
@@ -436,8 +442,8 @@ const restaurant: IntentExample<ProductIntentKey>[] = [
     ],
   },
   {
-    intentKey: "restaurant:cancel_order",
-    module: "products",
+    intentKey: "orders:cancel",
+    module: "orders",
     domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
@@ -697,7 +703,8 @@ export const intentExamples = [
   ...conversationalSignals,
 
   ...basicInformation,
-  ...booking,
-  ...restaurant,
+  ...restaurantBooking,
+  ...restaurantProducts,
+  ...restaurantOrders,
   ...erotic,
 ] as const;

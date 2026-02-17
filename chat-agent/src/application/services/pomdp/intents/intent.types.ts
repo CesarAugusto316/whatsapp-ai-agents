@@ -15,6 +15,7 @@ export type ModuleKind =
   // ============================================
   | "booking"
   | "products"
+  | "orders"
   | "delivery"; // futuro
 
 export type DomainKind =
@@ -61,32 +62,29 @@ export type BookingIntentKey =
   // conversational
   | "booking:check_availability";
 
+// ============================================
+// PRODUCT INTENTS (consulta/exploración)
+// ============================================
 export type ProductIntentKey =
-  // conversational
-  | "restaurant:view_menu"
-  | "restaurant:find_dishes"
-  | "restaurant:recommend_dishes"
-  // workflows
-  | "restaurant:place_order"
-  | "restaurant:update_order"
-  | "restaurant:cancel_order";
+  | "products:view"
+  | "products:find"
+  | "products:recommend";
 
-export type EroticIntentKey =
-  | "erotic:view_content"
-  | "erotic:purchase_content"
-  | "erotic:ask_services";
+// ============================================
+// ORDER INTENTS (workflow/acción)
+// ============================================
+export type OrderIntentKey =
+  | "orders:create"
+  | "orders:modify"
+  | "orders:cancel";
+
+export type ProductOrderIntentKey = ProductIntentKey | OrderIntentKey;
 
 export type IntentExampleKey =
   | SocialProtocolIntent
   | InformationalIntentKey
-  | ProductIntentKey
   | BookingIntentKey
-  | EroticIntentKey;
-
-export type CoreIntentKey =
-  | ProductIntentKey
-  | BookingIntentKey
-  | EroticIntentKey;
+  | ProductOrderIntentKey;
 
 // ============================================
 // 2. CONVERSATIONAL SIGNALS (no son intents, do not need vectorize)

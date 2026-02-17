@@ -102,7 +102,7 @@ export interface Business {
      * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
      */
     requireAppointmentApproval?: boolean | null;
-    businessType: "restaurant" | "medical" | "legal" | "real_estate" | "erotic";
+    businessType: "restaurant" | "medical" | "legal" | "real-estate" | "erotic";
     maxCapacity?: number | null;
     description?: string | null;
     user: User;

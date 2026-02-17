@@ -125,6 +125,9 @@ export async function conversationalWorkflow(
     if (intent.module === "products") {
       //
     }
+    if (intent.module === "orders") {
+      //
+    }
   }
 
   // 3. handling intent feedback

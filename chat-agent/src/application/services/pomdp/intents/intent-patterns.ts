@@ -1,4 +1,4 @@
-import type { BookingIntentKey, ProductIntentKey } from "./intent.types";
+import type { BookingIntentKey, ProductOrderIntentKey } from "./intent.types";
 
 /**
  * Patrones regex para detección de intents de acción explícita (CRUD).
@@ -12,7 +12,7 @@ import type { BookingIntentKey, ProductIntentKey } from "./intent.types";
  */
 
 export type IntentRegexMap = {
-  [K in BookingIntentKey | ProductIntentKey]?: RegExp;
+  [K in BookingIntentKey | ProductOrderIntentKey]?: RegExp;
 };
 
 // ============================================
@@ -81,9 +81,9 @@ export const intentPatterns: IntentRegexMap = {
   // ============================================
 
   /**
-   * restaurant:view_menu - Verbo de visualización + menú/carta/opciones
+   * products:find - Verbo de visualización + menú/carta/opciones
    */
-  "restaurant:view_menu": new RegExp(
+  "products:find": new RegExp(
     `^${MODAL_VERBS} (ver|consultar|revisar) (el |la )?(menu|carta)|` +
       `(muestrame|ensename|dame|ver) (las )?(opciones|menu|carta)|` +
       `que (tienen|hay|venden|ofrecen)( hoy)?( para (comer|cenar|almorzar))?|` +
@@ -93,9 +93,9 @@ export const intentPatterns: IntentRegexMap = {
   ),
 
   /**
-   * restaurant:place_order - Verbo de pedido + confirmación implícita
+   * orders:create - Verbo de pedido + confirmación implícita
    */
-  "restaurant:place_order": new RegExp(
+  "orders:create": new RegExp(
     `^${MODAL_VERBS} (hacer |realizar )?(un )?(pedido|orden)|` +
       `(pedir|ordenar) (${CONFIRMATION}|comida|para (llevar|domicilio))|` +
       `listo para (pedir|ordenar)|` +
@@ -104,9 +104,9 @@ export const intentPatterns: IntentRegexMap = {
   ),
 
   /**
-   * restaurant:update_order - Verbo de modificación + pedido/orden
+   * orders:modify - Verbo de modificación + pedido/orden
    */
-  "restaurant:update_order": new RegExp(
+  "orders:modify": new RegExp(
     `^${MODAL_VERBS} (cambiar|modificar|ajustar|actualizar|corregir) ${POSSESSIVES}(pedido|orden)|` +
       `(cambiar|modificar|ajustar) ${POSSESSIVES}(pedido|orden)|` +
       `cambiar algo del pedido|` +
@@ -115,10 +115,10 @@ export const intentPatterns: IntentRegexMap = {
   ),
 
   /**
-   * restaurant:cancel_order - REQUIERE verbo explícito o negación clara
+   * orders:cancel - REQUIERE verbo explícito o negación clara
    * Corregido: "recogerlo" ahora es opcional con artículo
    */
-  "restaurant:cancel_order": new RegExp(
+  "orders:cancel": new RegExp(
     `^${MODAL_VERBS} (cancelar|anular|desmarcar|eliminar) ${POSSESSIVES}(pedido|orden)|` +
       `(cancelar|anular|quitar) ${POSSESSIVES}(pedido|orden)|` +
       `ya no quiero (${POSSESSIVES}(pedido|orden|comida)|recogerlo)|` +
@@ -143,12 +143,12 @@ export function detectIntent(text: string): keyof IntentRegexMap | null {
   // Orden de prioridad: cancel > modify > create (más específico a menos)
   const priorityOrder: (keyof IntentRegexMap)[] = [
     "booking:cancel",
-    "restaurant:cancel_order",
+    "orders:cancel",
     "booking:modify",
-    "restaurant:update_order",
+    "orders:modify",
     "booking:create",
-    "restaurant:place_order",
-    "restaurant:view_menu",
+    "orders:create",
+    "products:find",
   ];
 
   for (const intentKey of priorityOrder) {

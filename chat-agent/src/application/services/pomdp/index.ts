@@ -13,7 +13,7 @@ export { pomdpManager } from "./pomdp-manager";
 export type {
   BookingIntentKey,
   ProductIntentKey,
-  EroticIntentKey,
+  ProductOrderIntentKey,
   ConversationalSignal,
   InformationalIntentKey,
   IntentExampleKey,
@@ -21,7 +21,6 @@ export type {
   ModuleKind,
   SocialProtocolIntent,
   RequiredConfirmation,
-  CoreIntentKey,
 } from "./intents/intent.types";
 
 export type { IntentPayloadWithScore, PomdpResult } from "./pomdp-manager";
