@@ -3,19 +3,34 @@
 // ============================================
 
 export type ModuleKind =
-  | "restaurant"
-  | "booking"
+  // ============================================
+  // CORE MODULES (siempre activos, domain-agnostic)
+  // ============================================
   | "informational"
-  | "erotic"
-  | "real-state"
   | "social-protocol"
-  | "conversational-signal";
+  | "conversational-signal"
+
+  // ============================================
+  // BUSINESS MODULES (activos según configuración)
+  // ============================================
+  | "booking"
+  | "products"
+  | "delivery"; // futuro
+
+export type DomainKind =
+  | "restaurant"
+  | "real-estate"
+  | "erotic"
+  | "retail"
+  | "medical"
+  | null; // ← null para módulos core (no tienen dominio)
 
 export type RequiredConfirmation = "always" | "never" | "maybe";
 
 export interface IntentExample<I extends string> {
   intentKey: I;
   module: ModuleKind;
+  domain: DomainKind;
   requiresConfirmation: RequiredConfirmation;
   lang: "es" | "en";
   examples: string[];
@@ -46,7 +61,7 @@ export type BookingIntentKey =
   // conversational
   | "booking:check_availability";
 
-export type RestaurantIntentKey =
+export type ProductIntentKey =
   // conversational
   | "restaurant:view_menu"
   | "restaurant:find_dishes"
@@ -64,12 +79,12 @@ export type EroticIntentKey =
 export type IntentExampleKey =
   | SocialProtocolIntent
   | InformationalIntentKey
-  | RestaurantIntentKey
+  | ProductIntentKey
   | BookingIntentKey
   | EroticIntentKey;
 
 export type CoreIntentKey =
-  | RestaurantIntentKey
+  | ProductIntentKey
   | BookingIntentKey
   | EroticIntentKey;
 

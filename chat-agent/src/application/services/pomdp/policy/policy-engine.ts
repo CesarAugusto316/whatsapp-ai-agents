@@ -149,7 +149,7 @@ export class PolicyEngine {
       "booking:cancel": BookingOptions.CANCEL_BOOKING,
       "booking:check_availability": "booking:check_availability", // hay que implementar
 
-      // Restaurant
+      // Product
       "restaurant:view_menu": "restaurant:view_menu", // hay que implementar
       "restaurant:place_order": "restaurant:place_order",
       "restaurant:find_dishes": "restaurant:find_dishes", // hay que implementar

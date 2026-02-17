@@ -122,7 +122,7 @@ export async function conversationalWorkflow(
       if (res) return res;
     }
 
-    if (intent.module === "restaurant") {
+    if (intent.module === "products") {
       //
     }
   }

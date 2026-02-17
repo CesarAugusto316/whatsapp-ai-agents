@@ -3,7 +3,7 @@ import type {
   IntentExampleKey,
   ModuleKind,
   PolicyDecision,
-  RestaurantIntentKey,
+  ProductIntentKey,
 } from "@/application/services/pomdp";
 import type { RestaurantCtx } from "@/domain/restaurant";
 import { basePrompt } from "./base-prompt";
@@ -43,19 +43,18 @@ export function intentClassifierPrompt(
   const getModuleName = (module: ModuleKind) => {
     const map: Record<ModuleKind, string> = {
       booking: "Reservas",
-      restaurant: "Pedidos",
+      products: "Pedidos",
       informational: "Información",
       "social-protocol": "Saludos",
       "conversational-signal": "Respuestas",
-      erotic: "Citas, venta de contenido",
-      "real-state": "Propiedades",
+      delivery: "Entrega",
     };
     return map[module];
   };
 
   // Helper: get action verb for intentKey
   const getActionVerb = (key: string) => {
-    const map: Record<BookingIntentKey | RestaurantIntentKey, string> = {
+    const map: Record<BookingIntentKey | ProductIntentKey, string> = {
       "booking:create": "Crear reserva",
       "booking:modify": "Modificar reserva",
       "booking:cancel": "Cancelar reserva",
@@ -67,7 +66,7 @@ export function intentClassifierPrompt(
       "restaurant:update_order": "Modificar pedido",
       "restaurant:cancel_order": "Cancelar pedido",
     };
-    return map[key as BookingIntentKey | RestaurantIntentKey] || "Gestionar";
+    return map[key as BookingIntentKey | ProductIntentKey] || "Gestionar";
   };
 
   // Helper: get alternatives excluding current intentKey
@@ -98,7 +97,7 @@ export function intentClassifierPrompt(
            : ""
        }
        ${
-         activeModules.includes("restaurant")
+         activeModules.includes("products")
            ? `
        2. PRODUCT ORDERS (Pedidos de comida):
           - Ver menú: "qué venden hoy"
@@ -241,7 +240,7 @@ export function intentClassifierPrompt(
             : ""
         }
         ${
-          intentModule === "restaurant"
+          intentModule === "products"
             ? `
         PRODUCT ORDERS:
         • intentKey="restaurant:place_order": "¿${getActionVerb("restaurant:place_order")}? ✅"
@@ -307,7 +306,7 @@ export function intentClassifierPrompt(
             : ""
         }
         ${
-          intentModule === "restaurant"
+          intentModule === "products"
             ? `
         PRODUCT ORDER RECHAZADO (intentKey=${intentKey}):
         • Usuario rechazó plato: "¿O probamos con otro plato del menú? ¿Qué opinas? ✨"
@@ -373,7 +372,7 @@ export function intentClassifierPrompt(
             : ""
         }
         ${
-          intentModule === "booking" || intentModule === "restaurant"
+          intentModule === "booking" || intentModule === "products"
             ? `
         ACCIÓN DE NEGOCIO (booking/restaurant):
         1. Confirma que vas a proceder con ${getActionVerb(intentKey)}

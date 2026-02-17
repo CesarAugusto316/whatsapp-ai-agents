@@ -1,4 +1,4 @@
-import type { BookingIntentKey, RestaurantIntentKey } from "./intent.types";
+import type { BookingIntentKey, ProductIntentKey } from "./intent.types";
 
 /**
  * Patrones regex para detección de intents de acción explícita (CRUD).
@@ -12,7 +12,7 @@ import type { BookingIntentKey, RestaurantIntentKey } from "./intent.types";
  */
 
 export type IntentRegexMap = {
-  [K in BookingIntentKey | RestaurantIntentKey]?: RegExp;
+  [K in BookingIntentKey | ProductIntentKey]?: RegExp;
 };
 
 // ============================================

@@ -1,10 +1,9 @@
 import { erotic } from "./erotic";
 import type {
   BookingIntentKey,
-  EroticIntentKey,
   InformationalIntentKey,
   IntentExample,
-  RestaurantIntentKey,
+  ProductIntentKey,
   SocialProtocolIntent,
 } from "./intent.types";
 
@@ -28,6 +27,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "social:greeting",
     module: "social-protocol",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -52,6 +52,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "social:goodbye",
     module: "social-protocol",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -72,6 +73,7 @@ const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "social:thanks",
     module: "social-protocol",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -94,6 +96,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "signal:affirmation",
     module: "conversational-signal",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -117,6 +120,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "signal:negation",
     module: "conversational-signal",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -136,6 +140,7 @@ const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "signal:uncertainty",
     module: "conversational-signal",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -167,6 +172,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intentKey: "booking:create",
     module: "booking",
+    domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
@@ -195,6 +201,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intentKey: "booking:modify",
     module: "booking",
+    domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
@@ -222,6 +229,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intentKey: "booking:cancel",
     module: "booking",
+    domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
@@ -246,6 +254,7 @@ const booking: IntentExample<BookingIntentKey>[] = [
   {
     intentKey: "booking:check_availability",
     module: "booking",
+    domain: "restaurant",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -274,10 +283,11 @@ const booking: IntentExample<BookingIntentKey>[] = [
   },
 ] as const;
 
-const restaurant: IntentExample<RestaurantIntentKey>[] = [
+const restaurant: IntentExample<ProductIntentKey>[] = [
   {
     intentKey: "restaurant:view_menu",
-    module: "restaurant",
+    module: "products",
+    domain: "restaurant",
     requiresConfirmation: "maybe",
     lang: "es",
     examples: [
@@ -307,7 +317,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   },
   {
     intentKey: "restaurant:place_order",
-    module: "restaurant",
+    module: "products",
+    domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
@@ -336,7 +347,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   },
   {
     intentKey: "restaurant:find_dishes",
-    module: "restaurant",
+    module: "products",
+    domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
@@ -366,7 +378,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   },
   {
     intentKey: "restaurant:recommend_dishes",
-    module: "restaurant",
+    module: "products",
+    domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
@@ -394,7 +407,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   },
   {
     intentKey: "restaurant:update_order",
-    module: "restaurant",
+    module: "products",
+    domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
@@ -423,7 +437,8 @@ const restaurant: IntentExample<RestaurantIntentKey>[] = [
   },
   {
     intentKey: "restaurant:cancel_order",
-    module: "restaurant",
+    module: "products",
+    domain: "restaurant",
     requiresConfirmation: "always",
     lang: "es",
     examples: [
@@ -456,6 +471,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_location",
     module: "informational",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -487,6 +503,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_business_hours",
     module: "informational",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -518,6 +535,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_payment_methods",
     module: "informational",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -548,6 +566,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_contact",
     module: "informational",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -578,6 +597,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_price",
     module: "informational",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -613,6 +633,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_delivery_time",
     module: "informational",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -642,6 +663,7 @@ const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_delivery_method",
     module: "informational",
+    domain: null,
     requiresConfirmation: "never",
     lang: "es",
     examples: [

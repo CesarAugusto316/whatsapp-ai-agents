@@ -12,7 +12,7 @@ export { pomdpManager } from "./pomdp-manager";
 // types
 export type {
   BookingIntentKey,
-  RestaurantIntentKey,
+  ProductIntentKey,
   EroticIntentKey,
   ConversationalSignal,
   InformationalIntentKey,

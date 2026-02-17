@@ -3,7 +3,8 @@ import { EroticIntentKey, IntentExample } from "./intent.types";
 export const erotic: IntentExample<EroticIntentKey>[] = [
   {
     intentKey: "erotic:view_content",
-    module: "erotic",
+    module: "products",
+    domain: "erotic",
     lang: "es",
     requiresConfirmation: "maybe",
     examples: [
@@ -31,7 +32,8 @@ export const erotic: IntentExample<EroticIntentKey>[] = [
   },
   {
     intentKey: "erotic:purchase_content",
-    module: "erotic",
+    module: "products",
+    domain: "erotic",
     lang: "es",
     requiresConfirmation: "maybe",
     examples: [
@@ -59,7 +61,8 @@ export const erotic: IntentExample<EroticIntentKey>[] = [
   },
   {
     intentKey: "erotic:ask_services",
-    module: "erotic",
+    module: "products",
+    domain: "erotic",
     lang: "es",
     requiresConfirmation: "maybe",
     examples: [
