@@ -76,12 +76,12 @@ export function businessInfoChunck(
         [
           renderField(general.address, "Address"),
           general.location?.length == 2
-            ? `- Google Maps: ${getGoogleMapLink(general.location[0], general.location[1])} \n`
+            ? `- Google Maps Link: ${getGoogleMapLink(general.location[0], general.location[1])}\n`
             : "",
         ],
         "\nBUSINESS LOCATION",
       ) +
-      `\n\nSPECIFIC RULE:\n- Share both address and Google Maps link if available.`,
+      `\n\nSPECIFIC RULE:\n- Share both address and Google Maps link if available.\n- When sharing the Google Maps link, paste the FULL URL as-is. Do NOT convert to markdown format. Do NOT add brackets or parentheses.`,
 
     "info:ask_business_hours": `
         BUSINESS SCHEDULE
