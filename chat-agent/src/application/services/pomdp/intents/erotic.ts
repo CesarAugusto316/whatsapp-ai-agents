@@ -1,4 +1,6 @@
-[
+import { EroticIntentKey, IntentExample } from "./intent.types";
+
+export const erotic: IntentExample<EroticIntentKey>[] = [
   {
     intentKey: "erotic:view_content",
     module: "erotic",
@@ -83,4 +85,4 @@
       "qué planes tienes disponibles",
     ],
   },
-];
+] as const;
