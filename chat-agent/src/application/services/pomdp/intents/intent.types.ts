@@ -5,9 +5,9 @@
 export type ModuleKind =
   | "restaurant"
   | "booking"
+  | "informational"
   | "erotic"
   | "real-state"
-  | "informational"
   | "social-protocol"
   | "conversational-signal";
 
