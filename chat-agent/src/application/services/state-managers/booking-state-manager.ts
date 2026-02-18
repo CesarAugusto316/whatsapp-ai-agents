@@ -175,8 +175,7 @@ class BookingStateManager {
     messages: ChatMessage[],
   ): string {
     const transition = this.nextState(status);
-    const userMessage =
-      transition.userMessage || BookingStateManager.STATE_MESSAGES[status];
+    const userMessage = transition.userMessage;
 
     if (!status || !userMessage?.trim()) {
       return originalMessage;
