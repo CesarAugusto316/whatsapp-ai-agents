@@ -1,5 +1,4 @@
 import { Business } from "@/infraestructure/adapters/cms/cms-types";
-import { WRITING_STYLE } from "./conversational-prompts copy";
 import { InputIntent } from "../../input-parser";
 
 export const validationPrompts = {
@@ -539,7 +538,6 @@ export const validationPrompts = {
     return `
               TASK: You are a deterministic translation module that converts validation error arrays into warm, helpful Spanish messages.
 
-              ${WRITING_STYLE}
 
               INPUT: An array of error objects in format: [{field: string, error: string}]
                 - field: "customerName", "startDate", "startTime", "endDate", "endTime", "numberOfPeople", "datetime"

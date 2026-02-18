@@ -59,7 +59,13 @@ Usage:
         const domain: SpecializedDomain = "restaurant";
         const { points } = await ragService.searchIntent(
           test.query,
-          ["booking", "products", "informational"],
+          [
+            "booking",
+            "products",
+            "informational",
+            "conversational-signal",
+            "social-protocol",
+          ],
           domain,
         );
 

@@ -161,7 +161,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
           { key: "lang" satisfies LangKey, match: { value: lang } },
           {
             // OR: busca modules activos por domain
-            min_should: 1,
+            // min_should: 1,
             should: activeModules.map((d) => ({
               key: "module" satisfies ModuleKey,
               match: { value: d },
@@ -179,7 +179,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
                 match: { value: GENERAL_DOMAIN },
               },
             ],
-            min_should: 1,
+            // min_should: 1,
           },
         ],
       },

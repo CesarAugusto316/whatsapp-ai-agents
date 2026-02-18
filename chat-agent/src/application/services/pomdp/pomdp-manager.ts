@@ -8,6 +8,7 @@ import { shouldSkipEmbedding } from "./intents/helpers/skip-embedding";
 import { ModuleKind, SocialProtocolIntent } from "./intents/intent.types";
 import { ragService } from "../rag";
 import { prioritizeIntents } from "./intents/helpers/prioritize-intents";
+import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 
 export type PomdpResult = {
   policyDecision: PolicyDecision;
@@ -63,10 +64,11 @@ class PomdpManager {
     // TODO: skip RAG for "booking" | "restaurant" etc.. by REGEX
     else if (!skip) {
       const limit = 4;
+      const domain: SpecializedDomain = ctx.business.general.businessType; // ej: restaurant | retail | real-estate
       const { points } = await ragService.searchIntent(
         ctx.customerMessage,
-        ctx.activeModules, // ej: ["informational", "booking", "restaurant"],
-        ctx.business.general.businessType,
+        ctx.activeModules, // ej: ["informational", "booking", "products"],
+        domain,
         limit,
       );
       // topResults =

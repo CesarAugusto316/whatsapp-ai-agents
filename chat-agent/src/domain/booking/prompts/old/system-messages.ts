@@ -28,34 +28,6 @@ const ACTION_MODES = {
  * @description deterministic messages sent to the user
  */
 export const systemMessages = {
-  //
-  initialGreeting(message: string, customerName?: string) {
-    const messageV1 = `
-       Este es un mensaje inicial, además de responder a mi pregunta debes saludarme,
-       presentarte brevemente y explicarme:
-        - Cómo hacer una reserva de forma facil y simple.
-
-       ${customerName ? `Mi nombre es ${customerName}` : ""}
-
-       Esta es mi pregunta:
-       - ${message}
-     `.trim();
-
-    const messageV2 = `
-      Este es un mensaje inicial, además de responder a mi pregunta debes saludarme y
-      presentarte brevemente.
-
-      ${customerName ? `Mi nombre es ${customerName}` : ""}
-
-      Esta es mi pregunta:
-      - ${message}
-
-      Al final de tu mensaje de respuesta debes preguntarme como puedes ayudarme HOY
-      o que otra cosa se me ofrece dependiendo de lo que necesite.
-    `.trim();
-    return messageV2;
-  },
-
   getCreateMsg({ userName }: { userName?: string }) {
     if (userName) {
       return `

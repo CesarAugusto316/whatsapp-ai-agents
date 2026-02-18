@@ -55,6 +55,8 @@ export class PolicyEngine {
   //
   public decide(belief: BeliefState): PolicyDecision {
     const intent = belief.current;
+    // 0. Regla: puede usarse para continuar una conversacion|chatHistory
+    // No ejecuta ninguna accion, continua el flujo normal de la conversación
     if (!belief.isIntentFound || !intent) {
       return { type: "unknown_intent", intent: undefined, state: belief };
     }
