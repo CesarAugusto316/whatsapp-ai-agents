@@ -7,12 +7,8 @@ import {
   VectorStoreAdapter,
 } from "@/infraestructure/adapters/vector-store";
 import { Schemas } from "@qdrant/js-client-rest";
-import { Product } from "@/infraestructure/adapters/cms";
-import {
-  AllDomainKind,
-  ModuleKind,
-  SpecializedDomain,
-} from "@/application/services/pomdp";
+import { Product, SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { ModuleKind } from "@/application/services/pomdp";
 import { IntentExample, IntentExampleKey, intentExamples } from "../pomdp";
 
 /**

@@ -1,11 +1,10 @@
 import type { Schemas } from "@qdrant/js-client-rest";
-import type { Product } from "../cms";
+import type { Product, SpecializedDomain } from "../cms";
 import {
   AllDomainKind,
   IntentExampleKey,
   ModuleKind,
   RequiredConfirmation,
-  SpecializedDomain,
 } from "@/application/services/pomdp";
 
 export type IntentPayload = {

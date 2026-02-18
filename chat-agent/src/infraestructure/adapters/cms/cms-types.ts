@@ -84,6 +84,14 @@ export type QuestionsToReview = {
   id?: string | null;
 };
 
+export type SpecializedDomain =
+  | "restaurant"
+  | "real-estate"
+  | "erotic"
+  | "retail"
+  | "legal"
+  | "medical";
+
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "businesses".
@@ -102,7 +110,7 @@ export interface Business {
      * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
      */
     requireAppointmentApproval?: boolean | null;
-    businessType: "restaurant" | "medical" | "legal" | "real-estate" | "erotic";
+    businessType: SpecializedDomain;
     maxCapacity?: number | null;
     description?: string | null;
     user: User;

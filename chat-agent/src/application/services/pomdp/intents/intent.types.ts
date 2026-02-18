@@ -1,7 +1,8 @@
-export const GENERAL_DOMAIN = "general" as const;
 // ============================================
 // 1. NAMESPACE POR DOMINIO (sin colisiones)
 // ============================================
+
+import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 
 export type ModuleKind =
   // ============================================
@@ -19,14 +20,9 @@ export type ModuleKind =
   | "orders"
   | "delivery"; // futuro
 
-export type SpecializedDomain =
-  | "restaurant"
-  | "real-estate"
-  | "erotic"
-  | "retail"
-  | "medical";
+export const GENERAL_DOMAIN = "general" as const; // ←  para módulos core (sirven para todos los negocios)
 
-export type AllDomainKind = SpecializedDomain | typeof GENERAL_DOMAIN; // ←  para módulos core (no tienen dominio)
+export type AllDomainKind = SpecializedDomain | typeof GENERAL_DOMAIN;
 
 export type RequiredConfirmation = "always" | "never" | "maybe";
 

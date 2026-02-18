@@ -22,7 +22,6 @@ export type {
   RequiredConfirmation,
   AllDomainKind,
   OrderIntentKey,
-  SpecializedDomain,
 } from "./intents/intent.types";
 
 export { GENERAL_DOMAIN } from "./intents/intent.types";

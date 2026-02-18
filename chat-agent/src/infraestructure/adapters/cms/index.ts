@@ -2,6 +2,7 @@ import cmsAdapter from "./cms.adapter";
 export { cmsAdapter };
 export { WEEK_DAYS } from "./cms-types";
 export type {
+  SpecializedDomain,
   Booking,
   Business,
   Product,

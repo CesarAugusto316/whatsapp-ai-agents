@@ -1,15 +1,11 @@
 import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
-import { Product } from "../cms";
+import { Product, SpecializedDomain } from "../cms";
 import {
   IntentPayload,
   IVectorStoreAdapter,
   QuadrantPoint,
 } from "./vector-store.adapter.interface";
-import {
-  GENERAL_DOMAIN,
-  ModuleKind,
-  SpecializedDomain,
-} from "@/application/services/pomdp";
+import { GENERAL_DOMAIN, ModuleKind } from "@/application/services/pomdp";
 
 type EnabledKey = keyof Pick<Product, "enabled">;
 type BusinessKey = keyof Pick<Product, "business">;

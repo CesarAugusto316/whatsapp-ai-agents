@@ -12,10 +12,12 @@ import {
 } from "./general-intents";
 
 export const intentExamples = [
+  // domain=general
   ...socialProtocols,
   ...conversationalSignals,
   ...basicInformation,
 
+  // domain=restaurant
   ...restaurantBooking,
   ...restaurantProducts,
   ...restaurantOrders,

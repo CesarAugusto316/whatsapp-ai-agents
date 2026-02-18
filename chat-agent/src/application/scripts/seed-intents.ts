@@ -1,3 +1,4 @@
+import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { intentExamples } from "../services/pomdp";
 import { ragService } from "../services/rag";
 
@@ -55,11 +56,12 @@ Usage:
 
       let passed = 0;
       for (const test of tests) {
-        const { points } = await ragService.searchIntent(test.query, [
-          "booking",
-          "products",
-          "informational",
-        ]);
+        const domain: SpecializedDomain = "restaurant";
+        const { points } = await ragService.searchIntent(
+          test.query,
+          ["booking", "products", "informational"],
+          domain,
+        );
 
         const detected = points[0].payload?.intentKey;
         if (detected === test.expected) {
