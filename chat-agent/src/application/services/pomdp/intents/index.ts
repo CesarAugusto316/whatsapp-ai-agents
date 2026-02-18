@@ -8,7 +8,7 @@ import {
   basicInformation,
   conversationalSignals,
   socialProtocols,
-} from "./shared-intents";
+} from "./general-intents";
 
 export const intentExamples = [
   ...socialProtocols,

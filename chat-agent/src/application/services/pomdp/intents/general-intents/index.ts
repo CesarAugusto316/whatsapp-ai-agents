@@ -4,11 +4,15 @@ import {
   SocialProtocolIntent,
 } from "../intent.types";
 
+// ============================================
+// 1. INTENTS DE PROPOSIO GENERAL PARA TODO NEGOCIO
+// ============================================
+
 export const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "signal:affirmation",
     module: "conversational-signal",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -32,7 +36,7 @@ export const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "signal:negation",
     module: "conversational-signal",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -52,7 +56,7 @@ export const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "signal:uncertainty",
     module: "conversational-signal",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -71,23 +75,11 @@ export const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
   },
 ] as const;
 
-/**
- *
- * @prompt entre 4 a 7 palabras semanticamente consistentes y coherentes con cada
- * intencion, debe haber variedad y reflejar diferentes localidades españa, latam.
- * Entre 15 - 25 ejemplos por intent
- *
- * Ejemplos de protocolos sociales para vectorizar y guardar en DB vectorial.
- * Estos vectores se cachean GLOBALMENTE y se reutilizan entre todos los usuarios/negocios.
- *
- * IMPORTANTE: Estos NO se procesan con shouldSkipProcessing porque contienen
- * variaciones más largas que requieren búsqueda semántica.
- */
 export const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "social:greeting",
     module: "social-protocol",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -112,7 +104,7 @@ export const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "social:goodbye",
     module: "social-protocol",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -133,7 +125,7 @@ export const socialProtocols: IntentExample<SocialProtocolIntent>[] = [
   {
     intentKey: "social:thanks",
     module: "social-protocol",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -156,7 +148,7 @@ export const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_location",
     module: "informational",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -188,7 +180,7 @@ export const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_business_hours",
     module: "informational",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -220,7 +212,7 @@ export const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_payment_methods",
     module: "informational",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -251,7 +243,7 @@ export const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_contact",
     module: "informational",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -282,7 +274,7 @@ export const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_price",
     module: "informational",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -318,7 +310,7 @@ export const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_delivery_time",
     module: "informational",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [
@@ -348,7 +340,7 @@ export const basicInformation: IntentExample<InformationalIntentKey>[] = [
   {
     intentKey: "info:ask_delivery_method",
     module: "informational",
-    domain: null,
+    domain: "general",
     requiresConfirmation: "never",
     lang: "es",
     examples: [

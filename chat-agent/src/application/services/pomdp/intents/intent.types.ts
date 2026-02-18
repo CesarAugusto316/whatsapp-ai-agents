@@ -24,7 +24,7 @@ export type DomainKind =
   | "erotic"
   | "retail"
   | "medical"
-  | null; // ← null para módulos core (no tienen dominio)
+  | "general"; // ←  para módulos core (no tienen dominio)
 
 export type RequiredConfirmation = "always" | "never" | "maybe";
 

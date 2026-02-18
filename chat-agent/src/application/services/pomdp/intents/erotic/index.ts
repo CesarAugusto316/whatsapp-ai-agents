@@ -5,7 +5,7 @@ type EroticIntentKey =
   | "erotic:purchase_content"
   | "erotic:ask_services";
 
-const erotic: IntentExample<EroticIntentKey>[] = [
+export const eroticProducts: IntentExample<EroticIntentKey>[] = [
   {
     intentKey: "erotic:view_content",
     module: "products",
