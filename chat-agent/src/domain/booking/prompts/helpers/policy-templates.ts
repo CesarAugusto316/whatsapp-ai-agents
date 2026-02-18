@@ -147,32 +147,32 @@ export function askConfirmationTemplate(data: PolicyTemplateData): string {
   const actionVerb = getActionVerb(intentKey, businessType);
 
   const userMessage = policy?.state?.current?.text || "";
-  const processGuidance = getProcessGuidance(intentModule, userMessage);
+  const userAskedHow = getProcessGuidance(intentModule, userMessage);
 
   return `
 ${basePrompt(ctx)}
 
-POLICY: ${policy?.type} — Requiere confirmación (${requiresConfirmation}). Usuario NO confirmó (isConfirmed=false).
+POLICY: ${policy?.type} — Requiere confirmación (${requiresConfirmation}). Usuario NO confirmó.
 
 INTENCIÓN: ${intentKey} (${getModuleName(intentModule, businessType)})
 ACCIÓN: ${actionVerb}
+${userAskedHow}
 
-${processGuidance}
-
-2 ESCENARIOS:
-
-A) Usuario pregunta "cómo":
-   - Explica proceso en 1 línea (pasos simples)
-   - Cierra: "¿Te aparto un lugar ahora? ✅"
-
-B) Usuario ya quiere actuar:
-   - Confirma: "¡Claro! Para ${actionVerb.toLowerCase()} solo necesito [datos clave]"
-   - Cierra: "¿Empezamos? 😊"
+RESPONDE:
+- Conector natural (varía): "¡Perfecto!" / "¡Claro!" / "Vale" / "¡Genial!" / "¡Vamos!" + emoji
+- Confirma INTENCIÓN con variedad:
+  · "¿Te gustaría ${actionVerb.toLowerCase()} ahora?"
+  · "¿Quieres que ${actionVerb.toLowerCase()}?"
+  · "¿Procedemos?"
+  · "¿Damos el siguiente paso?"
+- Cierra con variedad: "¿Qué dices?" / "¿Te animas?" / "¿Cómo lo ves?" / "¿Sí o no?"
 
 RULES:
-- NO bullets en líneas separadas
+- Máximo 2-3 líneas
+- VARÍA conectores y cierres (no repitas siempre lo mismo)
+- NO pidas datos (fecha, hora, personas) — solo confirma intención
+- Si el usuario preguntó "cómo" (ya está en el prompt arriba): 1 línea de proceso + oferta
 - NO "¿Estás seguro?" (ansiedad)
-- Máximo 3-4 líneas
 - Usuario responde: "sí" | "no" | "no sé"
 `.trim();
 }

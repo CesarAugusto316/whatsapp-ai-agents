@@ -30,16 +30,16 @@ export function getModuleName(module: ModuleKind, domain: DomainKind): string {
   const domainModules: Record<string, Partial<Record<ModuleKind, string>>> = {
     restaurant: {
       booking: "Reservas de mesa",
-      products: "Menú y platos",
-      orders: "Pedidos de comida",
+      products: "Ver Menú y platos",
+      orders: "Hacer pedidos de comida",
       delivery: "Entrega a domicilio",
     },
     "real-estate": {
-      booking: "Visitas y citas",
+      booking: "Reserva de visitas y citas",
     },
     erotic: {
-      booking: "Citas",
-      products: "Catálogo",
+      booking: "Reserva de citas",
+      products: "Ver contenido",
       orders: "Pedidos",
     },
     retail: {
@@ -88,7 +88,10 @@ export function getModuleName(module: ModuleKind, domain: DomainKind): string {
  * - medical + booking:create → "Agendar cita médica"
  * - real-estate + booking:create → "Agendar visita"
  */
-export function getActionVerb(key: IntentExampleKey, domain: DomainKind): string {
+export function getActionVerb(
+  key: IntentExampleKey,
+  domain: DomainKind,
+): string {
   // Booking verbs varían por dominio
   const bookingVerbs: Record<string, Record<BookingIntentKey, string>> = {
     restaurant: {
@@ -209,10 +212,7 @@ export function getDomainCapabilities(params: {
     const createVerb = getActionVerb("booking:create", businessType);
     const modifyVerb = getActionVerb("booking:modify", businessType);
     const cancelVerb = getActionVerb("booking:cancel", businessType);
-    const checkVerb = getActionVerb(
-      "booking:check_availability",
-      businessType,
-    );
+    const checkVerb = getActionVerb("booking:check_availability", businessType);
 
     capabilities.push(`
      ${index}. ${bookingLabel.toUpperCase()}:

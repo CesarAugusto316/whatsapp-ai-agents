@@ -30,16 +30,12 @@ export function getProcessGuidance(
 
   if (!userAskedHow) return "";
 
-  const guides: Record<ModuleKind, string> = {
+  const guides: Partial<Record<ModuleKind, string>> = {
     booking:
-      "\n\nQUICK GUIDE — CUANDO USUARIO PREGUNTA CÓMO FUNCIONA:\nPara reservar: Nombre + Fecha/Hora + N Personas → Confirmo ✅",
+      "\n\nNOTA: Usuario preguntó 'cómo'. Explica: 'Para reservar necesito: fecha, hora y número de personas. ¿Empezamos ahora? ✅'",
     orders:
-      "\n\nQUICK GUIDE — CUANDO USUARIO PREGUNTA CÓMO FUNCIONA:\nPara pedir: Producto + Cantidad + Entrega/Recogida → Confirmo ✅",
-    products: "",
+      "\n\nNOTA: Usuario preguntó 'cómo'. Explica: 'Para pedir necesito: qué producto y si es para llevar o delivery. ¿Empezamos? ✅'",
     delivery: "",
-    informational: "",
-    "social-protocol": "",
-    "conversational-signal": "",
   };
 
   return guides[module] || "";
