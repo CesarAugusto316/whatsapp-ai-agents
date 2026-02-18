@@ -9,73 +9,6 @@ import type {
 } from "@/application/services/pomdp";
 
 /**
- * Mapea módulos a nombres legibles en español según el dominio.
- *
- * ARQUITECTURA:
- * - Core modules: informational, social-protocol, conversational-signal (independientes del dominio)
- * - Domain modules: booking, products, orders, delivery (varían por dominio)
- *
- * EJEMPLOS:
- * - restaurant + booking → "Reservas de mesa"
- * - medical + booking → "Citas médicas"
- * - real-estate + booking → "Visitas y citas"
- */
-export function getModuleName(module: ModuleKind, domain: DomainKind): string {
-  const coreModules: Partial<Record<ModuleKind, string>> = {
-    informational: "Información",
-    "social-protocol": "Saludos",
-    "conversational-signal": "Respuestas",
-  };
-
-  const domainModules: Record<string, Partial<Record<ModuleKind, string>>> = {
-    restaurant: {
-      booking: "Reservas de mesa",
-      products: "Ver Menú y platos",
-      orders: "Hacer pedidos de comida",
-      delivery: "Entrega a domicilio",
-    },
-    "real-estate": {
-      booking: "Reserva de visitas y citas",
-    },
-    erotic: {
-      booking: "Reserva de citas",
-      products: "Ver contenido",
-      orders: "Pedidos",
-    },
-    retail: {
-      products: "Catálogo de productos",
-      orders: "Pedidos",
-      delivery: "Entrega",
-    },
-    medical: {
-      booking: "Citas médicas",
-    },
-  };
-
-  if (coreModules[module]) return coreModules[module]!;
-  if (
-    domain &&
-    domainModules[domain]?.[module as keyof (typeof domainModules)[string]]
-  ) {
-    return domainModules[domain][
-      module as keyof (typeof domainModules)[string]
-    ]!;
-  }
-
-  // Fallback genérico
-  const fallback: Record<ModuleKind, string> = {
-    booking: "Reservas",
-    products: "Productos",
-    orders: "Pedidos",
-    delivery: "Entrega",
-    informational: "Información",
-    "social-protocol": "Saludos",
-    "conversational-signal": "Respuestas",
-  };
-  return fallback[module];
-}
-
-/**
  * Obtiene el verbo de acción para un intentKey específico según el dominio.
  *
  * ARQUITECTURA:
@@ -208,14 +141,13 @@ export function getDomainCapabilities(params: {
   let index = 1;
 
   if (activeModules.includes("booking")) {
-    const bookingLabel = getModuleName("booking", businessType);
     const createVerb = getActionVerb("booking:create", businessType);
     const modifyVerb = getActionVerb("booking:modify", businessType);
     const cancelVerb = getActionVerb("booking:cancel", businessType);
     const checkVerb = getActionVerb("booking:check_availability", businessType);
 
     capabilities.push(`
-     ${index}. ${bookingLabel.toUpperCase()}:
+     ${index}. RESERVAS:
         - Crear: "${createVerb.toLowerCase()}"
         - Modificar: "${modifyVerb.toLowerCase()}"
         - Cancelar: "${cancelVerb.toLowerCase()}"
@@ -224,13 +156,12 @@ export function getDomainCapabilities(params: {
   }
 
   if (activeModules.includes("products")) {
-    const productsLabel = getModuleName("products", businessType);
     const viewVerb = getActionVerb("products:view", businessType);
     const findVerb = getActionVerb("products:find", businessType);
     const recommendVerb = getActionVerb("products:recommend", businessType);
 
     capabilities.push(`
-     ${index}. ${productsLabel.toUpperCase()}:
+     ${index}. PRODUCTOS:
         - Ver: "${viewVerb.toLowerCase()}"
         - Buscar: "${findVerb.toLowerCase()}"
         - Recomendaciones: "${recommendVerb.toLowerCase()}"`);
@@ -238,13 +169,12 @@ export function getDomainCapabilities(params: {
   }
 
   if (activeModules.includes("orders")) {
-    const ordersLabel = getModuleName("orders", businessType);
     const createVerb = getActionVerb("orders:create", businessType);
     const modifyVerb = getActionVerb("orders:modify", businessType);
     const cancelVerb = getActionVerb("orders:cancel", businessType);
 
     capabilities.push(`
-     ${index}. ${ordersLabel.toUpperCase()}:
+     ${index}. PEDIDOS:
         - Crear: "${createVerb.toLowerCase()}"
         - Modificar: "${modifyVerb.toLowerCase()}"
         - Cancelar: "${cancelVerb.toLowerCase()}"`);
@@ -252,9 +182,8 @@ export function getDomainCapabilities(params: {
   }
 
   if (activeModules.includes("delivery")) {
-    const deliveryLabel = getModuleName("delivery", businessType);
     capabilities.push(`
-     ${index}. ${deliveryLabel.toUpperCase()}:
+     ${index}. ENTREGA:
         - Consultar tiempo: "cuánto tarda en llegar"
         - Consultar método: "cómo hacen la entrega"`);
     index++;

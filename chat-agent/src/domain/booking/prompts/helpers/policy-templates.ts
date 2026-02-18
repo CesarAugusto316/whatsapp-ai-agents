@@ -7,7 +7,6 @@ import type {
 import type { RestaurantCtx } from "@/domain/restaurant";
 import { basePrompt } from "../base-prompt";
 import {
-  getModuleName,
   getActionVerb,
   getDomainCapabilities,
   getFilteredAlternatives,
@@ -49,7 +48,6 @@ MÓDULOS: ${activeModules
           m,
         ),
     )
-    .map((m) => getModuleName(m, businessType))
     .join(", ")}
 
 CAPACIDADES:
@@ -84,12 +82,12 @@ export function askClarificationTemplate(data: PolicyTemplateData): string {
   return `
 ${basePrompt(ctx)}
 
-POLICY: ${policy?.type} — Usuario ambiguo. Intent: ${intentKey} (score: ${intentScore.toFixed(2)}). Módulo: ${getModuleName(intentModule, businessType)}
+POLICY: ${policy?.type} — Usuario ambiguo. Intent: ${intentKey} (score: ${intentScore.toFixed(2)})
 
 ${processGuidance}
 
 ALTERNATIVAS:
-${filteredAlts.length > 0 ? filteredAlts.map((alt) => `- ${alt.intentKey} (${getModuleName(alt.module, businessType)})`).join("\n") : "Sin alternativas"}
+${filteredAlts.length > 0 ? filteredAlts.map((alt) => `- ${alt.intentKey}`).join("\n") : "Sin alternativas"}
 
 RESPONDE (2-3 líneas):
 - Reconocimiento: "Vale" / "Claro" + emoji
@@ -114,7 +112,7 @@ export function clearUpUncertaintyTemplate(data: PolicyTemplateData): string {
   return `
 ${basePrompt(ctx)}
 
-POLICY: ${policy?.type} — Usuario indeciso (isUncertain=true). NO ofrezcas ${intentKey}.
+POLICY: ${policy?.type} — Usuario indeciso
 
 ALTERNATIVAS (excluyendo ${intentKey}):
 ${filteredAlts.length > 0 ? filteredAlts.map((alt) => `- ${alt.intentKey}`).join("\n") : "Sin alternativas — usa opciones genéricas"}
@@ -136,14 +134,7 @@ RULES:
  * ~130 tokens
  */
 export function askConfirmationTemplate(data: PolicyTemplateData): string {
-  const {
-    ctx,
-    policy,
-    businessType,
-    intentModule,
-    intentKey,
-    requiresConfirmation,
-  } = data;
+  const { ctx, policy, businessType, intentModule, intentKey } = data;
   const actionVerb = getActionVerb(intentKey, businessType);
 
   const userMessage = policy?.state?.current?.text || "";
@@ -152,9 +143,9 @@ export function askConfirmationTemplate(data: PolicyTemplateData): string {
   return `
 ${basePrompt(ctx)}
 
-POLICY: ${policy?.type} — Requiere confirmación (${requiresConfirmation}). Usuario NO confirmó.
+POLICY: ${policy?.type} — Requiere confirmación
 
-INTENCIÓN: ${intentKey} (${getModuleName(intentModule, businessType)})
+INTENCIÓN: ${intentKey}
 ACCIÓN: ${actionVerb}
 ${userAskedHow}
 
@@ -195,7 +186,7 @@ ${basePrompt(ctx)}
 POLICY: ${policy?.type} — Usuario rechazó ${intentKey} (isRejected=true). Propón alternativa, NO insistas.
 
 ALTERNATIVAS (excluyendo ${intentKey}):
-${filteredAlts.length > 0 ? filteredAlts.map((alt) => `- ${alt.intentKey} (${getModuleName(alt.module, businessType)})`).join("\n") : "Sin alternativas"}
+${filteredAlts.length > 0 ? filteredAlts.map((alt) => `- ${alt.intentKey}`).join("\n") : "Sin alternativas"}
 
 ${sameModuleAlts.length > 0 ? `PRIORIDAD: Mismo módulo — ${sameModuleAlts[0].intentKey}` : ""}
 
@@ -232,7 +223,7 @@ ${basePrompt(ctx)}
 
 POLICY: ${policy?.type} — Ejecutar inmediatamente. requiresConfirmation: "${requiresConfirmation}".
 
-INTENCIÓN: ${intentKey} (${getModuleName(intentModule, businessType)})
+INTENCIÓN: ${intentKey}
 ACCIÓN: ${actionVerb}
 
 POR MÓDULO:
@@ -313,7 +304,6 @@ FALLBACK:
           m,
         ),
     )
-    .map((m) => getModuleName(m, businessType))
     .join(", ")}
 - NO menciones error técnico
 
