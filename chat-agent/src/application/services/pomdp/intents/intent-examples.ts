@@ -1,4 +1,3 @@
-import { erotic } from "./erotic";
 import type {
   BookingIntentKey,
   InformationalIntentKey,
@@ -707,5 +706,4 @@ export const intentExamples = [
   ...restaurantBooking,
   ...restaurantProducts,
   ...restaurantOrders,
-  ...erotic,
 ] as readonly IntentExample<IntentExampleKey>[];

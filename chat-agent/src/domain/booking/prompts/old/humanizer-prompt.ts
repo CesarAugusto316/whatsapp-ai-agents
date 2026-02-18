@@ -1,5 +1,5 @@
 import { BookingOptions, CustomerSignals } from "../../booking.types";
-import { WRITING_STYLE } from "../base-prompt";
+import { WRITING_STYLE } from "../global-rules";
 
 export function humanizerPrompt(originalMessage: string) {
   return `

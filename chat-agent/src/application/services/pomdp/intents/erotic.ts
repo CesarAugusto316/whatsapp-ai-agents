@@ -1,11 +1,11 @@
 import { IntentExample } from "./intent.types";
 
-export type EroticIntentKey =
+type EroticIntentKey =
   | "erotic:view_content"
   | "erotic:purchase_content"
   | "erotic:ask_services";
 
-export const erotic: IntentExample<EroticIntentKey>[] = [
+const erotic: IntentExample<EroticIntentKey>[] = [
   {
     intentKey: "erotic:view_content",
     module: "products",
