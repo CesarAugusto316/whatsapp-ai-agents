@@ -1,16 +1,16 @@
 import { test, expect, describe } from "bun:test";
-import { intentClassifierPrompt } from "@/domain/booking/prompts/intent-classifier-prompt";
+import { intentClassifierPrompt } from "@/domain/booking";
 import type {
   PolicyDecision,
   BeliefIntent,
 } from "@/application/services/pomdp";
-import type { RestaurantCtx } from "@/domain/restaurant";
+import type { DomainCtx } from "@/domain/booking";
 
 // ============================================
 // HELPERS PARA CREAR TEST DATA
 // ============================================
 
-const createMockCtx = (overrides?: Partial<RestaurantCtx>): RestaurantCtx =>
+const createMockCtx = (overrides?: Partial<DomainCtx>): DomainCtx =>
   ({
     customerMessage: "",
     beliefKey: "test-belief-key",
@@ -49,7 +49,7 @@ const createMockCtx = (overrides?: Partial<RestaurantCtx>): RestaurantCtx =>
     activeModules: ["booking", "products", "orders", "informational"],
     beliefState: undefined,
     ...overrides,
-  }) as RestaurantCtx;
+  }) as DomainCtx;
 
 const createBeliefIntent = (
   intentKey: string,
@@ -938,7 +938,7 @@ describe("intentClassifierPrompt - edge cases", () => {
           sunday: { open: "12:00", close: "23:00" },
         },
       },
-    } as unknown as RestaurantCtx);
+    } as unknown as DomainCtx);
     const policy = createPolicy("unknown_intent", undefined);
 
     const prompt = intentClassifierPrompt(ctx, policy);

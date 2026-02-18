@@ -4,7 +4,7 @@ import type {
   ModuleKind,
   PolicyDecision,
 } from "@/application/services/pomdp";
-import type { RestaurantCtx } from "@/domain/restaurant";
+import type { DomainCtx } from "@/domain/booking";
 import {
   PolicyTemplateData,
   policyTemplates,
@@ -31,7 +31,7 @@ import {
  * - medical: booking (citas médicas)
  */
 export function intentClassifierPrompt(
-  ctx: RestaurantCtx,
+  ctx: DomainCtx,
   policy: PolicyDecision,
 ): string {
   const currentIntent = policy?.intent;

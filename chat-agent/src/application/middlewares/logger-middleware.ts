@@ -1,7 +1,7 @@
 import { MiddlewareHandler } from "hono";
 import { env } from "bun";
 import { BookingState } from "@/domain/booking";
-import { ModuleCtx } from "@/domain/restaurant";
+import { ModuleCtx } from "@/domain/booking";
 
 // Tipos para diferentes niveles de log
 type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";

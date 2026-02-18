@@ -1,8 +1,8 @@
-import { RestaurantCtx } from "@/domain/restaurant";
+import { DomainCtx } from "@/domain/booking";
 import { generateAgentGoals } from "./agent-goals";
 import { WRITING_STYLE, SECURITY_RULES } from "./global-rules";
 
-export function basePrompt(ctx: RestaurantCtx) {
+export function basePrompt(ctx: DomainCtx) {
   const { business, activeModules } = ctx;
   const businessName = `${business.general.businessType} ${business.name}`;
   const assistantName = business.assistantName;

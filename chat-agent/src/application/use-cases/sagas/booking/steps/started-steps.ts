@@ -1,4 +1,3 @@
-import { OperationMode, systemMessages } from "@/domain/booking/prompts";
 import {
   CustomerSignals,
   BookingOptions,
@@ -6,6 +5,10 @@ import {
   isWithinHolydayRange,
   BookingState,
 } from "@/domain/booking";
+import {
+  getBookingExitMsg,
+  OperationMode,
+} from "@/application/services/state-managers/state-messages";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
@@ -17,7 +20,7 @@ import {
   SagaResult,
   stepConfig,
 } from "@/application/patterns";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { DomainCtx } from "@/domain/booking";
 import {
   BookingSchema,
   InputIntent,
@@ -37,11 +40,11 @@ export interface StartedSagaResult extends SagaBag {
 }
 
 export type StartedFuncSagaResult = (
-  ctx: RestaurantCtx,
+  ctx: DomainCtx,
 ) => Promise<SagaResult<StartedSagaResult, StartedSteps>>;
 
 type StartedFuncSagaStep = ISagaStep<
-  RestaurantCtx,
+  DomainCtx,
   StartedSagaResult,
   StartedSteps
 >;
@@ -54,7 +57,7 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
 
     if (customerMessage?.toUpperCase() === CustomerSignals.EXIT) {
       await cacheAdapter.delete(bookingKey);
-      const responseMsg = systemMessages.getExitMsg();
+      const responseMsg = getBookingExitMsg();
       logger.info("Customer asked a question", {
         customerAction: CustomerSignals.EXIT,
       });
@@ -299,7 +302,15 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
       }
 
       // FINAL: ✅ INPUT DATA VALIDATED
-      const transition = bookingStateManager.nextState(reservation.status);
+      const transition = bookingStateManager.nextState(
+        reservation.status,
+        undefined,
+        {
+          data,
+          timeZone: business.general.timezone,
+          domain: business.general.businessType,
+        },
+      );
       await cacheAdapter.save(bookingKey, {
         ...reservation,
         ...data,
@@ -324,11 +335,7 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
           ...data,
         },
       });
-      const responseMsg = systemMessages.getConfirmationMsg(
-        data,
-        mode,
-        business.general.timezone,
-      );
+      const responseMsg = transition.templateMessage!;
 
       // ✨ SEND SUCCESS MESSAGE
       const result = await humanizerAgent(responseMsg);

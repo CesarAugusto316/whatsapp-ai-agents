@@ -34,3 +34,8 @@ export {
   FORMAT_RULES,
   getGlobalRules,
 } from "./prompts/global-rules";
+
+export type {
+  ModuleCtx,
+  DomainCtx as DomainCtx,
+} from "./booking-context.types";

@@ -1,4 +1,4 @@
-import type { RestaurantCtx } from "@/domain/restaurant";
+import type { DomainCtx } from "@/domain/booking";
 import type { BookingSagaResult } from "../booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { initialOptionsWorkflow } from "./initial-options-workflow";
@@ -30,7 +30,7 @@ import { logger } from "@/infraestructure/logging";
  * cmsAdapter.sendQuestionForReview(businessId, payload)
  */
 export async function conversationalWorkflow(
-  ctx: RestaurantCtx,
+  ctx: DomainCtx,
 ): Promise<BookingSagaResult> {
   //
   // 1. generating the policy decision

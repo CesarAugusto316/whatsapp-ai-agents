@@ -1,5 +1,5 @@
 import { Handler } from "hono/types";
-import { ModuleCtx } from "@/domain/restaurant";
+import { ModuleCtx } from "@/domain/booking";
 import { cmsAdapter } from "@/infraestructure/adapters/cms";
 import { ragService, SyncStateRequest } from "@/application/services/rag";
 import { logger } from "@/infraestructure/logging";

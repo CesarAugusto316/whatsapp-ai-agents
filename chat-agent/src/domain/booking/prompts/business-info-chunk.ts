@@ -1,6 +1,6 @@
 import { formatSchedule, getGoogleMapLink } from "@/domain/utilities";
 import type { InformationalIntentKey } from "@/application/services/pomdp";
-import type { RestaurantCtx } from "@/domain/restaurant";
+import type { DomainCtx } from "@/domain/booking";
 import { basePrompt } from "./base-prompt";
 
 /**
@@ -35,7 +35,7 @@ const renderConditionalBlock = (lines: string[], title?: string): string => {
 
 export function businessInfoChunck(
   intentKey: InformationalIntentKey,
-  ctx: RestaurantCtx,
+  ctx: DomainCtx,
 ): string {
   const { name, general, schedule, currency } = ctx.business;
   const SCHEDULE_BLOCK = formatSchedule(schedule, general.timezone);

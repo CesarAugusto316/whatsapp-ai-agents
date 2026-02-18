@@ -1,7 +1,6 @@
 import { humanizerAgent } from "@/application/agents";
-import { RestaurantCtx } from "@/domain/restaurant";
-import { BookingOptions } from "@/domain/booking";
-import { systemMessages } from "@/domain/booking/prompts";
+import { DomainCtx } from "@/domain/booking";
+import { BookingOptions, BookingStatuses } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
 import { BookingSagaResult } from "../booking-saga";
@@ -15,7 +14,7 @@ import { bookingStateManager } from "@/application/services/state-managers";
  * @returns
  */
 export async function initialOptionsWorkflow(
-  ctx: RestaurantCtx,
+  ctx: DomainCtx,
   option: BookingIntentKey | string, // replace in the future for CoreIntentKey
 ): Promise<BookingSagaResult | undefined> {
   const { bookingKey, customer, business } = ctx;
@@ -24,6 +23,12 @@ export async function initialOptionsWorkflow(
     // choice 2
     const transition = bookingStateManager.nextState(
       BookingOptions.MAKE_BOOKING,
+      undefined,
+      {
+        domain: business.general.businessType,
+        timeZone: business.general.timezone,
+        userName: customer?.name,
+      },
     );
     await cacheAdapter.save(bookingKey, {
       businessId: business?.id,
@@ -31,10 +36,7 @@ export async function initialOptionsWorkflow(
       customerName: customer?.name || "",
       status: transition.nextState, // MAKE_STARTED
     });
-    const responseMsg = systemMessages.getCreateMsg({
-      userName: customer?.name,
-    });
-    const humanizedResponse = await humanizerAgent(responseMsg);
+    const humanizedResponse = await humanizerAgent(transition.templateMessage!);
     return {
       bag: {},
       lastStepResult: {
@@ -55,7 +57,16 @@ export async function initialOptionsWorkflow(
       customer,
       flowOption: BookingOptions.UPDATE_BOOKING,
       getMessage: (state) =>
-        systemMessages.getUpdateMsg(state, business.general.timezone),
+        bookingStateManager.nextState(
+          BookingStatuses.UPDATE_STARTED,
+          undefined,
+          {
+            domain: business.general.businessType,
+            timeZone: business.general.timezone,
+            data: state,
+            userName: customer?.name,
+          },
+        ).templateMessage!,
       bookingKey,
     });
     return {
@@ -78,7 +89,15 @@ export async function initialOptionsWorkflow(
       customer,
       flowOption: BookingOptions.CANCEL_BOOKING,
       getMessage: (state) =>
-        systemMessages.getCancelMsg(state, business.general.timezone),
+        bookingStateManager.nextState(
+          BookingStatuses.CANCEL_VALIDATED,
+          undefined,
+          {
+            domain: business.general.businessType,
+            timeZone: business.general.timezone,
+            data: state,
+          },
+        ).templateMessage!,
       bookingKey,
     });
     return {

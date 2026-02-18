@@ -4,7 +4,7 @@ import type {
   ModuleKind,
   PolicyDecision,
 } from "@/application/services/pomdp";
-import type { RestaurantCtx } from "@/domain/restaurant";
+import type { DomainCtx } from "@/domain/booking";
 import { basePrompt } from "../base-prompt";
 import {
   getActionVerb,
@@ -17,7 +17,7 @@ import { getProcessGuidance } from "./process-guidance";
  * Datos comunes para todos los policy templates
  */
 export interface PolicyTemplateData {
-  ctx: RestaurantCtx;
+  ctx: DomainCtx;
   policy: PolicyDecision;
   businessType: AllDomainKind;
   activeModules: ModuleKind[];

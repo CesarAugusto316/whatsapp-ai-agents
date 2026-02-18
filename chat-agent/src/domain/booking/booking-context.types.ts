@@ -1,12 +1,12 @@
-import { BookingState } from "../booking/booking.types";
+import { BookingState } from "./booking.types";
 import { ContextProps } from "../context.types";
 import { Context } from "hono";
 
-export type RestaurantCtx = ContextProps<
+export type DomainCtx = ContextProps<
   BookingState,
   {} // ProductOrderState
 >;
 
 export interface ModuleCtx extends Context {
-  Variables: RestaurantCtx;
+  Variables: DomainCtx;
 }

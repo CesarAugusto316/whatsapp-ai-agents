@@ -1,4 +1,4 @@
-import { OperationMode, systemMessages } from "@/domain/booking/prompts";
+import { BookingOperationMode, systemMessages } from "@/domain/booking/prompts";
 import {
   CustomerActionKey,
   CustomerSignals,
@@ -15,7 +15,7 @@ import {
   SagaResult,
   stepConfig,
 } from "@/application/patterns";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { DomainCtx } from "@/domain/booking";
 import type {
   Booking,
   CreateBooking,
@@ -38,11 +38,11 @@ export type ValidateSagaSteps =
   | "CONFIRM:SEND_MESSAGE";
 
 export type ValidateFuncSagaResult = (
-  ctx: RestaurantCtx,
+  ctx: DomainCtx,
 ) => Promise<SagaResult<ValidateSagaResult, ValidateSagaSteps>>;
 
 type ValidateFuncSagaStep = ISagaStep<
-  RestaurantCtx,
+  DomainCtx,
   ValidateSagaResult,
   ValidateSagaSteps
 >;
@@ -202,7 +202,9 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
   },
 });
 
-const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
+const sendConfirmationMsg = (
+  mode: BookingOperationMode,
+): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
   },

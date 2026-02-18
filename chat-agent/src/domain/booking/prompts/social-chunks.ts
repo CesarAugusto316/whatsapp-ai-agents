@@ -1,5 +1,5 @@
 import type { SocialProtocolIntent } from "@/application/services/pomdp";
-import type { RestaurantCtx } from "@/domain/restaurant";
+import type { DomainCtx } from "@/domain/booking";
 import { basePrompt } from "./base-prompt";
 
 const firstMessageVariants = [
@@ -205,7 +205,7 @@ const firstMessageVariants = [
   `,
 ] as const;
 
-export const getRandomOnboardingMsg = (ctx: RestaurantCtx): string => {
+export const getRandomOnboardingMsg = (ctx: DomainCtx): string => {
   const {
     business: { assistantName, name },
   } = ctx;
@@ -215,7 +215,7 @@ export const getRandomOnboardingMsg = (ctx: RestaurantCtx): string => {
 
 export function socialProtocolChunk(
   intentKey: SocialProtocolIntent,
-  ctx: RestaurantCtx,
+  ctx: DomainCtx,
 ): string {
   // Base: identidad del asistente (siempre necesaria)
   const base = `

@@ -1,4 +1,4 @@
-import { RestaurantCtx } from "@/domain/restaurant";
+import { DomainCtx } from "@/domain/booking";
 import { whatsappAdapter } from "@/infraestructure/adapters/whatsapp";
 import {
   FuncSagaStep,
@@ -33,7 +33,7 @@ interface WhatsappSagaResults extends SagaBag {
  * Ensures all steps use consistent typing for context, results, and keys.
  */
 type WhatsappSagaStep = ISagaStep<
-  RestaurantCtx,
+  DomainCtx,
   WhatsappSagaResults,
   WhatappStepName
 >;
@@ -70,7 +70,7 @@ const sendSeen: WhatsappSagaStep = {
  * execute functions. This implements the "undo" capability of the Saga pattern.
  */
 const sendStopTypingCompensate: FuncSagaStep<
-  RestaurantCtx,
+  DomainCtx,
   WhatsappSagaResults,
   WhatappStepName
 > = async ({ ctx, getStepResult }) => {
@@ -190,12 +190,8 @@ const sendMsgText: WhatsappSagaStep = {
 };
 
 // 1. Initialize the WhatsApp Saga
-export const whatsappSagaOrchestrator = async (ctx: RestaurantCtx) => {
-  return new SagaOrchestrator<
-    RestaurantCtx,
-    WhatsappSagaResults,
-    WhatappStepName
-  >({
+export const whatsappSagaOrchestrator = async (ctx: DomainCtx) => {
+  return new SagaOrchestrator<DomainCtx, WhatsappSagaResults, WhatappStepName>({
     ctx,
   })
     .addStep(sendSeen)

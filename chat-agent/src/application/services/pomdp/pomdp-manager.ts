@@ -1,7 +1,7 @@
 import { BeliefStateUpdater } from "./belief/belief-updater";
 import { PolicyDecision, PolicyEngine } from "./policy/policy-engine";
 import { BeliefIntent, BeliefState } from "./belief/belief.types";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { DomainCtx } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { IntentPayload } from "@/infraestructure/adapters/vector-store";
 import { shouldSkipEmbedding } from "./intents/helpers/skip-embedding";
@@ -35,7 +35,7 @@ class PomdpManager {
   /**
    * Process user input through the POMDP pipeline
    */
-  async process(ctx: RestaurantCtx) {
+  async process(ctx: DomainCtx) {
     //
     let mainIntent: IntentPayloadWithScore | undefined;
     let alternativeIntents: IntentPayloadWithScore[] = [];
