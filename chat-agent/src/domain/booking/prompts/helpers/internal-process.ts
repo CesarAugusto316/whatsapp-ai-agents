@@ -1,13 +1,13 @@
-import { DomainKind, ModuleKind } from "@/application/services/pomdp";
+import { AllDomainKind, ModuleKind } from "@/application/services/pomdp";
 import { bookingSchema } from "../../input-parser";
 
 type Guidance = {
   name: ModuleKind;
-  domains: DomainKind[];
+  domains: AllDomainKind[];
   requiredUserData: string[];
 };
 
-bookingSchema
+bookingSchema;
 
 export const internalProcesses: Guidance[] = [
   {

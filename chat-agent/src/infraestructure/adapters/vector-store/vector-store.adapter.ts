@@ -5,11 +5,17 @@ import {
   IVectorStoreAdapter,
   QuadrantPoint,
 } from "./vector-store.adapter.interface";
+import {
+  GENERAL_DOMAIN,
+  ModuleKind,
+  SpecializedDomain,
+} from "@/application/services/pomdp";
 
 type EnabledKey = keyof Pick<Product, "enabled">;
 type BusinessKey = keyof Pick<Product, "business">;
 type LangKey = keyof Pick<IntentPayload, "lang">;
 type ModuleKey = keyof Pick<IntentPayload, "module">;
+type DomainKey = keyof Pick<IntentPayload, "domain">;
 
 export class VectorStoreAdapter implements IVectorStoreAdapter {
   private client = new QdrantClient({ url: Bun.env.QDRANT_URL });
@@ -45,6 +51,10 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
     });
     await this.client.createPayloadIndex("intents", {
       field_name: "module" satisfies ModuleKey,
+      field_schema: "keyword",
+    });
+    await this.client.createPayloadIndex("intents", {
+      field_name: "domain" satisfies DomainKey,
       field_schema: "keyword",
     });
   }
@@ -140,8 +150,9 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
 
   queryIntents(
     vector: number[],
-    activeModules: string[],
+    activeModules: ModuleKind[],
     lang: string,
+    specializedDomain: SpecializedDomain,
     limit: number,
     threshold: number,
   ) {
@@ -153,11 +164,26 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
         must: [
           { key: "lang" satisfies LangKey, match: { value: lang } },
           {
-            // min_should: 1,
+            // OR: busca modules activos por domain
+            min_should: 1,
             should: activeModules.map((d) => ({
               key: "module" satisfies ModuleKey,
               match: { value: d },
             })),
+          },
+          {
+            // OR: busca intents del dominio específico O del dominio general (transversal)
+            should: [
+              {
+                key: "domain" satisfies DomainKey,
+                match: { value: specializedDomain },
+              },
+              {
+                key: "domain" satisfies DomainKey,
+                match: { value: GENERAL_DOMAIN },
+              },
+            ],
+            min_should: 1,
           },
         ],
       },

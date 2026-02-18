@@ -1,6 +1,6 @@
 import type {
   BookingIntentKey,
-  DomainKind,
+  AllDomainKind,
   IntentExampleKey,
   ModuleKind,
   OrderIntentKey,
@@ -23,7 +23,7 @@ import type {
  */
 export function getActionVerb(
   key: IntentExampleKey,
-  domain: DomainKind,
+  domain: AllDomainKind,
 ): string {
   // Booking verbs varían por dominio
   const bookingVerbs: Record<string, Record<BookingIntentKey, string>> = {
@@ -134,7 +134,7 @@ export function getActionVerb(
  */
 export function getDomainCapabilities(params: {
   activeModules: ModuleKind[];
-  businessType: DomainKind;
+  businessType: AllDomainKind;
 }): string {
   const { activeModules, businessType } = params;
   const capabilities: string[] = [];

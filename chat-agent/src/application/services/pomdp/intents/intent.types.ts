@@ -1,10 +1,11 @@
+export const GENERAL_DOMAIN = "general" as const;
 // ============================================
 // 1. NAMESPACE POR DOMINIO (sin colisiones)
 // ============================================
 
 export type ModuleKind =
   // ============================================
-  // CORE MODULES (siempre activos, domain-agnostic)
+  // GENERAL MODULES (siempre activos, domain-agnostic)
   // ============================================
   | "informational"
   | "social-protocol"
@@ -18,25 +19,27 @@ export type ModuleKind =
   | "orders"
   | "delivery"; // futuro
 
-export type DomainKind =
+export type SpecializedDomain =
   | "restaurant"
   | "real-estate"
   | "erotic"
   | "retail"
-  | "medical"
-  | "general"; // ←  para módulos core (no tienen dominio)
+  | "medical";
+
+export type AllDomainKind = SpecializedDomain | typeof GENERAL_DOMAIN; // ←  para módulos core (no tienen dominio)
 
 export type RequiredConfirmation = "always" | "never" | "maybe";
 
 export interface IntentExample<I extends string> {
   intentKey: I;
   module: ModuleKind;
-  domain: DomainKind;
+  domain: AllDomainKind;
   requiresConfirmation: RequiredConfirmation;
   lang: "es" | "en";
   examples: string[];
 }
 
+// general domain
 export type SocialProtocolIntent =
   | "social:greeting"
   | "social:goodbye"
@@ -45,6 +48,7 @@ export type SocialProtocolIntent =
   | "signal:negation"
   | "signal:uncertainty";
 
+// general domain
 export type InformationalIntentKey =
   | "info:ask_price"
   | "info:ask_location"
@@ -54,6 +58,7 @@ export type InformationalIntentKey =
   | "info:ask_delivery_time"
   | "info:ask_delivery_method";
 
+// specialized domain
 export type BookingIntentKey =
   // workflows
   | "booking:create"

@@ -1,5 +1,5 @@
 import type {
-  DomainKind,
+  AllDomainKind,
   IntentExampleKey,
   ModuleKind,
   PolicyDecision,
@@ -36,7 +36,7 @@ export function intentClassifierPrompt(
 ): string {
   const currentIntent = policy?.intent;
   const { business, activeModules } = ctx;
-  const businessType = business.general.businessType as DomainKind;
+  const businessType = business.general.businessType as AllDomainKind;
 
   // Extract intent data for dynamic prompts
   const intentKey = (currentIntent?.intentKey as IntentExampleKey) || "unknown";

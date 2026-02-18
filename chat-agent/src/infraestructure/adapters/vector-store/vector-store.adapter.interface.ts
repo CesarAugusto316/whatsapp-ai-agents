@@ -1,15 +1,18 @@
 import type { Schemas } from "@qdrant/js-client-rest";
 import type { Product } from "../cms";
 import {
+  AllDomainKind,
   IntentExampleKey,
   ModuleKind,
   RequiredConfirmation,
+  SpecializedDomain,
 } from "@/application/services/pomdp";
 
 export type IntentPayload = {
   text: string;
   module: ModuleKind;
   lang: string;
+  domain: AllDomainKind;
   requiresConfirmation: RequiredConfirmation;
   intentKey: IntentExampleKey;
 };
@@ -61,8 +64,9 @@ export interface IVectorStoreAdapter {
 
   queryIntents(
     vector: number[],
-    activeModules: string[],
+    activeModules: ModuleKind[],
     lang: string,
+    specializedDomain: SpecializedDomain,
     limit: number,
     threshold: number,
   ): Promise<{ points: QuadrantPoint<IntentPayload>[] }>;

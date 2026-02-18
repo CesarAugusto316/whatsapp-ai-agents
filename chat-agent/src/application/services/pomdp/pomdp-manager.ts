@@ -5,7 +5,12 @@ import { RestaurantCtx } from "@/domain/restaurant";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { IntentPayload } from "@/infraestructure/adapters/vector-store";
 import { shouldSkipEmbedding } from "./intents/helpers/skip-embedding";
-import { ModuleKind, SocialProtocolIntent } from "./intents/intent.types";
+import {
+  AllDomainKind,
+  ModuleKind,
+  SocialProtocolIntent,
+  SpecializedDomain,
+} from "./intents/intent.types";
 import { ragService } from "../rag";
 import { prioritizeIntents } from "./intents/helpers/prioritize-intents";
 
@@ -66,6 +71,7 @@ class PomdpManager {
       const { points } = await ragService.searchIntent(
         ctx.customerMessage,
         ctx.activeModules, // ej: ["informational", "booking", "restaurant"],
+        ctx.business.general.businessType as SpecializedDomain,
         limit,
       );
       // topResults =

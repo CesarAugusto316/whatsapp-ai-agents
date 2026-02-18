@@ -1,5 +1,5 @@
 import type {
-  DomainKind,
+  AllDomainKind,
   IntentExampleKey,
   ModuleKind,
   PolicyDecision,
@@ -19,7 +19,7 @@ import { getProcessGuidance } from "./process-guidance";
 export interface PolicyTemplateData {
   ctx: RestaurantCtx;
   policy: PolicyDecision;
-  businessType: DomainKind;
+  businessType: AllDomainKind;
   activeModules: ModuleKind[];
   intentKey: IntentExampleKey;
   intentModule: ModuleKind;

@@ -20,9 +20,12 @@ export type {
   ModuleKind,
   SocialProtocolIntent,
   RequiredConfirmation,
-  DomainKind,
+  AllDomainKind,
   OrderIntentKey,
+  SpecializedDomain,
 } from "./intents/intent.types";
+
+export { GENERAL_DOMAIN } from "./intents/intent.types";
 
 export type { IntentPayloadWithScore, PomdpResult } from "./pomdp-manager";
 export type { PolicyDecision } from "./policy/policy-engine";

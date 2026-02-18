@@ -8,7 +8,11 @@ import {
 } from "@/infraestructure/adapters/vector-store";
 import { Schemas } from "@qdrant/js-client-rest";
 import { Product } from "@/infraestructure/adapters/cms";
-import { ModuleKind } from "@/application/services/pomdp";
+import {
+  AllDomainKind,
+  ModuleKind,
+  SpecializedDomain,
+} from "@/application/services/pomdp";
 import { IntentExample, IntentExampleKey, intentExamples } from "../pomdp";
 
 /**
@@ -58,6 +62,13 @@ class RagService {
     return text.replace(/\s+/g, " ").trim();
   }
 
+  /**
+   *
+   * @description user query vectors are store in redis only not in qdrant
+   * @param text
+   * @param cacheKey
+   * @returns
+   */
   private async getOrCreateEmbedding(
     text: string,
     cacheKey: string,
@@ -104,6 +115,7 @@ class RagService {
   async searchIntent(
     query: string,
     activeModules: ModuleKind[],
+    domain: SpecializedDomain,
     limit = 3,
     lang = "es",
     version = "1.0",
@@ -132,6 +144,7 @@ class RagService {
       embedding,
       activeModules,
       lang,
+      domain,
       limit,
       this.THRESHOLD,
     ) as Promise<{ points: QuadrantPoint<IntentPayload>[] }>;
@@ -143,13 +156,14 @@ class RagService {
   async upsertIntents(intents: readonly IntentExample<IntentExampleKey>[]) {
     // 1. Preparar datos para embedding en lote
     const prepared = intents.flatMap(
-      ({ intentKey, module, examples, lang, requiresConfirmation }) =>
+      ({ intentKey, module, examples, lang, requiresConfirmation, domain }) =>
         examples.map(
           (ex) =>
             ({
               text: this.normalizeText(ex),
               intentKey,
               module,
+              domain,
               requiresConfirmation,
               lang,
             }) satisfies IntentPayload,
@@ -168,15 +182,16 @@ class RagService {
 
     // 3. Preparar puntos para Qdrant
     const points = embeddings.map(({ embedding }, i) => {
-      const { intentKey, module, lang, text, requiresConfirmation } =
+      const { intentKey, module, lang, text, requiresConfirmation, domain } =
         prepared[i];
-      const hash = this.sha256(`${module}:${lang}:${text}`);
+      const hash = this.sha256(`${domain}:${module}:${lang}:${text}`);
       return {
         id: this.hashToUUID(hash), // Generar ID determinístico
         vector: embedding,
         payload: {
           text,
           module,
+          domain,
           requiresConfirmation,
           lang,
           intentKey,

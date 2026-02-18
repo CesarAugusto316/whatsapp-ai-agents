@@ -1,8 +1,9 @@
-import { IntentExample, IntentExampleKey } from "./intent.types";
+import type { IntentExample, IntentExampleKey } from "./intent.types";
+export { GENERAL_DOMAIN } from "./intent.types";
 import {
   restaurantBooking,
-  restaurantOrders,
   restaurantProducts,
+  restaurantOrders,
 } from "./restaurant/intent-examples";
 import {
   basicInformation,
@@ -13,8 +14,8 @@ import {
 export const intentExamples = [
   ...socialProtocols,
   ...conversationalSignals,
-
   ...basicInformation,
+
   ...restaurantBooking,
   ...restaurantProducts,
   ...restaurantOrders,
