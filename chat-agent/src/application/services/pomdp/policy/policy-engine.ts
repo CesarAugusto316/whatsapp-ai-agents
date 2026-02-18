@@ -83,7 +83,7 @@ export class PolicyEngine {
       }
       // Just an example (can be changed in the future)
       return {
-        type: "propose_alternative",
+        type: "ask_confirmation",
         intent,
         state: clonedBelief,
       };

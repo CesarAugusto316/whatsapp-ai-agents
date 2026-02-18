@@ -1,9 +1,10 @@
 import { describe, it, expect } from "bun:test";
 import {
-  socialProtocols,
-  conversationalSignals,
-  shouldSkipProcessing,
-} from "@/application/services/pomdp/intents/conversational-signals";
+  patterns,
+  shouldSkipEmbedding,
+} from "@/application/services/pomdp/intents/helpers/skip-embedding";
+
+const { conversationalSignals, socialProtocols } = patterns;
 
 describe("socialProtocols", () => {
   describe("greeting", () => {
@@ -182,28 +183,28 @@ describe("conversationalSignals", () => {
 
 describe("shouldSkipProcessing", () => {
   it("should skip social protocols", () => {
-    expect(shouldSkipProcessing("hola").skip).toBe(true);
-    expect(shouldSkipProcessing("hola").kind).toBe("social-protocol");
-    expect(shouldSkipProcessing("gracias").skip).toBe(true);
-    expect(shouldSkipProcessing("chau").skip).toBe(true);
+    expect(shouldSkipEmbedding("hola").skip).toBe(true);
+    expect(shouldSkipEmbedding("hola").kind).toBe("social-protocol");
+    expect(shouldSkipEmbedding("gracias").skip).toBe(true);
+    expect(shouldSkipEmbedding("chau").skip).toBe(true);
   });
 
   it("should skip conversational signals", () => {
-    expect(shouldSkipProcessing("si").skip).toBe(true);
-    expect(shouldSkipProcessing("no").skip).toBe(true);
-    expect(shouldSkipProcessing("no se").skip).toBe(true);
-    expect(shouldSkipProcessing("dale").skip).toBe(true);
+    expect(shouldSkipEmbedding("si").skip).toBe(true);
+    expect(shouldSkipEmbedding("no").skip).toBe(true);
+    expect(shouldSkipEmbedding("no se").skip).toBe(true);
+    expect(shouldSkipEmbedding("dale").skip).toBe(true);
   });
 
   it("should not skip long messages", () => {
-    expect(shouldSkipProcessing("hola como estas hoy").skip).toBe(false);
+    expect(shouldSkipEmbedding("hola como estas hoy").skip).toBe(false);
     expect(
-      shouldSkipProcessing("quiero hacer una reserva para manana").skip,
+      shouldSkipEmbedding("quiero hacer una reserva para manana").skip,
     ).toBe(false);
   });
 
   it("should not skip unrecognized messages", () => {
-    expect(shouldSkipProcessing("que hora es").skip).toBe(false);
-    expect(shouldSkipProcessing("donde estan ubicados").skip).toBe(false);
+    expect(shouldSkipEmbedding("que hora es").skip).toBe(false);
+    expect(shouldSkipEmbedding("donde estan ubicados").skip).toBe(false);
   });
 });

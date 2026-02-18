@@ -2,9 +2,9 @@ import {
   ConversationalSignal,
   ModuleKind,
   SocialProtocolIntent,
-} from "./intent.types";
+} from "../intent.types";
 
-export type SocialProtocol = "greeting" | "goodbye" | "thanks";
+type SocialProtocol = "greeting" | "goodbye" | "thanks";
 
 /**
  * Helper para crear regex tolerante a variaciones
@@ -17,7 +17,7 @@ const opt = (char: string) => `${char}?`;
 const optAccent = (char: string) =>
   `[${char}${char.toUpperCase()}${char.toLowerCase()}]`;
 
-export const socialProtocols: Record<SocialProtocol, RegExp> = {
+const socialProtocols: Record<SocialProtocol, RegExp> = {
   // HOLA: incluye "ola", "holi", "holaa", "holaaa", "holaq" (typo común)
   // BUENAS: "buenas", "buenos días/tardes/noches" con variaciones
   // QUE TAL: "q tal", "qué tal", "que tal"
@@ -69,7 +69,7 @@ export const socialProtocols: Record<SocialProtocol, RegExp> = {
   ),
 };
 
-export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
+const conversationalSignals: Record<ConversationalSignal, RegExp> = {
   // AFIRMACIÓN: incluye "sii", "si", "sip", "síp", "simón" (México), "vale" (España)
   // Regionales: "dale" (Argentina/Uruguay), "de una" (Colombia), "orale" (México)
   affirmation: new RegExp(
@@ -134,6 +134,11 @@ export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
   ),
 };
 
+export const patterns = {
+  socialProtocols,
+  conversationalSignals,
+};
+
 /**
  * Detecta protocolos sociales y señales conversacionales TRIVIALES
  * para evitar procesamiento RAG innecesario.
@@ -142,7 +147,7 @@ export const conversationalSignals: Record<ConversationalSignal, RegExp> = {
  * obviamente protocolos/señales. El resto → vectorizar + cachear.
  * @returns true si el mensaje debe saltarse el flujo de RAG/LLM
  */
-export function shouldSkipProcessing(msg: string): {
+export function shouldSkipEmbedding(msg: string): {
   skip: boolean;
   kind: "social-protocol" | "conversational-signal" | null;
   msg: SocialProtocolIntent | null;

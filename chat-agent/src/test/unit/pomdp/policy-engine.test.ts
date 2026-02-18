@@ -87,7 +87,7 @@ test('requiresConfirmation="maybe" + score=0.6 → type="ask_clarification" (fal
 
   const decision = engine.decide(state);
 
-  expect(decision.type).toBe("propose_alternative");
+  expect(decision.type).toBe("ask_confirmation");
   expect(decision.intent).toBeDefined();
 });
 

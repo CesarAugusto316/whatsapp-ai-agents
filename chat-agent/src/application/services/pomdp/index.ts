@@ -1,10 +1,9 @@
-export { intentExamples } from "./intents/intent-examples";
-export { prioritizeIntents } from "./intents/prioritize-intents";
+export { intentExamples } from "./intents";
+export { prioritizeIntents } from "./intents/helpers/prioritize-intents";
 export {
-  conversationalSignals,
-  socialProtocols,
-  shouldSkipProcessing,
-} from "./intents/conversational-signals";
+  patterns,
+  shouldSkipEmbedding,
+} from "./intents/helpers/skip-embedding";
 export { BeliefStateUpdater } from "./belief/belief-updater";
 export { PolicyEngine } from "./policy/policy-engine";
 export { pomdpManager } from "./pomdp-manager";

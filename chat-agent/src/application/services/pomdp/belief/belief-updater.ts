@@ -25,13 +25,13 @@ export class BeliefStateUpdater {
     const base = Key.trim() as RequiredConfirmation;
     switch (base) {
       case "always":
-        return 0.76;
+        return 0.77;
       case "maybe":
-        return 0.7;
+        return 0.72;
       case "never":
-        return 0.63;
+        return 0.67;
       default:
-        return 0.7;
+        return 0.72;
     }
   }
 
@@ -45,7 +45,14 @@ export class BeliefStateUpdater {
     mainIntent?: IntentPayloadWithScore,
   ): BeliefState {
     // Si no hay resultado nuevo, no cambiamos el estado (no creamos "nueva intención" artificial)
-    if (!mainIntent) {
+    const isCurrentConfident = mainIntent
+      ? this.isConfident(
+          mainIntent?.score,
+          this.getThreshold(mainIntent?.requiresConfirmation),
+        )
+      : false;
+
+    if (!mainIntent || !isCurrentConfident) {
       return { ...prevState, isIntentFound: false };
     }
 

@@ -55,7 +55,8 @@ ${getDomainCapabilities({ activeModules, businessType })}
 
 RESPONDE:
 - NO digas "no entendí" — presenta capacidades cálidamente
-- Usa vocabulario de ${businessType}
+- NO pidas datos (fecha, hora, personas) si no hay intención clara
+- Pide que sea explícito: "¿Quieres reservar, pedir comida o ver el menú?"
 - Cierra: "¿Qué prefieres hoy?"
 `.trim();
 }

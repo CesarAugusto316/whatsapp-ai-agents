@@ -3,7 +3,7 @@ import {
   intentPatterns,
   detectIntent,
   detectAllIntents,
-} from "@/application/services/pomdp/intents/intent-patterns";
+} from "@/application/services/pomdp/intents/restaurant/intent-patterns";
 
 describe("Intent Patterns - Regex Detection", () => {
   // ============================================

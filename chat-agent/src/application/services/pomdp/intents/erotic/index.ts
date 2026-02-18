@@ -1,4 +1,4 @@
-import { IntentExample } from "./intent.types";
+import { IntentExample } from "../intent.types";
 
 type EroticIntentKey =
   | "erotic:view_content"

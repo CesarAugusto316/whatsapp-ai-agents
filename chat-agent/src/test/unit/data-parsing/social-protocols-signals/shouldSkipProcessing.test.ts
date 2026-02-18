@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
-import { shouldSkipProcessing } from "@/application/services/pomdp";
+import { shouldSkipEmbedding } from "@/application/services/pomdp";
 
 const DATA_DIR = __dirname;
 
@@ -48,21 +48,21 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     const thanks = collectInputs("thanks");
 
     it.each(greetings)("should skip greeting: $input", ({ input }) => {
-      const result = shouldSkipProcessing(input);
+      const result = shouldSkipEmbedding(input);
       expect(result.skip).toBe(true);
       expect(result.kind).toBe("social-protocol");
       expect(result.msg).toBe("social:greeting");
     });
 
     it.each(goodbyes)("should skip goodbye: $input", ({ input }) => {
-      const result = shouldSkipProcessing(input);
+      const result = shouldSkipEmbedding(input);
       expect(result.skip).toBe(true);
       expect(result.kind).toBe("social-protocol");
       expect(result.msg).toBe("social:goodbye");
     });
 
     it.each(thanks)("should skip thanks: $input", ({ input }) => {
-      const result = shouldSkipProcessing(input);
+      const result = shouldSkipEmbedding(input);
       expect(result.skip).toBe(true);
       expect(result.kind).toBe("social-protocol");
       expect(result.msg).toBe("social:thanks");
@@ -75,14 +75,14 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     const uncertainties = collectInputs("uncertainty");
 
     it.each(affirmations)("should skip affirmation: $input", ({ input }) => {
-      const result = shouldSkipProcessing(input);
+      const result = shouldSkipEmbedding(input);
       expect(result.skip).toBe(true);
       expect(result.kind).toBe("conversational-signal");
       expect(result.msg).toBe("signal:affirmation");
     });
 
     it.each(negations)("should skip negation: $input", ({ input }) => {
-      const result = shouldSkipProcessing(input);
+      const result = shouldSkipEmbedding(input);
       expect(result.skip).toBe(true);
       expect(result.kind).toBe("conversational-signal");
       expect(result.msg).toBe("signal:negation");
@@ -91,7 +91,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     it.each(uncertainties.filter((u) => !u.input.includes("asi")))(
       "should skip uncertainty: $input",
       ({ input }) => {
-        const result = shouldSkipProcessing(input);
+        const result = shouldSkipEmbedding(input);
         expect(result.skip).toBe(true);
         expect(result.kind).toBe("conversational-signal");
         expect(result.msg).toBe("signal:uncertainty");
@@ -100,7 +100,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
 
     // Test especial para "mas o menos asi" (4 palabras - no debe skip)
     it("should NOT skip 'mas o menos asi' (4 words)", () => {
-      const result = shouldSkipProcessing("mas o menos asi");
+      const result = shouldSkipEmbedding("mas o menos asi");
       expect(result.skip).toBe(false);
     });
   });
@@ -132,7 +132,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     it.each(longMessages.map((msg) => ({ input: msg })))(
       "should NOT skip long message: $input",
       ({ input }) => {
-        const result = shouldSkipProcessing(input);
+        const result = shouldSkipEmbedding(input);
         expect(result.skip).toBe(false);
         expect(result.kind).toBeNull();
         expect(result.msg).toBeNull();
@@ -162,7 +162,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     it.each(unrecognizedMessages.map((msg) => ({ input: msg })))(
       "should NOT skip unrecognized: $input",
       ({ input }) => {
-        const result = shouldSkipProcessing(input);
+        const result = shouldSkipEmbedding(input);
         expect(result.skip).toBe(false);
         expect(result.kind).toBeNull();
         expect(result.msg).toBeNull();
@@ -172,54 +172,54 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
 
   describe("Edge Cases", () => {
     it("should handle empty string", () => {
-      const result = shouldSkipProcessing("");
+      const result = shouldSkipEmbedding("");
       expect(result.skip).toBe(false);
       expect(result.kind).toBeNull();
       expect(result.msg).toBeNull();
     });
 
     it("should handle whitespace only", () => {
-      const result = shouldSkipProcessing("   ");
+      const result = shouldSkipEmbedding("   ");
       expect(result.skip).toBe(false);
       expect(result.kind).toBeNull();
       expect(result.msg).toBeNull();
     });
 
     it("should handle tabs and newlines", () => {
-      const result = shouldSkipProcessing("\t\n");
+      const result = shouldSkipEmbedding("\t\n");
       expect(result.skip).toBe(false);
       expect(result.kind).toBeNull();
       expect(result.msg).toBeNull();
     });
 
     it("should trim before processing", () => {
-      const result = shouldSkipProcessing("  hola  ");
+      const result = shouldSkipEmbedding("  hola  ");
       expect(result.skip).toBe(true);
       expect(result.kind).toBe("social-protocol");
     });
 
     it("should handle single character", () => {
-      const result = shouldSkipProcessing("h");
+      const result = shouldSkipEmbedding("h");
       expect(result.skip).toBe(false);
     });
 
     it("should handle numbers", () => {
-      const result = shouldSkipProcessing("123");
+      const result = shouldSkipEmbedding("123");
       expect(result.skip).toBe(false);
     });
 
     it("should handle special characters", () => {
-      const result = shouldSkipProcessing("!!!");
+      const result = shouldSkipEmbedding("!!!");
       expect(result.skip).toBe(false);
     });
 
     it("should handle emojis", () => {
-      const result = shouldSkipProcessing("👋");
+      const result = shouldSkipEmbedding("👋");
       expect(result.skip).toBe(false);
     });
 
     it("should handle mixed languages", () => {
-      const result = shouldSkipProcessing("hello hola");
+      const result = shouldSkipEmbedding("hello hola");
       expect(result.skip).toBe(false);
     });
   });
@@ -246,7 +246,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     it.each(caseVariations)(
       "should match case insensitive: $input",
       ({ input, expected }) => {
-        const result = shouldSkipProcessing(input);
+        const result = shouldSkipEmbedding(input);
         expect(result.skip).toBe(expected);
       },
     );
@@ -270,7 +270,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     it.each(withPunctuation)(
       "should handle punctuation: $input",
       ({ input, expected }) => {
-        const result = shouldSkipProcessing(input);
+        const result = shouldSkipEmbedding(input);
         expect(result.skip).toBe(expected);
       },
     );
@@ -278,7 +278,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
 
   describe("Return Type Structure", () => {
     it("should return correct structure for social protocol", () => {
-      const result = shouldSkipProcessing("hola");
+      const result = shouldSkipEmbedding("hola");
       expect(result).toHaveProperty("skip");
       expect(result).toHaveProperty("kind");
       expect(result).toHaveProperty("msg");
@@ -288,7 +288,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     });
 
     it("should return correct structure for conversational signal", () => {
-      const result = shouldSkipProcessing("si");
+      const result = shouldSkipEmbedding("si");
       expect(result).toHaveProperty("skip");
       expect(result).toHaveProperty("kind");
       expect(result).toHaveProperty("msg");
@@ -298,7 +298,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     });
 
     it("should return correct structure for non-skipped message", () => {
-      const result = shouldSkipProcessing("qué hora es");
+      const result = shouldSkipEmbedding("qué hora es");
       expect(result).toHaveProperty("skip");
       expect(result).toHaveProperty("kind");
       expect(result).toHaveProperty("msg");
@@ -311,84 +311,84 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
 
   describe("Word Count Boundary", () => {
     it("should skip 1 word messages", () => {
-      expect(shouldSkipProcessing("hola").skip).toBe(true);
-      expect(shouldSkipProcessing("gracias").skip).toBe(true);
-      expect(shouldSkipProcessing("chau").skip).toBe(true);
+      expect(shouldSkipEmbedding("hola").skip).toBe(true);
+      expect(shouldSkipEmbedding("gracias").skip).toBe(true);
+      expect(shouldSkipEmbedding("chau").skip).toBe(true);
     });
 
     it("should skip 2 word messages", () => {
-      expect(shouldSkipProcessing("buenas noches").skip).toBe(true);
-      expect(shouldSkipProcessing("muchas gracias").skip).toBe(true);
-      expect(shouldSkipProcessing("hasta luego").skip).toBe(true);
-      expect(shouldSkipProcessing("que tal").skip).toBe(true);
+      expect(shouldSkipEmbedding("buenas noches").skip).toBe(true);
+      expect(shouldSkipEmbedding("muchas gracias").skip).toBe(true);
+      expect(shouldSkipEmbedding("hasta luego").skip).toBe(true);
+      expect(shouldSkipEmbedding("que tal").skip).toBe(true);
     });
 
     it("should skip 3 word messages", () => {
-      expect(shouldSkipProcessing("buenos dias").skip).toBe(true);
-      expect(shouldSkipProcessing("millones de gracias").skip).toBe(true);
-      expect(shouldSkipProcessing("de ninguna manera").skip).toBe(true);
+      expect(shouldSkipEmbedding("buenos dias").skip).toBe(true);
+      expect(shouldSkipEmbedding("millones de gracias").skip).toBe(true);
+      expect(shouldSkipEmbedding("de ninguna manera").skip).toBe(true);
     });
 
     it("should NOT skip 4+ word messages", () => {
-      expect(shouldSkipProcessing("hola cómo estás hoy").skip).toBe(false);
-      expect(shouldSkipProcessing("buenos días qué tal").skip).toBe(false);
-      expect(shouldSkipProcessing("muchas gracias por todo").skip).toBe(false);
+      expect(shouldSkipEmbedding("hola cómo estás hoy").skip).toBe(false);
+      expect(shouldSkipEmbedding("buenos días qué tal").skip).toBe(false);
+      expect(shouldSkipEmbedding("muchas gracias por todo").skip).toBe(false);
     });
   });
 
   describe("Regional Variations", () => {
     describe("Mexico", () => {
       it("should recognize Mexican greetings", () => {
-        expect(shouldSkipProcessing("xou").skip).toBe(true);
-        expect(shouldSkipProcessing("quiubo").skip).toBe(true);
+        expect(shouldSkipEmbedding("xou").skip).toBe(true);
+        expect(shouldSkipEmbedding("quiubo").skip).toBe(true);
       });
 
       it("should recognize Mexican affirmations", () => {
-        expect(shouldSkipProcessing("simon").skip).toBe(true);
-        expect(shouldSkipProcessing("orale").skip).toBe(true);
+        expect(shouldSkipEmbedding("simon").skip).toBe(true);
+        expect(shouldSkipEmbedding("orale").skip).toBe(true);
       });
 
       it("should recognize Mexican negations", () => {
-        expect(shouldSkipProcessing("nel").skip).toBe(true);
-        expect(shouldSkipProcessing("nanai").skip).toBe(true);
+        expect(shouldSkipEmbedding("nel").skip).toBe(true);
+        expect(shouldSkipEmbedding("nanai").skip).toBe(true);
       });
     });
 
     describe("Argentina", () => {
       it("should recognize Argentine greetings", () => {
-        expect(shouldSkipProcessing("epa").skip).toBe(true);
+        expect(shouldSkipEmbedding("epa").skip).toBe(true);
       });
 
       it("should recognize Argentine affirmations", () => {
-        expect(shouldSkipProcessing("dale").skip).toBe(true);
-        expect(shouldSkipProcessing("sip").skip).toBe(true);
+        expect(shouldSkipEmbedding("dale").skip).toBe(true);
+        expect(shouldSkipEmbedding("sip").skip).toBe(true);
       });
 
       it("should recognize Argentine goodbyes", () => {
-        expect(shouldSkipProcessing("nos vidrios").skip).toBe(true);
+        expect(shouldSkipEmbedding("nos vidrios").skip).toBe(true);
       });
     });
 
     describe("Colombia", () => {
       it("should recognize Colombian greetings", () => {
-        expect(shouldSkipProcessing("quiubo").skip).toBe(true);
-        expect(shouldSkipProcessing("epa").skip).toBe(true);
+        expect(shouldSkipEmbedding("quiubo").skip).toBe(true);
+        expect(shouldSkipEmbedding("epa").skip).toBe(true);
       });
 
       it("should recognize Colombian affirmations", () => {
-        expect(shouldSkipProcessing("de una").skip).toBe(true);
-        expect(shouldSkipProcessing("de una vez").skip).toBe(true);
+        expect(shouldSkipEmbedding("de una").skip).toBe(true);
+        expect(shouldSkipEmbedding("de una vez").skip).toBe(true);
       });
     });
 
     describe("Spain", () => {
       it("should recognize Spanish greetings", () => {
-        expect(shouldSkipProcessing("holi").skip).toBe(true);
-        expect(shouldSkipProcessing("holis").skip).toBe(true);
+        expect(shouldSkipEmbedding("holi").skip).toBe(true);
+        expect(shouldSkipEmbedding("holis").skip).toBe(true);
       });
 
       it("should recognize Spanish affirmations", () => {
-        expect(shouldSkipProcessing("vale").skip).toBe(true);
+        expect(shouldSkipEmbedding("vale").skip).toBe(true);
       });
     });
   });
@@ -397,7 +397,7 @@ describe("shouldSkipProcessing - Comprehensive Tests", () => {
     it("should process quickly", () => {
       const start = performance.now();
       for (let i = 0; i < 1000; i++) {
-        shouldSkipProcessing("hola");
+        shouldSkipEmbedding("hola");
       }
       const end = performance.now();
       expect(end - start).toBeLessThan(100); // Should complete in < 100ms

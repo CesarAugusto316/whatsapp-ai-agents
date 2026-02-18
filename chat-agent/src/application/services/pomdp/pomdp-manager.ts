@@ -4,10 +4,10 @@ import { BeliefIntent, BeliefState } from "./belief/belief.types";
 import { RestaurantCtx } from "@/domain/restaurant";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { IntentPayload } from "@/infraestructure/adapters/vector-store";
-import { shouldSkipProcessing } from "./intents/conversational-signals";
+import { shouldSkipEmbedding } from "./intents/helpers/skip-embedding";
 import { ModuleKind, SocialProtocolIntent } from "./intents/intent.types";
 import { ragService } from "../rag";
-import { prioritizeIntents } from "./intents/prioritize-intents";
+import { prioritizeIntents } from "./intents/helpers/prioritize-intents";
 
 export type PomdpResult = {
   policyDecision: PolicyDecision;
@@ -38,7 +38,7 @@ class PomdpManager {
     //
     let mainIntent: IntentPayloadWithScore | undefined;
     let alternativeIntents: IntentPayloadWithScore[] = [];
-    const { skip, kind, msg } = shouldSkipProcessing(ctx.customerMessage);
+    const { skip, kind, msg } = shouldSkipEmbedding(ctx.customerMessage);
 
     // skip RAG, to save resources by using simple REGEX
     if (skip && kind === "social-protocol") {

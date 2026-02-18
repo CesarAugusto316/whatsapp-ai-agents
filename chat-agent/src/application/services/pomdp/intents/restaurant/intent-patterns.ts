@@ -1,4 +1,4 @@
-import type { BookingIntentKey, ProductOrderIntentKey } from "./intent.types";
+import type { BookingIntentKey, ProductOrderIntentKey } from "../intent.types";
 
 /**
  * Patrones regex para detección de intents de acción explícita (CRUD).

@@ -117,10 +117,12 @@ describe("intentClassifierPrompt - unknown_intent", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("POLICY: unknown_intent");
-    expect(prompt).toContain("Reservas, Productos, Pedidos");
+    expect(prompt).toContain("booking, products, orders");
     expect(prompt).toContain("RESERVAS");
     expect(prompt).toContain("PRODUCTOS");
     expect(prompt).toContain('NO digas "no entendí"');
+    expect(prompt).toContain("NO pidas datos");
+    expect(prompt).toContain("¿Quieres reservar, pedir comida o ver el menú?");
     expect(prompt).toContain("TestBot");
     expect(prompt).toContain("Test Restaurant");
   });
@@ -320,8 +322,8 @@ describe("intentClassifierPrompt - clear_up_uncertainty", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("POLICY: clear_up_uncertainty");
-    expect(prompt).toContain("isUncertain=true");
-    expect(prompt).toContain("NO ofrezcas");
+    expect(prompt).toContain("Usuario indeciso");
+    expect(prompt).toContain("ALTERNATIVAS (excluyendo booking:create)");
     expect(prompt).toContain("NO uses");
   });
 
@@ -441,9 +443,9 @@ describe("intentClassifierPrompt - ask_confirmation", () => {
 
     const prompt = intentClassifierPrompt(ctx, policy);
 
-    expect(prompt).toContain("2 ESCENARIOS");
     expect(prompt).toContain("booking:cancel");
     expect(prompt).toContain("Cancelar reserva");
+    expect(prompt).toContain("Conector natural");
   });
 
   test("debe mostrar requiresConfirmation del intent", () => {
@@ -456,7 +458,6 @@ describe("intentClassifierPrompt - ask_confirmation", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("Requiere confirmación");
-    expect(prompt).toContain("(always)");
   });
 });
 
@@ -581,7 +582,7 @@ describe("intentClassifierPrompt - propose_alternative", () => {
 
     expect(prompt).toContain("products:find");
     expect(prompt).toContain("orders:create");
-    expect(prompt).toContain("Productos");
+    expect(prompt).toContain("PRIORIDAD");
   });
 
   test("debe manejar caso sin alternativas", () => {
@@ -715,7 +716,7 @@ describe("intentClassifierPrompt - default fallback", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("POLICY: unknown_intent");
-    expect(prompt).toContain("Reservas, Productos, Pedidos");
+    expect(prompt).toContain("booking, products, orders");
   });
 });
 
@@ -810,7 +811,7 @@ describe("intentClassifierPrompt - integración PolicyEngine", () => {
     const prompt = intentClassifierPrompt(ctx, policy);
 
     expect(prompt).toContain("clear_up_uncertainty");
-    expect(prompt).toContain("isUncertain=true");
+    expect(prompt).toContain("Usuario indeciso");
     expect(prompt).toContain("NO uses");
   });
 

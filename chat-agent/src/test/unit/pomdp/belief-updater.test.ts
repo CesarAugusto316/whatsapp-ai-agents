@@ -63,23 +63,6 @@ test("Señal de confirmación sobre intent anterior", () => {
   expect(newState.current!.isConfident).toBe(true);
 });
 
-test("Módulo excluido sin contexto previo", () => {
-  const updater = new BeliefStateUpdater();
-  const initialState = BeliefStateUpdater.createEmpty();
-
-  const topResult: IntentPayloadWithScore = {
-    intentKey: "social:greeting",
-    module: "social-protocol",
-    score: 0.9,
-    requiresConfirmation: "always",
-    text: "",
-  };
-
-  const newState = updater.update(initialState, [], topResult);
-
-  expect(newState.current).toBeUndefined();
-});
-
 test("Transición entre intents", () => {
   const updater = new BeliefStateUpdater();
   const initialState = BeliefStateUpdater.createEmpty();

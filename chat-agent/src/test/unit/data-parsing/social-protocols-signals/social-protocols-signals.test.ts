@@ -1,13 +1,11 @@
 import { describe, it, expect } from "bun:test";
 import { readdirSync, readFileSync } from "fs";
 import { join, basename } from "path";
-import {
-  socialProtocols,
-  conversationalSignals,
-  shouldSkipProcessing,
-} from "@/application/services/pomdp";
+import { patterns, shouldSkipEmbedding } from "@/application/services/pomdp";
 
 const DATA_DIR = __dirname;
+
+const { conversationalSignals, socialProtocols } = patterns;
 
 /**
  * Lee todas las líneas de un archivo de datos, ignorando comentarios y líneas vacías
@@ -164,7 +162,7 @@ describe("Social Protocols & Conversational Signals - Data-Driven Tests", () => 
     it.each(testCases)(
       "should process correctly: $input",
       ({ input, expectedSkip, expectedKind }) => {
-        const result = shouldSkipProcessing(input);
+        const result = shouldSkipEmbedding(input);
         expect(result.skip).toBe(expectedSkip);
         expect(result.kind).toBe(expectedKind as unknown as any);
       },
@@ -173,11 +171,11 @@ describe("Social Protocols & Conversational Signals - Data-Driven Tests", () => 
 
   describe("Edge cases", () => {
     it("should handle empty strings", () => {
-      expect(shouldSkipProcessing("").skip).toBe(false);
+      expect(shouldSkipEmbedding("").skip).toBe(false);
     });
 
     it("should handle whitespace", () => {
-      expect(shouldSkipProcessing("   ").skip).toBe(false);
+      expect(shouldSkipEmbedding("   ").skip).toBe(false);
     });
 
     it("should handle mixed case", () => {
