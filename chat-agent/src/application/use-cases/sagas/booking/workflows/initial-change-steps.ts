@@ -1,9 +1,7 @@
 import { BookingOption, BookingOptions, BookingState } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { Business, cmsAdapter, Customer } from "@/infraestructure/adapters/cms";
-import { humanizerAgent } from "@/application/agents";
 import { toLocalDateTime } from "@/domain/utilities";
-import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { bookingStateManager } from "@/application/services/state-managers";
 
 type Args = {
@@ -11,7 +9,6 @@ type Args = {
   business: Business;
   bookingKey: string;
   flowOption: BookingOption;
-  getMessage: (state: BookingSchema) => string;
 };
 
 export const initChangeSteps = async ({
@@ -19,7 +16,6 @@ export const initChangeSteps = async ({
   business,
   bookingKey,
   flowOption,
-  getMessage,
 }: Args) => {
   // Validación del flowOption
   if (
@@ -29,7 +25,7 @@ export const initChangeSteps = async ({
     throw new Error(`FlowOption no soportado: ${flowOption}`);
   }
   if (!customer) {
-    return humanizerAgent("Por favor, Crea una reserva para poder continuar");
+    return "Por favor, Crea una reserva para poder continuar";
   }
   const lastRes = await cmsAdapter.getBookingByParams({
     "where[business][equals]": business.id,
@@ -42,27 +38,36 @@ export const initChangeSteps = async ({
   const reservation = lastRes.docs.at(0);
 
   if (!reservation) {
-    return humanizerAgent(
-      "Reserva no encontrada. Seguro que ya has creado una reserva?",
-    );
+    return "Reserva no encontrada. Seguro que ya has creado una reserva?";
   }
   const timezone = business.general.timezone;
-  const transition = bookingStateManager.nextState(flowOption);
   const start = toLocalDateTime(reservation.startDateTime, timezone);
   const end = toLocalDateTime(reservation?.endDateTime ?? "", timezone);
-  const previousState = {
+
+  const data = {
     id: reservation.id,
     customerName: reservation.customerName || customer?.name || "",
+    businessId: business.id,
+    customerId: customer.id,
+    status: flowOption,
+    numberOfPeople: reservation.numberOfPeople || 0,
     datetime: {
       start,
       end,
     },
-    numberOfPeople: reservation.numberOfPeople || 0,
-    businessId: business.id,
-    customerId: customer.id,
+  };
+
+  const transition = bookingStateManager.nextState(flowOption, {
+    domain: business.general.businessType,
+    timeZone: business.general.timezone,
+    data,
+  });
+
+  const previousState = {
+    ...data,
     status: transition.nextState, // FlowOption
   } satisfies Partial<BookingState>;
 
   await cacheAdapter.save(bookingKey, previousState);
-  return humanizerAgent(getMessage(previousState));
+  return transition.message;
 };
