@@ -32,23 +32,21 @@ export type PolicyDecision =
     };
 
 /**
- *
- * @todo implement Reinforce learning RL (decisión secuencial óptima)
+ * @todo HÍBRIDO: Reglas + Modelos Supervisados (NO RL)
  * @example
- * Futuro híbrido (ejemplo conceptual)
  * class PolicyEngine {
- *  decide(belief: BeliefState): PolicyDecision {
- *    // 1. Fallback seguro: reglas deterministas (tu código actual)
- *    const ruleBased = this.ruleBasedDecision(belief);
+ *   decide(belief: BeliefState): PolicyDecision {
+ *     // 1. Reglas deterministas (fallback seguro)
+ *     const ruleBased = this.ruleBasedDecision(belief);
  *
- *    // 2. Solo si el sistema está en modo "aprendizaje" y la confianza del modelo es alta
- *    if (this.rlMode && this.rlConfidence > 0.9) {
- *      return this.rlPolicy.decide(belief);
- *    }
+ *     // 2. Modelos supervisados (solo si confianza > 0.9)
+ *     if (this.mlModel && this.mlConfidence > 0.9) {
+ *       return this.mlPolicy.decide(belief);
+ *     }
  *
- *    // 3. Siempre cae a reglas deterministas (control humano explícito)
- *    return ruleBased;
- *  }
+ *     // 3. Siempre cae a reglas (control explícito)
+ *     return ruleBased;
+ *   }
  * }
  */
 export class PolicyEngine {

@@ -6,6 +6,7 @@ import {
   timestamp,
   numeric,
   boolean,
+  index,
 } from "drizzle-orm/pg-core";
 
 // ============================================
@@ -100,3 +101,55 @@ export const userBookings = pgTable("user_bookings", {
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
+
+// ============================================
+// 5. Interaction Logs (para supervised learning)
+// ============================================
+export const interactionLogs = pgTable("interaction_logs", {
+  logId: integer("log_id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id", { length: 255 }),
+  sessionId: varchar("session_id", { length: 255 }),
+  // Estado de creencia que vio el PolicyEngine
+  beliefStateSnapshot: jsonb("belief_state_snapshot").default({}),
+  // Decisión del policy
+  policyDecision: jsonb("policy_decision").default({}),
+  // Resultado de la interacción
+  outcome: jsonb("outcome").default({}), // { "converted": true, "revenue": 25.00 }
+  // Timestamp
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// ============================================
+// 6. User Behavior Patterns (actualización offline para ML)
+// ============================================
+export const userBehaviorPatterns = pgTable(
+  "user_behavior_patterns",
+  {
+    patternId: integer("pattern_id").primaryKey().generatedAlwaysAsIdentity(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    patternType: varchar("pattern_type", { length: 50 }).notNull(), // temporal, sequential, contextual
+    // Para patrones temporales
+    dayOfWeek: integer("day_of_week"), // 0=domingo, 6=sábado
+    hourRange: integer("hour_range").array(), // ej: [18, 19, 20] para "noche"
+    // Resultado del patrón
+    likelyIntent: varchar("likely_intent", { length: 255 }).notNull(), // ej: "orders:create:pizza"
+    confidence: numeric("confidence", { precision: 3, scale: 2 }).notNull(), // 0.00 - 1.00
+    supportCount: integer("support_count").default(1), // cuántas veces se observó
+    // Timestamp
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  // Unique constraint: (user_id, pattern_type, day_of_week, hour_range)
+  (table) => [
+    {
+      // uniqueUserPattern: table
+      //   .index("user_behavior_patterns_user_type_day_hour_unique")
+      //   .on(table.userId, table.patternType, table.dayOfWeek, table.hourRange),
+      // Index para consultas rápidas al iniciar chat (solo patrones con alta confianza)
+      idxUserTemporalPatterns: index("idx_user_temporal_patterns").on(
+        table.userId,
+        table.patternType,
+        table.dayOfWeek,
+      ),
+    },
+  ],
+);

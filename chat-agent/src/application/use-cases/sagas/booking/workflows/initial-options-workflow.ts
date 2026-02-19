@@ -23,7 +23,6 @@ export async function initialOptionsWorkflow(
     // choice 2
     const transition = bookingStateManager.nextState(
       BookingOptions.MAKE_BOOKING,
-      undefined,
       {
         domain: business.general.businessType,
         timeZone: business.general.timezone,
@@ -36,7 +35,7 @@ export async function initialOptionsWorkflow(
       customerName: customer?.name || "",
       status: transition.nextState, // MAKE_STARTED
     });
-    const humanizedResponse = await humanizerAgent(transition.stateMessage!);
+    const humanizedResponse = await humanizerAgent(transition.message!);
     return {
       bag: {},
       lastStepResult: {
@@ -57,16 +56,12 @@ export async function initialOptionsWorkflow(
       customer,
       flowOption: BookingOptions.UPDATE_BOOKING,
       getMessage: (state) =>
-        bookingStateManager.nextState(
-          BookingStatuses.UPDATE_STARTED,
-          undefined,
-          {
-            domain: business.general.businessType,
-            timeZone: business.general.timezone,
-            data: state,
-            userName: customer?.name,
-          },
-        ).stateMessage!,
+        bookingStateManager.nextState(BookingStatuses.UPDATE_STARTED, {
+          domain: business.general.businessType,
+          timeZone: business.general.timezone,
+          data: state,
+          userName: customer?.name,
+        }).message!,
       bookingKey,
     });
     return {
@@ -89,15 +84,11 @@ export async function initialOptionsWorkflow(
       customer,
       flowOption: BookingOptions.CANCEL_BOOKING,
       getMessage: (state) =>
-        bookingStateManager.nextState(
-          BookingStatuses.CANCEL_VALIDATED,
-          undefined,
-          {
-            domain: business.general.businessType,
-            timeZone: business.general.timezone,
-            data: state,
-          },
-        ).stateMessage!,
+        bookingStateManager.nextState(BookingStatuses.CANCEL_VALIDATED, {
+          domain: business.general.businessType,
+          timeZone: business.general.timezone,
+          data: state,
+        }).message!,
       bookingKey,
     });
     return {

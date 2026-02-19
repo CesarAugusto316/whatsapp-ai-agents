@@ -1,5 +1,5 @@
 import {
-  CustomerActionValue,
+  CustomerSignalKey,
   CustomerSignals,
   BookingOptions,
   FMStatus,
@@ -21,7 +21,7 @@ export interface BookingStateTransition {
    *
    * @see getBookingStateMessage en domain/booking/prompts/helpers/state-messages.ts
    */
-  stateMessage?: string;
+  message: string;
 }
 
 /**
@@ -43,8 +43,7 @@ class BookingStateManager {
    * @param params.userName - Nombre del usuario (para mensajes personalizados)
    */
   nextState(
-    status: FMStatus,
-    action?: CustomerActionValue,
+    status: string,
     params?: {
       data?: Partial<BookingState>;
       timeZone?: string;
@@ -53,19 +52,15 @@ class BookingStateManager {
     },
   ): BookingStateTransition {
     const { data, timeZone, domain = "restaurant", userName } = params || {};
-    const condition = status + (action ?? "");
 
-    // Importar dinámicamente para evitar circular dependency
-
-    switch (condition) {
+    switch (status) {
       // CREATE
       case BookingOptions.MAKE_BOOKING:
         return {
           nextState: BookingStatuses.MAKE_STARTED,
           suggestedActions: [],
-          stateMessage: stateMessages[BookingStatuses.MAKE_STARTED]({
+          message: stateMessages[BookingStatuses.MAKE_STARTED]({
             domain,
-            mode: "create",
             userName,
           }),
         };
@@ -73,6 +68,12 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.MAKE_VALIDATED,
           suggestedActions: [CustomerSignals.EXIT],
+          message: stateMessages[BookingStatuses.MAKE_VALIDATED]({
+            domain,
+            mode: "create",
+            data,
+            timeZone,
+          }),
           messageHint:
             "Recordar al usuario que hay una reserva en curso y puede continuar o salir.",
         };
@@ -84,19 +85,21 @@ class BookingStateManager {
             CustomerSignals.RESTART,
             CustomerSignals.EXIT,
           ],
-          messageHint:
-            "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
-          stateMessage: stateMessages[BookingStatuses.MAKE_VALIDATED]({
+          // refactor pass: CONFIRM | RESTART | EXIT
+          message: stateMessages[BookingStatuses.MAKE_CONFIRMED]({
             domain,
             mode: "create",
             data,
             timeZone,
           }),
+          messageHint:
+            "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
         };
       case BookingStatuses.MAKE_VALIDATED + CustomerSignals.RESTART:
         return {
           nextState: BookingStatuses.MAKE_STARTED,
           suggestedActions: [],
+          message: "",
         };
 
       // UPDATE
@@ -104,7 +107,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.UPDATE_STARTED,
           suggestedActions: [],
-          stateMessage: stateMessages[BookingStatuses.UPDATE_STARTED]({
+          message: stateMessages[BookingStatuses.UPDATE_STARTED]({
             domain,
             data,
             timeZone,
@@ -114,6 +117,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.UPDATE_VALIDATED,
           suggestedActions: [CustomerSignals.EXIT],
+          message: "",
           messageHint:
             "Recordar al usuario que hay una actualización en curso y puede continuar o salir.",
         };
@@ -127,7 +131,7 @@ class BookingStateManager {
           ],
           messageHint:
             "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
-          stateMessage: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
+          message: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
             domain,
             mode: "update",
             data,
@@ -138,6 +142,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.UPDATE_STARTED,
           suggestedActions: [],
+          message: "",
         };
 
       // CANCEL
@@ -145,7 +150,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.CANCEL_VALIDATED,
           suggestedActions: [],
-          stateMessage: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
+          message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
             domain,
             data,
             timeZone,
@@ -157,7 +162,7 @@ class BookingStateManager {
           suggestedActions: [CustomerSignals.CONFIRM, CustomerSignals.EXIT],
           messageHint:
             "Recordar al usuario que hay una cancelación en curso y puede confirmar o salir.",
-          stateMessage: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
+          message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
             domain,
             data,
             timeZone,
@@ -167,7 +172,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.CANCEL_CONFIRMED,
           suggestedActions: [],
-          stateMessage: stateMessages[BookingStatuses.CANCEL_CONFIRMED]({
+          message: stateMessages[BookingStatuses.CANCEL_CONFIRMED]({
             domain,
             data,
           }),
@@ -175,8 +180,9 @@ class BookingStateManager {
 
       default:
         return {
-          nextState: status,
+          nextState: status as FMStatus,
           suggestedActions: [],
+          message: "",
         };
     }
   }
@@ -223,7 +229,7 @@ class BookingStateManager {
     messages: ChatMessage[],
   ): string {
     const transition = this.nextState(status);
-    const userMessage = transition.stateMessage;
+    const userMessage = transition.message;
 
     if (!status || !userMessage?.trim()) {
       return originalMessage;

@@ -1,6 +1,6 @@
 import { systemMessages } from "@/domain/booking/prompts";
 import {
-  CustomerActionKey,
+  CustomerSignal,
   CustomerSignals,
   BookingState,
   BookingStatuses,
@@ -34,7 +34,7 @@ export interface ValidateSagaResult extends SagaBag {
 }
 
 export type ValidateSagaSteps =
-  | CustomerActionKey
+  | CustomerSignal
   | "CONFIRM:FAILED"
   | "CONFIRM:SEND_MESSAGE";
 
@@ -203,103 +203,6 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
   },
 });
 
-const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
-  config: {
-    execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
-  },
-  execute: async ({ ctx, getStepResult }) => {
-    const { customerMessage, bookingState, bookingKey, customer, business } =
-      ctx;
-    const {
-      customerName = "",
-      datetime,
-      numberOfPeople = 1,
-    } = bookingState as BookingState;
-    const reservation = getStepResult("execute:CONFIRM")?.reservation;
-
-    if (!reservation?.id) {
-      logger.info("Reservation not found", reservation);
-      return {
-        continue: true,
-      };
-    }
-    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
-      return { continue: true };
-    }
-    const assistantMsg = systemMessages.getSuccessMsg(
-      {
-        id: reservation?.id,
-        datetime, // localTime
-        customerName: customerName || customer?.name || "",
-        numberOfPeople,
-      },
-      mode,
-      business.general.timezone,
-    );
-    await cacheAdapter.delete(bookingKey);
-    logger.info("Customer selected an option", {
-      customerAction: CustomerSignals.CONFIRM,
-      customerMessage,
-    });
-    const result = await humanizerAgent(assistantMsg);
-    return {
-      result,
-      continue: false,
-    };
-  },
-});
-
-const exit = (): ValidateFuncSagaStep => ({
-  config: { execute: { name: "EXIT", ...stepConfig } },
-  execute: async ({ ctx }) => {
-    const { customerMessage, bookingKey } = ctx;
-
-    if (customerMessage?.toUpperCase() !== CustomerSignals.EXIT) {
-      return { continue: true };
-    }
-    await cacheAdapter.delete(bookingKey);
-    const assistantMsg = systemMessages.getExitMsg();
-    logger.info("Customer selected an option", {
-      customerAction: CustomerSignals.EXIT,
-    });
-    return { result: assistantMsg, continue: false };
-  },
-});
-
-const restart = (): ValidateFuncSagaStep => ({
-  config: { execute: { name: "RESTART", ...stepConfig } },
-  execute: async ({ ctx }) => {
-    //
-    const { customerMessage, bookingKey, business, bookingState, customer } =
-      ctx;
-    const reservation = bookingState as BookingState;
-
-    if (customerMessage?.toUpperCase() !== CustomerSignals.RESTART) {
-      return { continue: true };
-    }
-    const assistantResponse = systemMessages.getCreateMsg({
-      userName: customer?.name,
-    });
-
-    const transition = bookingStateManager.nextState(
-      reservation.status,
-      CustomerSignals.RESTART,
-    );
-    await cacheAdapter.save(bookingKey ?? "", {
-      ...reservation,
-      businessId: business?.id,
-      customerId: customer?.id,
-      status: transition.nextState,
-    });
-    logger.info("Customer selected an option", {
-      customerAction: CustomerSignals.RESTART,
-    });
-
-    const result = await humanizerAgent(assistantResponse);
-    return { result, continue: false };
-  },
-});
-
 const cancelConfirmed = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "CONFIRM", ...stepConfig } },
   execute: async ({ ctx }) => {
@@ -347,6 +250,106 @@ const cancelConfirmed = (): ValidateFuncSagaStep => ({
       return { result, continue: true };
     }
     return { continue: false };
+  },
+});
+
+const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
+  config: {
+    execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
+  },
+  execute: async ({ ctx, getStepResult }) => {
+    const { customerMessage, bookingState, bookingKey, customer, business } =
+      ctx;
+    const {
+      customerName = "",
+      datetime,
+      numberOfPeople = 1,
+      status,
+    } = bookingState as BookingState;
+    const reservation = getStepResult("execute:CONFIRM")?.reservation;
+
+    if (!reservation?.id) {
+      logger.info("Reservation not found", reservation);
+      return {
+        continue: true,
+      };
+    }
+    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
+      return { continue: true };
+    }
+    // const assistantMsg = systemMessages.getSuccessMsg(
+    //   {
+    //     id: reservation?.id,
+    //     datetime, // localTime
+    //     customerName: customerName || customer?.name || "",
+    //     numberOfPeople,
+    //   },
+    //   mode,
+    //   business.general.timezone,
+    // );
+
+    const { message } = bookingStateManager.nextState(status!);
+
+    await cacheAdapter.delete(bookingKey);
+    logger.info("Customer selected an option", {
+      customerAction: CustomerSignals.CONFIRM,
+      customerMessage,
+    });
+    const result = await humanizerAgent(message);
+    return {
+      result,
+      continue: false,
+    };
+  },
+});
+
+const exit = (): ValidateFuncSagaStep => ({
+  config: { execute: { name: "EXIT", ...stepConfig } },
+  execute: async ({ ctx }) => {
+    const { customerMessage, bookingKey } = ctx;
+
+    if (customerMessage?.toUpperCase() !== CustomerSignals.EXIT) {
+      return { continue: true };
+    }
+    await cacheAdapter.delete(bookingKey);
+    const assistantMsg = systemMessages.getExitMsg();
+    logger.info("Customer selected an option", {
+      customerAction: CustomerSignals.EXIT,
+    });
+    return { result: assistantMsg, continue: false };
+  },
+});
+
+const restart = (): ValidateFuncSagaStep => ({
+  config: { execute: { name: "RESTART", ...stepConfig } },
+  execute: async ({ ctx }) => {
+    //
+    const { customerMessage, bookingKey, business, bookingState, customer } =
+      ctx;
+    const reservation = bookingState as BookingState;
+
+    if (customerMessage?.toUpperCase() !== CustomerSignals.RESTART) {
+      return { continue: true };
+    }
+    const assistantResponse = systemMessages.getCreateMsg({
+      userName: customer?.name,
+    });
+
+    const transition = bookingStateManager.nextState(
+      reservation.status + CustomerSignals.RESTART,
+    );
+    await cacheAdapter.save(bookingKey ?? "", {
+      ...reservation,
+      businessId: business?.id,
+      customerId: customer?.id,
+      status: transition.nextState,
+    });
+    logger.info("Customer selected an option", {
+      customerAction: CustomerSignals.RESTART,
+    });
+
+    const result = await humanizerAgent(assistantResponse);
+    return { result, continue: false };
   },
 });
 

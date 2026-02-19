@@ -300,32 +300,16 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
       }
 
       // FINAL: ✅ INPUT DATA VALIDATED
-      const transition = bookingStateManager.nextState(
-        reservation.status,
-        undefined,
-        {
-          data,
-          timeZone: business.general.timezone,
-          domain: business.general.businessType,
-        },
-      );
+      const transition = bookingStateManager.nextState(reservation.status, {
+        data,
+        timeZone: business.general.timezone,
+        domain: business.general.businessType,
+      });
       await cacheAdapter.save(bookingKey, {
         ...reservation,
         ...data,
-        status: transition.nextState, // UPDATE_VALIDATED,
+        status: transition.nextState, // *_VALIDATED,
       } satisfies Partial<BookingState>);
-
-      /** @todo implement semantic memory */
-
-      // await semanticMemory.upsert({
-      //   chatId: reservationKey,
-      //   type: "reservation_state",
-      //   payload: {
-      //     status: transition.nextState,
-      //     datetime: data.datetime,
-      //     people: data.numberOfPeople
-      //   }
-      // });
 
       logger.info("✅ Reservation data validated", {
         reservation: {
@@ -333,12 +317,11 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
           ...data,
         },
       });
-      const responseMsg = transition.stateMessage!;
 
       // ✨ SEND SUCCESS MESSAGE
-      const result = await humanizerAgent(responseMsg);
+      // const result = await humanizerAgent(transition.message);
       return {
-        result,
+        result: transition.message,
         data,
         shouldTransition: true,
         continue: false,

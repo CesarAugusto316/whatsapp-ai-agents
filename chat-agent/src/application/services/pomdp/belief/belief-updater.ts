@@ -3,8 +3,32 @@ import { IntentPayloadWithScore } from "../pomdp-manager";
 import { BeliefIntent, BeliefState } from "./belief.types";
 
 /**
+ * Actualiza el BeliefState del agente con nuevas intenciones detectadas.
  *
- * @todo ML predictivo (mejor detección de intenciones)
+ * ## Integración con ML Predictivo (ONNX)
+ *
+ * El belief state se enriquece ANTES de llamar a `PolicyEngine.decide()`.
+ *
+ * ### Flujo de entrenamiento (Python):
+ * 1. Entrenas modelo con scikit-learn
+ * 2. Exportas a `modelo.onnx` (archivo binario de matemáticas)
+ *
+ * ### Flujo de inferencia (TypeScript/Node):
+ * 1. Instalas `onnxruntime-node`
+ * 2. Cargas `modelo.onnx` al iniciar el agente
+ * 3. Ejecutas `session.run(inputs)` → obtienes outputs (< 10ms en C++ nativo)
+ * 4. Inyectas las predicciones en el BeliefState antes de `decide()`
+ *
+ * @example
+ * ```ts
+ * // Al iniciar el agente
+ * const session = await ort.InferenceSession.create("./modelo.onnx");
+ *
+ * // En el belief updater
+ * const mlPredictions = await session.run({ features: inputTensor });
+ * const enrichedBeliefState = beliefUpdater.update(prevState, intents, mainIntent);
+ * const policyDecision = policyEngine.decide({ ...enrichedBeliefState, mlPredictions });
+ * ```
  */
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
@@ -45,17 +69,10 @@ export class BeliefStateUpdater {
     mainIntent?: IntentPayloadWithScore,
   ): BeliefState {
     // Si no hay resultado nuevo, no cambiamos el estado (no creamos "nueva intención" artificial)
-    const isCurrentConfident = mainIntent
-      ? this.isConfident(
-          mainIntent?.score,
-          this.getThreshold(mainIntent?.requiresConfirmation),
-        )
-      : false;
 
-    if (!mainIntent || !isCurrentConfident) {
+    if (!mainIntent) {
       return { ...prevState, isIntentFound: false };
     }
-
     if (prevState.current) {
       const previousIntent = prevState.current;
 

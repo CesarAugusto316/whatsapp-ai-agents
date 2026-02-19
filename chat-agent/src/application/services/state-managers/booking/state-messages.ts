@@ -173,29 +173,14 @@ const DOMAIN_ACTION_CONFIG: Record<
 export const stateMessages = {
   [BookingStatuses.MAKE_STARTED]: function (params: {
     domain: SpecializedDomain;
-    mode: OperationMode;
     userName?: string;
   }): string {
-    const { domain, mode, userName } = params;
-
-    if (mode === "update") {
-      return `
-         ✨ Hemos encontrado tu más reciente ${DOMAIN_ACTION_CONFIG[domain].update.title}!
-
-         👤 A *nombre* de: ${userName}
-
-         Si gustas cambiarla ayudanos con tus nuevos datos.
-         Por ejemplo:
-           "Para mañana a las 8pm para 4 personas"
-
-         Así de simple 😊
-       `.trim();
-    }
+    const { domain, userName } = params;
 
     // CREATE mode
     if (userName) {
       return `
-         ✌🏽 Para ${DOMAIN_ACTION_CONFIG[domain].create.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].create.title} es muy simple, comentame:
+         Para ${DOMAIN_ACTION_CONFIG[domain].create.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].create.title} comentame:
          el *día*, la *hora* y *cuántas personas* serán.
 
          Por ejemplo:
@@ -204,7 +189,7 @@ export const stateMessages = {
     }
 
     return `
-       👌 Para ${DOMAIN_ACTION_CONFIG[domain].create.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].create.title} es muy fácil, ayudame con:
+       Para ${DOMAIN_ACTION_CONFIG[domain].create.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].create.title} es muy fácil, ayudame con:
        *tu nombre*, el *día*, la *hora* y *cuántas personas* serán.
 
        Por ejemplo:
@@ -293,8 +278,6 @@ export const stateMessages = {
        Si gustas cambiarla ayudanos con tus nuevos datos.
        Por ejemplo:
          "Para mañana a las 8pm para 4 personas"
-
-       Así de simple 😊
      `.trim();
   },
   [BookingStatuses.UPDATE_VALIDATED]: function (params: {

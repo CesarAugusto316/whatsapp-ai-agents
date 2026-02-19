@@ -14,6 +14,26 @@ export interface BeliefIntent extends IntentPayloadWithScore {
 }
 
 export interface BeliefState {
+  // comportamiento agregado de muchos usuarios
+  aggregateContext?: {
+    season?: "valentines" | "christmas" | "regular";
+    userSegment?: "romantic_getaway" | "family" | "business";
+    demandSignal?: "high" | "medium" | "low"; // basado en búsquedas recientes
+  };
+  // ... comportamiento de un usuario recurrente
+  userContext?: {
+    userId: string;
+    preferences?: {
+      favoriteCategories?: string[];
+      typicalOrderDay?: string;
+      priceSensitivity?: "low" | "medium" | "high";
+    };
+    historySummary?: {
+      totalOrders: number;
+      lastOrderDate?: string;
+      commonIntents: string[];
+    };
+  };
   // we use top result beacause we may need
   // the most similar intents + example text for clarification
   executedIntents: BeliefIntent[];

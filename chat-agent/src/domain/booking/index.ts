@@ -9,12 +9,12 @@ export {
 } from "./booking.types";
 export type {
   AgentArgs,
-  CustomerActionKey,
+  CustomerSignal,
   BookingOption,
   BookingStatus,
   BookingState,
   FMStatus,
-  CustomerActionValue,
+  CustomerSignalKey as CustomerSignalKey,
 } from "./booking.types";
 
 export { generateAgentGoals } from "./prompts/agent-goals";

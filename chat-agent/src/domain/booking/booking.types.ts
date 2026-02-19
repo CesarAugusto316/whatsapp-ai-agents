@@ -67,10 +67,10 @@ export const CustomerSignals = {
 } as const;
 
 // TODO: REMOVE
-export type CustomerActionKey = keyof typeof CustomerSignals;
+export type CustomerSignal = keyof typeof CustomerSignals;
 
 // TODO: REMOVE
-export type CustomerActionValue =
+export type CustomerSignalKey =
   | typeof CustomerSignals.CONFIRM
   | typeof CustomerSignals.RESTART
   | typeof CustomerSignals.EXIT;
