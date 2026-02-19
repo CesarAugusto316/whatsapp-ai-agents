@@ -171,45 +171,55 @@ const DOMAIN_ACTION_CONFIG: Record<
   },
 };
 
-export const stateMessages = {
-  [BookingStatuses.MAKE_STARTED]: function (params: {
-    domain: SpecializedDomain;
-    data?: Partial<BookingState>;
-  }): string {
-    const { domain, data } = params;
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper functions - reutilizables para evitar código duplicado
+// ─────────────────────────────────────────────────────────────────────────────
 
-    // CREATE mode
-    if (data?.customerName) {
-      return `
-         Para ${DOMAIN_ACTION_CONFIG[domain].create.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].create.title} comentame:
-         el *día*, la *hora* y *cuántas personas* serán.
+/**
+ * Mensaje para pedir datos de reserva (con o sin nombre previo)
+ */
+function getBookingRequestMsg(
+  domain: SpecializedDomain,
+  mode: "create" | "update",
+  hasCustomerName?: boolean,
+): string {
+  const config = DOMAIN_ACTION_CONFIG[domain][mode];
 
-         Por ejemplo:
-           "Mañana a las 8pm para 4 personas"
-       `.trim();
-    }
-
+  if (hasCustomerName) {
     return `
-       Para ${DOMAIN_ACTION_CONFIG[domain].create.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].create.title} es muy fácil, ayudame con:
+       Para ${config.verbInfinitive} tu ${config.title} comentame:
+       el *día*, la *hora* y *cuántas personas* serán.
+
+       Por ejemplo:
+         "Mañana a las 8pm para 4 personas"
+     `.trim();
+  }
+
+  return `
+       Para ${config.verbInfinitive} tu ${config.title} es muy fácil, ayudame con:
        *tu nombre*, el *día*, la *hora* y *cuántas personas* serán.
 
        Por ejemplo:
          "A nombre de María Rodríguez, mañana a las 8pm para 4 personas"
      `.trim();
-  },
+}
 
-  [BookingStatuses.MAKE_VALIDATED]: function (params: {
-    domain: SpecializedDomain;
-    data?: Partial<BookingState>;
-    timeZone?: string;
-  }): string {
-    const { domain, data, timeZone } = params;
-    const actionConfig = DOMAIN_ACTION_CONFIG[domain]["create"];
-    const { datetime } = data || {};
-    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
+/**
+ * Mensaje de validación de datos (reutilizable para CREATE y UPDATE)
+ */
+function getValidationMsg(params: {
+  domain: SpecializedDomain;
+  mode: "create" | "update";
+  data?: Partial<BookingState>;
+  timeZone?: string;
+}): string {
+  const { domain, mode, data, timeZone } = params;
+  const actionConfig = DOMAIN_ACTION_CONFIG[domain][mode];
+  const { datetime } = data || {};
+  const dateStart = formatLocalDateTime(datetime?.start, timeZone);
+  const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
 
-    return `
+  return `
        1.  Ya tenemos las datos listos para tu ${actionConfig.title} !!
        2.  Hemos CONFIRMADO que hay disponibilidad ✅.
        Por favor revisa antes de confirmar la ${actionConfig.process} de tu ${actionConfig.title}:
@@ -229,22 +239,24 @@ export const stateMessages = {
        Si no deseas continuar, escribe:
        🚪 *${CustomerSignals.EXIT}*
      `.trim();
-  },
+}
 
-  [BookingStatuses.MAKE_CONFIRMED]: function (params: {
-    domain: SpecializedDomain;
-    data?: Partial<BookingState>;
-    timeZone?: string;
-    signal: CustomerSignalKey;
-  }): string {
-    const { domain, data, timeZone, signal } = params;
-    const actionConfig = DOMAIN_ACTION_CONFIG[domain]["create"];
-    const { customerName, datetime, numberOfPeople } = data || {};
-    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
+/**
+ * Mensaje de confirmación exitosa (reutilizable para CREATE y UPDATE)
+ */
+function getSuccessMsg(params: {
+  domain: SpecializedDomain;
+  mode: "create" | "update";
+  data?: Partial<BookingState>;
+  timeZone?: string;
+}): string {
+  const { domain, mode, data, timeZone } = params;
+  const actionConfig = DOMAIN_ACTION_CONFIG[domain][mode];
+  const { customerName, datetime, numberOfPeople } = data || {};
+  const dateStart = formatLocalDateTime(datetime?.start, timeZone);
+  const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
 
-    if (signal === "CONFIRMAR") {
-      return `
+  return `
        ✅ Tu ${actionConfig.title} ha sido ${actionConfig.verb} con éxito.
 
        👤 Nombre: ${customerName}
@@ -258,29 +270,91 @@ export const stateMessages = {
        ⚠️ Guarda este ID.
        Para presentarla en el ${domain.toUpperCase()} el día de tu llegada.
      `.trim();
+}
+
+/**
+ * Mensaje para mostrar reserva existente (reutilizable para UPDATE_STARTED y CANCEL_VALIDATED)
+ */
+function getExistingBookingMsg(params: {
+  domain: SpecializedDomain;
+  mode: "update" | "cancel";
+  data?: Partial<BookingState>;
+  timeZone?: string;
+}): string {
+  const { domain, mode, data, timeZone } = params;
+  const { datetime } = data || {};
+  const dateStart = formatLocalDateTime(datetime?.start, timeZone);
+  const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
+
+  return `
+       ✨ Hemos encontrado tu más reciente ${DOMAIN_ACTION_CONFIG[domain][mode].title}!
+
+       👤 A *nombre* de: ${data?.customerName}
+       📆 Día : ${dateStart.date}
+       ⏰ Hora de *entrada*: ${dateStart.time}
+       ⏰ Hora de *salida*: ${dateEnd.time}
+       👥 Número de personas: ${data?.numberOfPeople}
+    `.trim();
+}
+
+/**
+ * Mensaje de salida (EXIT)
+ * Independiente del dominio
+ */
+function getBookingExitMsg(domain: SpecializedDomain): string {
+  const title = domain ? DOMAIN_ACTION_CONFIG[domain].create.title : "reserva";
+
+  return `
+     Gracias por usar nuestro servicio 😊
+     Recuerda que puedes elegir una de estas opciones en cualquier momento:
+
+     1️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].create.action}
+     2️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].update.action} ó
+     3️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].cancel.action}
+
+     💬 Si tienes otra pregunta, escríbela directamente.
+   `.trim();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const stateMessages = {
+  [BookingStatuses.MAKE_STARTED]: function (params: {
+    domain: SpecializedDomain;
+    data?: Partial<BookingState>;
+  }): string {
+    const { domain, data } = params;
+    return getBookingRequestMsg(domain, "create", !!data?.customerName);
+  },
+
+  [BookingStatuses.MAKE_VALIDATED]: function (params: {
+    domain: SpecializedDomain;
+    data?: Partial<BookingState>;
+    timeZone?: string;
+  }): string {
+    return getValidationMsg({ ...params, mode: "create" });
+  },
+
+  [BookingStatuses.MAKE_CONFIRMED]: function (params: {
+    domain: SpecializedDomain;
+    data?: Partial<BookingState>;
+    timeZone?: string;
+    signal: CustomerSignalKey;
+  }): string {
+    const { domain, data, timeZone, signal } = params;
+
+    if (signal === "CONFIRMAR") {
+      return getSuccessMsg({ domain, mode: "create", data, timeZone });
     }
+
     if (signal === "SALIR") {
       return getBookingExitMsg(domain);
     }
 
     // RESTART
-    if (data?.customerName) {
-      return `
-         Para ${DOMAIN_ACTION_CONFIG[domain].update.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].update.title} comentame:
-         el *día*, la *hora* y *cuántas personas* serán.
-
-         Por ejemplo:
-           "Mañana a las 8pm para 4 personas"
-       `.trim();
-    }
-
-    return `
-       Para ${DOMAIN_ACTION_CONFIG[domain].update.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].update.title} es muy fácil, ayudame con:
-       *tu nombre*, el *día*, la *hora* y *cuántas personas* serán.
-
-       Por ejemplo:
-         "A nombre de María Rodríguez, mañana a las 8pm para 4 personas"
-     `.trim();
+    return getBookingRequestMsg(domain, "update", !!data?.customerName);
   },
 
   // UPDATE
@@ -290,18 +364,15 @@ export const stateMessages = {
     timeZone?: string;
   }): string {
     const { domain, data, timeZone } = params;
-    const { datetime } = data || {};
-    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
+    const baseMsg = getExistingBookingMsg({
+      domain,
+      mode: "update",
+      data,
+      timeZone,
+    });
 
     return `
-       ✨ Hemos encontrado tu más reciente ${DOMAIN_ACTION_CONFIG[domain].update.title}!
-
-       👤 A *nombre* de: ${data?.customerName}
-       📆 Día : ${dateStart.date}
-       ⏰ Hora de *entrada*: ${dateStart.time}
-       ⏰ Hora de *salida*: ${dateEnd.time}
-       👥 *Número de personas*: ${data?.numberOfPeople}
+       ${baseMsg}
 
        Si gustas cambiarla ayudanos con tus nuevos datos.
        Por ejemplo:
@@ -314,32 +385,7 @@ export const stateMessages = {
     data?: Partial<BookingState>;
     timeZone?: string;
   }): string {
-    const { domain, data, timeZone } = params;
-    const actionConfig = DOMAIN_ACTION_CONFIG[domain]["update"];
-    const { datetime } = data || {};
-    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
-
-    return `
-       1.  Ya tenemos las datos listos para tu ${actionConfig.title} !!
-       2.  Hemos CONFIRMADO que hay disponibilidad ✅.
-       Por favor revisa antes de confirmar la ${actionConfig.process} de tu ${actionConfig.title}:
-
-       👤 *Nombre*: ${data?.customerName}
-       📆 Día : ${dateStart.date}
-       ⏰ Hora de *entrada*: ${dateStart.time}
-       ⏰ Hora de *salida*: ${dateEnd.time}
-       👥 *Número de personas*: ${data?.numberOfPeople}
-
-       Si los datos son correctos, escribe:
-       ✅ *${CustomerSignals.CONFIRM}*
-
-       Si deseas corregirlos, escribe:
-       ✏️ *${CustomerSignals.RESTART}*
-
-       Si no deseas continuar, escribe:
-       🚪 *${CustomerSignals.EXIT}*
-     `.trim();
+    return getValidationMsg({ ...params, mode: "update" });
   },
 
   [BookingStatuses.UPDATE_CONFIRMED]: function (params: {
@@ -349,26 +395,9 @@ export const stateMessages = {
     signal: CustomerSignalKey;
   }): string {
     const { domain, data, timeZone, signal } = params;
-    const actionConfig = DOMAIN_ACTION_CONFIG[domain]["update"];
-    const { customerName, datetime, numberOfPeople } = data || {};
-    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
 
     if (signal === "CONFIRMAR") {
-      return `
-       ✅ Tu ${actionConfig.title} ha sido ${actionConfig.verb} con éxito.
-
-       👤 Nombre: ${customerName}
-       📆 Día : ${dateStart.date}
-       ⏰ Hora de *entrada*: ${dateStart.time}
-       ⏰ Hora de *salida*: ${dateEnd.time}
-       👥 Personas: ${numberOfPeople}
-
-       🆔 ID de ${actionConfig.title}: ${data?.id}
-
-       ⚠️ Guarda este ID.
-       Para presentarla en el ${domain.toUpperCase()} el día de tu llegada.
-     `.trim();
+      return getSuccessMsg({ domain, mode: "update", data, timeZone });
     }
 
     if (signal === "SALIR") {
@@ -376,23 +405,7 @@ export const stateMessages = {
     }
 
     // RESTART
-    if (data?.customerName) {
-      return `
-         Para ${DOMAIN_ACTION_CONFIG[domain].update.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].update.title} comentame:
-         el *día*, la *hora* y *cuántas personas* serán.
-
-         Por ejemplo:
-           "Mañana a las 8pm para 4 personas"
-       `.trim();
-    }
-
-    return `
-       Para ${DOMAIN_ACTION_CONFIG[domain].update.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].update.title} es muy fácil, ayudame con:
-       *tu nombre*, el *día*, la *hora* y *cuántas personas* serán.
-
-       Por ejemplo:
-         "A nombre de María Rodríguez, mañana a las 8pm para 4 personas"
-     `.trim();
+    return getBookingRequestMsg(domain, "update", !!data?.customerName);
   },
 
   [BookingStatuses.CANCEL_VALIDATED]: function (params: {
@@ -401,18 +414,15 @@ export const stateMessages = {
     timeZone?: string;
   }): string {
     const { domain, data, timeZone } = params;
-    const { datetime } = data || {};
-    const dateStart = formatLocalDateTime(datetime?.start, timeZone);
-    const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
+    const baseMsg = getExistingBookingMsg({
+      domain,
+      mode: "cancel",
+      data,
+      timeZone,
+    });
 
     return `
-       ✨ Hemos encontrado tu más reciente ${DOMAIN_ACTION_CONFIG[domain].cancel.title}!
-
-       👤 A *nombre* de: ${data?.customerName}
-       📆 Día : ${dateStart.date}
-       ⏰ Hora de *entrada*: ${dateStart.time}
-       ⏰ Hora de *salida*: ${dateEnd.time}
-       👥 Número de personas: ${data?.numberOfPeople}
+       ${baseMsg}
 
        Si deseas cancelarla, escribe:
        🚪 ${CustomerSignals.CONFIRM}
@@ -436,22 +446,3 @@ export const stateMessages = {
      `.trim();
   },
 };
-
-/**
- * Mensaje de salida (EXIT)
- * Independiente del dominio
- */
-function getBookingExitMsg(domain: SpecializedDomain): string {
-  const title = domain ? DOMAIN_ACTION_CONFIG[domain].create.title : "reserva";
-
-  return `
-     Gracias por usar nuestro servicio 😊
-     Recuerda que puedes elegir una de estas opciones en cualquier momento:
-
-     1️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].create.action}
-     2️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].update.action} ó
-     3️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].cancel.action}
-
-     💬 Si tienes otra pregunta, escríbela directamente.
-   `.trim();
-}
