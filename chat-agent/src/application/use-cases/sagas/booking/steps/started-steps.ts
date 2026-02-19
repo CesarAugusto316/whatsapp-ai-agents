@@ -190,16 +190,16 @@ const checkAvailability = (): StartedFuncSagaStep => ({
     const previous = getStepResult("execute:collect_and_validate");
     const { customerMessage, bookingState, bookingKey, business } = ctx;
     const reservation = bookingState as BookingState;
+    const timeZone = business.general.timezone;
 
     // if collect_and_validate OK
     if (previous?.continue && previous?.data) {
-      const timezone = business.general.timezone;
       const data = previous.data!;
       const { start, end } = data?.datetime;
 
       const isWithinSchedule = {
-        start: isWithinBusinessHours(business.schedule, timezone, start),
-        end: isWithinBusinessHours(business.schedule, timezone, end),
+        start: isWithinBusinessHours(business.schedule, timeZone, start),
+        end: isWithinBusinessHours(business.schedule, timeZone, end),
       };
 
       if (!isWithinSchedule.start || !isWithinSchedule.end) {
@@ -231,8 +231,8 @@ const checkAvailability = (): StartedFuncSagaStep => ({
           },
         };
       }
-      const startDateTime = toUTC(start, timezone);
-      const endDateTime = toUTC(end, timezone);
+      const startDateTime = toUTC(start, timeZone);
+      const endDateTime = toUTC(end, timeZone);
 
       const { isWithinRange, message } = isWithinHolydayRange(
         business,
@@ -300,10 +300,11 @@ const checkAvailability = (): StartedFuncSagaStep => ({
       }
 
       // FINAL: ✅ INPUT DATA VALIDATED
+      const domain = business.general.businessType;
       const transition = bookingStateManager.nextState(reservation.status, {
         data,
-        timeZone: business.general.timezone,
-        domain: business.general.businessType,
+        timeZone,
+        domain,
       });
       await cacheAdapter.save(bookingKey, {
         ...reservation,

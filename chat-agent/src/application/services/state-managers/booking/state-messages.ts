@@ -4,6 +4,7 @@ import {
   CustomerSignals,
   BookingState,
   BookingStatuses,
+  CustomerSignalKey,
 } from "@/domain/booking/booking.types";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 
@@ -173,12 +174,12 @@ const DOMAIN_ACTION_CONFIG: Record<
 export const stateMessages = {
   [BookingStatuses.MAKE_STARTED]: function (params: {
     domain: SpecializedDomain;
-    userName?: string;
+    data?: Partial<BookingState>;
   }): string {
-    const { domain, userName } = params;
+    const { domain, data } = params;
 
     // CREATE mode
-    if (userName) {
+    if (data?.customerName) {
       return `
          Para ${DOMAIN_ACTION_CONFIG[domain].create.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].create.title} comentame:
          el *día*, la *hora* y *cuántas personas* serán.
@@ -198,12 +199,11 @@ export const stateMessages = {
   },
   [BookingStatuses.MAKE_VALIDATED]: function (params: {
     domain: SpecializedDomain;
-    mode: OperationMode;
     data?: Partial<BookingState>;
     timeZone?: string;
   }): string {
-    const { domain, mode, data, timeZone } = params;
-    const actionConfig = DOMAIN_ACTION_CONFIG[domain][mode];
+    const { domain, data, timeZone } = params;
+    const actionConfig = DOMAIN_ACTION_CONFIG[domain]["create"];
     const { datetime } = data || {};
     const dateStart = formatLocalDateTime(datetime?.start, timeZone);
     const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
@@ -231,17 +231,18 @@ export const stateMessages = {
   },
   [BookingStatuses.MAKE_CONFIRMED]: function (params: {
     domain: SpecializedDomain;
-    mode: OperationMode;
     data?: Partial<BookingState>;
     timeZone?: string;
+    signal: CustomerSignalKey;
   }): string {
-    const { domain, mode, data, timeZone } = params;
-    const actionConfig = DOMAIN_ACTION_CONFIG[domain][mode];
+    const { domain, data, timeZone, signal } = params;
+    const actionConfig = DOMAIN_ACTION_CONFIG[domain]["create"];
     const { customerName, datetime, numberOfPeople } = data || {};
     const dateStart = formatLocalDateTime(datetime?.start, timeZone);
     const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
 
-    return `
+    if (signal === "CONFIRMAR") {
+      return `
        ✅ Tu ${actionConfig.title} ha sido ${actionConfig.verb} con éxito.
 
        👤 Nombre: ${customerName}
@@ -255,7 +256,32 @@ export const stateMessages = {
        ⚠️ Guarda este ID.
        Para presentarla en el ${domain.toUpperCase()} el día de tu llegada.
      `.trim();
+    }
+    if (signal === "SALIR") {
+      return getBookingExitMsg(domain);
+    }
+
+    // RESTART
+    if (data?.customerName) {
+      return `
+         Para ${DOMAIN_ACTION_CONFIG[domain].update.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].update.title} comentame:
+         el *día*, la *hora* y *cuántas personas* serán.
+
+         Por ejemplo:
+           "Mañana a las 8pm para 4 personas"
+       `.trim();
+    }
+
+    return `
+       Para ${DOMAIN_ACTION_CONFIG[domain].update.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].update.title} es muy fácil, ayudame con:
+       *tu nombre*, el *día*, la *hora* y *cuántas personas* serán.
+
+       Por ejemplo:
+         "A nombre de María Rodríguez, mañana a las 8pm para 4 personas"
+     `.trim();
   },
+
+  // UPDATE
   [BookingStatuses.UPDATE_STARTED]: function (params: {
     domain: SpecializedDomain;
     data?: Partial<BookingState>;
@@ -280,14 +306,14 @@ export const stateMessages = {
          "Para mañana a las 8pm para 4 personas"
      `.trim();
   },
+
   [BookingStatuses.UPDATE_VALIDATED]: function (params: {
     domain: SpecializedDomain;
-    mode: OperationMode;
     data?: Partial<BookingState>;
     timeZone?: string;
   }): string {
-    const { domain, mode, data, timeZone } = params;
-    const actionConfig = DOMAIN_ACTION_CONFIG[domain][mode];
+    const { domain, data, timeZone } = params;
+    const actionConfig = DOMAIN_ACTION_CONFIG[domain]["update"];
     const { datetime } = data || {};
     const dateStart = formatLocalDateTime(datetime?.start, timeZone);
     const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
@@ -340,6 +366,7 @@ export const stateMessages = {
        Para presentarla en el ${domain.toUpperCase()} el día de tu llegada.
      `.trim();
   },
+
   [BookingStatuses.CANCEL_VALIDATED]: function (params: {
     domain: SpecializedDomain;
     data?: Partial<BookingState>;
@@ -365,6 +392,7 @@ export const stateMessages = {
        Así de simple 😉
      `.trim();
   },
+
   [BookingStatuses.CANCEL_CONFIRMED]: function (params: {
     domain: SpecializedDomain;
     data?: Partial<BookingState>;
@@ -385,7 +413,7 @@ export const stateMessages = {
  * Mensaje de salida (EXIT)
  * Independiente del dominio
  */
-export function getBookingExitMsg(domain: SpecializedDomain): string {
+function getBookingExitMsg(domain: SpecializedDomain): string {
   const title = domain ? DOMAIN_ACTION_CONFIG[domain].create.title : "reserva";
 
   return `

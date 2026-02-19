@@ -1,11 +1,11 @@
-import { humanizerAgent } from "@/application/agents";
 import { DomainCtx } from "@/domain/booking";
-import { BookingOptions, BookingStatuses } from "@/domain/booking";
+import { BookingOptions } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
 import { BookingSagaResult } from "../booking-saga";
 import { BookingIntentKey } from "@/application/services/pomdp";
 import { bookingStateManager } from "@/application/services/state-managers";
+import { formatSagaOutput } from "@/application/patterns";
 
 /**
  *
@@ -37,19 +37,11 @@ export async function initialOptionsWorkflow(
       customerName: customer?.name || "",
       status: transition.nextState, // MAKE_STARTED
     });
-    const humanizedResponse = await humanizerAgent(transition.message!);
-    return {
-      bag: {},
-      lastStepResult: {
-        execute: {
-          result: humanizedResponse,
-          metadata: {
-            description: "MAKE_RESERVATION, option selected",
-            internal: `customerMessage=${BookingOptions.MAKE_BOOKING}`,
-          },
-        },
-      },
-    };
+    return formatSagaOutput(
+      transition.message!,
+      "MAKE_RESERVATION, option selected",
+      `customerMessage=${BookingOptions.MAKE_BOOKING}`,
+    );
   }
 
   if (option === BookingOptions.UPDATE_BOOKING) {
@@ -59,18 +51,11 @@ export async function initialOptionsWorkflow(
       flowOption: BookingOptions.UPDATE_BOOKING,
       bookingKey,
     });
-    return {
-      bag: {},
-      lastStepResult: {
-        execute: {
-          result: msg,
-          metadata: {
-            description: "UPDATE_RESERVATION, option selected",
-            internal: `customerMessage=${BookingOptions.UPDATE_BOOKING}`,
-          },
-        },
-      },
-    };
+    return formatSagaOutput(
+      msg,
+      "UPDATE_RESERVATION, option selected",
+      `customerMessage=${BookingOptions.UPDATE_BOOKING}`,
+    );
   }
 
   if (option === BookingOptions.CANCEL_BOOKING) {
@@ -80,18 +65,11 @@ export async function initialOptionsWorkflow(
       flowOption: BookingOptions.CANCEL_BOOKING,
       bookingKey,
     });
-    return {
-      bag: {},
-      lastStepResult: {
-        execute: {
-          result: msg,
-          metadata: {
-            description: "CANCEL_RESERVATION, option selected",
-            internal: `customerMessage=${BookingOptions.CANCEL_BOOKING}`,
-          },
-        },
-      },
-    };
+    return formatSagaOutput(
+      msg,
+      "CANCEL_RESERVATION, option selected",
+      `customerMessage=${BookingOptions.CANCEL_BOOKING}`,
+    );
   }
 
   if (option === "booking:check_availability") {

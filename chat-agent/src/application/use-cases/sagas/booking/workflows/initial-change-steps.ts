@@ -40,6 +40,8 @@ export const initChangeSteps = async ({
   if (!reservation) {
     return "Reserva no encontrada. Seguro que ya has creado una reserva?";
   }
+
+  // we need to format UTC to local time
   const timezone = business.general.timezone;
   const start = toLocalDateTime(reservation.startDateTime, timezone);
   const end = toLocalDateTime(reservation?.endDateTime ?? "", timezone);
