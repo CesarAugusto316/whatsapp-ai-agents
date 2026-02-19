@@ -8,7 +8,7 @@ import {
   BookingStatuses,
   CustomerSignals,
 } from "@/domain/booking";
-import type { SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test data helpers
@@ -27,6 +27,17 @@ const mockBookingData = {
 const mockTimeZone = "America/Mexico_City";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Domain configs explícitas para tests (single source of truth)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const RESTAURANT_CREATE = DOMAIN_ACTION_CONFIG.restaurant.create;
+const RESTAURANT_UPDATE = DOMAIN_ACTION_CONFIG.restaurant.update;
+const RESTAURANT_CANCEL = DOMAIN_ACTION_CONFIG.restaurant.cancel;
+
+const MEDICAL_CREATE = DOMAIN_ACTION_CONFIG.medical.create;
+const REAL_ESTATE_CREATE = DOMAIN_ACTION_CONFIG["real-estate"].create;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -41,8 +52,9 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_STARTED);
-      expect(result.message).toContain("crear tu reserva");
-      expect(result.message).toContain("tu nombre");
+      expect(result.message).toContain(RESTAURANT_CREATE.verbInfinitive);
+      expect(result.message).toContain(RESTAURANT_CREATE.title);
+      expect(result.message).toContain(mockBookingData.customerName);
     });
 
     it("MAKE_BOOKING → MAKE_STARTED (con nombre)", () => {
@@ -55,9 +67,9 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_STARTED);
-      expect(result.message).toContain("crear tu reserva");
-      expect(result.message).not.toContain("tu nombre");
-      expect(result.message).toContain("comentame");
+      expect(result.message).toContain(RESTAURANT_CREATE.verbInfinitive);
+      expect(result.message).toContain(RESTAURANT_CREATE.title);
+      expect(result.message).not.toContain(mockBookingData.customerName);
     });
 
     it("MAKE_STARTED → MAKE_VALIDATED", () => {
@@ -71,8 +83,8 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_VALIDATED);
-      expect(result.message).toContain("Ya tenemos las datos listos");
-      expect(result.message).toContain("CONFIRMADO que hay disponibilidad");
+      expect(result.message).toContain(RESTAURANT_CREATE.process);
+      expect(result.message).toContain(RESTAURANT_CREATE.title);
       expect(result.message).toContain(CustomerSignals.CONFIRM);
       expect(result.message).toContain(CustomerSignals.RESTART);
       expect(result.message).toContain(CustomerSignals.EXIT);
@@ -89,9 +101,9 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_CONFIRMED);
-      expect(result.message).toContain("ha sido creada con éxito");
+      expect(result.message).toContain(RESTAURANT_CREATE.verb);
       expect(result.message).toContain("María Rodríguez");
-      expect(result.message).toContain("123");
+      expect(result.message).toContain(mockBookingData.id);
     });
 
     it("MAKE_VALIDATED + SALIR → exit (nextState undefined)", () => {
@@ -119,7 +131,8 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_STARTED);
-      expect(result.message).toContain("actualizar tu reserva");
+      expect(result.message).toContain(RESTAURANT_UPDATE.verbInfinitive);
+      expect(result.message).toContain(RESTAURANT_UPDATE.title);
     });
   });
 
@@ -135,8 +148,8 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.UPDATE_STARTED);
-      expect(result.message).toContain("Hemos encontrado tu más reciente");
-      expect(result.message).toContain("María Rodríguez");
+      expect(result.message).toContain(RESTAURANT_UPDATE.title);
+      expect(result.message).toContain(mockBookingData.customerName);
     });
 
     it("UPDATE_STARTED → UPDATE_VALIDATED", () => {
@@ -150,8 +163,8 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.UPDATE_VALIDATED);
-      expect(result.message).toContain("Ya tenemos las datos listos");
-      expect(result.message).toContain("actualización");
+      expect(result.message).toContain(RESTAURANT_UPDATE.process);
+      expect(result.message).toContain(RESTAURANT_UPDATE.title);
     });
 
     it("UPDATE_VALIDATED + CONFIRMAR → UPDATE_CONFIRMED (éxito)", () => {
@@ -165,8 +178,8 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.UPDATE_CONFIRMED);
-      expect(result.message).toContain("ha sido actualizada con éxito");
-      expect(result.message).toContain("María Rodríguez");
+      expect(result.message).toContain(RESTAURANT_UPDATE.verb);
+      expect(result.message).toContain(mockBookingData.customerName);
     });
 
     it("UPDATE_VALIDATED + SALIR → exit (nextState undefined)", () => {
@@ -194,7 +207,8 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.UPDATE_STARTED);
-      expect(result.message).toContain("actualizar tu reserva");
+      expect(result.message).toContain(RESTAURANT_UPDATE.verbInfinitive);
+      expect(result.message).toContain(RESTAURANT_UPDATE.title);
     });
   });
 
@@ -210,8 +224,8 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.CANCEL_VALIDATED);
-      expect(result.message).toContain("Hemos encontrado tu más reciente");
-      expect(result.message).toContain("Si deseas cancelarla");
+      expect(result.message).toContain(RESTAURANT_CANCEL.title);
+      expect(result.message).toContain(CustomerSignals.CONFIRM);
     });
 
     it("CANCEL_VALIDATED + CONFIRMAR → CANCEL_CONFIRMED (éxito)", () => {
@@ -224,7 +238,7 @@ describe("BookingStateManager.nextState()", () => {
       );
 
       expect(result.nextState).toBe(BookingStatuses.CANCEL_CONFIRMED);
-      expect(result.message).toContain("ha sido cancelada con éxito");
+      expect(result.message).toContain(RESTAURANT_CANCEL.verb);
       expect(result.message).toContain("Esperamos verte pronto");
     });
   });
@@ -234,7 +248,8 @@ describe("BookingStateManager.nextState()", () => {
       const result = bookingStateManager.nextState(BookingOptions.MAKE_BOOKING);
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_STARTED);
-      expect(result.message).toContain("crear tu reserva");
+      expect(result.message).toContain(RESTAURANT_CREATE.verbInfinitive);
+      expect(result.message).toContain(RESTAURANT_CREATE.title);
     });
 
     it("soporta dominio 'medical'", () => {
@@ -245,8 +260,8 @@ describe("BookingStateManager.nextState()", () => {
         },
       );
 
-      expect(result.message).toContain("agendar");
-      expect(result.message).toContain("cita");
+      expect(result.message).toContain(MEDICAL_CREATE.verbInfinitive);
+      expect(result.message).toContain(MEDICAL_CREATE.title);
     });
 
     it("soporta dominio 'real-estate'", () => {
@@ -257,11 +272,11 @@ describe("BookingStateManager.nextState()", () => {
         },
       );
 
-      expect(result.message).toContain("agendar");
-      expect(result.message).toContain("visita");
+      expect(result.message).toContain(REAL_ESTATE_CREATE.verbInfinitive);
+      expect(result.message).toContain(REAL_ESTATE_CREATE.title);
     });
 
-    it("verifica que el mensaje contenga action, verb, process, title", () => {
+    it("verifica que el mensaje contenga verb y title explícitos", () => {
       const result = bookingStateManager.nextState(
         BookingStatuses.MAKE_VALIDATED + CustomerSignals.CONFIRM,
         {
@@ -271,9 +286,9 @@ describe("BookingStateManager.nextState()", () => {
         },
       );
 
-      // Verifica palabras clave de DOMAIN_ACTION_CONFIG
-      expect(result.message).toMatch(/(creada|actualizada|cancelada)/); // verb
-      expect(result.message).toMatch(/(reserva|cita|visita|consulta)/); // title
+      // Verifica palabras clave explícitas de DOMAIN_ACTION_CONFIG
+      expect(result.message).toContain(RESTAURANT_CREATE.verb);
+      expect(result.message).toContain(RESTAURANT_CREATE.title);
     });
   });
 
