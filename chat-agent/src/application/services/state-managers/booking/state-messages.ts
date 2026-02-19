@@ -12,7 +12,7 @@ import { SpecializedDomain } from "@/infraestructure/adapters/cms";
  * Configuración de verbos y acciones por dominio y modo de operación.
  * Extensible para futuros dominios.
  */
-const DOMAIN_ACTION_CONFIG: Record<
+export const DOMAIN_ACTION_CONFIG: Record<
   SpecializedDomain,
   Record<
     OperationMode,
