@@ -55,13 +55,6 @@ export async function initialOptionsWorkflow(
       business,
       customer,
       flowOption: BookingOptions.UPDATE_BOOKING,
-      getMessage: (state) =>
-        bookingStateManager.nextState(BookingStatuses.UPDATE_STARTED, {
-          domain: business.general.businessType,
-          timeZone: business.general.timezone,
-          data: state,
-          userName: customer?.name,
-        }).message!,
       bookingKey,
     });
     return {
@@ -83,12 +76,6 @@ export async function initialOptionsWorkflow(
       business,
       customer,
       flowOption: BookingOptions.CANCEL_BOOKING,
-      getMessage: (state) =>
-        bookingStateManager.nextState(BookingStatuses.CANCEL_VALIDATED, {
-          domain: business.general.businessType,
-          timeZone: business.general.timezone,
-          data: state,
-        }).message!,
       bookingKey,
     });
     return {

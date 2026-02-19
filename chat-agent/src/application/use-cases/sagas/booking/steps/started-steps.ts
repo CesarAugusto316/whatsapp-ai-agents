@@ -183,7 +183,7 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
   },
 });
 
-const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
+const checkAvailability = (): StartedFuncSagaStep => ({
   config: { execute: { name: "check_availability", ...stepConfig } },
   execute: async ({ ctx, getStepResult }) => {
     //

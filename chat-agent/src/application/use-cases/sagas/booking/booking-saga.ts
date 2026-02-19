@@ -21,7 +21,7 @@ const makeStarted: StartedFuncSagaResult = (ctx: DomainCtx) => {
   })
     .addStep(startedSteps.earlyConditions("create"))
     .addStep(startedSteps.collectAndValidate())
-    .addStep(startedSteps.checkAvailability("create"))
+    .addStep(startedSteps.checkAvailability())
     .start();
 };
 
@@ -34,7 +34,7 @@ const updateStarted: StartedFuncSagaResult = (ctx: DomainCtx) => {
   })
     .addStep(startedSteps.earlyConditions("update"))
     .addStep(startedSteps.collectAndValidate())
-    .addStep(startedSteps.checkAvailability("update"))
+    .addStep(startedSteps.checkAvailability())
     .start();
 };
 
@@ -48,10 +48,7 @@ const makeValidated: ValidateFuncSagaResult = (ctx: DomainCtx) => {
       ctx,
     },
   )
-    .addStep(validatedSteps.makeConfirmed())
-    .addStep(validatedSteps.sendConfirmationMsg("create"))
-    .addStep(validatedSteps.exit())
-    .addStep(validatedSteps.restart())
+    .addStep(validatedSteps.created())
     .start();
 };
 
@@ -64,10 +61,7 @@ const updateValidated: ValidateFuncSagaResult = (ctx: DomainCtx) => {
       ctx,
     },
   )
-    .addStep(validatedSteps.updateConfirmed())
-    .addStep(validatedSteps.sendConfirmationMsg("update"))
-    .addStep(validatedSteps.exit())
-    .addStep(validatedSteps.restart())
+    .addStep(validatedSteps.updated())
     .start();
 };
 
@@ -80,8 +74,7 @@ const cancelValidated: ValidateFuncSagaResult = (ctx: DomainCtx) => {
       ctx,
     },
   )
-    .addStep(validatedSteps.cancelConfirmed())
-    .addStep(validatedSteps.exit())
+    .addStep(validatedSteps.cancelled())
     .start();
 };
 

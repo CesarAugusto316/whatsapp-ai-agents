@@ -48,16 +48,23 @@ type ValidateFuncSagaStep = ISagaStep<
   ValidateSagaSteps
 >;
 
-const makeConfirmed = (): ValidateFuncSagaStep => ({
+const created = (): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM", ...stepConfig },
     compensate: { name: "CONFIRM:FAILED", ...stepConfig },
   },
   execute: async ({ ctx }) => {
-    const { customerMessage, bookingState, customer, business, customerPhone } =
-      ctx;
+    const {
+      customerMessage,
+      bookingState,
+      customer,
+      business,
+      customerPhone,
+      bookingKey,
+    } = ctx;
 
     const {
+      status,
       customerName = "",
       datetime,
       numberOfPeople = 1,
@@ -70,9 +77,41 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       };
     }
 
-    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
-      return { continue: true };
+    if (customerMessage.toUpperCase() === CustomerSignals.EXIT) {
+      const { message } = bookingStateManager.nextState(
+        bookingState?.status + CustomerSignals.EXIT,
+      );
+      await cacheAdapter.delete(bookingKey);
+      logger.info("Customer selected an option", {
+        customerAction: CustomerSignals.EXIT,
+      });
+      return { result: message, continue: false };
     }
+
+    if (customerMessage.toUpperCase() === CustomerSignals.RESTART) {
+      const reservation = bookingState as BookingState;
+      const transition = bookingStateManager.nextState(
+        reservation.status + CustomerSignals.RESTART,
+        { userName: customer?.name },
+      );
+      await cacheAdapter.save(bookingKey ?? "", {
+        ...reservation,
+        businessId: business?.id,
+        customerId: customer?.id,
+        status: transition.nextState,
+      });
+      logger.info("Customer selected an option", {
+        customerAction: CustomerSignals.RESTART,
+      });
+      return { result: transition.message, continue: false };
+    }
+
+    if (customerMessage.toLocaleUpperCase() !== CustomerSignals.CONFIRM) {
+      return {
+        continue: false,
+      };
+    }
+
     let newCustomer = customer;
     if (!customer && customerName) {
       newCustomer = (
@@ -108,8 +147,24 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
       ).doc;
 
       logger.info("✨Reservation created, response", reservation);
-      return { reservation, continue: true };
+      const { message } = bookingStateManager.nextState(
+        status + CustomerSignals.CONFIRM,
+        {
+          data: {
+            id: reservation?.id,
+            datetime, // localTime
+            customerName: customerName || customer?.name || "",
+            numberOfPeople,
+          },
+          timeZone: business.general.timezone,
+          domain: business.general.businessType,
+        },
+      );
+
+      await cacheAdapter.delete(bookingKey);
+      return { result: message, continue: false };
     }
+    await cacheAdapter.delete(bookingKey);
     return {
       continue: false,
       result: "No pudimos crear tu reserva intenlo mas tarde",
@@ -134,17 +189,19 @@ const makeConfirmed = (): ValidateFuncSagaStep => ({
   },
 });
 
-const updateConfirmed = (): ValidateFuncSagaStep => ({
+const updated = (): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM", ...stepConfig },
     compensate: { name: "CONFIRM:FAILED", ...stepConfig },
   },
   execute: async ({ ctx }) => {
-    const { customerMessage, bookingState, customer, business } = ctx;
+    const { customerMessage, bookingState, customer, business, bookingKey } =
+      ctx;
     const {
       customerName = "",
       datetime,
       numberOfPeople = 1,
+      status,
     } = bookingState as BookingState;
 
     if (!bookingState)
@@ -159,9 +216,42 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
         continue: false,
       };
     }
-    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
-      return { continue: true };
+
+    if (customerMessage.toUpperCase() === CustomerSignals.EXIT) {
+      const { message } = bookingStateManager.nextState(
+        bookingState?.status + CustomerSignals.EXIT,
+      );
+      await cacheAdapter.delete(bookingKey);
+      logger.info("Customer selected an option", {
+        customerAction: CustomerSignals.EXIT,
+      });
+      return { result: message, continue: false };
     }
+
+    if (customerMessage.toUpperCase() === CustomerSignals.RESTART) {
+      const reservation = bookingState as BookingState;
+      const transition = bookingStateManager.nextState(
+        reservation.status + CustomerSignals.RESTART,
+        { userName: customer?.name },
+      );
+      await cacheAdapter.save(bookingKey ?? "", {
+        ...reservation,
+        businessId: business?.id,
+        customerId: customer?.id,
+        status: transition.nextState,
+      });
+      logger.info("Customer selected an option", {
+        customerAction: CustomerSignals.RESTART,
+      });
+      return { result: transition.message, continue: false };
+    }
+
+    if (customerMessage.toLocaleUpperCase() !== CustomerSignals.CONFIRM) {
+      return {
+        continue: false,
+      };
+    }
+
     if (customer?.id && bookingState?.id) {
       const timezone = business.general.timezone;
       const { start, end } = datetime;
@@ -182,7 +272,21 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
         ).json()) as { doc: Booking }
       ).doc;
 
-      return { reservation, continue: true };
+      const { message } = bookingStateManager.nextState(
+        status + CustomerSignals.CONFIRM,
+        {
+          data: {
+            id: reservation?.id,
+            datetime, // localTime
+            customerName: customerName || customer?.name || "",
+            numberOfPeople,
+          },
+          timeZone: business.general.timezone,
+          domain: business.general.businessType,
+        },
+      );
+      await cacheAdapter.delete(bookingKey!);
+      return { result: message, continue: false };
     }
     return { continue: true };
   },
@@ -203,18 +307,13 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
   },
 });
 
-const cancelConfirmed = (): ValidateFuncSagaStep => ({
+const cancelled = (): ValidateFuncSagaStep => ({
   config: { execute: { name: "CONFIRM", ...stepConfig } },
   execute: async ({ ctx }) => {
     //
     const { bookingState, customerMessage, bookingKey, customer } = ctx;
 
     if (!bookingState?.id) {
-      return {
-        continue: true,
-      };
-    }
-    if (bookingState.status !== BookingStatuses.CANCEL_STARTED) {
       return {
         continue: true,
       };
@@ -226,9 +325,24 @@ const cancelConfirmed = (): ValidateFuncSagaStep => ({
           "Aún no te has registrado, por favor has tu primera reserva para registrarte",
       };
     }
-    if (customerMessage.toUpperCase() !== CustomerSignals.CONFIRM) {
-      return { continue: true };
+
+    if (customerMessage.toUpperCase() === CustomerSignals.EXIT) {
+      const { message } = bookingStateManager.nextState(
+        bookingState?.status + CustomerSignals.EXIT,
+      );
+      await cacheAdapter.delete(bookingKey);
+      logger.info("Customer selected an option", {
+        customerAction: CustomerSignals.EXIT,
+      });
+      return { result: message, continue: false };
     }
+
+    if (customerMessage.toLocaleUpperCase() !== CustomerSignals.CONFIRM) {
+      return {
+        continue: false,
+      };
+    }
+
     const res = await cmsAdapter.updateBooking(bookingState.id!, {
       status: "cancelled",
     });
@@ -236,9 +350,11 @@ const cancelConfirmed = (): ValidateFuncSagaStep => ({
       throw new Error("Error al cancelar la reserva");
     }
     const assistantResponse = `Hemos cancelado tu reserva  ${bookingState.id} exitosamente ✅. Gracias por preferirnos`;
-    await cacheAdapter.delete(bookingKey);
     logger.info(`Reservation ${bookingState.id} cancelled successfully`);
+
+    await cacheAdapter.delete(bookingKey);
     const result = await humanizerAgent(assistantResponse);
+
     return { continue: false, result };
   },
   compensate: async ({ ctx }) => {
@@ -253,111 +369,8 @@ const cancelConfirmed = (): ValidateFuncSagaStep => ({
   },
 });
 
-const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
-  config: {
-    execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
-  },
-  execute: async ({ ctx, getStepResult }) => {
-    const { customerMessage, bookingState, bookingKey, customer, business } =
-      ctx;
-    const {
-      customerName = "",
-      datetime,
-      numberOfPeople = 1,
-      status,
-    } = bookingState as BookingState;
-    const reservation = getStepResult("execute:CONFIRM")?.reservation;
-
-    if (!reservation?.id) {
-      logger.info("Reservation not found", reservation);
-      return {
-        continue: true,
-      };
-    }
-    if (customerMessage?.toUpperCase() !== CustomerSignals.CONFIRM) {
-      return { continue: true };
-    }
-    // const assistantMsg = systemMessages.getSuccessMsg(
-    //   {
-    //     id: reservation?.id,
-    //     datetime, // localTime
-    //     customerName: customerName || customer?.name || "",
-    //     numberOfPeople,
-    //   },
-    //   mode,
-    //   business.general.timezone,
-    // );
-
-    const { message } = bookingStateManager.nextState(status!);
-
-    await cacheAdapter.delete(bookingKey);
-    logger.info("Customer selected an option", {
-      customerAction: CustomerSignals.CONFIRM,
-      customerMessage,
-    });
-    const result = await humanizerAgent(message);
-    return {
-      result,
-      continue: false,
-    };
-  },
-});
-
-const exit = (): ValidateFuncSagaStep => ({
-  config: { execute: { name: "EXIT", ...stepConfig } },
-  execute: async ({ ctx }) => {
-    const { customerMessage, bookingKey } = ctx;
-
-    if (customerMessage?.toUpperCase() !== CustomerSignals.EXIT) {
-      return { continue: true };
-    }
-    await cacheAdapter.delete(bookingKey);
-    const assistantMsg = systemMessages.getExitMsg();
-    logger.info("Customer selected an option", {
-      customerAction: CustomerSignals.EXIT,
-    });
-    return { result: assistantMsg, continue: false };
-  },
-});
-
-const restart = (): ValidateFuncSagaStep => ({
-  config: { execute: { name: "RESTART", ...stepConfig } },
-  execute: async ({ ctx }) => {
-    //
-    const { customerMessage, bookingKey, business, bookingState, customer } =
-      ctx;
-    const reservation = bookingState as BookingState;
-
-    if (customerMessage?.toUpperCase() !== CustomerSignals.RESTART) {
-      return { continue: true };
-    }
-    const assistantResponse = systemMessages.getCreateMsg({
-      userName: customer?.name,
-    });
-
-    const transition = bookingStateManager.nextState(
-      reservation.status + CustomerSignals.RESTART,
-    );
-    await cacheAdapter.save(bookingKey ?? "", {
-      ...reservation,
-      businessId: business?.id,
-      customerId: customer?.id,
-      status: transition.nextState,
-    });
-    logger.info("Customer selected an option", {
-      customerAction: CustomerSignals.RESTART,
-    });
-
-    const result = await humanizerAgent(assistantResponse);
-    return { result, continue: false };
-  },
-});
-
 export const validatedSteps = {
-  updateConfirmed,
-  makeConfirmed,
-  cancelConfirmed,
-  sendConfirmationMsg,
-  exit,
-  restart,
+  updated,
+  created,
+  cancelled,
 };
