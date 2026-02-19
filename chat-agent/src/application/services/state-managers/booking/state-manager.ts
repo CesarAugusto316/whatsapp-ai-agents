@@ -117,11 +117,22 @@ class BookingStateManager {
             timeZone,
           }),
         };
-      case BookingStatuses.UPDATE_VALIDATED:
+      case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.CONFIRM:
         return {
           nextState: BookingStatuses.UPDATE_CONFIRMED,
-          message: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
+          message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
             domain,
+            signal: CustomerSignals.CONFIRM,
+            data,
+            timeZone,
+          }),
+        };
+      case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.EXIT:
+        return {
+          nextState: undefined,
+          message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
+            domain,
+            signal: CustomerSignals.EXIT,
             data,
             timeZone,
           }),
@@ -129,30 +140,24 @@ class BookingStateManager {
       case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.RESTART:
         return {
           nextState: BookingStatuses.UPDATE_STARTED,
-          message: "",
+          message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
+            domain,
+            signal: CustomerSignals.RESTART,
+            data,
+            timeZone,
+          }),
         };
 
       // CANCEL
       case BookingOptions.CANCEL_BOOKING:
         return {
-          nextState: BookingStatuses.CANCEL_STARTED,
+          nextState: BookingStatuses.CANCEL_VALIDATED,
           message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
             domain,
             data,
             timeZone,
           }),
         };
-      // case BookingStatuses.CANCEL_VALIDATED:
-      //   return {
-      //     nextState: BookingStatuses.CANCEL_CONFIRMED,
-      //     messageHint:
-      //       "Recordar al usuario que hay una cancelación en curso y puede confirmar o salir.",
-      //     message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
-      //       domain,
-      //       data,
-      //       timeZone,
-      //     }),
-      //   };
       case BookingStatuses.CANCEL_VALIDATED + CustomerSignals.CONFIRM:
         return {
           nextState: BookingStatuses.CANCEL_CONFIRMED,

@@ -197,6 +197,7 @@ export const stateMessages = {
          "A nombre de María Rodríguez, mañana a las 8pm para 4 personas"
      `.trim();
   },
+
   [BookingStatuses.MAKE_VALIDATED]: function (params: {
     domain: SpecializedDomain;
     data?: Partial<BookingState>;
@@ -229,6 +230,7 @@ export const stateMessages = {
        🚪 *${CustomerSignals.EXIT}*
      `.trim();
   },
+
   [BookingStatuses.MAKE_CONFIRMED]: function (params: {
     domain: SpecializedDomain;
     data?: Partial<BookingState>;
@@ -339,19 +341,21 @@ export const stateMessages = {
        🚪 *${CustomerSignals.EXIT}*
      `.trim();
   },
+
   [BookingStatuses.UPDATE_CONFIRMED]: function (params: {
     domain: SpecializedDomain;
-    mode: OperationMode;
     data?: Partial<BookingState>;
     timeZone?: string;
+    signal: CustomerSignalKey;
   }): string {
-    const { domain, mode, data, timeZone } = params;
-    const actionConfig = DOMAIN_ACTION_CONFIG[domain][mode];
+    const { domain, data, timeZone, signal } = params;
+    const actionConfig = DOMAIN_ACTION_CONFIG[domain]["update"];
     const { customerName, datetime, numberOfPeople } = data || {};
     const dateStart = formatLocalDateTime(datetime?.start, timeZone);
     const dateEnd = formatLocalDateTime(datetime?.end, timeZone);
 
-    return `
+    if (signal === "CONFIRMAR") {
+      return `
        ✅ Tu ${actionConfig.title} ha sido ${actionConfig.verb} con éxito.
 
        👤 Nombre: ${customerName}
@@ -364,6 +368,30 @@ export const stateMessages = {
 
        ⚠️ Guarda este ID.
        Para presentarla en el ${domain.toUpperCase()} el día de tu llegada.
+     `.trim();
+    }
+
+    if (signal === "SALIR") {
+      return getBookingExitMsg(domain);
+    }
+
+    // RESTART
+    if (data?.customerName) {
+      return `
+         Para ${DOMAIN_ACTION_CONFIG[domain].update.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].update.title} comentame:
+         el *día*, la *hora* y *cuántas personas* serán.
+
+         Por ejemplo:
+           "Mañana a las 8pm para 4 personas"
+       `.trim();
+    }
+
+    return `
+       Para ${DOMAIN_ACTION_CONFIG[domain].update.verbInfinitive} tu ${DOMAIN_ACTION_CONFIG[domain].update.title} es muy fácil, ayudame con:
+       *tu nombre*, el *día*, la *hora* y *cuántas personas* serán.
+
+       Por ejemplo:
+         "A nombre de María Rodríguez, mañana a las 8pm para 4 personas"
      `.trim();
   },
 
