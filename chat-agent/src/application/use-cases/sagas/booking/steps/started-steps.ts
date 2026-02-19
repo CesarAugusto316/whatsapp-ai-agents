@@ -333,7 +333,7 @@ const checkAvailability = (mode: OperationMode): StartedFuncSagaStep => ({
           ...data,
         },
       });
-      const responseMsg = transition.templateMessage!;
+      const responseMsg = transition.stateMessage!;
 
       // ✨ SEND SUCCESS MESSAGE
       const result = await humanizerAgent(responseMsg);

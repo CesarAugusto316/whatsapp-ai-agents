@@ -15,14 +15,13 @@ export interface BookingStateTransition {
   nextState: FMStatus;
   suggestedActions: string[];
   messageHint?: string;
-  userMessage?: string;
   /**
    * Mensaje template determinístico para enviar al usuario después de la transición.
    * Se genera automáticamente basado en el estado, dominio y datos.
    *
    * @see getBookingStateMessage en domain/booking/prompts/helpers/state-messages.ts
    */
-  templateMessage?: string;
+  stateMessage?: string;
 }
 
 /**
@@ -64,7 +63,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.MAKE_STARTED,
           suggestedActions: [],
-          templateMessage: stateMessages[BookingStatuses.MAKE_STARTED]({
+          stateMessage: stateMessages[BookingStatuses.MAKE_STARTED]({
             domain,
             mode: "create",
             userName,
@@ -87,7 +86,7 @@ class BookingStateManager {
           ],
           messageHint:
             "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
-          templateMessage: stateMessages[BookingStatuses.MAKE_VALIDATED]({
+          stateMessage: stateMessages[BookingStatuses.MAKE_VALIDATED]({
             domain,
             mode: "create",
             data,
@@ -105,7 +104,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.UPDATE_STARTED,
           suggestedActions: [],
-          templateMessage: stateMessages[BookingStatuses.UPDATE_STARTED]({
+          stateMessage: stateMessages[BookingStatuses.UPDATE_STARTED]({
             domain,
             data,
             timeZone,
@@ -128,7 +127,7 @@ class BookingStateManager {
           ],
           messageHint:
             "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
-          templateMessage: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
+          stateMessage: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
             domain,
             mode: "update",
             data,
@@ -146,7 +145,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.CANCEL_VALIDATED,
           suggestedActions: [],
-          templateMessage: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
+          stateMessage: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
             domain,
             data,
             timeZone,
@@ -158,7 +157,7 @@ class BookingStateManager {
           suggestedActions: [CustomerSignals.CONFIRM, CustomerSignals.EXIT],
           messageHint:
             "Recordar al usuario que hay una cancelación en curso y puede confirmar o salir.",
-          templateMessage: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
+          stateMessage: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
             domain,
             data,
             timeZone,
@@ -168,7 +167,7 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.CANCEL_CONFIRMED,
           suggestedActions: [],
-          templateMessage: stateMessages[BookingStatuses.CANCEL_CONFIRMED]({
+          stateMessage: stateMessages[BookingStatuses.CANCEL_CONFIRMED]({
             domain,
             data,
           }),
@@ -224,7 +223,7 @@ class BookingStateManager {
     messages: ChatMessage[],
   ): string {
     const transition = this.nextState(status);
-    const userMessage = transition.templateMessage || transition.userMessage;
+    const userMessage = transition.stateMessage;
 
     if (!status || !userMessage?.trim()) {
       return originalMessage;

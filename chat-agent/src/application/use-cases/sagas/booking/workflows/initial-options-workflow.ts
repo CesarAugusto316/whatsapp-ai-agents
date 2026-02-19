@@ -36,7 +36,7 @@ export async function initialOptionsWorkflow(
       customerName: customer?.name || "",
       status: transition.nextState, // MAKE_STARTED
     });
-    const humanizedResponse = await humanizerAgent(transition.templateMessage!);
+    const humanizedResponse = await humanizerAgent(transition.stateMessage!);
     return {
       bag: {},
       lastStepResult: {
@@ -66,7 +66,7 @@ export async function initialOptionsWorkflow(
             data: state,
             userName: customer?.name,
           },
-        ).templateMessage!,
+        ).stateMessage!,
       bookingKey,
     });
     return {
@@ -97,7 +97,7 @@ export async function initialOptionsWorkflow(
             timeZone: business.general.timezone,
             data: state,
           },
-        ).templateMessage!,
+        ).stateMessage!,
       bookingKey,
     });
     return {
