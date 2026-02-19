@@ -1,9 +1,7 @@
-import { systemMessages } from "@/domain/booking/prompts";
 import {
   CustomerSignal,
   CustomerSignals,
   BookingState,
-  BookingStatuses,
 } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
@@ -24,7 +22,6 @@ import type {
 import { toUTC } from "@/domain/utilities";
 import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { bookingStateManager } from "@/application/services/state-managers";
-import { OperationMode } from "@/domain";
 
 export const ATTEMPTS = 4;
 
@@ -92,7 +89,9 @@ const created = (): ValidateFuncSagaStep => ({
       const reservation = bookingState as BookingState;
       const transition = bookingStateManager.nextState(
         reservation.status + CustomerSignals.RESTART,
-        { userName: customer?.name },
+        {
+          data: { customerName: customer?.name || "" },
+        },
       );
       await cacheAdapter.save(bookingKey ?? "", {
         ...reservation,
@@ -232,7 +231,7 @@ const updated = (): ValidateFuncSagaStep => ({
       const reservation = bookingState as BookingState;
       const transition = bookingStateManager.nextState(
         reservation.status + CustomerSignals.RESTART,
-        { userName: customer?.name },
+        { data: { customerName: customer?.name } },
       );
       await cacheAdapter.save(bookingKey ?? "", {
         ...reservation,

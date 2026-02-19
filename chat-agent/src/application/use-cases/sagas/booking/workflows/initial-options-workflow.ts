@@ -26,7 +26,9 @@ export async function initialOptionsWorkflow(
       {
         domain: business.general.businessType,
         timeZone: business.general.timezone,
-        userName: customer?.name,
+        data: {
+          customerName: customer?.name || "",
+        },
       },
     );
     await cacheAdapter.save(bookingKey, {
