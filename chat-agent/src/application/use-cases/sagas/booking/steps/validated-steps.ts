@@ -1,4 +1,4 @@
-import { BookingOperationMode, systemMessages } from "@/domain/booking/prompts";
+import { systemMessages } from "@/domain/booking/prompts";
 import {
   CustomerActionKey,
   CustomerSignals,
@@ -24,6 +24,7 @@ import type {
 import { toUTC } from "@/domain/utilities";
 import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { bookingStateManager } from "@/application/services/state-managers";
+import { OperationMode } from "@/domain";
 
 export const ATTEMPTS = 4;
 
@@ -202,9 +203,7 @@ const updateConfirmed = (): ValidateFuncSagaStep => ({
   },
 });
 
-const sendConfirmationMsg = (
-  mode: BookingOperationMode,
-): ValidateFuncSagaStep => ({
+const sendConfirmationMsg = (mode: OperationMode): ValidateFuncSagaStep => ({
   config: {
     execute: { name: "CONFIRM:SEND_MESSAGE", ...stepConfig },
   },

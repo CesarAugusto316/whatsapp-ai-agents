@@ -11,7 +11,7 @@ import {
 import {
   whatsappBookingHandler,
   testBookingHandler,
-} from "@/application/handlers/restaurant";
+} from "@/application/handlers";
 import { contentSyncStateHandler } from "./application/handlers/content-sync";
 
 const app = new Hono();

@@ -1,8 +1,7 @@
 import { formatLocalDateTime } from "@/domain/utilities";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { OrderIntentKey } from "@/application/services/pomdp";
-
-export type OrderOperationMode = "create" | "modify" | "cancel";
+import { OperationMode } from "@/domain";
 
 /**
  * Templates de mensajes determinísticos para transiciones de estado en orders.
@@ -24,7 +23,7 @@ export type OrderOperationMode = "create" | "modify" | "cancel";
 const DOMAIN_ORDER_CONFIG: Record<
   SpecializedDomain,
   Record<
-    OrderOperationMode,
+    OperationMode,
     {
       action: string;
       verb: string;
@@ -43,7 +42,7 @@ const DOMAIN_ORDER_CONFIG: Record<
       process: "creación",
       title: "pedido de comida",
     },
-    modify: {
+    update: {
       action: "Modificar pedido",
       verb: "actualizado",
       verbInfinitive: "modificar",
@@ -67,7 +66,7 @@ const DOMAIN_ORDER_CONFIG: Record<
       process: "creación",
       title: "pedido",
     },
-    modify: {
+    update: {
       action: "Modificar pedido",
       verb: "actualizado",
       verbInfinitive: "modificar",
@@ -91,7 +90,7 @@ const DOMAIN_ORDER_CONFIG: Record<
       process: "creación",
       title: "pedido",
     },
-    modify: {
+    update: {
       action: "Modificar pedido",
       verb: "actualizado",
       verbInfinitive: "modificar",
@@ -115,7 +114,7 @@ const DOMAIN_ORDER_CONFIG: Record<
       process: "agendamiento",
       title: "servicio",
     },
-    modify: {
+    update: {
       action: "Modificar servicio",
       verb: "actualizado",
       verbInfinitive: "modificar",
@@ -139,7 +138,7 @@ const DOMAIN_ORDER_CONFIG: Record<
       process: "agendamiento",
       title: "trámite",
     },
-    modify: {
+    update: {
       action: "Modificar trámite",
       verb: "actualizado",
       verbInfinitive: "modificar",
@@ -163,7 +162,7 @@ const DOMAIN_ORDER_CONFIG: Record<
       process: "apertura",
       title: "caso",
     },
-    modify: {
+    update: {
       action: "Modificar caso",
       verb: "actualizado",
       verbInfinitive: "modificar",
@@ -183,7 +182,7 @@ const DOMAIN_ORDER_CONFIG: Record<
 /**
  * Obtiene la configuración de orden para un dominio y modo específicos.
  */
-function getOrderConfig(domain: SpecializedDomain, mode: OrderOperationMode) {
+function getOrderConfig(domain: SpecializedDomain, mode: OperationMode) {
   return DOMAIN_ORDER_CONFIG[domain][mode];
 }
 
@@ -198,7 +197,7 @@ export function getOrderMessage(
   intent: OrderIntentKey,
   config: {
     domain: SpecializedDomain;
-    mode?: OrderOperationMode;
+    mode?: OperationMode;
     data?: {
       orderId?: string;
       items?: Array<{ name: string; quantity: number; price?: number }>;
@@ -210,13 +209,13 @@ export function getOrderMessage(
   },
 ): string {
   const { domain, mode = "create", data } = config;
-  const intentType = intent.split(":")[1] as OrderOperationMode;
+  const intentType = intent.split(":")[1] as OperationMode;
 
   switch (intentType) {
     case "create":
       return getOrderCreateMessage(domain, mode, data);
 
-    case "modify":
+    case "update":
       return getOrderModifyMessage(domain, data);
 
     case "cancel":
@@ -233,7 +232,7 @@ export function getOrderMessage(
  */
 function getOrderCreateMessage(
   domain: SpecializedDomain,
-  mode: OrderOperationMode,
+  mode: OperationMode,
   data?: {
     orderId?: string;
     items?: Array<{ name: string; quantity: number; price?: number }>;
@@ -297,7 +296,7 @@ function getOrderModifyMessage(
     status?: string;
   },
 ): string {
-  const config = getOrderConfig(domain, "modify");
+  const config = getOrderConfig(domain, "update");
 
   if (!data?.items || data.items.length === 0) {
     return `
@@ -368,7 +367,7 @@ export function getOrderExitMsg(domain?: SpecializedDomain): string {
 
      Recuerda que puedes:
      1️⃣ ${DOMAIN_ORDER_CONFIG[domain || "restaurant"].create.action}
-     2️⃣ ${DOMAIN_ORDER_CONFIG[domain || "restaurant"].modify.action} ó
+     2️⃣ ${DOMAIN_ORDER_CONFIG[domain || "restaurant"].update.action} ó
      3️⃣ ${DOMAIN_ORDER_CONFIG[domain || "restaurant"].cancel.action}
 
      💬 Si tienes otra pregunta, escríbela directamente.

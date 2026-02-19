@@ -1,7 +1,6 @@
 import { formatLocalDateTime } from "@/domain/utilities";
 import { CustomerSignals, BookingState } from "../../booking.types";
-
-export type OperationMode = "create" | "update";
+import { OperationMode } from "@/domain";
 
 /**
  *
@@ -16,6 +15,12 @@ const ACTION_MODES = {
     process: "creación",
   },
   update: {
+    action: "Modificar una reserva",
+    verb: "actualizada",
+    verbInfinitive: "actualizar",
+    process: "actualización",
+  },
+  cancel: {
     action: "Modificar una reserva",
     verb: "actualizada",
     verbInfinitive: "actualizar",

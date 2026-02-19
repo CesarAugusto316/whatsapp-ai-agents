@@ -9,7 +9,7 @@ import {
 import { ChatMessage } from "@/infraestructure/adapters/ai";
 import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
-import { getBookingStateMessage } from "./state-messages";
+import { stateMessages } from "./state-messages";
 
 export interface BookingStateTransition {
   nextState: FMStatus;
@@ -64,14 +64,11 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.MAKE_STARTED,
           suggestedActions: [],
-          templateMessage: getBookingStateMessage(
-            BookingStatuses.MAKE_STARTED,
-            {
-              domain,
-              mode: "create",
-              userName,
-            },
-          ),
+          templateMessage: stateMessages[BookingStatuses.MAKE_STARTED]({
+            domain,
+            mode: "create",
+            userName,
+          }),
         };
       case BookingStatuses.MAKE_STARTED:
         return {
@@ -90,15 +87,12 @@ class BookingStateManager {
           ],
           messageHint:
             "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
-          templateMessage: getBookingStateMessage(
-            BookingStatuses.MAKE_VALIDATED,
-            {
-              domain,
-              mode: "create",
-              data,
-              timeZone,
-            },
-          ),
+          templateMessage: stateMessages[BookingStatuses.MAKE_VALIDATED]({
+            domain,
+            mode: "create",
+            data,
+            timeZone,
+          }),
         };
       case BookingStatuses.MAKE_VALIDATED + CustomerSignals.RESTART:
         return {
@@ -111,16 +105,11 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.UPDATE_STARTED,
           suggestedActions: [],
-          templateMessage: getBookingStateMessage(
-            BookingStatuses.UPDATE_STARTED,
-            {
-              domain,
-              mode: "update",
-              data,
-              timeZone,
-              userName,
-            },
-          ),
+          templateMessage: stateMessages[BookingStatuses.UPDATE_STARTED]({
+            domain,
+            data,
+            timeZone,
+          }),
         };
       case BookingStatuses.UPDATE_STARTED:
         return {
@@ -139,15 +128,12 @@ class BookingStateManager {
           ],
           messageHint:
             "Recordar al usuario que los datos están completos y puede confirmar, reiniciar o salir.",
-          templateMessage: getBookingStateMessage(
-            BookingStatuses.UPDATE_VALIDATED,
-            {
-              domain,
-              mode: "update",
-              data,
-              timeZone,
-            },
-          ),
+          templateMessage: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
+            domain,
+            mode: "update",
+            data,
+            timeZone,
+          }),
         };
       case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.RESTART:
         return {
@@ -160,15 +146,11 @@ class BookingStateManager {
         return {
           nextState: BookingStatuses.CANCEL_VALIDATED,
           suggestedActions: [],
-          templateMessage: getBookingStateMessage(
-            BookingStatuses.CANCEL_VALIDATED,
-            {
-              domain,
-              mode: "cancel",
-              data,
-              timeZone,
-            },
-          ),
+          templateMessage: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
+            domain,
+            data,
+            timeZone,
+          }),
         };
       case BookingStatuses.CANCEL_VALIDATED:
         return {
@@ -176,28 +158,20 @@ class BookingStateManager {
           suggestedActions: [CustomerSignals.CONFIRM, CustomerSignals.EXIT],
           messageHint:
             "Recordar al usuario que hay una cancelación en curso y puede confirmar o salir.",
-          templateMessage: getBookingStateMessage(
-            BookingStatuses.CANCEL_VALIDATED,
-            {
-              domain,
-              mode: "cancel",
-              data,
-              timeZone,
-            },
-          ),
+          templateMessage: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
+            domain,
+            data,
+            timeZone,
+          }),
         };
       case BookingStatuses.CANCEL_VALIDATED + CustomerSignals.CONFIRM:
         return {
           nextState: BookingStatuses.CANCEL_CONFIRMED,
           suggestedActions: [],
-          templateMessage: getBookingStateMessage(
-            BookingStatuses.CANCEL_CONFIRMED,
-            {
-              domain,
-              mode: "cancel",
-              data,
-            },
-          ),
+          templateMessage: stateMessages[BookingStatuses.CANCEL_CONFIRMED]({
+            domain,
+            data,
+          }),
         };
 
       default:

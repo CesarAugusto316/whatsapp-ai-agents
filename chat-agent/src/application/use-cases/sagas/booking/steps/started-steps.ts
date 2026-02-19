@@ -5,10 +5,7 @@ import {
   isWithinHolydayRange,
   BookingState,
 } from "@/domain/booking";
-import {
-  getBookingExitMsg,
-  OperationMode,
-} from "@/application/services/state-managers/state-messages";
+import { getBookingExitMsg } from "@/application/services/state-managers";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
@@ -27,6 +24,7 @@ import {
 } from "@/domain/booking/input-parser/booking-schemas";
 import { bookingStateManager } from "@/application/services/state-managers";
 import { classifyInput } from "@/domain/booking/input-parser";
+import { OperationMode } from "@/domain";
 
 export const ATTEMPTS = 4;
 
@@ -52,12 +50,12 @@ type StartedFuncSagaStep = ISagaStep<
 const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
   config: { execute: { name: "early_conditions", ...stepConfig } },
   execute: async ({ ctx }) => {
-    const { customerMessage, bookingState, bookingKey } = ctx;
+    const { customerMessage, bookingState, bookingKey, business } = ctx;
     const reservation = bookingState as BookingState;
 
     if (customerMessage?.toUpperCase() === CustomerSignals.EXIT) {
       await cacheAdapter.delete(bookingKey);
-      const responseMsg = getBookingExitMsg();
+      const responseMsg = getBookingExitMsg(business.general.businessType);
       logger.info("Customer asked a question", {
         customerAction: CustomerSignals.EXIT,
       });
