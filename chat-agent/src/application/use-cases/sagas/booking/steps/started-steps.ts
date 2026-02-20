@@ -5,7 +5,6 @@ import {
   isWithinHolydayRange,
   BookingState,
 } from "@/domain/booking";
-import { getBookingExitMsg } from "@/application/services/state-managers";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { logger } from "@/infraestructure/logging";
 import { formatAvailability, toUTC } from "@/domain/utilities";
@@ -22,7 +21,10 @@ import {
   BookingSchema,
   InputIntent,
 } from "@/domain/booking/input-parser/booking-schemas";
-import { bookingStateManager } from "@/application/services/state-managers";
+import {
+  bookingStateManager,
+  getBookingExitMsg,
+} from "@/application/services/state-managers";
 import { classifyInput } from "@/domain/booking/input-parser";
 import { OperationMode } from "@/domain";
 
@@ -53,15 +55,12 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
     const { customerMessage, bookingState, bookingKey, business } = ctx;
     const reservation = bookingState as BookingState;
 
+    // TODO: REMOVE, deberiamos usar el intentClassfier and regex
     if (customerMessage?.toUpperCase() === CustomerSignals.EXIT) {
-      await cacheAdapter.delete(bookingKey);
       const responseMsg = getBookingExitMsg(business.general.businessType);
-      logger.info("Customer asked a question", {
-        customerAction: CustomerSignals.EXIT,
-      });
-      const res = await humanizerAgent(responseMsg);
+      await cacheAdapter.delete(bookingKey);
       return {
-        result: res.trim(),
+        result: responseMsg,
         continue: false,
         metadata: {
           description: "CUSTOMER_EXITED_FLOW",
@@ -69,7 +68,7 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
         },
       };
     }
-    // OPTION: 2. REINICIAR FOR MAXIMUM ATTEMPTS REACHED
+    // TODO: ESTO DEBE IR EN POLICY ENGINE
     if ((reservation?.attempts ?? 0) >= ATTEMPTS) {
       await cacheAdapter.delete(bookingKey);
       const action =
@@ -83,7 +82,6 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
         Empecemos de nuevo desde cero.
         Escribe *${action}* para ${verb} otro proceso de reserva.
       `);
-
       return {
         result: res.trim(),
         continue: false,

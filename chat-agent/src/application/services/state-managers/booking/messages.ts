@@ -301,16 +301,16 @@ function getExistingBookingMsg(params: {
  * Mensaje de salida (EXIT)
  * Independiente del dominio
  */
-function getBookingExitMsg(domain: SpecializedDomain): string {
+export function getBookingExitMsg(domain: SpecializedDomain): string {
   const title = domain ? DOMAIN_ACTION_CONFIG[domain].create.title : "reserva";
 
   return `
      Gracias por usar nuestro servicio 😊
      Recuerda que puedes elegir una de estas opciones en cualquier momento:
 
-     1️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].create.action}
-     2️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].update.action} ó
-     3️⃣ ${DOMAIN_ACTION_CONFIG[domain || "restaurant"].cancel.action}
+     1️⃣ ${DOMAIN_ACTION_CONFIG[domain].create.action}
+     2️⃣ ${DOMAIN_ACTION_CONFIG[domain].update.action} ó
+     3️⃣ ${DOMAIN_ACTION_CONFIG[domain].cancel.action}
 
      💬 Si tienes otra pregunta, escríbela directamente.
    `.trim();

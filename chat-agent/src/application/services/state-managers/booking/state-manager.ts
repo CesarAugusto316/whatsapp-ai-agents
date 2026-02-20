@@ -7,7 +7,7 @@ import {
 } from "@/domain/booking";
 import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
-import { stateMessages } from "./state-messages";
+import { stateMessages } from "./messages";
 
 export interface BookingStateTransition {
   nextState?: FMStatus;
