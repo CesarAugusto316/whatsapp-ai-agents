@@ -2,7 +2,7 @@ import { MiddlewareHandler } from "hono/types";
 import { ModuleCtx } from "@/domain/booking";
 import { WahaRecievedEvent } from "@/infraestructure/adapters/whatsapp";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
-import { cmsAdapter } from "@/infraestructure/adapters/cms";
+import { cmsAdapter, SpecializedDomain } from "@/infraestructure/adapters/cms";
 import type { BookingState } from "@/domain/booking";
 import type { BeliefState, ModuleKind } from "@/application/services/pomdp";
 
@@ -80,27 +80,28 @@ export const bootstrapMiddleware = (): MiddlewareHandler<ModuleCtx> => {
     // ============================================
     // 4. SET ACTIVE MODULES
     // ============================================
+    const domain: SpecializedDomain = business.general.businessType;
     const coreModules: ModuleKind[] = [
       "informational",
       "conversational-signal",
       "social-protocol",
     ];
 
-    if (business.general.businessType === "restaurant") {
-      ctx.set(
-        "activeModules",
-        coreModules.concat(["products", "orders", "booking", "delivery"]),
-      );
-    }
-    if (business.general.businessType === "real-estate") {
-      ctx.set("activeModules", coreModules.concat(["booking"]));
-    }
-    if (business.general.businessType === "erotic") {
-      ctx.set(
-        "activeModules",
-        coreModules.concat(["products", "orders", "booking"]),
-      );
-    }
+    /**
+     * Configuración de módulos por tipo de negocio.
+     * Cada negocio activa solo los módulos que necesita.
+     */
+    const BUSINESS_MODULES: Record<SpecializedDomain, ModuleKind[]> = {
+      restaurant: ["products", "orders", "booking", "delivery"],
+      "real-estate": ["booking"],
+      erotic: ["products", "orders", "booking"],
+      medical: ["booking"],
+      retail: ["products", "orders"],
+      legal: ["booking"],
+    };
+
+    const modules = BUSINESS_MODULES[domain] || [];
+    ctx.set("activeModules", coreModules.concat(modules));
 
     // 5. NEXT HANDLER
     await next();
