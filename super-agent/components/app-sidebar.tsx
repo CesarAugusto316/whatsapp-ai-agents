@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { SettingsIcon } from "lucide-react";
+import {
+  MessageSquare,
+  Settings,
+  User,
+  History,
+  BookTemplate,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -16,9 +22,29 @@ import {
 
 const menuItems = [
   {
+    title: "New Chat",
+    url: "/",
+    icon: MessageSquare,
+  },
+  {
+    title: "Chats",
+    url: "/chats",
+    icon: History,
+  },
+  {
+    title: "Templates",
+    url: "/templates",
+    icon: BookTemplate,
+  },
+  {
+    title: "Account",
+    url: "/account",
+    icon: User,
+  },
+  {
     title: "Settings",
     url: "/settings",
-    icon: SettingsIcon,
+    icon: Settings,
   },
 ];
 

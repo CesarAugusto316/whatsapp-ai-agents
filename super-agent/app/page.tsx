@@ -335,7 +335,6 @@ const mockResponses = [
 ];
 
 const delay = (ms: number): Promise<void> =>
-  // eslint-disable-next-line promise/avoid-new -- setTimeout requires a new Promise
   new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
