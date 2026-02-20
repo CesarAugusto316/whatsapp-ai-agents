@@ -583,7 +583,7 @@ const Example = () => {
   );
 
   return (
-    <div className="flex h-screen size-full flex-col overflow-hidden">
+    <div className="p-1 flex h-screen size-full flex-col overflow-hidden">
       {/* Chat */}
       <section className="flex-1 overflow-y-scroll">
         <Conversation>
