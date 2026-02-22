@@ -70,16 +70,17 @@ export async function conversationalWorkflow(
         );
         return formatSagaOutput(
           ONBOARDING_MSG,
-          `${intent?.intentKey}:${policy.type}`, // optional
+          intent?.intentKey, // optional
           policy,
         );
       }
 
+      const systemPrompt = socialProtocolChunk(
+        intent?.intentKey as SocialProtocolIntent,
+        ctx,
+      );
       const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
-        systemPrompt: socialProtocolChunk(
-          intent?.intentKey as SocialProtocolIntent,
-          ctx,
-        ),
+        systemPrompt,
         msg: ctx.customerMessage,
         chatHistory,
         useAuxModel: true,
@@ -92,7 +93,7 @@ export async function conversationalWorkflow(
       return formatSagaOutput(
         ASSISTANT_MSG,
         intent?.intentKey, // optional
-        policy,
+        { policy, systemPrompt },
       );
     }
 

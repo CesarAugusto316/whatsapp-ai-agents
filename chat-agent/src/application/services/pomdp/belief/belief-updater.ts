@@ -32,7 +32,12 @@ import { BeliefIntent, BeliefState } from "./belief.types";
  */
 export class BeliefStateUpdater {
   // Solo necesitamos UN umbral para decidir acciones
-
+  private coreModules: ModuleKind[] = [
+    "booking",
+    "delivery",
+    "products",
+    "orders",
+  ];
   private readonly excludedModules: ModuleKind[] = ["social-protocol"];
 
   static createEmpty(): BeliefState {
@@ -86,7 +91,7 @@ export class BeliefStateUpdater {
       // for confirmation | negation | doubt
       if (
         mainIntent.module === "conversational-signal" &&
-        previousIntent.isConfident &&
+        this.coreModules.includes(previousIntent.module) &&
         isMainItentConfident
       ) {
         // no deberiamos actualizar alternativeIntents porque solo estamos en una confirmacion
