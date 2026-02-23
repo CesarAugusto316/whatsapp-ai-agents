@@ -1,7 +1,7 @@
 import type { DomainCtx } from "@/domain/booking";
-import type { BookingSagaResult } from "../booking-saga";
+import type { BookingSagaResult } from "../../booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
-import { initialOptionsWorkflow } from "./initial-options-workflow";
+import { initialOptionsWorkflow } from "../initial-options-workflow";
 import {
   InformationalIntentKey,
   pomdpManager,
@@ -35,14 +35,6 @@ export async function conversationalWorkflow(
   //
   // 1. generating the policy decision
   const policy = await pomdpManager.process(ctx);
-
-  if (
-    ["1", "2", "3", "4"].includes(ctx.customerMessage) &&
-    !ctx.bookingState?.status
-  ) {
-    const res = await initialOptionsWorkflow(ctx, ctx.customerMessage);
-    if (res) return res;
-  }
 
   // 2. handling intent execution
   if (policy.type === "execute") {
@@ -129,6 +121,8 @@ export async function conversationalWorkflow(
 
     if (intent.module === "booking") {
       //
+      const res = await initialOptionsWorkflow(ctx, policy.action);
+      if (res) return res;
     }
 
     if (intent.module === "products") {
@@ -141,7 +135,6 @@ export async function conversationalWorkflow(
 
   // 3. handling intent feedback
   const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
-
   // Agregar este log mínimo para validar en producción
   const systemPrompt = intentClassifierPrompt(ctx, policy);
   logger.info("PROMPT_GENERATED", {

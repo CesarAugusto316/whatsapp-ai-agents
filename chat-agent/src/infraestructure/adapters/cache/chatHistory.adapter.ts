@@ -14,7 +14,7 @@ type StoredMessage = {
 // LRANGE chat:71358eb4-b61e-418d-a2fe-e34b8e5c5e6c:+3455555555 0 -1
 class ChatHistory {
   private hours = env.NODE_ENV === "production" ? 24 : 0.5;
-  private readonly MAX_MESSAGES = 20;
+  private readonly MAX_MESSAGES = 5;
   private readonly EXPIRATION_TIME = 60 * 60 * this.hours; // 24 horas
 
   /**
