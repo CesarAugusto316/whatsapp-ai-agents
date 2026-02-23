@@ -18,8 +18,7 @@ export const validatorAgent = {
    */
   parseData(customerMessage: string, previousState: BookingSchema) {
     const rawObj = parseBookingData(customerMessage);
-    const partial = bookingSchema.partial().parse(rawObj);
-    const mergedData = bookingStateManager.mergeState(partial, previousState);
+    const mergedData = bookingStateManager.mergeState(rawObj, previousState);
     // ✅ Required fields
     const parsedData = bookingSchema.safeParse(mergedData);
     return {
@@ -64,6 +63,8 @@ export const validatorAgent = {
     }
 
     return aiAdapter.generateText({
+      useAuxModel: true,
+      temperature: temp,
       messages: [
         { role: "system", content: COLLECTOR_PROMPT },
         {

@@ -8,6 +8,7 @@ import {
 import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { stateMessages } from "./messages";
+import { ParsedBookingData } from "@/domain/booking/input-parser";
 
 export interface BookingStateTransition {
   nextState?: FMStatus;
@@ -179,7 +180,7 @@ class BookingStateManager {
    * Fusiona el estado entrante con el estado previo de la reserva
    */
   mergeState(
-    incoming: Partial<BookingSchema>,
+    incoming: Partial<BookingSchema> | ParsedBookingData,
     previous?: Partial<BookingSchema>,
   ): BookingSchema {
     return {

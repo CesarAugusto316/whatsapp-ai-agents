@@ -96,7 +96,7 @@ class AiAdapter implements IAiAdapter {
         primaryModel: "@cf/qwen/qwen3-30b-a3b-fp8",
         // primaryModel: "@cf/ibm-granite/granite-4.0-h-micro",
         // auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
-        auxModel: "@cf/qwen/qwen3-30b-a3b-fp8",
+        auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
         embedding: "@cf/qwen/qwen3-embedding-0.6b",
         headers: {
           Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
@@ -202,6 +202,7 @@ class AiAdapter implements IAiAdapter {
       }
       const result = (await response.json()) as ChatCompletionResponse;
       const content = result.choices?.[0]?.message?.content?.trim();
+      console.log({ result, messages: result.choices?.[0]?.message });
       if (!content) {
         throw new Error("No se recibió respuesta de la AI");
       }

@@ -47,7 +47,7 @@ export interface BookingState extends BookingSchema {
   attempts: number;
 }
 // TODO: REMOVE
-export type BookingOption = "1" | "2" | "3";
+export type BookingOption = "1" | "2" | "3" | "4";
 export type FMStatus = BookingStatus | BookingOption;
 
 // TODO: REMOVE

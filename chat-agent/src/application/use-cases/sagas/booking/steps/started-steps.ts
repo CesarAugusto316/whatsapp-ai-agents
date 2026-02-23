@@ -94,10 +94,10 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
     // OPTION: 3. CLASSIFY INPUT
     const inputIntent = classifyInput(customerMessage);
 
+    logger.info("Customer asked a question", {
+      inputIntent,
+    });
     if (inputIntent === InputIntent.INFORMATION_REQUEST) {
-      logger.info("Customer asked a question", {
-        inputIntent,
-      });
       return {
         result: InputIntent.INFORMATION_REQUEST,
         continue: false,
@@ -162,6 +162,8 @@ const collectAndValidate = (): StartedFuncSagaStep => ({
       } satisfies Partial<BookingState>);
 
       const result = await validatorAgent.collectMissingData(business, errors);
+
+      logger.info("collecting missing data", { result });
       return {
         result,
         continue: false,

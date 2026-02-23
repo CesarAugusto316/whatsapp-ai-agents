@@ -203,6 +203,123 @@ const firstMessageVariants = [
 
     ¿Qué necesitas? 😊
   `,
+
+  // V17 - Onboarding simple: acciones principales
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Elige una opción:
+    1️⃣ Reservar mesa
+    2️⃣ Modificar reserva
+    3️⃣ Cancelar reserva
+    4️⃣ Hacer pedido
+
+    ¿Qué quieres hacer? 😊
+  `,
+
+  // V18 - Variación en orden y redacción
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Selecciona una opción:
+    1️⃣ Hacer pedido
+    2️⃣ Reservar mesa
+    3️⃣ Modificar reserva
+    4️⃣ Cancelar reserva
+
+    ¿Qué deseas hacer? 😊
+  `,
+
+  // V19 - Variación con verbos diferentes
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Elige una opción:
+    1️⃣ Cancelar reserva
+    2️⃣ Reservar mesa
+    3️⃣ Hacer pedido
+    4️⃣ Modificar reserva
+
+    ¿Qué necesitas? 😊
+  `,
+
+  // V20 - Variación con sinónimos
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Elige una opción:
+    1️⃣ Modificar reserva
+    2️⃣ Hacer pedido
+    3️⃣ Reservar mesa
+    4️⃣ Cancelar reserva
+
+    ¿Qué quieres hacer? 😊
+  `,
+
+  // V21 - Variación con otro orden
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Elige una opción:
+    1️⃣ Reservar mesa
+    2️⃣ Hacer pedido
+    3️⃣ Cancelar reserva
+    4️⃣ Modificar reserva
+
+    ¿Qué prefieres? 😊
+  `,
+
+  // V22 - Variación con redacción alternativa
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Elige una opción:
+    1️⃣ Modificar reserva
+    2️⃣ Cancelar reserva
+    3️⃣ Reservar mesa
+    4️⃣ Hacer pedido
+
+    ¿Qué te gustaría hacer? 😊
+  `,
+
+  // V23 - Variación con otro cierre
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Elige una opción:
+    1️⃣ Hacer pedido
+    2️⃣ Cancelar reserva
+    3️⃣ Modificar reserva
+    4️⃣ Reservar mesa
+
+    ¿Por cuál empiezas? 😊
+  `,
+
+  // V24 - Variación con saludo alternativo
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Elige una opción:
+    1️⃣ Cancelar reserva
+    2️⃣ Modificar reserva
+    3️⃣ Hacer pedido
+    4️⃣ Reservar mesa
+
+    ¿Qué opción eliges? 😊
+  `,
+
+  // V25 - Variación final
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Elige una opción:
+    1️⃣ Reservar mesa
+    2️⃣ Cancelar reserva
+    3️⃣ Hacer pedido
+    4️⃣ Modificar reserva
+
+    ¿Qué vas a necesitar? 😊
+  `,
 ] as const;
 
 export const getRandomOnboardingMsg = (ctx: DomainCtx): string => {
