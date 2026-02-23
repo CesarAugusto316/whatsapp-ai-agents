@@ -4,7 +4,7 @@ import {
   DOMAIN_ACTION_CONFIG,
 } from "@/application/services/state-managers";
 import {
-  BookingOptions,
+  MainOptions,
   BookingStatuses,
   CustomerSignals,
 } from "@/domain/booking";
@@ -44,12 +44,9 @@ const REAL_ESTATE_CREATE = DOMAIN_ACTION_CONFIG["real-estate"].create;
 describe("BookingStateManager.nextState()", () => {
   describe("CREATE flow", () => {
     it("MAKE_BOOKING → MAKE_STARTED (sin nombre)", () => {
-      const result = bookingStateManager.nextState(
-        BookingOptions.MAKE_BOOKING,
-        {
-          domain: "restaurant" satisfies SpecializedDomain,
-        },
-      );
+      const result = bookingStateManager.nextState(MainOptions.MAKE_BOOKING, {
+        domain: "restaurant" satisfies SpecializedDomain,
+      });
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_STARTED);
       expect(result.message).toContain(RESTAURANT_CREATE.verbInfinitive);
@@ -58,13 +55,10 @@ describe("BookingStateManager.nextState()", () => {
     });
 
     it("MAKE_BOOKING → MAKE_STARTED (con nombre)", () => {
-      const result = bookingStateManager.nextState(
-        BookingOptions.MAKE_BOOKING,
-        {
-          domain: "restaurant" satisfies SpecializedDomain,
-          data: { customerName: "Juan Pérez" },
-        },
-      );
+      const result = bookingStateManager.nextState(MainOptions.MAKE_BOOKING, {
+        domain: "restaurant" satisfies SpecializedDomain,
+        data: { customerName: "Juan Pérez" },
+      });
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_STARTED);
       expect(result.message).toContain(RESTAURANT_CREATE.verbInfinitive);
@@ -138,14 +132,11 @@ describe("BookingStateManager.nextState()", () => {
 
   describe("UPDATE flow", () => {
     it("UPDATE_BOOKING → UPDATE_STARTED", () => {
-      const result = bookingStateManager.nextState(
-        BookingOptions.UPDATE_BOOKING,
-        {
-          domain: "restaurant" satisfies SpecializedDomain,
-          data: mockBookingData,
-          timeZone: mockTimeZone,
-        },
-      );
+      const result = bookingStateManager.nextState(MainOptions.UPDATE_BOOKING, {
+        domain: "restaurant" satisfies SpecializedDomain,
+        data: mockBookingData,
+        timeZone: mockTimeZone,
+      });
 
       expect(result.nextState).toBe(BookingStatuses.UPDATE_STARTED);
       expect(result.message).toContain(RESTAURANT_UPDATE.title);
@@ -214,14 +205,11 @@ describe("BookingStateManager.nextState()", () => {
 
   describe("CANCEL flow", () => {
     it("CANCEL_BOOKING → CANCEL_VALIDATED", () => {
-      const result = bookingStateManager.nextState(
-        BookingOptions.CANCEL_BOOKING,
-        {
-          domain: "restaurant" satisfies SpecializedDomain,
-          data: mockBookingData,
-          timeZone: mockTimeZone,
-        },
-      );
+      const result = bookingStateManager.nextState(MainOptions.CANCEL_BOOKING, {
+        domain: "restaurant" satisfies SpecializedDomain,
+        data: mockBookingData,
+        timeZone: mockTimeZone,
+      });
 
       expect(result.nextState).toBe(BookingStatuses.CANCEL_VALIDATED);
       expect(result.message).toContain(RESTAURANT_CANCEL.title);
@@ -245,7 +233,7 @@ describe("BookingStateManager.nextState()", () => {
 
   describe("Domain configuration", () => {
     it("usa 'restaurant' como domain por defecto", () => {
-      const result = bookingStateManager.nextState(BookingOptions.MAKE_BOOKING);
+      const result = bookingStateManager.nextState(MainOptions.MAKE_BOOKING);
 
       expect(result.nextState).toBe(BookingStatuses.MAKE_STARTED);
       expect(result.message).toContain(RESTAURANT_CREATE.verbInfinitive);
@@ -253,24 +241,18 @@ describe("BookingStateManager.nextState()", () => {
     });
 
     it("soporta dominio 'medical'", () => {
-      const result = bookingStateManager.nextState(
-        BookingOptions.MAKE_BOOKING,
-        {
-          domain: "medical" satisfies SpecializedDomain,
-        },
-      );
+      const result = bookingStateManager.nextState(MainOptions.MAKE_BOOKING, {
+        domain: "medical" satisfies SpecializedDomain,
+      });
 
       expect(result.message).toContain(MEDICAL_CREATE.verbInfinitive);
       expect(result.message).toContain(MEDICAL_CREATE.title);
     });
 
     it("soporta dominio 'real-estate'", () => {
-      const result = bookingStateManager.nextState(
-        BookingOptions.MAKE_BOOKING,
-        {
-          domain: "real-estate" satisfies SpecializedDomain,
-        },
-      );
+      const result = bookingStateManager.nextState(MainOptions.MAKE_BOOKING, {
+        domain: "real-estate" satisfies SpecializedDomain,
+      });
 
       expect(result.message).toContain(REAL_ESTATE_CREATE.verbInfinitive);
       expect(result.message).toContain(REAL_ESTATE_CREATE.title);

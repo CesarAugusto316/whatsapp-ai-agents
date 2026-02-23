@@ -1,5 +1,5 @@
 import { DomainCtx } from "@/domain/booking";
-import { BookingOptions } from "@/domain/booking";
+import { MainOptions } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { initChangeSteps } from "./initial-change-steps";
 import { BookingSagaResult } from "../booking-saga";
@@ -19,18 +19,15 @@ export async function initialOptionsWorkflow(
 ): Promise<BookingSagaResult | undefined> {
   const { bookingKey, customer, business } = ctx;
 
-  if (option === BookingOptions.MAKE_BOOKING) {
+  if (option === MainOptions.MAKE_BOOKING) {
     // choice 2
-    const transition = bookingStateManager.nextState(
-      BookingOptions.MAKE_BOOKING,
-      {
-        domain: business.general.businessType,
-        timeZone: business.general.timezone,
-        data: {
-          customerName: customer?.name || "",
-        },
+    const transition = bookingStateManager.nextState(MainOptions.MAKE_BOOKING, {
+      domain: business.general.businessType,
+      timeZone: business.general.timezone,
+      data: {
+        customerName: customer?.name || "",
       },
-    );
+    });
     await cacheAdapter.save(bookingKey, {
       businessId: business?.id,
       customerId: customer?.id,
@@ -40,35 +37,35 @@ export async function initialOptionsWorkflow(
     return formatSagaOutput(
       transition.message!,
       "MAKE_RESERVATION, option selected",
-      `customerMessage=${BookingOptions.MAKE_BOOKING}`,
+      `customerMessage=${MainOptions.MAKE_BOOKING}`,
     );
   }
 
-  if (option === BookingOptions.UPDATE_BOOKING) {
+  if (option === MainOptions.UPDATE_BOOKING) {
     const msg = await initChangeSteps({
       business,
       customer,
-      flowOption: BookingOptions.UPDATE_BOOKING,
+      flowOption: MainOptions.UPDATE_BOOKING,
       bookingKey,
     });
     return formatSagaOutput(
       msg,
       "UPDATE_RESERVATION, option selected",
-      `customerMessage=${BookingOptions.UPDATE_BOOKING}`,
+      `customerMessage=${MainOptions.UPDATE_BOOKING}`,
     );
   }
 
-  if (option === BookingOptions.CANCEL_BOOKING) {
+  if (option === MainOptions.CANCEL_BOOKING) {
     const msg = await initChangeSteps({
       business,
       customer,
-      flowOption: BookingOptions.CANCEL_BOOKING,
+      flowOption: MainOptions.CANCEL_BOOKING,
       bookingKey,
     });
     return formatSagaOutput(
       msg,
       "CANCEL_RESERVATION, option selected",
-      `customerMessage=${BookingOptions.CANCEL_BOOKING}`,
+      `customerMessage=${MainOptions.CANCEL_BOOKING}`,
     );
   }
 

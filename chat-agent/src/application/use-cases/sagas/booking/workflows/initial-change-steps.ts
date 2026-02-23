@@ -1,4 +1,4 @@
-import { BookingOption, BookingOptions, BookingState } from "@/domain/booking";
+import { BookingOption, MainOptions, BookingState } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { Business, cmsAdapter, Customer } from "@/infraestructure/adapters/cms";
 import { toLocalDateTime } from "@/domain/utilities";
@@ -19,8 +19,8 @@ export const initChangeSteps = async ({
 }: Args) => {
   // Validación del flowOption
   if (
-    flowOption !== BookingOptions.UPDATE_BOOKING &&
-    flowOption !== BookingOptions.CANCEL_BOOKING
+    flowOption !== MainOptions.UPDATE_BOOKING &&
+    flowOption !== MainOptions.CANCEL_BOOKING
   ) {
     throw new Error(`FlowOption no soportado: ${flowOption}`);
   }

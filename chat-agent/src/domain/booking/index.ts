@@ -3,7 +3,7 @@ export { isWithinBusinessHours } from "./is-within-business-hours";
 export {
   BOOL,
   CustomerSignals,
-  BookingOptions,
+  MainOptions,
   BookingStatuses,
   CUSTOMER_INTENT,
 } from "./booking.types";
@@ -25,7 +25,7 @@ export { askForMissingData } from "./prompts/ask-for-missing-data";
 export {
   getRandomOnboardingMsg,
   socialProtocolChunk,
-} from "./prompts/social-chunks";
+} from "./prompts/social-chunks/social-chunks";
 
 export {
   WRITING_STYLE,

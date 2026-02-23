@@ -1,6 +1,6 @@
 import {
   CustomerSignals,
-  BookingOptions,
+  MainOptions,
   FMStatus,
   BookingStatuses,
   BookingState,
@@ -50,7 +50,7 @@ class BookingStateManager {
 
     switch (status) {
       // CREATE
-      case BookingOptions.MAKE_BOOKING:
+      case MainOptions.MAKE_BOOKING:
         return {
           nextState: BookingStatuses.MAKE_STARTED,
           message: stateMessages[BookingStatuses.MAKE_STARTED]({
@@ -99,7 +99,7 @@ class BookingStateManager {
         };
 
       // UPDATE
-      case BookingOptions.UPDATE_BOOKING:
+      case MainOptions.UPDATE_BOOKING:
         return {
           nextState: BookingStatuses.UPDATE_STARTED,
           message: stateMessages[BookingStatuses.UPDATE_STARTED]({
@@ -149,7 +149,7 @@ class BookingStateManager {
         };
 
       // CANCEL
-      case BookingOptions.CANCEL_BOOKING:
+      case MainOptions.CANCEL_BOOKING:
         return {
           nextState: BookingStatuses.CANCEL_VALIDATED,
           message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({

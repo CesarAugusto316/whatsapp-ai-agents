@@ -1,4 +1,4 @@
-import { BookingOptions, CustomerSignals } from "../../booking.types";
+import { MainOptions, CustomerSignals } from "../../booking.types";
 import { WRITING_STYLE } from "../global-rules";
 
 export function humanizerPrompt(originalMessage: string) {
@@ -17,7 +17,7 @@ export function humanizerPrompt(originalMessage: string) {
        ${Object.values(CustomerSignals)
          .map((action) => `*${action}*`)
          .join(", ")},
-       ${Object.values(BookingOptions)
+       ${Object.values(MainOptions)
          .map((option) => `*${option}*`)
          .join(", ")}.
     3. Do NOT add new instructions, requirements, or data requests.

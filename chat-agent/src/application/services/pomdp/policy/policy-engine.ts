@@ -1,5 +1,5 @@
 import { BeliefIntent, BeliefState } from "../belief/belief.types";
-import { BookingOptions } from "@/domain/booking";
+import { MainOptions } from "@/domain/booking";
 import { IntentExampleKey } from "../intents/intent.types";
 
 // ============================================
@@ -144,9 +144,9 @@ export class PolicyEngine {
   private mapIntentToWorkflow(intent: IntentExampleKey): IntentExampleKey {
     const map: Partial<Record<IntentExampleKey, string>> = {
       // Booking
-      "booking:create": BookingOptions.MAKE_BOOKING,
-      "booking:modify": BookingOptions.UPDATE_BOOKING,
-      "booking:cancel": BookingOptions.CANCEL_BOOKING,
+      "booking:create": MainOptions.MAKE_BOOKING,
+      "booking:modify": MainOptions.UPDATE_BOOKING,
+      "booking:cancel": MainOptions.CANCEL_BOOKING,
       "booking:check_availability": "booking:check_availability", // hay que implementar
 
       // Product

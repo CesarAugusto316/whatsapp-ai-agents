@@ -33,9 +33,6 @@ export async function conversationalWorkflow(
   ctx: DomainCtx,
 ): Promise<BookingSagaResult> {
   //
-  // 1. generating the policy decision
-  const policy = await pomdpManager.process(ctx);
-
   if (
     ["1", "2", "3", "4"].includes(ctx.customerMessage) &&
     !ctx.bookingState?.status
@@ -43,6 +40,9 @@ export async function conversationalWorkflow(
     const res = await initialOptionsWorkflow(ctx, ctx.customerMessage);
     if (res) return res;
   }
+
+  // 1. generating the policy decision
+  const policy = await pomdpManager.process(ctx);
 
   // 2. handling intent execution
   if (policy.type === "execute") {

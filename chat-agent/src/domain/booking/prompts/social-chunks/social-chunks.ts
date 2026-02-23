@@ -1,6 +1,6 @@
 import type { SocialProtocolIntent } from "@/application/services/pomdp";
 import type { DomainCtx } from "@/domain/booking";
-import { basePrompt } from "./base-prompt";
+import { basePrompt } from "../base-prompt";
 
 const firstMessageVariants = [
   // V1 - Detallada pero fluida

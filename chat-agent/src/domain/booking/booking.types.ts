@@ -52,10 +52,11 @@ export type FMStatus = BookingStatus | BookingOption;
 
 // TODO: REMOVE
 // PRE_BOOKING = CONVERSATIONAL + INTENTS
-export const BookingOptions = {
+export const MainOptions = {
   MAKE_BOOKING: "1",
   UPDATE_BOOKING: "2",
   CANCEL_BOOKING: "3",
+  CREATE_ORDER: "4",
 } as const;
 // POST_BOOKING = CONVERSATIONAL + INTENTS
 

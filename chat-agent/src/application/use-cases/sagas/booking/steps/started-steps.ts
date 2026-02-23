@@ -1,6 +1,6 @@
 import {
   CustomerSignals,
-  BookingOptions,
+  MainOptions,
   isWithinBusinessHours,
   isWithinHolydayRange,
   BookingState,
@@ -73,8 +73,8 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
       await cacheAdapter.delete(bookingKey);
       const action =
         mode === "create"
-          ? BookingOptions.MAKE_BOOKING
-          : BookingOptions.UPDATE_BOOKING;
+          ? MainOptions.MAKE_BOOKING
+          : MainOptions.UPDATE_BOOKING;
       const verb = mode === "create" ? "iniciar" : "actualizar";
       const res = await humanizerAgent(`
         Has llegado al límite de *intentos fallidos* al checkear disponibilidad.
