@@ -20,6 +20,8 @@ export const validatorAgent = {
     const rawObj = parseBookingData(customerMessage);
     const mergedData = bookingStateManager.mergeState(rawObj, previousState);
     // ✅ Required fields
+
+    console.log({ rawObj, previousState, mergedData });
     const parsedData = bookingSchema.safeParse(mergedData);
     return {
       parsedData: {

@@ -202,7 +202,6 @@ class AiAdapter implements IAiAdapter {
       }
       const result = (await response.json()) as ChatCompletionResponse;
       const content = result.choices?.[0]?.message?.content?.trim();
-      console.log({ result, messages: result.choices?.[0]?.message });
       if (!content) {
         throw new Error("No se recibió respuesta de la AI");
       }
