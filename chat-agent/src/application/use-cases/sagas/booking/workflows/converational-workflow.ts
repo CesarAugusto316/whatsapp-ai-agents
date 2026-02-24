@@ -38,7 +38,6 @@ export async function conversationalWorkflow(
     !ctx.bookingState?.status
   ) {
     const res = await initialOptionsWorkflow(ctx, ctx.customerMessage);
-    console.log({ res });
     if (res) return res;
   }
 

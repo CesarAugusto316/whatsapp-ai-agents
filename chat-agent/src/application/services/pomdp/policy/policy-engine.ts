@@ -1,6 +1,7 @@
 import { BeliefIntent, BeliefState } from "../belief/belief.types";
 import { MainOptions } from "@/domain/booking";
 import { IntentExampleKey } from "../intents/intent.types";
+import { logger } from "@/infraestructure/logging";
 
 // ============================================
 // POLICY ENGINE — Simple, legible, mantenible
@@ -170,7 +171,7 @@ export class PolicyEngine {
 
     const value = map[intent] ?? intent;
     if (!value) throw new Error(`Unknown intent: ${intent}`);
-    console.log({ intent, value });
+    logger.info("Intent mapping:", { intent, value });
     return value as IntentExampleKey;
   }
 

@@ -70,7 +70,6 @@ export const validatorAgent = {
       logger.info("Customer name captured from raw input", { customerMessage });
     }
 
-    console.log({ rawObj, previousState, mergedData });
     const parsedData = bookingSchema.safeParse(mergedData);
     return {
       parsedData: {

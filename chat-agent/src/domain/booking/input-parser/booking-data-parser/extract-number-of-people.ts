@@ -91,6 +91,7 @@ export function extractNumberOfPeople(
     /(?:somos\s+en\s+total|grupo\s+total\s+de)\s+(\d+)/i, // "somos en total 6", "grupo total de 10"
     /(?:alojamiento\s+para)\s+(\d+)/i, // "alojamiento para 8"
     /(?:reserv[ée]\s+para)\s+(\d+)/i, // "reservé para 5" con acento
+    /(?:par[ae]?\s+|par[ae]\s+)(\d+)$/i, // "para 3", "pa 3" - patrón simple al final del mensaje
   ];
 
   for (const pattern of patterns) {
