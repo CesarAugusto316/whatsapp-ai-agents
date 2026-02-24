@@ -128,6 +128,7 @@ describe("extractNumberOfPeople", () => {
       { input: "queremos diez", expected: 10 },
       { input: "necesitamos diez", expected: 10 },
       { input: "llegamos a ser diez", expected: 10 },
+      { input: "para 3", expected: 3 },
     ];
 
     test.each(numberWords)(

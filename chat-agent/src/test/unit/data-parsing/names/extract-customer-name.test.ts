@@ -1,5 +1,5 @@
 import { expect, describe, test } from "bun:test";
-import { extractCustomerName } from "@/domain/booking/input-parser/booking-data-parser/extract-customer-name";
+import { extractCustomerName } from "@/domain/booking/input-parser";
 
 describe("extractCustomerName", () => {
   describe("patrones 'a nombre de'", () => {
@@ -15,6 +15,8 @@ describe("extractCustomerName", () => {
       },
       { input: "la reserva está a nombre de Carmen", expected: "Carmen" },
       { input: "viene a nombre de Francisco", expected: "Francisco" },
+      { input: "César", expected: "César" },
+      { input: "Camilo Ponce", expected: "Camilo Ponce" },
     ];
 
     test.each(patterns)(
