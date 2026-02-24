@@ -41,8 +41,6 @@ export function parseBookingData(
   const numberOfPeople = extractNumberOfPeople(normalizedMessage);
   const customerName = extractCustomerName(message);
 
-  console.log({ customerName });
-
   const { startDate, startTime, endDate, endTime } = extractDateTime(
     normalizedMessage,
     timezone,
