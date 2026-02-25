@@ -1,8 +1,9 @@
 import { describe, test, expect, beforeEach, beforeAll } from "bun:test";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
+import { env } from "bun";
 
 // Constants from the logs
-const BUSINESS_ID = "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c";
+const BUSINESS_ID = env.BUSINESS_ID_TEST;
 const CUSTOMER_PHONE = "+3455555555";
 
 describe("Real integration: Empty message error", () => {
@@ -22,6 +23,8 @@ describe("Real integration: Empty message error", () => {
     "should return 400 when message is empty",
     async () => {
       const payload = {
+        event: "message",
+        session: "default",
         payload: {
           body: "", // Empty message
           from: CUSTOMER_PHONE,
