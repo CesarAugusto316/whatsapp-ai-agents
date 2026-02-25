@@ -17,7 +17,7 @@ import { TimeWindow } from "@/infraestructure/adapters/cms";
 export function formatAvailability(
   slots: TimeWindow[],
   capacity: number,
-  locale = "es-EC",
+  locale = "es-ES",
 ): string {
   if (slots.length === 0) {
     return "No hay horarios disponibles para este día.";

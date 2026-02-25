@@ -220,7 +220,7 @@ const checkAvailability = (): StartedFuncSagaStep => ({
         const msg = formatAvailability(
           availability.slotsByTimeRange ?? [],
           availability.maxCapacityPerHour,
-          business.general.timezone,
+          // business.general.timezone,
         );
         return {
           result: `${titleMsg} ${msg}`, // suggest available slots
@@ -286,7 +286,7 @@ const checkAvailability = (): StartedFuncSagaStep => ({
         const msg = formatAvailability(
           availability.slotsByTimeRange ?? [],
           availability.maxCapacityPerHour,
-          business.general.timezone,
+          // business.general.timezone,
         );
 
         return {
