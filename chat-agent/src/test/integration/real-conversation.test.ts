@@ -92,57 +92,44 @@ describe("Real conversation flow integration test", () => {
         date: "Para el 26 de enero a las 6pm",
       };
 
-      console.log(
-        `Step 4: Sending 'para ${payload.people} personas' (partial data)`,
-      );
+      // Step 4: Provide complete reservation data in one message
+      console.log("Step 4: Sending complete reservation data");
       const response4 = await makeRequest(
-        `para ${payload.people} personas, ${payload.name}`,
+        `Reserva para ${payload.people} personas a nombre de ${payload.name}, ${payload.date}`,
       );
       expect(typeof response4.lastStepResult?.execute?.result).toBe("string");
       const result4 = response4.lastStepResult!.execute!.result;
 
-      // Should ask for missing data
-      // expect(result4).toContain("problema");
-      expect(result4).toContain("día");
-      expect(result4).toContain("hora");
+      // Should show summary and ask for confirmation
+      expect(result4).toContain("CONFIRMAR");
+      expect(result4).toContain("SALIR");
+      expect(result4).toContain("26 de enero");
+      expect(result4).toContain("18:00");
+      expect(result4).toContain("19:00");
 
-      // Step 5: Provide full date and time
-      console.log("Step 5: Sending 'para el 26 de enero a las 6pm'");
-      const response5 = await makeRequest(payload.date);
+      // Step 5: Clarify confirmation step
+      console.log("Step 5: Asking 'solo escribir confirmar?'");
+      const response5 = await makeRequest("solo escribir confirmar?");
       expect(typeof response5.lastStepResult?.execute?.result).toBe("string");
       const result5 = response5.lastStepResult!.execute!.result;
-
-      // Should show summary and ask for confirmation
       expect(result5).toContain("CONFIRMAR");
-      // expect(result5).toContain("REINGRESAR");
-      expect(result5).toContain("SALIR");
-      expect(result5).toContain("26 de enero");
-      expect(result5).toContain("18:00");
-      expect(result5).toContain("19:00");
 
-      // Step 6: Clarify confirmation step
-      console.log("Step 6: Asking 'solo escribir confirmar?'");
-      const response6 = await makeRequest("solo escribir confirmar?");
+      // Step 6: Confirm reservation
+      console.log("Step 6: Sending 'Confirmar' to finalize");
+      const response6 = await makeRequest("Confirmar");
       expect(typeof response6.lastStepResult?.execute?.result).toBe("string");
       const result6 = response6.lastStepResult!.execute!.result;
-      expect(result6).toContain("CONFIRMAR");
-
-      // Step 7: Confirm reservation
-      console.log("Step 7: Sending 'Confirmar' to finalize");
-      const response7 = await makeRequest("Confirmar");
-      expect(typeof response7.lastStepResult?.execute?.result).toBe("string");
-      const result7 = response7.lastStepResult!.execute!.result;
-      expect(result7).toContain("reserva");
-      expect(result7).toContain("creada"); // success
-      expect(result7).toContain("éxito");
-      expect(result7).toContain("ID");
-      expect(result7).toContain(payload.name); // nombre del cliente
-      expect(result7).toContain(payload.people.toString()); //  2 personas
+      expect(result6).toContain("reserva");
+      expect(result6).toContain("creada"); // success
+      expect(result6).toContain("éxito");
+      expect(result6).toContain("ID");
+      expect(result6).toContain(payload.name); // nombre del cliente
+      expect(result6).toContain(payload.people.toString()); //  2 personas
 
       // Verify that a reservation was actually created in the system
-      // expect(response7.bag).toBeDefined();
-      // expect(typeof response7.bag).toBe("object");
-      // const confirmBag = response7.bag["execute:CONFIRM"];
+      // expect(response6.bag).toBeDefined();
+      // expect(typeof response6.bag).toBe("object");
+      // const confirmBag = response6.bag["execute:CONFIRM"];
       // expect(confirmBag).toBeDefined();
       // expect(typeof confirmBag).toBe("object");
       // expect(confirmBag.reservation).toBeDefined();
