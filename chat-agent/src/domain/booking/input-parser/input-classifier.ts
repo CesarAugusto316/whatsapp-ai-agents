@@ -1,4 +1,4 @@
-import { InputIntent } from "./booking-schemas";
+import { InputType } from "./booking-schemas";
 
 /**
  * @todo
@@ -11,7 +11,7 @@ import { InputIntent } from "./booking-schemas";
  * @param message
  * @returns
  */
-export function classifyInput(message: string): InputIntent {
+export function classifyInput(message: string): InputType {
   const m = message.trim().toLowerCase();
 
   // Special handling for short confirmation words that should remain as INFORMATION_REQUEST
@@ -25,7 +25,7 @@ export function classifyInput(message: string): InputIntent {
     m === "si" ||
     m === "dale"
   ) {
-    return InputIntent.INFORMATION_REQUEST; // Default for pure confirmations
+    return InputType.INFORMATION_REQUEST; // Default for pure confirmations
   }
 
   // Additional normalization for specific edge cases without affecting main logic
@@ -40,7 +40,7 @@ export function classifyInput(message: string): InputIntent {
       m.replace(/[¿?]/g, ""),
     )
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Additional early detection for common question patterns without punctuation
@@ -48,7 +48,7 @@ export function classifyInput(message: string): InputIntent {
     /\b^(hay|tienen|tenés|queda|quedan)\s+(mesa|espacio|disponible)/i.test(m) &&
     /\b\d+\b/.test(m)
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Handle "hay disponibilidad para hoy" and similar patterns
@@ -57,7 +57,7 @@ export function classifyInput(message: string): InputIntent {
       m,
     )
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Handle contextual numbers that are NOT person counts (e.g., "mesa 5", "habitación 101")
@@ -66,7 +66,7 @@ export function classifyInput(message: string): InputIntent {
       m,
     )
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Enhanced question detection for informal speech without punctuation
@@ -256,7 +256,7 @@ export function classifyInput(message: string): InputIntent {
         m,
       );
     if (hasInterrogativeWords) {
-      return InputIntent.INFORMATION_REQUEST;
+      return InputType.INFORMATION_REQUEST;
     }
 
     // Si hay signos de pregunta y verbos de pregunta, priorizar CUSTOMER_QUESTION
@@ -265,7 +265,7 @@ export function classifyInput(message: string): InputIntent {
         m,
       );
     if (hasQuestionVerbs) {
-      return InputIntent.INFORMATION_REQUEST;
+      return InputType.INFORMATION_REQUEST;
     }
 
     // Si la frase comienza con una palabra interrogativa (antes de cualquier número o información de reserva), priorizar CUSTOMER_QUESTION
@@ -283,7 +283,7 @@ export function classifyInput(message: string): InputIntent {
       );
 
       if (hasQuestionWordInBeginning) {
-        return InputIntent.INFORMATION_REQUEST;
+        return InputType.INFORMATION_REQUEST;
       }
     }
   }
@@ -294,7 +294,7 @@ export function classifyInput(message: string): InputIntent {
     m.startsWith("¿a qué") &&
     (m.includes("personas") || m.includes("personas?"))
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases que contienen palabras de pregunta seguidas de palabras relacionadas con precios
@@ -305,7 +305,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("precio") ||
       m.includes("costo"))
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases coloquiales y regionales que son claramente preguntas
@@ -318,7 +318,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("ubican") ||
       m.includes("páguenos"))
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases que empiezan con "¿Tenés", "¿Tienen", etc. seguidas de "lugar", "espacio", etc.
@@ -331,7 +331,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("pa'") ||
       m.includes("para"))
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases con "¿Cabemos", "¿Caben", "¿Cubre", etc.
@@ -344,7 +344,7 @@ export function classifyInput(message: string): InputIntent {
     m.startsWith("¿van a entrar") ||
     m.startsWith("¿nos ubican")
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Caso especial: Frases coloquiales con pronombres y verbos de capacidad/ubicación
@@ -354,7 +354,7 @@ export function classifyInput(message: string): InputIntent {
       m.includes("¿nos dan")) &&
     (m.includes("pa'") || m.includes("para"))
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Caso especial: Si hay signos de interrogación y palabras clave de pregunta, priorizar CUSTOMER_QUESTION
@@ -362,18 +362,18 @@ export function classifyInput(message: string): InputIntent {
     // Aumentar el score de pregunta si hay signos de interrogación
     const adjustedQuestionScore = questionScore + 3;
     if (adjustedQuestionScore - inputDataScore >= DIFF_THRESHOLD) {
-      return InputIntent.INFORMATION_REQUEST;
+      return InputType.INFORMATION_REQUEST;
     }
   }
 
   // Caso 1: INPUT_DATA es mucho más fuerte
   if (inputDataScore >= 7 && inputDataScore - questionScore >= DIFF_THRESHOLD) {
-    return InputIntent.USER_PROVIDED_DATA;
+    return InputType.USER_PROVIDED_DATA;
   }
 
   // Caso 2: CUSTOMER_QUESTION es mucho más fuerte
   if (questionScore >= 8 && questionScore - inputDataScore >= DIFF_THRESHOLD) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Caso 3: Ambiguo - usar heurística de fallback
@@ -383,7 +383,7 @@ export function classifyInput(message: string): InputIntent {
     (/\b\d+\b/.test(m) ||
       /\b(hoy|mañana|pasado|:\d{2}|am|pm|tarde|noche)\b/i.test(m))
   ) {
-    return InputIntent.USER_PROVIDED_DATA;
+    return InputType.USER_PROVIDED_DATA;
   }
 
   // Enhanced check for sentences starting with question words, even with punctuation
@@ -403,7 +403,7 @@ export function classifyInput(message: string): InputIntent {
       m,
     )
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Special case: If the message contains "reserva" + "para" + a name, it's likely INPUT_DATA
@@ -422,7 +422,7 @@ export function classifyInput(message: string): InputIntent {
   // Specific fix for the issue mentioned: "caben 6 chamacos pa hoy?" should be NORMAL_SENTENCE
   // This handles the case where a question word is followed by numbers and regional terms
   if (/\b^caben\s+\d+\s+chamacos?\b/i.test(m.replace(/[¿?]/g, ""))) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Check for confirmation emojis commonly used in mobile messaging
@@ -432,12 +432,12 @@ export function classifyInput(message: string): InputIntent {
   // If we detected question-like phrasing without punctuation and the question score isn't significantly lower,
   // classify as NORMAL_SENTENCE instead of defaulting
   if (hasQuestionWithoutPunctuation && questionScore >= inputDataScore - 2) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // If the message contains confirmation emojis, treat as USER_PROVIDED_DATA
   if (hasConfirmationEmoji) {
-    return InputIntent.USER_PROVIDED_DATA;
+    return InputType.USER_PROVIDED_DATA;
   }
 
   // Special handling for short confirmation words that should remain as INFORMATION_REQUEST
@@ -445,9 +445,9 @@ export function classifyInput(message: string): InputIntent {
   if (m === "ok" || m === "sí" || m === "si" || m === "vale") {
     // Only classify as USER_PROVIDED_DATA if there are other strong data indicators
     if (inputDataScore > questionScore) {
-      return InputIntent.USER_PROVIDED_DATA;
+      return InputType.USER_PROVIDED_DATA;
     } else {
-      return InputIntent.INFORMATION_REQUEST; // Default for pure confirmations
+      return InputType.INFORMATION_REQUEST; // Default for pure confirmations
     }
   }
 
@@ -462,9 +462,9 @@ export function classifyInput(message: string): InputIntent {
       m,
     )
   ) {
-    return InputIntent.INFORMATION_REQUEST;
+    return InputType.INFORMATION_REQUEST;
   }
 
   // Caso 4: Por defecto, asumir pregunta si no hay datos claros
-  return InputIntent.INFORMATION_REQUEST;
+  return InputType.INFORMATION_REQUEST;
 }

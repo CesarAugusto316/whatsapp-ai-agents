@@ -3,7 +3,7 @@ export {
   mapZodErrorsToCollector,
   customerIntentSchema,
   inputIntentSchema,
-  InputIntent,
+  InputType,
 } from "./booking-schemas";
 export { extractCustomerName } from "./booking-data-parser/extract-customer-name";
 export { extractDateTime } from "./booking-data-parser/extract-date-time";

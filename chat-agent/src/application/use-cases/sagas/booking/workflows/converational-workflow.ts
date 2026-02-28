@@ -16,6 +16,7 @@ import {
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { formatSagaOutput } from "@/application/patterns";
 import { logger } from "@/infraestructure/logging";
+import { InputType } from "@/domain/booking/input-parser";
 
 /**
  *
@@ -31,6 +32,7 @@ import { logger } from "@/infraestructure/logging";
  */
 export async function conversationalWorkflow(
   ctx: DomainCtx,
+  inputType?: InputType,
 ): Promise<BookingSagaResult> {
   //
   if (
@@ -45,7 +47,7 @@ export async function conversationalWorkflow(
   const policy = await pomdpManager.process(ctx);
 
   // 2. handling intent execution
-  if (policy.type === "execute") {
+  if (policy.type === "execute" && !inputType) {
     const { intent } = policy;
     const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
     const isFirstMessage = chatHistory.length === 0;
@@ -136,6 +138,31 @@ export async function conversationalWorkflow(
     }
     if (intent.module === "orders") {
       //
+    }
+  }
+
+  if (inputType === InputType.INFORMATION_REQUEST) {
+    const { intent } = policy;
+    if (intent?.module === "informational") {
+      const key = intent.intentKey as InformationalIntentKey;
+      const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+      const systemPrompt = businessInfoChunck(key, ctx);
+      const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
+        systemPrompt,
+        msg: ctx.customerMessage,
+        chatHistory,
+        useAuxModel: true,
+      });
+      await chatHistoryAdapter.push(
+        ctx.chatKey,
+        ctx.customerMessage,
+        ASSISTANT_MSG,
+      );
+      return formatSagaOutput(
+        ASSISTANT_MSG,
+        intent?.intentKey, // optional
+        { policy, systemPrompt },
+      );
     }
   }
 

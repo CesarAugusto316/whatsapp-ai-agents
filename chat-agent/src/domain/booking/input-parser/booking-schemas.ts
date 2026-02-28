@@ -224,12 +224,12 @@ export const customerIntentSchema = z.enum([
  *
  * @description Enum for intention classification
  */
-export enum InputIntent {
+export enum InputType {
   USER_PROVIDED_DATA = "USER_PROVIDED_DATA",
   INFORMATION_REQUEST = "INFORMATION_REQUEST", // QUESTIONS, ANSWERS, COMMANDS
 }
 
 export const inputIntentSchema = z.enum([
-  InputIntent.INFORMATION_REQUEST,
-  InputIntent.USER_PROVIDED_DATA,
+  InputType.INFORMATION_REQUEST,
+  InputType.USER_PROVIDED_DATA,
 ]);

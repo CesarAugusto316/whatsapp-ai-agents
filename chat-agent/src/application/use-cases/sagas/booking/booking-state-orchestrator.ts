@@ -5,7 +5,7 @@ import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { conversationalWorkflow } from "./workflows";
 import type { StartedFuncSagaResult, ValidateFuncSagaResult } from "./steps";
 import { formatSagaOutput } from "@/application/patterns";
-import { InputIntent } from "@/domain/booking/input-parser";
+import { InputType } from "@/domain/booking/input-parser";
 
 const MAX_WORDS = 60;
 
@@ -60,7 +60,7 @@ export const bookingStateOrchestrator = async (
       lastStepResult?.execute?.result ||
       lastStepResult?.compensate?.result ||
       "";
-    if (result && result !== InputIntent.INFORMATION_REQUEST) {
+    if (result && result !== InputType.INFORMATION_REQUEST) {
       await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
       return { bag, lastStepResult };
     }

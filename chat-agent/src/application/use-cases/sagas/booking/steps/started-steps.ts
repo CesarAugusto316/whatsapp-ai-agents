@@ -19,7 +19,7 @@ import {
 import { DomainCtx } from "@/domain/booking";
 import {
   BookingSchema,
-  InputIntent,
+  InputType,
 } from "@/domain/booking/input-parser/booking-schemas";
 import {
   bookingStateManager,
@@ -97,13 +97,13 @@ const earlyConditions = (mode: OperationMode): StartedFuncSagaStep => ({
     logger.info("Customer asked a question", {
       inputIntent,
     });
-    if (inputIntent === InputIntent.INFORMATION_REQUEST) {
+    if (inputIntent === InputType.INFORMATION_REQUEST) {
       return {
-        result: InputIntent.INFORMATION_REQUEST,
+        result: InputType.INFORMATION_REQUEST,
         continue: false,
         metadata: {
           description: "INPUT_CLASSIFICATION_RESULT",
-          internal: InputIntent.INFORMATION_REQUEST,
+          internal: InputType.INFORMATION_REQUEST,
         },
       };
     }
