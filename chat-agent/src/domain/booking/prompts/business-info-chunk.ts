@@ -45,6 +45,8 @@ export function businessInfoChunck(
     timeZone: general.timezone,
   });
 
+  const currentStatus = ctx.bookingState?.status;
+
   // Base minimalista (siempre necesaria)
   const base = `
     ${basePrompt(ctx)}

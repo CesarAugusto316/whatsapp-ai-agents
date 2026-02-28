@@ -41,6 +41,8 @@ export async function conversationalWorkflow(
     if (res) return res;
   }
 
+  const bookingStatus = ctx.bookingState?.status;
+
   // 1. generating the policy decision
   const policy = await pomdpManager.process(ctx);
 
@@ -65,44 +67,59 @@ export async function conversationalWorkflow(
       );
     }
 
-    if (intent.module === "social-protocol") {
-      const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
-      const isFirstMessage = chatHistory.length === 0;
-      //
-      if (intent.intentKey === "social:greeting" && isFirstMessage) {
-        const ONBOARDING_MSG = getRandomOnboardingMsg(ctx);
+    if (!bookingStatus) {
+      if (intent.module === "social-protocol") {
+        const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+        const isFirstMessage = chatHistory.length === 0;
+        //
+        if (intent.intentKey === "social:greeting" && isFirstMessage) {
+          const ONBOARDING_MSG = getRandomOnboardingMsg(ctx);
+          await chatHistoryAdapter.push(
+            ctx.chatKey,
+            ctx.customerMessage,
+            ONBOARDING_MSG,
+          );
+          return formatSagaOutput(
+            ONBOARDING_MSG,
+            intent?.intentKey, // optional
+            policy,
+          );
+        }
+
+        const systemPrompt = socialProtocolChunk(
+          intent?.intentKey as SocialProtocolIntent,
+          ctx,
+        );
+        const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
+          systemPrompt,
+          msg: ctx.customerMessage,
+          chatHistory,
+          useAuxModel: true,
+        });
         await chatHistoryAdapter.push(
           ctx.chatKey,
           ctx.customerMessage,
-          ONBOARDING_MSG,
+          ASSISTANT_MSG,
         );
         return formatSagaOutput(
-          ONBOARDING_MSG,
+          ASSISTANT_MSG,
           intent?.intentKey, // optional
-          policy,
+          { policy, systemPrompt },
         );
       }
 
-      const systemPrompt = socialProtocolChunk(
-        intent?.intentKey as SocialProtocolIntent,
-        ctx,
-      );
-      const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
-        systemPrompt,
-        msg: ctx.customerMessage,
-        chatHistory,
-        useAuxModel: true,
-      });
-      await chatHistoryAdapter.push(
-        ctx.chatKey,
-        ctx.customerMessage,
-        ASSISTANT_MSG,
-      );
-      return formatSagaOutput(
-        ASSISTANT_MSG,
-        intent?.intentKey, // optional
-        { policy, systemPrompt },
-      );
+      if (intent.module === "booking") {
+        //
+      }
+
+      //
+      if (intent.module === "products") {
+        //
+      }
+
+      if (intent.module === "orders") {
+        //
+      }
     }
 
     if (intent.module === "informational") {
@@ -125,17 +142,6 @@ export async function conversationalWorkflow(
         intent?.intentKey, // optional
         { policy, systemPrompt },
       );
-    }
-
-    if (intent.module === "booking") {
-      //
-    }
-
-    if (intent.module === "products") {
-      //
-    }
-    if (intent.module === "orders") {
-      //
     }
   }
 
