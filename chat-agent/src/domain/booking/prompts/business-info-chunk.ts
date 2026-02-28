@@ -69,6 +69,14 @@ export function businessInfoChunck(
     - Timezone: ${general.timezone}
     ${renderField(general.requireAppointmentApproval ? "Yes" : "No", "Appointment approval required")}
     ${renderField(schedule.minDurationTime, "Minimum booking duration (minutes)")}
+    ${
+      currentStatus
+        ? `
+    REMINDER:
+    - Tienes una ${currentStatus.startsWith("MAKE") ? "reserva nueva" : currentStatus.startsWith("UPDATE") ? "actualización de reserva" : "cancelación de reserva"} en curso.
+    - Al final de tu respuesta, invita al usuario a continuar con este trámite o a consultar cualquier otra duda.`
+        : ""
+    }
 `.trim();
 
   // Mapeo 1:1 intentKey → sección relevante con renderizado condicional
