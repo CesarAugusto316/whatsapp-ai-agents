@@ -1,7 +1,7 @@
 import type { DomainCtx } from "@/domain/booking";
 import type { BookingSagaResult } from "../../booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
-import { initialOptionsWorkflow } from "../initial-options-workflow";
+import { bookingInitWorkflow } from "../initial-options-workflow";
 import {
   InformationalIntentKey,
   pomdpManager,
@@ -121,7 +121,7 @@ export async function conversationalWorkflow(
 
     if (intent.module === "booking") {
       //
-      const res = await initialOptionsWorkflow(ctx, policy.action);
+      const res = await bookingInitWorkflow(ctx, policy.action);
       if (res) return res;
     }
 

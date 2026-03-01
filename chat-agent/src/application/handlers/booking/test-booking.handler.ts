@@ -1,6 +1,6 @@
 import { Handler } from "hono/types";
 import { ModuleCtx, DomainCtx } from "@/domain/booking";
-import { bookingStateOrchestrator } from "@/application/use-cases/sagas";
+import { stateOrchestrator } from "@/application/use-cases/sagas";
 
 /**
  *
@@ -26,6 +26,6 @@ export const testBookingHandler: Handler<ModuleCtx> = async (c) => {
   } as DomainCtx;
 
   return c.json(
-    await bookingStateOrchestrator(Object.freeze(structuredClone(context))),
+    await stateOrchestrator(Object.freeze(structuredClone(context))),
   );
 };

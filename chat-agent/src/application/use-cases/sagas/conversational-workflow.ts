@@ -1,7 +1,7 @@
 import type { DomainCtx } from "@/domain/booking";
-import type { BookingSagaResult } from "../booking-saga";
+import type { BookingSagaResult } from "./booking/booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
-import { initialOptionsWorkflow } from "./initial-options-workflow";
+import { bookingInitWorkflow } from "./booking/workflows/initial-options-workflow";
 import {
   InformationalIntentKey,
   pomdpManager,
@@ -35,10 +35,22 @@ export async function conversationalWorkflow(
   //
   const bookingStatus = ctx.bookingState?.status;
 
-  if (["1", "2", "3", "4"].includes(ctx.customerMessage) && !bookingStatus) {
-    const res = await initialOptionsWorkflow(ctx, ctx.customerMessage);
+  // -----------------------------------------
+  // DIRECT COMMANDS HANDLING
+  // -----------------------------------------
+
+  if (["1", "2", "3"].includes(ctx.customerMessage) && !bookingStatus) {
+    const res = await bookingInitWorkflow(ctx, ctx.customerMessage);
     if (res) return res;
   }
+  if (["4"].includes(ctx.customerMessage) && !bookingStatus) {
+    const res = await bookingInitWorkflow(ctx, ctx.customerMessage);
+    if (res) return res;
+  }
+
+  // -----------------------------------------
+  // INTENT HANDLING
+  // -----------------------------------------
 
   // 1. generating the policy decision
   const policy = await pomdpManager.process(ctx);
@@ -107,6 +119,8 @@ export async function conversationalWorkflow(
 
       if (intent.module === "booking") {
         //
+        const res = await bookingInitWorkflow(ctx, policy.action);
+        if (res) return res;
       }
 
       //

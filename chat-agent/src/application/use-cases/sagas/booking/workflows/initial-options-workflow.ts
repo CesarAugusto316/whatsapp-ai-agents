@@ -13,7 +13,7 @@ import { formatSagaOutput } from "@/application/patterns";
  * @param ctx
  * @returns
  */
-export async function initialOptionsWorkflow(
+export async function bookingInitWorkflow(
   ctx: DomainCtx,
   option: BookingIntentKey | string, // replace in the future for CoreIntentKey
 ): Promise<BookingSagaResult | undefined> {
