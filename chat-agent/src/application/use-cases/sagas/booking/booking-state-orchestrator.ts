@@ -9,7 +9,7 @@ import { InputType } from "@/domain/booking/input-parser";
 
 const MAX_WORDS = 60;
 
-const statusSagaMap: Partial<
+const bookingSagaMap: Partial<
   Record<FMStatus, StartedFuncSagaResult | ValidateFuncSagaResult>
 > = {
   MAKE_STARTED: reservationSaga.makeStarted,
@@ -30,7 +30,7 @@ export const bookingStateOrchestrator = async (
   ctx: DomainCtx,
 ): Promise<BookingSagaResult> => {
   //
-  const status = ctx.bookingState?.status;
+  const bookingStatus = ctx.bookingState?.status;
   const business = ctx.business;
   const words = ctx.customerMessage.split(" ");
 
@@ -46,14 +46,14 @@ export const bookingStateOrchestrator = async (
       "OUT_OF_SERVICE",
     );
   }
-  if (status) {
+  if (bookingStatus) {
     // ============================================
     // 2.DETERMINISTIC SAGA ORCHESTRATOR
     // For every workflow option there is a FSM transition
     // ============================================
-    const sagaOrchestrator = statusSagaMap[status];
+    const sagaOrchestrator = bookingSagaMap[bookingStatus];
     if (!sagaOrchestrator) {
-      throw new Error(`No saga found for status ${status}`);
+      throw new Error(`No saga found for status ${bookingStatus}`);
     }
     const { lastStepResult, bag } = await sagaOrchestrator(ctx);
     const result =

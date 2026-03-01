@@ -33,15 +33,12 @@ export async function conversationalWorkflow(
   ctx: DomainCtx,
 ): Promise<BookingSagaResult> {
   //
-  if (
-    ["1", "2", "3", "4"].includes(ctx.customerMessage) &&
-    !ctx.bookingState?.status
-  ) {
+  const bookingStatus = ctx.bookingState?.status;
+
+  if (["1", "2", "3", "4"].includes(ctx.customerMessage) && !bookingStatus) {
     const res = await initialOptionsWorkflow(ctx, ctx.customerMessage);
     if (res) return res;
   }
-
-  const bookingStatus = ctx.bookingState?.status;
 
   // 1. generating the policy decision
   const policy = await pomdpManager.process(ctx);
@@ -124,6 +121,28 @@ export async function conversationalWorkflow(
 
     if (intent.module === "informational") {
       const key = intent.intentKey as InformationalIntentKey;
+      const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+      const systemPrompt = businessInfoChunck(key, ctx);
+      const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
+        systemPrompt,
+        msg: ctx.customerMessage,
+        chatHistory,
+        useAuxModel: true,
+      });
+      await chatHistoryAdapter.push(
+        ctx.chatKey,
+        ctx.customerMessage,
+        ASSISTANT_MSG,
+      );
+      return formatSagaOutput(
+        ASSISTANT_MSG,
+        intent?.intentKey, // optional
+        { policy, systemPrompt },
+      );
+    }
+
+    if (intent.module !== "conversational-signal") {
+      const key = "unknown" as InformationalIntentKey;
       const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
       const systemPrompt = businessInfoChunck(key, ctx);
       const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
