@@ -2,6 +2,7 @@ import type { DomainCtx } from "@/domain/booking";
 import type { BookingSagaResult } from "./booking/booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { bookingInitWorkflow } from "./booking/workflows/initial-options-workflow";
+import { productFindWorkflow } from "./product-orders";
 import {
   InformationalIntentKey,
   pomdpManager,
@@ -44,8 +45,8 @@ export async function conversationalWorkflow(
     if (res) return res;
   }
   if (["4"].includes(ctx.customerMessage) && !bookingStatus) {
-    const res = await bookingInitWorkflow(ctx, ctx.customerMessage);
-    if (res) return res;
+    // const res = await bookingInitWorkflow(ctx, ctx.customerMessage);
+    // if (res) return res;
   }
 
   // -----------------------------------------
@@ -125,7 +126,10 @@ export async function conversationalWorkflow(
 
       //
       if (intent.module === "products") {
-        //
+        if (intent.intentKey == "products:find") {
+          const res = await productFindWorkflow(ctx);
+          if (res) return res;
+        }
       }
 
       if (intent.module === "orders") {
