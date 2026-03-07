@@ -203,8 +203,10 @@ const firstMessageVariants = [
 
     ¿Qué necesitas? 😊
   `,
+] as const;
 
-  // V17 - Onboarding simple: acciones principales
+const flowOptions: readonly ((name: string, business: string) => string)[] = [
+  // 1
   (name: string, business: string) => `
     ¡Hola! 👋 Soy ${name} de ${business}.
 
@@ -212,113 +214,69 @@ const firstMessageVariants = [
     1️⃣ Reservar mesa
     2️⃣ Modificar reserva
     3️⃣ Cancelar reserva
-    4️⃣ Hacer pedido
+    4️⃣ Hacer pedido de comida
 
     ¿Qué quieres hacer? 😊
   `,
-
-  // V18 - Variación en orden y redacción
+  // 2
   (name: string, business: string) => `
     ¡Hola! 👋 Soy ${name} de ${business}.
 
     Selecciona una opción:
-    1️⃣ Hacer pedido
-    2️⃣ Reservar mesa
-    3️⃣ Modificar reserva
-    4️⃣ Cancelar reserva
+    1️⃣ Agendar mesa
+    2️⃣ Cambiar reserva
+    3️⃣ Anular reserva
+    4️⃣ Realizar pedido de comida
 
-    ¿Qué deseas hacer? 😊
+    ¿En qué te ayudo? 😊
   `,
-
-  // V19 - Variación con verbos diferentes
+  // 3
   (name: string, business: string) => `
     ¡Hola! 👋 Soy ${name} de ${business}.
 
-    Elige una opción:
-    1️⃣ Cancelar reserva
-    2️⃣ Reservar mesa
-    3️⃣ Hacer pedido
-    4️⃣ Modificar reserva
-
-    ¿Qué necesitas? 😊
-  `,
-
-  // V20 - Variación con sinónimos
-  (name: string, business: string) => `
-    ¡Hola! 👋 Soy ${name} de ${business}.
-
-    Elige una opción:
-    1️⃣ Modificar reserva
-    2️⃣ Hacer pedido
-    3️⃣ Reservar mesa
-    4️⃣ Cancelar reserva
-
-    ¿Qué quieres hacer? 😊
-  `,
-
-  // V21 - Variación con otro orden
-  (name: string, business: string) => `
-    ¡Hola! 👋 Soy ${name} de ${business}.
-
-    Elige una opción:
-    1️⃣ Reservar mesa
-    2️⃣ Hacer pedido
+    ¿Qué deseas hacer?
+    1️⃣ Reservar una mesa
+    2️⃣ Editar reserva
     3️⃣ Cancelar reserva
-    4️⃣ Modificar reserva
+    4️⃣ Ordenar comida
 
-    ¿Qué prefieres? 😊
+    Estoy aquí para ayudarte 😊
   `,
-
-  // V22 - Variación con redacción alternativa
+  // 4
   (name: string, business: string) => `
     ¡Hola! 👋 Soy ${name} de ${business}.
 
-    Elige una opción:
-    1️⃣ Modificar reserva
-    2️⃣ Cancelar reserva
-    3️⃣ Reservar mesa
-    4️⃣ Hacer pedido
-
-    ¿Qué te gustaría hacer? 😊
-  `,
-
-  // V23 - Variación con otro cierre
-  (name: string, business: string) => `
-    ¡Hola! 👋 Soy ${name} de ${business}.
-
-    Elige una opción:
-    1️⃣ Hacer pedido
-    2️⃣ Cancelar reserva
-    3️⃣ Modificar reserva
-    4️⃣ Reservar mesa
-
-    ¿Por cuál empiezas? 😊
-  `,
-
-  // V24 - Variación con saludo alternativo
-  (name: string, business: string) => `
-    ¡Hola! 👋 Soy ${name} de ${business}.
-
-    Elige una opción:
-    1️⃣ Cancelar reserva
-    2️⃣ Modificar reserva
-    3️⃣ Hacer pedido
-    4️⃣ Reservar mesa
-
-    ¿Qué opción eliges? 😊
-  `,
-
-  // V25 - Variación final
-  (name: string, business: string) => `
-    ¡Hola! 👋 Soy ${name} de ${business}.
-
-    Elige una opción:
+    Tienes estas opciones:
     1️⃣ Reservar mesa
-    2️⃣ Cancelar reserva
-    3️⃣ Hacer pedido
-    4️⃣ Modificar reserva
+    2️⃣ Actualizar reserva
+    3️⃣ Eliminar reserva
+    4️⃣ Hacer pedido de comida
 
-    ¿Qué vas a necesitar? 😊
+    ¿Cuál eliges? 😊
+  `,
+  // 5
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    ¿Qué necesitas?
+    1️⃣ Reservar mesa
+    2️⃣ Ajustar reserva
+    3️⃣ Cancelar reserva
+    4️⃣ Pedir comida
+
+    Dime tu opción 😊
+  `,
+  // 6
+  (name: string, business: string) => `
+    ¡Hola! 👋 Soy ${name} de ${business}.
+
+    Mira las opciones:
+    1️⃣ Reservar mesa
+    2️⃣ Modificar reserva
+    3️⃣ Anular reserva
+    4️⃣ Enviar pedido de comida
+
+    ¿Por cuál vas? 😊
   `,
 ] as const;
 
@@ -326,8 +284,8 @@ export const getRandomOnboardingMsg = (ctx: DomainCtx): string => {
   const {
     business: { assistantName, name },
   } = ctx;
-  const randomIndex = Math.floor(Math.random() * firstMessageVariants.length);
-  return firstMessageVariants[randomIndex](assistantName, name).trim();
+  const randomIndex = Math.floor(Math.random() * flowOptions.length);
+  return flowOptions[randomIndex](assistantName, name).trim();
 };
 
 export function socialProtocolChunk(

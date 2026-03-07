@@ -125,12 +125,12 @@ export async function conversationalWorkflow(
       }
 
       //
-      if (intent.module === "products") {
-        if (intent.intentKey == "products:find") {
-          const res = await productFindWorkflow(ctx);
-          if (res) return res;
-        }
-      }
+      // if (intent.module === "products") {
+      //   if (intent.intentKey === "products:find") {
+      //     const res = await productFindWorkflow(ctx);
+      //     if (res) return res;
+      //   }
+      // }
 
       if (intent.module === "orders") {
         //
