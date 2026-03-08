@@ -1,7 +1,7 @@
 import type { DomainCtx } from "@/domain/booking";
 import type { BookingSagaResult } from "./booking/booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
-import { bookingInitWorkflow } from "./booking/workflows/initial-options-workflow";
+import { initWorkflow } from "./initial-options-workflow";
 import { productFindWorkflow } from "./product-orders";
 import {
   InformationalIntentKey,
@@ -40,13 +40,9 @@ export async function conversationalWorkflow(
   // DIRECT COMMANDS HANDLING
   // -----------------------------------------
 
-  if (["1", "2", "3"].includes(ctx.customerMessage) && !bookingStatus) {
-    const res = await bookingInitWorkflow(ctx, ctx.customerMessage);
+  if (["1", "2", "3", "4"].includes(ctx.customerMessage) && !bookingStatus) {
+    const res = await initWorkflow(ctx, ctx.customerMessage);
     if (res) return res;
-  }
-  if (["4"].includes(ctx.customerMessage) && !bookingStatus) {
-    // const res = await bookingInitWorkflow(ctx, ctx.customerMessage);
-    // if (res) return res;
   }
 
   // -----------------------------------------
@@ -120,20 +116,14 @@ export async function conversationalWorkflow(
 
       if (intent.module === "booking") {
         //
-        const res = await bookingInitWorkflow(ctx, policy.action);
+        const res = await initWorkflow(ctx, policy.action);
         if (res) return res;
       }
-
-      //
-      // if (intent.module === "products") {
-      //   if (intent.intentKey === "products:find") {
-      //     const res = await productFindWorkflow(ctx);
-      //     if (res) return res;
-      //   }
-      // }
+      // if (intent.module === "products") {}
 
       if (intent.module === "orders") {
-        //
+        const res = await initWorkflow(ctx, "4");
+        if (res) return res;
       }
     }
 
@@ -159,6 +149,7 @@ export async function conversationalWorkflow(
       );
     }
 
+    // unknown informational intent
     if (intent.module !== "conversational-signal") {
       const key = "unknown" as InformationalIntentKey;
       const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);

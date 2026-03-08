@@ -1,11 +1,11 @@
 import { DomainCtx } from "@/domain/booking";
 import { MainOptions } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
-import { initChangeSteps } from "./initial-change-steps";
-import { BookingSagaResult } from "../booking-saga";
+import { BookingSagaResult } from "./booking/booking-saga";
 import { BookingIntentKey } from "@/application/services/pomdp";
 import { bookingStateManager } from "@/application/services/state-managers";
 import { formatSagaOutput } from "@/application/patterns";
+import { initChangeSteps } from "./booking/workflows";
 
 /**
  *
@@ -13,7 +13,7 @@ import { formatSagaOutput } from "@/application/patterns";
  * @param ctx
  * @returns
  */
-export async function bookingInitWorkflow(
+export async function initWorkflow(
   ctx: DomainCtx,
   option: BookingIntentKey | string, // replace in the future for CoreIntentKey
 ): Promise<BookingSagaResult | undefined> {
@@ -69,8 +69,30 @@ export async function bookingInitWorkflow(
     );
   }
 
-  if (option === "booking:check_availability") {
-    //
-    console.log({ option });
+  if (option === MainOptions.CREATE_ORDER) {
+    // choice 2
+    const transition = bookingStateManager.nextState(MainOptions.MAKE_BOOKING, {
+      domain: business.general.businessType,
+      timeZone: business.general.timezone,
+      data: {
+        customerName: customer?.name || "",
+      },
+    });
+    await cacheAdapter.save(bookingKey, {
+      businessId: business?.id,
+      customerId: customer?.id,
+      customerName: customer?.name || "",
+      status: transition.nextState, // MAKE_STARTED
+    });
+    return formatSagaOutput(
+      transition.message!,
+      "MAKE_RESERVATION, option selected",
+      `customerMessage=${MainOptions.MAKE_BOOKING}`,
+    );
   }
+
+  // if (option === "booking:check_availability") {
+  //   //
+  //   console.log({ option });
+  // }
 }
