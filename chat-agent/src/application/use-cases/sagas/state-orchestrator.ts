@@ -129,6 +129,9 @@ export const stateOrchestrator = async (
       messages: input,
     });
 
+    ragService.searchProducts;
+    ragService.searchBusinessMedia;
+
     console.log("Final input:");
     console.log(JSON.stringify(input, null, 2));
 

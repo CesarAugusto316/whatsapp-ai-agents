@@ -191,7 +191,7 @@ const ORDER_START_MESSAGES: string[] = [
   "¡Buena! Arranquemos con tu pedido 🍕\n\n¿Querés que te pase el menú o que te cuente qué hay de bueno hoy?",
   "¡Dale! Preparemos tu pedido 🥗\n\n¿Te muestro las opciones del menú o preferís que te sugiera algunos platos?",
   "¡Genial! Comencemos la experiencia 🍜\n\n¿Querés ver todo el menú o que te recomiende nuestras especialidades?",
-  "¡Excelente! Iniciemos la aventura 🌮\n\n¿Preferís que te muestre el menú o que te dé mis favoritos?",
+  "¡Excelente! Iniciemos la aventura 🌮\n\n¿Preferís que te muestre el menú o prefieres buscar opciones?",
 ];
 
 /**
