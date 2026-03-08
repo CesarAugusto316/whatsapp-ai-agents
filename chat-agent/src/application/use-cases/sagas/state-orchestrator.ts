@@ -12,6 +12,7 @@ import { conversationalWorkflow } from "./conversational-workflow";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { ragService } from "@/application/services/rag";
+import { createProductOrderSystemPrompt } from "@/application/services/rag/product-order-prompt";
 
 const MAX_WORDS = 60;
 
@@ -74,18 +75,15 @@ export const stateOrchestrator = async (
     }
   }
 
+  const domain: SpecializedDomain = ctx.business.general.businessType;
+
   if (productOrdeStatus) {
-    const menu = await ragService.searchBusinessMedia(
-      "media alt",
-      ctx.businessId,
-    );
+    const systemPrompt = createProductOrderSystemPrompt(domain);
 
-    const products = await ragService.searchProducts(
-      "product description",
-      ctx.businessId,
-    );
-
-    let input: ChatMessage[] = [{ role: "user", content: message }];
+    let input: ChatMessage[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: message },
+    ];
 
     const res = await aiAdapter.generateText({
       tools: [
@@ -104,6 +102,25 @@ export const stateOrchestrator = async (
                 },
               },
               // required: [],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "get_menu",
+            description:
+              "Get the complete menu or menu items by category. Use this when the user wants to see all available products or explore menu options.",
+            parameters: {
+              type: "object",
+              properties: {
+                description: {
+                  type: "string",
+                  description:
+                    "Optional category or type of menu items to filter (e.g., 'bebidas', 'postres', 'platos principales')",
+                },
+              },
               additionalProperties: false,
             },
           },
