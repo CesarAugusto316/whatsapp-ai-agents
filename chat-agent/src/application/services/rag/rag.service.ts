@@ -232,6 +232,33 @@ class RagService {
   }
 
   /**
+   * Busca productos semánticamente similares
+   */
+  async searchBusinessMedia(
+    query: string,
+    businessId: string,
+    limit = 3,
+    lang = "es",
+  ): Promise<Schemas["QueryResponse"]> {
+    // 1. Generar clave de caché
+    const normalizedQuery = this.normalizeText(query);
+    const hash = this.sha256(
+      `${lang}:${this.EMBED_VERSION}:${normalizedQuery}`,
+    );
+
+    // 2. Obtener embedding (con caché)
+    const embedding = await this.getOrCreateEmbedding(normalizedQuery, hash);
+
+    // 3. Buscar en vector DB
+    return this.vectorAdapter.searchBusinessMedia(
+      embedding,
+      businessId,
+      limit,
+      this.THRESHOLD,
+    );
+  }
+
+  /**
    *
    * @requires refactor
    * @todo we use only name and description for embeding,
