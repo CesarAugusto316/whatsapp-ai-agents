@@ -72,6 +72,8 @@ export const bookingSchema = z.object({
     .max(50, "too_large: Máximo 100 personas"),
 });
 
+export type BookingSchema = z.infer<typeof bookingSchema>;
+
 // Función de mapeo mejorada con filtrado de errores humanos
 export const mapZodErrorsToCollector = (
   zodError: z.ZodError | Partial<z.core.$ZodIssue>[],
@@ -212,8 +214,6 @@ export const mapZodErrorsToCollector = (
   });
   return filteredErrors;
 };
-
-export type BookingSchema = z.infer<typeof bookingSchema>;
 
 export const customerIntentSchema = z.enum([
   CUSTOMER_INTENT.WHAT,

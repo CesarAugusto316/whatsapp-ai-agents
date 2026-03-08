@@ -24,7 +24,7 @@ export interface BookingStateTransition {
 /**
  * Manager para el estado del proceso de reserva
  */
-class BookingStateManager {
+class ProductOrderStateManager {
   //
 
   /**
@@ -209,4 +209,4 @@ class BookingStateManager {
   }
 }
 
-export const bookingStateManager = new BookingStateManager();
+export const productOrderStateManager = new ProductOrderStateManager();

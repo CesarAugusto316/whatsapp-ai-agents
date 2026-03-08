@@ -3,7 +3,10 @@ import { MainOptions } from "@/domain/booking";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { BookingSagaResult } from "./booking/booking-saga";
 import { BookingIntentKey } from "@/application/services/pomdp";
-import { bookingStateManager } from "@/application/services/state-managers";
+import {
+  bookingStateManager,
+  productOrderStateManager,
+} from "@/application/services/state-managers";
 import { formatSagaOutput } from "@/application/patterns";
 import { initChangeSteps } from "./booking/workflows";
 
@@ -17,7 +20,7 @@ export async function initWorkflow(
   ctx: DomainCtx,
   option: BookingIntentKey | string, // replace in the future for CoreIntentKey
 ): Promise<BookingSagaResult | undefined> {
-  const { bookingKey, customer, business } = ctx;
+  const { bookingKey, productOrderKey, customer, business } = ctx;
 
   if (option === MainOptions.MAKE_BOOKING) {
     // choice 2
@@ -71,14 +74,17 @@ export async function initWorkflow(
 
   if (option === MainOptions.CREATE_ORDER) {
     // choice 2
-    const transition = bookingStateManager.nextState(MainOptions.MAKE_BOOKING, {
-      domain: business.general.businessType,
-      timeZone: business.general.timezone,
-      data: {
-        customerName: customer?.name || "",
+    const transition = productOrderStateManager.nextState(
+      MainOptions.CREATE_ORDER,
+      {
+        domain: business.general.businessType,
+        timeZone: business.general.timezone,
+        data: {
+          customerName: customer?.name || "",
+        },
       },
-    });
-    await cacheAdapter.save(bookingKey, {
+    );
+    await cacheAdapter.save(productOrderKey, {
       businessId: business?.id,
       customerId: customer?.id,
       customerName: customer?.name || "",
@@ -86,8 +92,8 @@ export async function initWorkflow(
     });
     return formatSagaOutput(
       transition.message!,
-      "MAKE_RESERVATION, option selected",
-      `customerMessage=${MainOptions.MAKE_BOOKING}`,
+      "CREATE_ORDER, option selected",
+      `customerMessage=${MainOptions.CREATE_ORDER}`,
     );
   }
 

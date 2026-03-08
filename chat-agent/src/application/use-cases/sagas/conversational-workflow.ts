@@ -2,7 +2,6 @@ import type { DomainCtx } from "@/domain/booking";
 import type { BookingSagaResult } from "./booking/booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { initWorkflow } from "./initial-options-workflow";
-import { productFindWorkflow } from "./product-orders";
 import {
   InformationalIntentKey,
   pomdpManager,
@@ -34,13 +33,15 @@ export async function conversationalWorkflow(
   ctx: DomainCtx,
 ): Promise<BookingSagaResult> {
   //
-  const bookingStatus = ctx.bookingState?.status;
+  const hasStatus = Boolean(
+    ctx.bookingState?.status || ctx.productOrderState?.status,
+  );
 
   // -----------------------------------------
   // DIRECT COMMANDS HANDLING
   // -----------------------------------------
 
-  if (["1", "2", "3", "4"].includes(ctx.customerMessage) && !bookingStatus) {
+  if (["1", "2", "3", "4"].includes(ctx.customerMessage) && !hasStatus) {
     const res = await initWorkflow(ctx, ctx.customerMessage);
     if (res) return res;
   }
@@ -73,7 +74,7 @@ export async function conversationalWorkflow(
       );
     }
 
-    if (!bookingStatus) {
+    if (!hasStatus) {
       if (intent.module === "social-protocol") {
         const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
         const isFirstMessage = chatHistory.length === 0;
@@ -115,11 +116,9 @@ export async function conversationalWorkflow(
       }
 
       if (intent.module === "booking") {
-        //
         const res = await initWorkflow(ctx, policy.action);
         if (res) return res;
       }
-      // if (intent.module === "products") {}
 
       if (intent.module === "orders") {
         const res = await initWorkflow(ctx, "4");
