@@ -29,10 +29,6 @@ export default buildConfig({
       scriptPath: path.resolve(dirname, "seed.ts"),
       key: "seed",
     },
-    {
-      scriptPath: path.resolve(dirname, "add-products.ts"),
-      key: "products",
-    },
   ],
   /**
    *
