@@ -54,11 +54,11 @@ export class BeliefStateUpdater {
     const base = Key.trim() as RequiredConfirmation;
     switch (base) {
       case "always":
-        return 0.77;
+        return 0.8;
       case "maybe":
-        return 0.72;
+        return 0.77;
       case "never":
-        return 0.67;
+        return 0.72;
       default:
         return 0.72;
     }

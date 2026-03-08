@@ -5,6 +5,7 @@ import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { cmsAdapter, SpecializedDomain } from "@/infraestructure/adapters/cms";
 import type { BookingState } from "@/domain/booking";
 import type { BeliefState, ModuleKind } from "@/application/services/pomdp";
+import { ProductOrderState } from "@/domain/orders";
 
 /**
  *
@@ -60,6 +61,9 @@ export const bootstrapMiddleware = (): MiddlewareHandler<ModuleCtx> => {
     const beliefState = await cacheAdapter.getObj<BeliefState>(beliefKey);
     const bookingKey = `booking:${businessId}:${customerPhone}`;
     const bookingState = await cacheAdapter.getObj<BookingState>(bookingKey);
+    const productOrderKey = `order:${businessId}:${customerPhone}`;
+    const productOrderState =
+      await cacheAdapter.getObj<ProductOrderState>(productOrderKey);
 
     // ============================================
     // 3. SET CONTEXT
@@ -76,6 +80,8 @@ export const bootstrapMiddleware = (): MiddlewareHandler<ModuleCtx> => {
     ctx.set("beliefState", beliefState);
     ctx.set("bookingKey", bookingKey);
     ctx.set("bookingState", bookingState);
+    ctx.set("productOrderKey", productOrderKey);
+    ctx.set("productOrderState", productOrderState);
 
     // ============================================
     // 4. SET ACTIVE MODULES

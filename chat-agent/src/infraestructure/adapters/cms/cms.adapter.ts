@@ -2,6 +2,7 @@ import { env, fetch } from "bun";
 import {
   Booking,
   Business,
+  BusinessesMedia,
   CreateBooking,
   CreateCustomer,
   Customer,
@@ -295,6 +296,21 @@ class CMSAdapter {
         throw new Error(`Failed to fetch product: ${res.status}`);
       }
       return res.json() as Promise<Product>;
+    }, resilientConfig);
+  }
+
+  public getBusinessMediaById(id: string, isStale = false) {
+    const url = generateUrl(`businesses-media/${id}`, { depth: 0 });
+
+    return resilientQuery(async () => {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: this.headers,
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch product: ${res.status}`);
+      }
+      return res.json() as Promise<BusinessesMedia>;
     }, resilientConfig);
   }
 

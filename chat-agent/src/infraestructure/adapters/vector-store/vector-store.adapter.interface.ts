@@ -1,5 +1,5 @@
 import type { Schemas } from "@qdrant/js-client-rest";
-import type { Product, SpecializedDomain } from "../cms";
+import type { BusinessesMedia, Product, SpecializedDomain } from "../cms";
 import {
   AllDomainKind,
   IntentExampleKey,
@@ -38,13 +38,28 @@ export interface IVectorStoreAdapter {
     payload: Partial<Product>,
   ): Promise<Schemas["UpdateResult"]>;
 
+  upsertBusinessMedia(
+    id: string,
+    vector: number[],
+    payload: Partial<BusinessesMedia>,
+  ): Promise<Schemas["UpdateResult"]>;
+
   deleteProduct(id: string): Promise<Schemas["UpdateResult"]>;
+
+  deleteBusinessMedia(id: string): Promise<Schemas["UpdateResult"]>;
 
   deleteProductsByBusiness(
     businessId: string,
   ): Promise<Schemas["UpdateResult"]>;
 
   searchProducts(
+    vector: number[],
+    businessId: string,
+    limit: number,
+    threshold: number,
+  ): Promise<Schemas["QueryResponse"]>;
+
+  searchBusinessMedia(
     vector: number[],
     businessId: string,
     limit: number,

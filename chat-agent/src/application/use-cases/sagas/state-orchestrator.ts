@@ -10,6 +10,8 @@ import { formatSagaOutput, SagaOrchestrator } from "@/application/patterns";
 import { InputType } from "@/domain/booking/input-parser";
 import { conversationalWorkflow } from "./conversational-workflow";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
+import { SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { ragService } from "@/application/services/rag";
 
 const MAX_WORDS = 60;
 
@@ -37,7 +39,8 @@ export const stateOrchestrator = async (
   const bookingStatus = ctx.bookingState?.status;
   const productOrdeStatus = ctx.productOrderState?.status;
   const business = ctx.business;
-  const words = ctx.customerMessage.split(" ");
+  const message = ctx.customerMessage;
+  const words = message.split(" ");
 
   if (words.length > MAX_WORDS) {
     return formatSagaOutput(
@@ -66,14 +69,34 @@ export const stateOrchestrator = async (
       lastStepResult?.compensate?.result ||
       "";
     if (result && result !== InputType.INFORMATION_REQUEST) {
-      await chatHistoryAdapter.push(ctx.chatKey, ctx.customerMessage, result);
+      await chatHistoryAdapter.push(ctx.chatKey, message, result);
       return { bag, lastStepResult };
     }
   }
 
   if (productOrdeStatus) {
     // Create a running input list we will add to over time
-    let input: ChatMessage[] = [{ role: "user", content: ctx.customerMessage }];
+    const limit = 1;
+    const domain: SpecializedDomain = ctx.business.general.businessType; // ej: restaurant | retail | real-estate
+    const { points } = await ragService.searchIntent(
+      ctx.customerMessage,
+      ["products"], // ej: ["informational", "booking", "products"],
+      domain,
+      limit,
+    );
+
+    const firstIntent = points.at(0);
+
+    if (
+      firstIntent &&
+      firstIntent?.score > 8 &&
+      firstIntent.payload.intentKey === "products:view"
+    ) {
+      // SHOW MENU
+      ragService.searchProducts
+    }
+
+    let input: ChatMessage[] = [{ role: "user", content: message }];
 
     const res = await aiAdapter.generateText({
       tools: [

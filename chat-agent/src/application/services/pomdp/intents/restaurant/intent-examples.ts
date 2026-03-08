@@ -111,38 +111,38 @@ export const restaurantBooking: IntentExample<BookingIntentKey>[] = [
       "cancela la mesa que aparté",
     ],
   },
-  {
-    intentKey: "booking:check_availability",
-    module: "booking",
-    domain: "restaurant",
-    requiresConfirmation: "never",
-    lang: "es",
-    examples: [
-      // Universal (explícitamente sobre reservas/mesas)
-      "hay disponibilidad de mesas",
-      "qué horarios tienen libres para reservar",
-      "qué días tienen disponibles para reserva",
-      "hay mesas disponibles para hoy",
-      "puedo reservar para esta noche",
-      "tienen huecos para reservar",
+  // {
+  //   intentKey: "booking:check_availability",
+  //   module: "booking",
+  //   domain: "restaurant",
+  //   requiresConfirmation: "never",
+  //   lang: "es",
+  //   examples: [
+  //     // Universal (explícitamente sobre reservas/mesas)
+  //     "hay disponibilidad de mesas",
+  //     "qué horarios tienen libres para reservar",
+  //     "qué días tienen disponibles para reserva",
+  //     "hay mesas disponibles para hoy",
+  //     "puedo reservar para esta noche",
+  //     "tienen huecos para reservar",
 
-      // España (auténtico pero explícito)
-      "queda sitio para reservar",
-      "tenéis hueco para mesa",
-      "tenéis mesas libres hoy",
-      "queda alguna mesa disponible",
-      "hay disponibilidad para cenar",
-      "podéis atenderme esta noche",
+  //     // España (auténtico pero explícito)
+  //     "queda sitio para reservar",
+  //     "tenéis hueco para mesa",
+  //     "tenéis mesas libres hoy",
+  //     "queda alguna mesa disponible",
+  //     "hay disponibilidad para cenar",
+  //     "podéis atenderme esta noche",
 
-      // Latam (CO/EC/MX)
-      "queda lugar para reservar",
-      "hay mesa libre para hoy",
-      "se puede reservar para esta noche",
-      "hay cupo para reservar",
-      "mesas disponibles para hoy",
-      "tienen disponibilidad para almorzar",
-    ],
-  },
+  //     // Latam (CO/EC/MX)
+  //     "queda lugar para reservar",
+  //     "hay mesa libre para hoy",
+  //     "se puede reservar para esta noche",
+  //     "hay cupo para reservar",
+  //     "mesas disponibles para hoy",
+  //     "tienen disponibilidad para almorzar",
+  //   ],
+  // },
 ] as const;
 
 export const restaurantProducts: IntentExample<ProductIntentKey>[] = [
@@ -213,40 +213,40 @@ export const restaurantProducts: IntentExample<ProductIntentKey>[] = [
     ],
   },
 
-  {
-    intentKey: "products:find",
-    module: "products",
-    domain: "restaurant",
-    requiresConfirmation: "always",
-    lang: "es",
-    examples: [
-      // Universal (búsqueda por atributo de plato)
-      "busco un plato picante",
-      "busco platos vegetarianos del menú",
-      "busco comida saludable de la carta",
-      "busco un plato rápido de preparar",
-      "busco postres dulces del menú",
-      "tienen opciones sin gluten en la carta",
-      "hay platos veganos disponibles",
+  // {
+  //   intentKey: "products:find",
+  //   module: "products",
+  //   domain: "restaurant",
+  //   requiresConfirmation: "always",
+  //   lang: "es",
+  //   examples: [
+  //     // Universal (búsqueda por atributo de plato)
+  //     "busco un plato picante",
+  //     "busco platos vegetarianos del menú",
+  //     "busco comida saludable de la carta",
+  //     "busco un plato rápido de preparar",
+  //     "busco postres dulces del menú",
+  //     "tienen opciones sin gluten en la carta",
+  //     "hay platos veganos disponibles",
 
-      // España
-      "qué tienen vegetariano en la carta",
-      "busco platos ligeros para cenar",
-      "tienen opciones veganas hoy",
-      "busco algo tradicional del menú",
-      "qué hay sin lactosa en la carta",
-      "platos sin carne disponibles",
+  //     // España
+  //     "qué tienen vegetariano en la carta",
+  //     "busco platos ligeros para cenar",
+  //     "tienen opciones veganas hoy",
+  //     "busco algo tradicional del menú",
+  //     "qué hay sin lactosa en la carta",
+  //     "platos sin carne disponibles",
 
-      // Latam (CO/EC/MX)
-      "busco comida picante del menú",
-      "tienen platos vegetarianos hoy",
-      "busco algo económico de la carta",
-      "qué hay sin picante para comer",
-      "busco platos típicos del restaurante",
-      "tienen opciones rápidas del menú",
-      "hay algo sin queso en la carta",
-    ],
-  },
+  //     // Latam (CO/EC/MX)
+  //     "busco comida picante del menú",
+  //     "tienen platos vegetarianos hoy",
+  //     "busco algo económico de la carta",
+  //     "qué hay sin picante para comer",
+  //     "busco platos típicos del restaurante",
+  //     "tienen opciones rápidas del menú",
+  //     "hay algo sin queso en la carta",
+  //   ],
+  // },
 ] as const;
 
 export const restaurantOrders: IntentExample<OrderIntentKey>[] = [
@@ -284,69 +284,69 @@ export const restaurantOrders: IntentExample<OrderIntentKey>[] = [
     ],
   },
 
-  {
-    intentKey: "orders:modify",
-    module: "orders",
-    domain: "restaurant",
-    requiresConfirmation: "always",
-    lang: "es",
-    examples: [
-      // Universal (modificar contenido del pedido de comida)
-      "quiero cambiar mi pedido de comida",
-      "necesito modificar mi pedido del menú",
-      "quiero ajustar mi pedido de platos",
-      "cambiar algo del pedido de comida",
-      "modificar mi orden de comida",
-      "agregar un plato al pedido",
-      "quitar un plato del pedido",
+  // {
+  //   intentKey: "orders:modify",
+  //   module: "orders",
+  //   domain: "restaurant",
+  //   requiresConfirmation: "always",
+  //   lang: "es",
+  //   examples: [
+  //     // Universal (modificar contenido del pedido de comida)
+  //     "quiero cambiar mi pedido de comida",
+  //     "necesito modificar mi pedido del menú",
+  //     "quiero ajustar mi pedido de platos",
+  //     "cambiar algo del pedido de comida",
+  //     "modificar mi orden de comida",
+  //     "agregar un plato al pedido",
+  //     "quitar un plato del pedido",
 
-      // España
-      "quiero cambiar el pedido de comida",
-      "ajustar mi pedido del menú",
-      "agregar comida al pedido",
-      "quitar comida del pedido",
-      "corregir mi pedido de platos",
-      "cambiar un plato del pedido",
+  //     // España
+  //     "quiero cambiar el pedido de comida",
+  //     "ajustar mi pedido del menú",
+  //     "agregar comida al pedido",
+  //     "quitar comida del pedido",
+  //     "corregir mi pedido de platos",
+  //     "cambiar un plato del pedido",
 
-      // Latam (CO/EC/MX)
-      "cambiar mi orden de comida",
-      "modificar mi orden del menú",
-      "agregar un plato a mi orden",
-      "quitar un plato de mi orden",
-      "actualizar mi pedido de comida",
-      "corregir mi orden de platos",
-    ],
-  },
-  {
-    intentKey: "orders:cancel",
-    module: "orders",
-    domain: "restaurant",
-    requiresConfirmation: "always",
-    lang: "es",
-    examples: [
-      // Universal (cancelar pedido de comida explícito)
-      "quiero cancelar mi pedido de comida",
-      "necesito cancelar mi pedido del menú",
-      "cancelar mi pedido de platos",
-      "ya no quiero el pedido de comida",
-      "no quiero mi pedido del restaurante",
-      "anular pedido de comida",
+  //     // Latam (CO/EC/MX)
+  //     "cambiar mi orden de comida",
+  //     "modificar mi orden del menú",
+  //     "agregar un plato a mi orden",
+  //     "quitar un plato de mi orden",
+  //     "actualizar mi pedido de comida",
+  //     "corregir mi orden de platos",
+  //   ],
+  // },
+  // {
+  //   intentKey: "orders:cancel",
+  //   module: "orders",
+  //   domain: "restaurant",
+  //   requiresConfirmation: "always",
+  //   lang: "es",
+  //   examples: [
+  //     // Universal (cancelar pedido de comida explícito)
+  //     "quiero cancelar mi pedido de comida",
+  //     "necesito cancelar mi pedido del menú",
+  //     "cancelar mi pedido de platos",
+  //     "ya no quiero el pedido de comida",
+  //     "no quiero mi pedido del restaurante",
+  //     "anular pedido de comida",
 
-      // España
-      "quiero anular el pedido de comida",
-      "anular mi pedido del menú",
-      "ya no quiero la comida pedida",
-      "cancelad mi pedido de platos",
-      "no quiero recoger la comida",
-      "anular pedido del restaurante",
+  //     // España
+  //     "quiero anular el pedido de comida",
+  //     "anular mi pedido del menú",
+  //     "ya no quiero la comida pedida",
+  //     "cancelad mi pedido de platos",
+  //     "no quiero recoger la comida",
+  //     "anular pedido del restaurante",
 
-      // Latam (CO/EC/MX)
-      "quiero cancelar mi orden de comida",
-      "anular mi orden del menú",
-      "cancelar mi orden de platos",
-      "ya no quiero la orden de comida",
-      "no quiero mi orden del restaurante",
-      "desmarcar mi pedido de comida",
-    ],
-  },
+  //     // Latam (CO/EC/MX)
+  //     "quiero cancelar mi orden de comida",
+  //     "anular mi orden del menú",
+  //     "cancelar mi orden de platos",
+  //     "ya no quiero la orden de comida",
+  //     "no quiero mi orden del restaurante",
+  //     "desmarcar mi pedido de comida",
+  //   ],
+  // },
 ] as const;

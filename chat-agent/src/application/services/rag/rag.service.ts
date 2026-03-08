@@ -7,7 +7,11 @@ import {
   VectorStoreAdapter,
 } from "@/infraestructure/adapters/vector-store";
 import { Schemas } from "@qdrant/js-client-rest";
-import { Product, SpecializedDomain } from "@/infraestructure/adapters/cms";
+import {
+  BusinessesMedia,
+  Product,
+  SpecializedDomain,
+} from "@/infraestructure/adapters/cms";
 import { ModuleKind } from "@/application/services/pomdp";
 import { IntentExample, IntentExampleKey, intentExamples } from "../pomdp";
 
@@ -259,7 +263,7 @@ class RagService {
       enabled: product.enabled,
       price: product.price,
       estimatedProcessingTime: product.estimatedProcessingTime,
-    } as Partial<Product>;
+    } satisfies Partial<Product>;
 
     // 4. Insertar en vector DB
     return this.vectorAdapter.upsertProduct(
@@ -269,10 +273,44 @@ class RagService {
     );
   }
 
+  async upsertBusinessMedia(media: BusinessesMedia) {
+    // 1. Preparar texto para embedding
+    const input = [media.alt, media.filename || ""]
+      .map(this.normalizeText)
+      .filter(Boolean)
+      .join(". ");
+
+    // 2. Generar embedding
+    const data = await this.aiAdapter.embedding({
+      input,
+      dimensions: this.vectorAdapter.dimension,
+    });
+
+    // 3. Preparar payload
+    const payload = {
+      alt: media.alt,
+      url: media.url,
+      thumbnailURL: media.thumbnailURL,
+      business:
+        typeof media.business === "string" ? media.business : media.business.id,
+    } satisfies Partial<BusinessesMedia>;
+
+    // 4. Insertar en vector DB
+    return this.vectorAdapter.upsertBusinessMedia(
+      media.id,
+      data[0].embedding,
+      payload,
+    );
+  }
+
   // -------------------- OPERACIONES DE ADMINISTRACIÓN --------------------
 
-  async deleteProductById(productId: string) {
-    return this.vectorAdapter.deleteProduct(productId);
+  async deleteProductById(id: string) {
+    return this.vectorAdapter.deleteProduct(id);
+  }
+
+  async deleteMediaById(id: string) {
+    return this.vectorAdapter.deleteBusinessMedia(id);
   }
 
   async deleteAllProducts(businessId: string) {

@@ -49,6 +49,46 @@ export const BusinessMedia: CollectionConfig = {
     },
   },
   timestamps: true,
+  hooks: process.env.IS_CLI
+    ? undefined
+    : {
+        afterChange: [
+          async ({ doc, operation, req }) => {
+            await req.payload.jobs.queue({
+              task: "semanticSync",
+              input: {
+                docId: doc.id,
+                collection: "businesses-media",
+                businessId:
+                  typeof doc.business === "string"
+                    ? doc.business
+                    : doc.business.id,
+                operation: operation, // create | update
+              },
+              queue: "oneMinute",
+            });
+            return doc;
+          },
+        ],
+        afterDelete: [
+          async ({ doc, req }) => {
+            await req.payload.jobs.queue({
+              task: "semanticSync",
+              input: {
+                docId: doc.id,
+                collection: "businesses-media",
+                businessId:
+                  typeof doc.business === "string"
+                    ? doc.business
+                    : doc.business.id,
+                operation: "delete",
+              },
+              queue: "oneMinute",
+            });
+            return doc;
+          },
+        ],
+      },
   fields: [
     {
       name: "alt",

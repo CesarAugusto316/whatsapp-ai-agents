@@ -1,5 +1,5 @@
 import { QdrantClient, Schemas } from "@qdrant/js-client-rest";
-import { Product, SpecializedDomain } from "../cms";
+import { BusinessesMedia, Product, SpecializedDomain } from "../cms";
 import {
   IntentPayload,
   IVectorStoreAdapter,
@@ -23,6 +23,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
     const existing = new Set(collections.map((c) => c.name));
 
     await this.ensure("business", existing);
+    await this.ensureBusinessMedia(existing);
     await this.ensureIntents(existing);
     await this.ensureProducts(existing);
   }
@@ -78,6 +79,25 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
     });
   }
 
+  private async ensureBusinessMedia(existing: Set<string>) {
+    if (existing.has("business-media")) return;
+
+    await this.client.createCollection("business-media", {
+      vectors: { size: this.dimension, distance: "Cosine" },
+      /**
+       * @link https://qdrant.tech/documentation/guides/multitenancy/
+       */
+      hnsw_config: { payload_m: 16, m: 0 },
+    });
+    await this.client.createPayloadIndex("business-media", {
+      field_name: "business" satisfies BusinessKey,
+      field_schema: {
+        type: "uuid",
+        is_tenant: true,
+      },
+    });
+  }
+
   // ---------------- Products ----------------
 
   upsertProduct(id: string, vector: number[], payload: Partial<Product>) {
@@ -87,8 +107,26 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
     });
   }
 
+  upsertBusinessMedia(
+    id: string,
+    vector: number[],
+    payload: Partial<BusinessesMedia>,
+  ) {
+    return this.client.upsert("business-media", {
+      wait: true,
+      points: [{ id, vector, payload }],
+    });
+  }
+
   deleteProduct(id: string) {
     return this.client.delete("products", {
+      wait: true,
+      points: [id],
+    });
+  }
+
+  deleteBusinessMedia(id: string) {
+    return this.client.delete("business-media", {
       wait: true,
       points: [id],
     });
@@ -123,6 +161,27 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
             match: { value: businessId },
           },
           { key: "enabled" satisfies EnabledKey, match: { value: true } },
+        ],
+      },
+      limit,
+    });
+  }
+
+  searchBusinessMedia(
+    vector: number[],
+    businessId: string,
+    limit: number,
+    threshold: number,
+  ): Promise<Schemas["QueryResponse"]> {
+    return this.client.query("business-media", {
+      query: vector,
+      score_threshold: threshold,
+      filter: {
+        must: [
+          {
+            key: "business" satisfies BusinessKey,
+            match: { value: businessId },
+          },
         ],
       },
       limit,

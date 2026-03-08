@@ -26,6 +26,17 @@ export const contentSyncStateHandler: Handler<ModuleCtx> = async (c) => {
     }
     logger.info("Business update triggered 🔄");
   }
+
+  if (data.collection === "businesses-media") {
+    if (data.operation === "delete") {
+      await ragService.deleteMediaById(businessId);
+    } else {
+      const media = await cmsAdapter.getBusinessMediaById(data.docId);
+      await ragService.upsertBusinessMedia(media);
+    }
+    logger.info("Business gallery update triggered 🔄");
+  }
+
   //
   else if (data.collection === "products") {
     if (data.operation === "delete") {

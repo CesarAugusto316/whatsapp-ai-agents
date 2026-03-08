@@ -28,11 +28,11 @@ export const DOMAIN_ACTION_CONFIG: Record<
   // RESTAURANT - dominio principal implementado
   restaurant: {
     create: {
-      action: "Hacer una reserva",
-      verb: "creada",
+      action: "Hacer un pedido",
+      verb: "creado",
       verbInfinitive: "crear",
       process: "creación",
-      title: "reserva",
+      title: "pedido",
     },
     update: {
       action: "Modificar una reserva",
@@ -176,32 +176,34 @@ export const DOMAIN_ACTION_CONFIG: Record<
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Mensajes aleatorios para iniciar un pedido de comida
+ * Cada mensaje confirma el inicio del proceso e invita al usuario a tomar acción
+ */
+const ORDER_START_MESSAGES: string[] = [
+  "¡Perfecto! Empecemos tu pedido 🎉\n\n¿Querés que te muestre el menú completo o preferís que te recomiende algunos platos?",
+  "¡Excelente! Vamos a armar tu pedido 🍽️\n\n¿Te gustaría ver el menú completo o que te sugiera algunas opciones populares?",
+  "¡Genial! Ya estamos cocinando tu pedido 👨‍🍳\n\n¿Querés explorar el menú completo o preferís que te recomiende platos?",
+  "¡Muy bien! Comencemos con tu pedido 🥘\n\n¿Preferís ver todo el menú o que te recomiende algunos especiales?",
+  "¡Fantástico! Iniciemos tu pedido 🌟\n\n¿Querés que te muestre todas las opciones o te sugiera algunos platos?",
+  "¡De una! Empecemos con tu orden 🍴\n\n¿Te muestro el menú completo o preferís que te dé algunas recomendaciones?",
+  "¡Listo! Vamos con tu pedido 🎯\n\n¿Querés ver el menú completo o que te sugiera lo más rico?",
+  "¡Vamos allá! Iniciemos tu orden 🚀\n\n¿Preferís explorar el menú o que te recomiende algunos platos?",
+  "¡Buena! Arranquemos con tu pedido 🍕\n\n¿Querés que te pase el menú o que te cuente qué hay de bueno hoy?",
+  "¡Dale! Preparemos tu pedido 🥗\n\n¿Te muestro las opciones del menú o preferís que te sugiera algunos platos?",
+  "¡Genial! Comencemos la experiencia 🍜\n\n¿Querés ver todo el menú o que te recomiende nuestras especialidades?",
+  "¡Excelente! Iniciemos la aventura 🌮\n\n¿Preferís que te muestre el menú o que te dé mis favoritos?",
+];
+
+/**
  * Mensaje para pedir datos de reserva (con o sin nombre previo)
  */
-function getBookingRequestMsg(
+function createOrderMsg(
   domain: SpecializedDomain,
   mode: "create" | "update",
-  hasCustomerName?: boolean,
 ): string {
   const config = DOMAIN_ACTION_CONFIG[domain][mode];
-
-  if (hasCustomerName) {
-    return `
-       Para ${config.verbInfinitive} tu ${config.title} comentame:
-       el *día*, la *hora* y *cuántas personas* serán.
-
-       Por ejemplo:
-         "Mañana a las 8pm para 4 personas"
-     `.trim();
-  }
-
-  return `
-       Para ${config.verbInfinitive} tu ${config.title} es muy fácil, ayudame con:
-       *tu nombre*, el *día*, la *hora* y *cuántas personas* serán.
-
-       Por ejemplo:
-         "A nombre de María Rodríguez, mañana a las 8pm para 4 personas"
-     `.trim();
+  const randomIndex = Math.floor(Math.random() * ORDER_START_MESSAGES.length);
+  return ORDER_START_MESSAGES[randomIndex];
 }
 
 /**
@@ -326,7 +328,7 @@ export const stateMessages = {
     data?: Partial<BookingState>;
   }): string {
     const { domain, data } = params;
-    return getBookingRequestMsg(domain, "create", !!data?.customerName);
+    return createOrderMsg(domain, "create");
   },
 
   [BookingStatuses.MAKE_VALIDATED]: function (params: {
@@ -354,7 +356,7 @@ export const stateMessages = {
     }
 
     // RESTART
-    return getBookingRequestMsg(domain, "update", !!data?.customerName);
+    return createOrderMsg(domain, "update");
   },
 
   // UPDATE
@@ -405,7 +407,7 @@ export const stateMessages = {
     }
 
     // RESTART
-    return getBookingRequestMsg(domain, "update", !!data?.customerName);
+    return createOrderMsg(domain, "update");
   },
 
   [BookingStatuses.CANCEL_VALIDATED]: function (params: {
