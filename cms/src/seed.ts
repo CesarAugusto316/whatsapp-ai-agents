@@ -300,6 +300,6 @@ export const script = async (config: SanitizedConfig) => {
     allAppointmentsToCreate.map((appointment) => payload.create(appointment)),
   );
 
-  payload.logger.info("✅ Seed complete");
+  payload.logger.info(`✅ Seed complete: ${businesses.length} businesses`);
   process.exit(0);
 };

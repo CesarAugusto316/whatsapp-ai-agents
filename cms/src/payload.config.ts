@@ -29,6 +29,10 @@ export default buildConfig({
       scriptPath: path.resolve(dirname, "seed.ts"),
       key: "seed",
     },
+    {
+      scriptPath: path.resolve(dirname, "add-products.ts"),
+      key: "products",
+    },
   ],
   /**
    *
@@ -117,8 +121,8 @@ export default buildConfig({
         defaultJobsCollection.admin = {};
       }
 
-      defaultJobsCollection.admin.hidden = true;
-      // process.env.NODE_ENV === "production";
+      defaultJobsCollection.admin.hidden =
+        process.env.NODE_ENV === "production";
       return defaultJobsCollection;
     },
     tasks: [
