@@ -276,8 +276,8 @@ export interface ProductOrder {
 export interface ProductCart {
   id: string;
   quantity?: number | null;
-  product: string | Product;
-  order: string | ProductOrder;
+  product: string | Product; // product ID
+  order: string | ProductOrder; // order ID
   updatedAt: string;
   createdAt: string;
 }
