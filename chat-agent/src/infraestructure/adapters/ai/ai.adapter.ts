@@ -10,7 +10,11 @@ import {
   ResilientQueryOptions,
 } from "@/application/patterns";
 import { EmbeddingRequest, EmbeddingResponse } from "./embeddings.types";
-import { IAiAdapter, GenerateTextResult } from "./ai.adapter.interface";
+import {
+  IAiAdapter,
+  GenerateTextResult,
+  HandleMessageSendArgs,
+} from "./ai.adapter.interface";
 
 // resilient query + circuit breaker
 const chatConfig = {
@@ -47,13 +51,6 @@ const embeddingConfig = {
     intervalSeconds: 2,
   },
 } satisfies ResilientQueryOptions;
-
-type HandleMessageSendArgs = {
-  readonly systemPrompt: string;
-  readonly msg: string;
-  readonly chatHistory?: ChatMessage[];
-  readonly useAuxModel?: boolean;
-};
 
 const defaultConfig: HandleMessageSendArgs = {
   chatHistory: [],

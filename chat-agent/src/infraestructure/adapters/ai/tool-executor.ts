@@ -10,6 +10,7 @@ import { formatSagaOutput } from "@/application/patterns";
 import { createProductOrderSystemPrompt } from "@/application/services/rag/product-order-prompt";
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
 import { SpecializedDomain } from "../cms";
+import { chatHistoryAdapter } from "../cache";
 
 /**
  * Tools predefinidos para pedidos de productos
@@ -72,12 +73,14 @@ async function executeTool(
         5,
       );
       return JSON.stringify({
-        products: results.points?.map((p) => ({
-          name: p.payload?.name,
-          description: p.payload?.description,
-          price: p.payload?.price,
-          enabled: p.payload?.enabled,
-        })),
+        products: results.points
+          ?.map((p) => ({
+            name: p.payload?.name,
+            description: p.payload?.description,
+            price: p.payload?.price,
+            enabled: p.payload?.enabled,
+          }))
+          .filter((p) => p.enabled),
       });
     }
     case "get_menu": {
@@ -114,13 +117,11 @@ async function processToolCalls(
       } catch {
         // Usar args vacíos si falla el parse
       }
-
       const result = await executeTool(
         toolCall.function.name,
         args,
         businessId,
       );
-
       return {
         role: "tool" as const,
         content: result,
@@ -140,9 +141,11 @@ export async function handleProductOrderWithTools(
 ): Promise<BookingSagaResult> {
   const domain: SpecializedDomain = ctx.business.general.businessType;
   const systemPrompt = createProductOrderSystemPrompt(domain);
+  const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
+    ...(chatHistory ?? []),
     { role: "user", content: message },
   ];
 
@@ -152,6 +155,7 @@ export async function handleProductOrderWithTools(
   });
 
   if (!toolCalls || toolCalls.length === 0) {
+    await chatHistoryAdapter.push(ctx.chatKey, message, content);
     return formatSagaOutput(content);
   }
 
@@ -163,5 +167,6 @@ export async function handleProductOrderWithTools(
     tools: PRODUCT_ORDER_TOOLS,
   });
 
+  await chatHistoryAdapter.push(ctx.chatKey, message, finalResponse);
   return formatSagaOutput(finalResponse);
 }

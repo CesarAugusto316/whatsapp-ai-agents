@@ -6,7 +6,7 @@ import type {
   StartedFuncSagaResult,
   ValidateFuncSagaResult,
 } from "./booking/steps";
-import { formatSagaOutput, SagaOrchestrator } from "@/application/patterns";
+import { formatSagaOutput } from "@/application/patterns";
 import { InputType } from "@/domain/booking/input-parser";
 import { conversationalWorkflow } from "./conversational-workflow";
 import { handleProductOrderWithTools } from "@/infraestructure/adapters/ai/tool-executor";
