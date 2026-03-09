@@ -10,7 +10,7 @@ import {
   ResilientQueryOptions,
 } from "@/application/patterns";
 import { EmbeddingRequest, EmbeddingResponse } from "./embeddings.types";
-import { IAiAdapter } from "./ai.adapter.interface";
+import { IAiAdapter, GenerateTextResult } from "./ai.adapter.interface";
 
 // resilient query + circuit breaker
 const chatConfig = {
@@ -207,6 +207,45 @@ class AiAdapter implements IAiAdapter {
       }
       return content;
     }, chatConfig);
+  }
+
+  /**
+   * Generate text with tool calling support
+   * Returns tool calls if LLM requests them, caller is responsible for execution
+   */
+  async generateTextWithTools(
+    request: MessagesBasedRequest,
+  ): Promise<GenerateTextResult> {
+    const response = await resilientQuery(async () => {
+      const httpResp = await fetch(`${this.config.url}/chat/completions`, {
+        method: "POST",
+        headers: this.config.headers,
+        body: JSON.stringify({
+          model: request.useAuxModel
+            ? this.config.auxModel
+            : this.config.primaryModel,
+          messages: request.messages,
+          tools: request.tools,
+          temperature: request.temperature ?? 0.5,
+          max_tokens: request.max_tokens ?? 512,
+        }),
+      });
+      if (!httpResp.ok) {
+        throw new Error(`Error ${httpResp.status}: ${httpResp.statusText}`);
+      }
+      return (await httpResp.json()) as ChatCompletionResponse;
+    }, chatConfig);
+
+    const choice = response.choices?.[0];
+    if (!choice) {
+      throw new Error("No response from LLM");
+    }
+
+    const { message } = choice;
+    return {
+      content: message.content?.trim() || "",
+      toolCalls: message.tool_calls,
+    };
   }
 
   /**

@@ -61,7 +61,7 @@ export const bootstrapMiddleware = (): MiddlewareHandler<ModuleCtx> => {
     const beliefState = await cacheAdapter.getObj<BeliefState>(beliefKey);
     const bookingKey = `booking:${businessId}:${customerPhone}`;
     const bookingState = await cacheAdapter.getObj<BookingState>(bookingKey);
-    const productOrderKey = `order:${businessId}:${customerPhone}`;
+    const productOrderKey = `product-order:${businessId}:${customerPhone}`;
     const productOrderState =
       await cacheAdapter.getObj<ProductOrderState>(productOrderKey);
 
