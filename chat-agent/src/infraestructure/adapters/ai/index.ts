@@ -22,3 +22,4 @@ export {
   isToolFunction,
   isMessagesBasedRequest,
 } from "./open-ai-compatible.types";
+export { handleProductOrderWithTools } from "./tool-executor";
