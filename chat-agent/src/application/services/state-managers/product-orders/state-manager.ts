@@ -10,7 +10,7 @@ import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { stateMessages } from "./messages";
 import { ParsedBookingData } from "@/domain/booking/input-parser";
 
-export interface BookingStateTransition {
+interface ProductStateTransition {
   nextState?: FMStatus;
   /**
    * Mensaje template determinístico para enviar al usuario después de la transición.
@@ -46,12 +46,12 @@ class ProductOrderStateManager {
       domain?: SpecializedDomain;
       data?: Partial<BookingState>;
     },
-  ): BookingStateTransition {
+  ): ProductStateTransition {
     const { data, timeZone, domain = "restaurant" } = params || {};
 
     switch (status) {
       // CREATE
-      case MainOptions.MAKE_BOOKING:
+      case MainOptions.CREATE_ORDER:
         return {
           nextState: BookingStatuses.MAKE_STARTED,
           message: stateMessages[BookingStatuses.MAKE_STARTED]({
@@ -99,46 +99,46 @@ class ProductOrderStateManager {
           }),
         };
 
-      // UPDATE
-      case MainOptions.UPDATE_BOOKING:
-        return {
-          nextState: BookingStatuses.UPDATE_STARTED,
-          message: stateMessages[BookingStatuses.UPDATE_STARTED]({
-            domain,
-            data,
-            timeZone,
-          }),
-        };
-      case BookingStatuses.UPDATE_STARTED:
-        return {
-          nextState: BookingStatuses.UPDATE_VALIDATED,
-          message: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
-            domain,
-            data,
-            timeZone,
-          }),
-        };
-      case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.CONFIRM:
-        return {
-          nextState: BookingStatuses.UPDATE_CONFIRMED,
-          message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
-            domain,
-            signal: CustomerSignals.CONFIRM,
-            data,
-            timeZone,
-          }),
-        };
-      case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.EXIT:
-        return {
-          nextState: undefined,
-          message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
-            domain,
-            signal: CustomerSignals.EXIT,
-            data,
-            timeZone,
-          }),
-        };
-      case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.RESTART:
+        // UPDATE
+        // case MainOptions.UPDATE_BOOKING:
+        //   return {
+        //     nextState: BookingStatuses.UPDATE_STARTED,
+        //     message: stateMessages[BookingStatuses.UPDATE_STARTED]({
+        //       domain,
+        //       data,
+        //       timeZone,
+        //     }),
+        //   };
+        // case BookingStatuses.UPDATE_STARTED:
+        //   return {
+        //     nextState: BookingStatuses.UPDATE_VALIDATED,
+        //     message: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
+        //       domain,
+        //       data,
+        //       timeZone,
+        //     }),
+        //   };
+        // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.CONFIRM:
+        //   return {
+        //     nextState: BookingStatuses.UPDATE_CONFIRMED,
+        //     message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
+        //       domain,
+        //       signal: CustomerSignals.CONFIRM,
+        //       data,
+        //       timeZone,
+        //     }),
+        //   };
+        // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.EXIT:
+        //   return {
+        //     nextState: undefined,
+        //     message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
+        //       domain,
+        //       signal: CustomerSignals.EXIT,
+        //       data,
+        //       timeZone,
+        //     }),
+        //   };
+        // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.RESTART:
         return {
           nextState: BookingStatuses.UPDATE_STARTED,
           message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
@@ -149,17 +149,17 @@ class ProductOrderStateManager {
           }),
         };
 
-      // CANCEL
-      case MainOptions.CANCEL_BOOKING:
-        return {
-          nextState: BookingStatuses.CANCEL_VALIDATED,
-          message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
-            domain,
-            data,
-            timeZone,
-          }),
-        };
-      case BookingStatuses.CANCEL_VALIDATED + CustomerSignals.CONFIRM:
+        // CANCEL
+        // case MainOptions.CANCEL_BOOKING:
+        //   return {
+        //     nextState: BookingStatuses.CANCEL_VALIDATED,
+        //     message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
+        //       domain,
+        //       data,
+        //       timeZone,
+        //     }),
+        //   };
+        // case BookingStatuses.CANCEL_VALIDATED + CustomerSignals.CONFIRM:
         return {
           nextState: BookingStatuses.CANCEL_CONFIRMED,
           message: stateMessages[BookingStatuses.CANCEL_CONFIRMED]({
@@ -179,34 +179,34 @@ class ProductOrderStateManager {
   /**
    * Fusiona el estado entrante con el estado previo de la reserva
    */
-  mergeState(
-    incoming: Partial<BookingSchema> | ParsedBookingData,
-    previous?: Partial<BookingSchema>,
-  ): BookingSchema {
-    return {
-      customerName:
-        incoming.customerName?.trim() || previous?.customerName?.trim() || "",
-      datetime: {
-        start: {
-          date:
-            incoming.datetime?.start?.date ||
-            previous?.datetime?.start?.date ||
-            "",
-          time:
-            incoming.datetime?.start?.time ||
-            previous?.datetime?.start?.time ||
-            "",
-        },
-        end: {
-          date:
-            incoming.datetime?.end?.date || previous?.datetime?.end?.date || "",
-          time:
-            incoming.datetime?.end?.time || previous?.datetime?.end?.time || "",
-        },
-      },
-      numberOfPeople: incoming.numberOfPeople || previous?.numberOfPeople || 0,
-    };
-  }
+  // mergeState(
+  //   incoming: Partial<BookingSchema> | ParsedBookingData,
+  //   previous?: Partial<BookingSchema>,
+  // ): BookingSchema {
+  //   return {
+  //     customerName:
+  //       incoming.customerName?.trim() || previous?.customerName?.trim() || "",
+  //     datetime: {
+  //       start: {
+  //         date:
+  //           incoming.datetime?.start?.date ||
+  //           previous?.datetime?.start?.date ||
+  //           "",
+  //         time:
+  //           incoming.datetime?.start?.time ||
+  //           previous?.datetime?.start?.time ||
+  //           "",
+  //       },
+  //       end: {
+  //         date:
+  //           incoming.datetime?.end?.date || previous?.datetime?.end?.date || "",
+  //         time:
+  //           incoming.datetime?.end?.time || previous?.datetime?.end?.time || "",
+  //       },
+  //     },
+  //     numberOfPeople: incoming.numberOfPeople || previous?.numberOfPeople || 0,
+  //   };
+  // }
 }
 
 export const productOrderStateManager = new ProductOrderStateManager();

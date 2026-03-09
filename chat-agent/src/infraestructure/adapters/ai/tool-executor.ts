@@ -137,7 +137,7 @@ async function processToolCalls(
  */
 export async function handleProductOrderWithTools(
   ctx: DomainCtx,
-  message: string,
+  userMessage: string,
 ): Promise<BookingSagaResult> {
   const domain: SpecializedDomain = ctx.business.general.businessType;
   const systemPrompt = createProductOrderSystemPrompt(domain);
@@ -146,17 +146,20 @@ export async function handleProductOrderWithTools(
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
     ...(chatHistory ?? []),
-    { role: "user", content: message },
+    { role: "user", content: userMessage },
   ];
 
   const { toolCalls, content } = await aiAdapter.generateTextWithTools({
+    useAuxModel: true,
     messages,
     tools: PRODUCT_ORDER_TOOLS,
   });
 
+  console.log({ toolCalls, content });
+
   if (!toolCalls || toolCalls.length === 0) {
-    await chatHistoryAdapter.push(ctx.chatKey, message, content);
-    return formatSagaOutput(content);
+    await chatHistoryAdapter.push(ctx.chatKey, userMessage, content);
+    return formatSagaOutput(content, "No tool calls", toolCalls);
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx.businessId);
@@ -167,6 +170,6 @@ export async function handleProductOrderWithTools(
     tools: PRODUCT_ORDER_TOOLS,
   });
 
-  await chatHistoryAdapter.push(ctx.chatKey, message, finalResponse);
-  return formatSagaOutput(finalResponse);
+  await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
+  return formatSagaOutput(finalResponse, "tools called", toolCalls);
 }

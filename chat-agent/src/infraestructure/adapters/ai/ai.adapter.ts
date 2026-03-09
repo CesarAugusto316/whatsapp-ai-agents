@@ -237,7 +237,6 @@ class AiAdapter implements IAiAdapter {
     if (!choice) {
       throw new Error("No response from LLM");
     }
-
     const { message } = choice;
     return {
       content: message.content?.trim() || "",

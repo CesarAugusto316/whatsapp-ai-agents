@@ -288,6 +288,7 @@ export const Products: CollectionConfig = {
       en: "My products",
       es: "Mis productos",
     },
+    defaultColumns: ["name", "price", "enabled", "inventory", "business"],
     // hidden: true,
     hideAPIURL: true,
   },

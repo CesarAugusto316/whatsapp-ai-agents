@@ -84,6 +84,7 @@ export async function initWorkflow(
         },
       },
     );
+
     await cacheAdapter.save(productOrderKey, {
       businessId: business?.id,
       customerId: customer?.id,
