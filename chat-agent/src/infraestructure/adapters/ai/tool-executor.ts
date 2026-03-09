@@ -113,7 +113,7 @@ async function processToolCalls(
     toolCalls.map(async (toolCall) => {
       let args: Record<string, unknown> = {};
       try {
-        args = JSON.parse(toolCall.function.arguments);
+        args = JSON.parse(JSON.parse(toolCall.function.arguments));
       } catch {
         // Usar args vacíos si falla el parse
       }
@@ -159,17 +159,24 @@ export async function handleProductOrderWithTools(
 
   if (!toolCalls || toolCalls.length === 0) {
     await chatHistoryAdapter.push(ctx.chatKey, userMessage, content);
-    return formatSagaOutput(content, "No tool calls", toolCalls);
+    return formatSagaOutput(content, "No tool calls", {
+      toolCalls,
+      systemPrompt,
+    });
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx.businessId);
+  console.log({ toolResults });
   messages.push(...toolResults);
 
   const finalResponse = await aiAdapter.generateText({
     messages,
-    tools: PRODUCT_ORDER_TOOLS,
+    // tools: PRODUCT_ORDER_TOOLS,
   });
 
   await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
-  return formatSagaOutput(finalResponse, "tools called", toolCalls);
+  return formatSagaOutput(finalResponse, "tools called", {
+    toolCalls,
+    systemPrompt,
+  });
 }
