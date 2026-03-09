@@ -212,7 +212,7 @@ class RagService {
     businessId: string,
     limit = 3,
     lang = "es",
-  ): Promise<Schemas["QueryResponse"]> {
+  ) {
     // 1. Generar clave de caché
     const normalizedQuery = this.normalizeText(query);
     const hash = this.sha256(
@@ -228,7 +228,7 @@ class RagService {
       businessId,
       limit,
       this.THRESHOLD,
-    );
+    ) as Promise<{ points: QuadrantPoint<Partial<Product>>[] }>;
   }
 
   /**
@@ -239,7 +239,7 @@ class RagService {
     businessId: string,
     limit = 3,
     lang = "es",
-  ): Promise<Schemas["QueryResponse"]> {
+  ) {
     // 1. Generar clave de caché
     const normalizedQuery = this.normalizeText(query);
     const hash = this.sha256(
@@ -255,7 +255,7 @@ class RagService {
       businessId,
       limit,
       this.THRESHOLD,
-    );
+    ) as Promise<{ points: QuadrantPoint<Partial<BusinessesMedia>>[] }>;
   }
 
   /**

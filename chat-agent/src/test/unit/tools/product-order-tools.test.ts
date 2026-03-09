@@ -2,6 +2,7 @@ import { describe, test, expect, mock } from "bun:test";
 import { DomainCtx } from "@/domain/booking";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { ToolCall } from "@/infraestructure/adapters/ai";
+import type { ExecuteToolFn } from "@/application/use-cases/sagas/state-orchestrator";
 
 const mockRagService = {
   searchProducts: mock(() =>

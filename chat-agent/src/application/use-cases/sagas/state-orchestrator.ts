@@ -32,22 +32,16 @@ const bookingSagaMap: Partial<
   CANCEL_VALIDATED: reservationSaga.cancelValidated,
 };
 
-/**
- * Tool executor type
- */
-type ToolExecutor = (args: {
-  name: string;
-  arguments: Record<string, unknown>;
-  ctx: DomainCtx;
-}) => Promise<string>;
+export interface ExecuteToolFn {
+  (args: {
+    name: string;
+    arguments: Record<string, unknown>;
+    ctx: DomainCtx;
+  }): Promise<string>;
+}
 
-/**
- * Creates a tool executor for product order tools
- * @visibleForTesting
- */
-export const createProductOrderToolExecutor =
-  (ctx: DomainCtx): ToolExecutor =>
-  async ({ name, arguments: args }) => {
+export function createProductOrderToolExecutor(ctx: DomainCtx): ExecuteToolFn {
+  return async function ({ name, arguments: args }) {
     const businessId = ctx.businessId;
 
     switch (name) {
@@ -87,7 +81,7 @@ export const createProductOrderToolExecutor =
         return JSON.stringify(
           {
             menuItems: results.points?.map((p) => ({
-              url: p.payload?.url,
+              url: p.payload?.alt,
             })),
           },
           null,
@@ -99,6 +93,7 @@ export const createProductOrderToolExecutor =
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
   };
+}
 
 /**
  * Processes tool calls and returns formatted results for the LLM
@@ -106,7 +101,7 @@ export const createProductOrderToolExecutor =
  */
 export const processToolCalls = async (
   toolCalls: ToolCall[],
-  executor: ToolExecutor,
+  executor: ExecuteToolFn,
   ctx: DomainCtx,
 ): Promise<ChatMessage[]> => {
   const results: ChatMessage[] = [];
