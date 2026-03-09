@@ -24,12 +24,13 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
       parameters: {
         type: "object" as const,
         properties: {
-          description: {
+          intent: {
             type: "string",
-            description: "Product description to search for",
+            description:
+              "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', 'busco platos con pollo', 'quiero pedir una pizza')",
           },
         },
-        required: ["description"],
+        required: ["description", "intent"],
         additionalProperties: false,
       },
     },
@@ -42,11 +43,13 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
       parameters: {
         type: "object" as const,
         properties: {
-          description: {
+          intent: {
             type: "string",
-            description: "Category filter (optional)",
+            description:
+              "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', '¿qué postres tienen?', 'muéstrame las opciones')",
           },
         },
+        required: ["intent"],
         additionalProperties: false,
       },
     },
@@ -56,22 +59,19 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
 /**
  * Ejecuta una herramienta específica
  */
-async function executeTool(
+export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   businessId: string,
 ): Promise<string> {
   switch (name) {
     case "search_products": {
-      const description = args.description as string;
-      if (!description) {
+      const intent = args.intent as string;
+      if (!intent) {
         return JSON.stringify({ error: "Missing description" });
       }
-      const results = await ragService.searchProducts(
-        description,
-        businessId,
-        5,
-      );
+      console.log({ tool: "search_products", description: intent });
+      const results = await ragService.searchProducts(intent, businessId, 5);
       return JSON.stringify({
         products: results.points
           ?.map((p) => ({
@@ -84,12 +84,13 @@ async function executeTool(
       });
     }
     case "get_menu": {
-      const category = args.description as string | undefined;
+      const intent = args.intent as string | undefined;
       const results = await ragService.searchBusinessMedia(
-        category || "menu",
+        intent || "menu",
         businessId,
         3,
       );
+      console.log({ tool: "get_menu", intent, results });
       return JSON.stringify({
         menuItems: results.points?.map((p) => ({
           url: p.payload?.url,
@@ -105,7 +106,7 @@ async function executeTool(
 /**
  * Procesa tool calls del LLM y ejecuta las herramientas
  */
-async function processToolCalls(
+export async function processToolCalls(
   toolCalls: ToolCall[],
   businessId: string,
 ): Promise<ChatMessage[]> {
@@ -117,6 +118,7 @@ async function processToolCalls(
       } catch {
         // Usar args vacíos si falla el parse
       }
+      // Extraer el intent del usuario de los argumentos del tool call
       const result = await executeTool(
         toolCall.function.name,
         args,
