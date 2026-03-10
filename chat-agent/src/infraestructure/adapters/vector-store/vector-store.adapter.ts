@@ -161,7 +161,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
             key: "business" satisfies BusinessKey,
             match: { value: businessId },
           },
-          { key: "enabled" satisfies EnabledKey, match: { value: true } },
+          // { key: "enabled" satisfies EnabledKey, match: { value: true } },
         ],
       },
       limit,

@@ -1,8 +1,9 @@
 import { describe, test, expect } from "bun:test";
 import { executeTool } from "@/infraestructure/adapters/ai/tool-executor";
+import { env } from "bun";
 
 // Business ID con datos de menú en Qdrant
-const BUSINESS_ID = "ec4978a3-a7fb-4dbc-8681-a1622bf31b57";
+const BUSINESS_ID = env.BUSINESS_ID_TEST!;
 
 describe("executeTool - get_menu", () => {
   test("should find menu with intent 'menu'", async () => {

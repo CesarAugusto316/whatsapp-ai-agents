@@ -109,6 +109,8 @@ export async function executeTool(
         isAvailable: payload?.enabled,
       }));
 
+      console.log({ products });
+
       if (!products?.length) {
         return {
           success: false,
@@ -230,7 +232,6 @@ export async function handleProductOrderWithTools(
     tools: PRODUCT_ORDER_TOOLS,
     response_format: { type: "json_object" },
   });
-  console.log({ toolCalls });
 
   if (!toolCalls || toolCalls.length === 0) {
     await chatHistoryAdapter.push(ctx.chatKey, userMessage, content);
