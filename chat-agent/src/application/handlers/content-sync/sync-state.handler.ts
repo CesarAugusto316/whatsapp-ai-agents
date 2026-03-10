@@ -42,7 +42,6 @@ export const contentSyncStateHandler: Handler<ModuleCtx> = async (c) => {
       await ragService.deleteProductById(data.docId);
     } else {
       const product = await cmsAdapter.getProductById(data.docId);
-      console.log({ product });
       await ragService.upsertProduct(product);
     }
     logger.info("Product update triggered 🔄");

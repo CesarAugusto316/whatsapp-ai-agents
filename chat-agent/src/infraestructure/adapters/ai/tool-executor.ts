@@ -109,6 +109,8 @@ export async function executeTool(
         isAvailable: payload?.enabled,
       }));
 
+      console.log({ keywords, products });
+
       if (!products?.length) {
         return {
           success: false,

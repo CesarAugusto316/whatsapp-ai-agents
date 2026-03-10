@@ -212,7 +212,7 @@ export function createProductOrderSystemPrompt(
 
     Usuario: "Quiero una pizza"
     Tú: [LLAMAR search_products buscando "pizza"]
-    [Después de obtener resultados] "¡Sí! Tenemos estas opciones de pizza: ..." (Lista todos los elementos)
+    [Después de obtener resultados] "¡Sí! Tenemos estas opciones de pizza: ..." (Lista todos los elementos revelantes)
 
     ## IMPORTANTE
 
