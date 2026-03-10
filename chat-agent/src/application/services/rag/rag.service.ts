@@ -22,7 +22,7 @@ import { IntentExample, IntentExampleKey, intentExamples } from "../pomdp";
 class RagService {
   private readonly EMBED_VERSION = "qwen3-0.6b";
   private readonly THRESHOLD = 0.6;
-  private readonly CACHE_TTL = 60 * 60 * 24 * 40; // 40 días
+  private readonly CACHE_TTL = 60 * 60 * 24 * 30; // 30 días
 
   constructor(
     private vectorAdapter: IVectorStoreAdapter,
@@ -214,7 +214,7 @@ class RagService {
     businessId: string,
     limit = 3,
     lang = "es",
-    THRESHOLD?: number,
+    THRESHOLD = 0.7,
   ) {
     // 1. Generar clave de caché
     const normalizedQuery = this.normalizeText(query);

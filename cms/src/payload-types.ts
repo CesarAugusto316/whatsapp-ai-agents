@@ -406,7 +406,7 @@ export interface Customer {
 export interface BusinessesMedia {
   id: string;
   /**
-   * Alternative text for the image or video
+   * Description text for the image or video
    */
   alt: string;
   /**
@@ -477,7 +477,7 @@ export interface Product {
 export interface ProductsMedia {
   id: string;
   /**
-   * Alternative text for the image or video
+   * Description text for the image or video
    */
   alt: string;
   /**

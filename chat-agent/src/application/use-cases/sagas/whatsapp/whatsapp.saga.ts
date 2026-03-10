@@ -195,11 +195,13 @@ const sendMsgText: WhatsappSagaStep = {
         file.mimetype.startsWith("image/")
           ? whatsappAdapter.sendImage({
               ...args,
+              caption: file.alt,
               file,
             })
           : file.mimetype.startsWith("video/")
             ? whatsappAdapter.sendVideo({
                 ...args,
+                caption: file.alt,
                 file,
               })
             : null,
