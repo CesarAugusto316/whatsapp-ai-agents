@@ -13,6 +13,7 @@ import {
   resilientQuery,
   ResilientQueryOptions,
 } from "@/application/patterns";
+import { SendImagePayload } from "./whatsapp-types/send-image";
 
 const apiUrl = env.WAHA_API + "/api";
 const apiKey = env.WAHA_API_KEY; // waha API key
@@ -171,6 +172,14 @@ class WhatsAppAdapter {
 
   public async sendEvent(args: SendEventPayload) {
     return fetch(`${apiUrl}/${args.session}/events`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify(args),
+    });
+  }
+
+  public async sendImage(args: SendImagePayload) {
+    return fetch(`${apiUrl}/${args.session}/sendImage`, {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify(args),

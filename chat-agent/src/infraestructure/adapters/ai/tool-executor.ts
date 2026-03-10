@@ -11,6 +11,7 @@ import { createProductOrderSystemPrompt } from "@/application/services/rag/produ
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
 import { SpecializedDomain } from "../cms";
 import { chatHistoryAdapter } from "../cache";
+import { SendImagePayload } from "../whatsapp";
 
 /**
  *
@@ -36,8 +37,12 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
             description:
               "Specific product keywords to search for (e.g., 'pizza hawaiana', 'zapatos rojos', 'camisa azul')",
           },
+          limit: {
+            type: "integer",
+            description: "Maximum number of results to return (default: 5)",
+          },
         },
-        required: ["intent", "keywords"],
+        required: ["intent", "keywords", "limit"],
         additionalProperties: false,
       },
     },
@@ -55,8 +60,12 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
             description:
               "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', '¿qué postres tienen?', 'muéstrame las opciones')",
           },
+          limit: {
+            type: "integer",
+            description: "Maximum number of results to return (default: 3)",
+          },
         },
-        required: ["intent"],
+        required: ["intent", "limit"],
         additionalProperties: false,
       },
     },
@@ -70,40 +79,55 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   businessId: string,
-): Promise<string> {
+): Promise<{ content: string; files: SendImagePayload["file"][] }> {
   switch (name) {
+    //
     case "search_products": {
       const keywords = args.keywords as string;
+      const limit = Number(args.limit) || 5;
       // Usar keywords si está disponible, sino usar intent
-      const results = await ragService.searchProducts(keywords, businessId, 5);
-      return JSON.stringify({
-        products: results.points
-          ?.map((p) => ({
-            name: p.payload?.name,
-            description: p.payload?.description,
-            price: p.payload?.price,
-            isAvailable: p.payload?.enabled,
-            estimatedProcessingTime: p.payload?.estimatedProcessingTime,
-          }))
-          .filter((p) => p.isAvailable),
-      });
+      const results = await ragService.searchProducts(
+        keywords,
+        businessId,
+        limit,
+      );
+      return {
+        content: JSON.stringify({
+          products: results.points
+            ?.map(({ payload }) => ({
+              ...payload,
+              isAvailable: payload?.enabled,
+            }))
+            .filter((p) => p.isAvailable),
+        }),
+
+        files: [],
+      };
     }
+
     case "get_menu": {
       const intent = args.intent as string | undefined;
+      const limit = Number(args.limit) || 3;
       const { points } = await ragService.searchBusinessMedia(
         intent || "menu",
         businessId,
-        3,
+        limit,
       );
-      return JSON.stringify({
-        menuItems: points?.map((p) => ({
-          url: p.payload?.url,
-          thumbnailURL: p.payload?.thumbnailURL,
+      return {
+        files: points?.map((p) => ({
+          filename: p.payload.filename ?? "",
+          url: p.payload.url ?? "",
+          mimetype: p.payload.mimeType ?? "",
         })),
-      });
+        content: "Aquí tienes el menú:",
+      };
     }
+
     default:
-      return JSON.stringify({ error: `Unknown tool: ${name}` });
+      return {
+        content: JSON.stringify({ error: `Unknown tool: ${name}` }),
+        files: [],
+      };
   }
 }
 
@@ -113,7 +137,7 @@ export async function executeTool(
 export async function processToolCalls(
   toolCalls: ToolCall[],
   businessId: string,
-): Promise<ChatMessage[]> {
+): Promise<{ text: ChatMessage; files?: SendImagePayload["file"][] }[]> {
   return Promise.all(
     toolCalls.map(async (toolCall) => {
       let args: Record<string, unknown> = {};
@@ -129,10 +153,13 @@ export async function processToolCalls(
         businessId,
       );
       return {
-        role: "tool" as const,
-        content: result,
-        tool_call_id: toolCall.id,
-        name: toolCall.function.name,
+        text: {
+          role: "tool",
+          content: result.content,
+          tool_call_id: toolCall.id,
+          name: toolCall.function.name,
+        } satisfies ChatMessage,
+        files: result.files,
       };
     }),
   );
@@ -159,9 +186,9 @@ export async function handleProductOrderWithTools(
     useAuxModel: true,
     messages,
     tools: PRODUCT_ORDER_TOOLS,
+    response_format: { type: "json_object" },
   });
-
-  console.log({ toolCalls, content });
+  console.log({ toolCalls });
 
   if (!toolCalls || toolCalls.length === 0) {
     await chatHistoryAdapter.push(ctx.chatKey, userMessage, content);
@@ -172,17 +199,20 @@ export async function handleProductOrderWithTools(
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx.businessId);
-  console.log({ toolResults });
-  messages.push(...toolResults);
+  messages.push(...toolResults.map((r) => r.text));
 
   const finalResponse = await aiAdapter.generateText({
     messages,
-    // tools: PRODUCT_ORDER_TOOLS,
   });
 
   await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
-  return formatSagaOutput(finalResponse, "tools called", {
-    toolCalls,
-    systemPrompt,
-  });
+  return formatSagaOutput(
+    finalResponse,
+    "tools called",
+    {
+      toolCalls,
+      systemPrompt,
+    },
+    ...toolResults.map((r) => r.files),
+  );
 }

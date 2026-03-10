@@ -311,7 +311,8 @@ class RagService {
     const payload = {
       alt: media.alt,
       url: media.url,
-      thumbnailURL: media.thumbnailURL,
+      filename: media.filename,
+      mimeType: media.mimeType,
       business:
         typeof media.business === "string" ? media.business : media.business.id,
     } satisfies Partial<BusinessesMedia>;

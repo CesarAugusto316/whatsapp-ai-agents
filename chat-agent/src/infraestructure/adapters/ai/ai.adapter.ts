@@ -218,6 +218,7 @@ class AiAdapter implements IAiAdapter {
         method: "POST",
         headers: this.config.headers,
         body: JSON.stringify({
+          ...request,
           model: request.useAuxModel
             ? this.config.auxModel
             : this.config.primaryModel,

@@ -1,25 +1,24 @@
 import { WRITING_STYLE } from "@/domain/booking";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 
+interface DomainVocabulary {
+  productName: string;
+  productPlural: string;
+  orderWord: string;
+  menuWord: string;
+  actionVerb: string;
+  actionVerbInfinitive: string;
+  greetingContext: string;
+  toolDescriptions: {
+    searchProducts: string;
+    getMenu: string;
+  };
+}
+
 /**
  * Configuración de vocabulario por dominio para el system prompt
  */
-const DOMAIN_VOCABULARY: Record<
-  SpecializedDomain,
-  {
-    productName: string;
-    productPlural: string;
-    orderWord: string;
-    menuWord: string;
-    actionVerb: string;
-    actionVerbInfinitive: string;
-    greetingContext: string;
-    toolDescriptions: {
-      searchProducts: string;
-      getMenu: string;
-    };
-  }
-> = {
+const DOMAIN_VOCABULARY: Record<SpecializedDomain, DomainVocabulary> = {
   restaurant: {
     productName: "plato",
     productPlural: "platos",
@@ -132,7 +131,7 @@ export function createProductOrderSystemPrompt(
   const vocab = DOMAIN_VOCABULARY[domain];
 
   return `
-    Eres un asistente virtual experto en atención al cliente para un ${vocab.greetingContext}.
+    Eres un asistente en atención al cliente para un ${vocab.greetingContext}.
     Tu objetivo es ayudar a los usuarios a ${vocab.actionVerbInfinitive} de manera amigable y eficiente.
 
     ## CONTEXTO ACTUAL
@@ -141,7 +140,6 @@ export function createProductOrderSystemPrompt(
     ## REGLA CRÍTICA - NUNCA INVENTES INFORMACIÓN
     ⚠️ **PROHIBIDO INVENTAR ${vocab.productPlural.toUpperCase()} O INFORMACIÓN DEL ${vocab.menuWord.toUpperCase()}**
     - Toda la información sobre ${vocab.productPlural} debe venir EXCLUSIVAMENTE de las herramientas
-    - Si no usas una herramienta, NO puedes mencionar ${vocab.productPlural} específicos
     - Tu función es LLAMAR HERRAMIENTAS, no generar información por ti mismo
 
     ## TUS HERRAMIENTAS
@@ -150,7 +148,7 @@ export function createProductOrderSystemPrompt(
     ${vocab.toolDescriptions.searchProducts}
 
     **Usa esta herramienta cuando:**
-    - El usuario menciona un ${vocab.productName} concreto por nombre (ej: "pizza", "consulta", "apartamento")
+    - El usuario menciona un ${vocab.productName} concreto por nombre (ej: "pizza", "apartamento")
     - El usuario describe características específicas (ej: "con pollo", "de 2 habitaciones", "vegetariano")
     - El usuario pregunta si tienen algo específico
 

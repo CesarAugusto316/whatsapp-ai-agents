@@ -125,7 +125,7 @@ const sendStartTyping: WhatsappSagaStep = {
  * Note: This step doesn't have direct WhatsApp API calls but produces
  * the text result that will be sent in the final step.
  */
-const bookingSagaStep: WhatsappSagaStep = {
+const businessSagaStep: WhatsappSagaStep = {
   config: {
     execute: { name: "reservationFlow", ...stepConfig },
   },
@@ -136,7 +136,12 @@ const bookingSagaStep: WhatsappSagaStep = {
       lastStepResult?.compensate?.result ||
       "Ocurrio un error, vuelva a intentarlo más tarde";
 
-    return { text: result, continue: true };
+    const images =
+      lastStepResult?.execute?.images ||
+      lastStepResult?.compensate?.images ||
+      [];
+
+    return { text: result, continue: true, images };
   },
 };
 
@@ -180,12 +185,23 @@ const sendMsgText: WhatsappSagaStep = {
   execute: async ({ ctx, getStepResult }) => {
     // Retrieve the text result from the reservationFlow step
     const text = getStepResult("execute:reservationFlow")?.text ?? "";
+    const imageFiles = getStepResult("execute:reservationFlow")?.images ?? [];
     const args = {
-      text,
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return whatsappAdapter.sendMsgText(args);
+    await whatsappAdapter.sendMsgText({ ...args, text });
+
+    await Promise.all(
+      imageFiles.map((file) =>
+        whatsappAdapter.sendImage({
+          ...args,
+          file,
+        }),
+      ),
+    );
+
+    return { text };
   },
 };
 
@@ -196,7 +212,7 @@ export const whatsappSagaOrchestrator = async (ctx: DomainCtx) => {
   })
     .addStep(sendSeen)
     .addStep(sendStartTyping)
-    .addStep(bookingSagaStep)
+    .addStep(businessSagaStep)
     .addStep(sendStopTyping)
     .addStep(sendMsgText)
     .start();
@@ -208,5 +224,5 @@ export {
   sendStartTyping,
   sendStopTyping,
   sendMsgText,
-  bookingSagaStep,
+  businessSagaStep as bookingSagaStep,
 };

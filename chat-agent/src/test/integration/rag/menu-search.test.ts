@@ -11,7 +11,7 @@ describe("executeTool - get_menu", () => {
       { intent: "menu" },
       BUSINESS_ID,
     );
-    const parsed = JSON.parse(result);
+    const parsed = JSON.parse(result.content);
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
@@ -28,7 +28,7 @@ describe("executeTool - get_menu", () => {
       { intent: "quiero ver el menu" },
       BUSINESS_ID,
     );
-    const parsed = JSON.parse(result);
+    const parsed = JSON.parse(result.content);
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
@@ -45,7 +45,7 @@ describe("executeTool - get_menu", () => {
       { intent: "quiero ver el menú" },
       BUSINESS_ID,
     );
-    const parsed = JSON.parse(result);
+    const parsed = JSON.parse(result.content);
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
@@ -62,7 +62,7 @@ describe("executeTool - get_menu", () => {
       { intent: "muéstrame el menú" },
       BUSINESS_ID,
     );
-    const parsed = JSON.parse(result);
+    const parsed = JSON.parse(result.content);
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
@@ -79,7 +79,7 @@ describe("executeTool - get_menu", () => {
       { intent: "la carta por favor" },
       BUSINESS_ID,
     );
-    const parsed = JSON.parse(result);
+    const parsed = JSON.parse(result.content);
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
@@ -92,7 +92,7 @@ describe("executeTool - get_menu", () => {
 
   test("should find menu with undefined intent (fallback to 'menu')", async () => {
     const result = await executeTool("get_menu", {}, BUSINESS_ID);
-    const parsed = JSON.parse(result);
+    const parsed = JSON.parse(result.content);
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
