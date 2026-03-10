@@ -214,6 +214,7 @@ class RagService {
     businessId: string,
     limit = 3,
     lang = "es",
+    THRESHOLD?: number,
   ) {
     // 1. Generar clave de caché
     const normalizedQuery = this.normalizeText(query);
@@ -229,7 +230,7 @@ class RagService {
       embedding,
       businessId,
       limit,
-      this.THRESHOLD,
+      THRESHOLD ?? this.THRESHOLD,
     ) as Promise<{ points: QuadrantPoint<Partial<Product>>[] }>;
   }
 
