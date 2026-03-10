@@ -6,7 +6,6 @@ import {
   QuadrantPoint,
   VectorStoreAdapter,
 } from "@/infraestructure/adapters/vector-store";
-import { Schemas } from "@qdrant/js-client-rest";
 import {
   BusinessesMedia,
   Product,
@@ -59,7 +58,10 @@ class RagService {
 
   private normalizeText(text?: string): string {
     if (!text) return "";
-    return text.replace(/\s+/g, " ").trim();
+    return text
+      .replace(/[.,!?;:()"'¡¿\-–—]/g, "") // eliminar puntuación
+      .replace(/\s+/g, " ") // colapsar espacios
+      .trim();
   }
 
   /**

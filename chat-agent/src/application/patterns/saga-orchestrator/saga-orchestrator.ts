@@ -2,7 +2,7 @@ import { StepConfig } from "@dbos-inc/dbos-sdk";
 import type { StartWorkflowParams } from "node_modules/@dbos-inc/dbos-sdk/dist/src/dbos";
 import { logger } from "@/infraestructure/logging";
 import { durableExecution } from "@/infraestructure/durable-execution";
-import type { SendImagePayload } from "@/infraestructure/adapters/whatsapp";
+import type { MediaFile } from "@/infraestructure/adapters/whatsapp";
 
 export const stepConfig = {
   retriesAllowed: true, // Enable automatic retries on failure
@@ -25,7 +25,7 @@ type SagaKey = string | number | bigint;
  */
 export type SagaBag = Record<string, unknown> & {
   result?: string;
-  images?: SendImagePayload["file"][];
+  files?: MediaFile[];
   continue?: boolean;
   /**
    * @todo Esto puede ser usada en el futuro para desacoplar resolveNextState

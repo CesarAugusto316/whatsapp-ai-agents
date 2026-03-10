@@ -94,17 +94,17 @@ export const BusinessMedia: CollectionConfig = {
       name: "alt",
       type: "text",
       label: {
-        en: "Alternative Text",
-        es: "Texto Alternativo",
+        en: "Description",
+        es: "Descripción",
       },
       admin: {
         description: {
-          en: "Alternative text for the image or video",
-          es: "Texto alternativo para la imagen o video",
+          en: "Description text for the image or video",
+          es: "Descripción para la imagen o video",
         },
         placeholder: {
-          en: "Enter alternative text",
-          es: "Ingrese texto alternativo",
+          en: "Use keywords to describe the image or video",
+          es: "Usa palabras clave para describir la imagen o video",
         },
       },
       required: true,

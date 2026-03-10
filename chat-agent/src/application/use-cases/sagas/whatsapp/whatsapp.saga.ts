@@ -136,12 +136,10 @@ const businessSagaStep: WhatsappSagaStep = {
       lastStepResult?.compensate?.result ||
       "Ocurrio un error, vuelva a intentarlo más tarde";
 
-    const images =
-      lastStepResult?.execute?.images ||
-      lastStepResult?.compensate?.images ||
-      [];
+    const files =
+      lastStepResult?.execute?.files || lastStepResult?.compensate?.files || [];
 
-    return { text: result, continue: true, images };
+    return { text: result, continue: true, files };
   },
 };
 
@@ -185,7 +183,7 @@ const sendMsgText: WhatsappSagaStep = {
   execute: async ({ ctx, getStepResult }) => {
     // Retrieve the text result from the reservationFlow step
     const text = getStepResult("execute:reservationFlow")?.text ?? "";
-    const imageFiles = getStepResult("execute:reservationFlow")?.images ?? [];
+    const files = getStepResult("execute:reservationFlow")?.files ?? [];
     const args = {
       session: ctx.session,
       chatId: ctx.customerPhone,
@@ -193,11 +191,18 @@ const sendMsgText: WhatsappSagaStep = {
     await whatsappAdapter.sendMsgText({ ...args, text });
 
     await Promise.all(
-      imageFiles.map((file) =>
-        whatsappAdapter.sendImage({
-          ...args,
-          file,
-        }),
+      files.map((file) =>
+        file.mimetype.startsWith("image/")
+          ? whatsappAdapter.sendImage({
+              ...args,
+              file,
+            })
+          : file.mimetype.startsWith("video/")
+            ? whatsappAdapter.sendVideo({
+                ...args,
+                file,
+              })
+            : null,
       ),
     );
 

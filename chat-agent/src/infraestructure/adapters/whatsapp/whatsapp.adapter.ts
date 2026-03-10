@@ -13,7 +13,10 @@ import {
   resilientQuery,
   ResilientQueryOptions,
 } from "@/application/patterns";
-import { SendImagePayload } from "./whatsapp-types/send-image";
+import {
+  SendImagePayload,
+  SendVideoPayload,
+} from "./whatsapp-types/send-media";
 
 const apiUrl = env.WAHA_API + "/api";
 const apiKey = env.WAHA_API_KEY; // waha API key
@@ -183,6 +186,18 @@ class WhatsAppAdapter {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify(args),
+    });
+  }
+
+  public async sendVideo(args: SendVideoPayload) {
+    return fetch(`${apiUrl}/${args.session}/sendVideo`, {
+      method: "POST",
+      headers: this.headers,
+      body: JSON.stringify({
+        ...args,
+        convert: args.convert ?? false,
+        asNote: args.asNote ?? false,
+      }),
     });
   }
 }

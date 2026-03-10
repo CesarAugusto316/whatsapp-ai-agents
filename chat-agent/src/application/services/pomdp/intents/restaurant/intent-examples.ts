@@ -146,73 +146,68 @@ export const restaurantBooking: IntentExample<BookingIntentKey>[] = [
 ] as const;
 
 export const restaurantProducts: IntentExample<ProductIntentKey>[] = [
-  {
-    intentKey: "products:view",
-    module: "products",
-    domain: "restaurant",
-    requiresConfirmation: "maybe",
-    lang: "es",
-    examples: [
-      // Universal (explícito sobre comida/platos)
-      "quiero ver el menú de comidas",
-      "puedo ver la carta de platos",
-      "tienen menú disponible hoy",
-      "dame las opciones de comida",
-      "muéstrame los platos del menú",
-      "qué platos tienen para comer",
-      "ver el menú del restaurante",
-
-      // España (auténtico y explícito)
-      "quiero ver la carta de comer",
-      "qué hay en la carta hoy",
-      "enséñame la carta de platos",
-      "qué tienen para cenar hoy",
-      "opciones de la carta del día",
-      "ver los platos de la carta",
-
-      // Latam (CO/EC/MX)
-      "qué hay de comer hoy",
-      "menú del día para almorzar",
-      "qué tienen para almorzar hoy",
-      "opciones del menú de comida",
-      "qué venden para comer hoy",
-      "qué ofrecen para cenar",
-      "ver el menú de platos",
-    ],
-  },
-  {
-    intentKey: "products:recommend",
-    module: "products",
-    domain: "restaurant",
-    requiresConfirmation: "always",
-    lang: "es",
-    examples: [
-      // Universal (explícito sobre platos/comida)
-      "qué plato me recomiendas",
-      "qué es lo mejor para comer",
-      "qué debo probar del menú",
-      "cuál es el plato más popular",
-      "lo más vendido de la carta",
-      "recomiéndame un plato típico",
-
-      // España
-      "qué me recomendáis de la carta",
-      "cuál es el plato estrella",
-      "lo más típico del restaurante",
-      "qué piden los clientes siempre",
-      "vuestra especialidad de la casa",
-      "recomendadme un plato bueno",
-
-      // Latam (CO/EC/MX)
-      "qué me recomiendan para comer",
-      "lo más pedido del menú",
-      "sus recomendaciones de platos",
-      "qué piden usualmente los clientes",
-      "lo más famoso del restaurante",
-      "recomiéndenme algo rico",
-    ],
-  },
-
+  // {
+  //   intentKey: "products:view",
+  //   module: "products",
+  //   domain: "restaurant",
+  //   requiresConfirmation: "maybe",
+  //   lang: "es",
+  //   examples: [
+  //     // Universal (explícito sobre comida/platos)
+  //     "quiero ver el menú de comidas",
+  //     "puedo ver la carta de platos",
+  //     "tienen menú disponible hoy",
+  //     "dame las opciones de comida",
+  //     "muéstrame los platos del menú",
+  //     "qué platos tienen para comer",
+  //     "ver el menú del restaurante",
+  //     // España (auténtico y explícito)
+  //     "quiero ver la carta de comer",
+  //     "qué hay en la carta hoy",
+  //     "enséñame la carta de platos",
+  //     "qué tienen para cenar hoy",
+  //     "opciones de la carta del día",
+  //     "ver los platos de la carta",
+  //     // Latam (CO/EC/MX)
+  //     "qué hay de comer hoy",
+  //     "menú del día para almorzar",
+  //     "qué tienen para almorzar hoy",
+  //     "opciones del menú de comida",
+  //     "qué venden para comer hoy",
+  //     "qué ofrecen para cenar",
+  //     "ver el menú de platos",
+  //   ],
+  // },
+  // {
+  //   intentKey: "products:recommend",
+  //   module: "products",
+  //   domain: "restaurant",
+  //   requiresConfirmation: "always",
+  //   lang: "es",
+  //   examples: [
+  //     // Universal (explícito sobre platos/comida)
+  //     "qué plato me recomiendas",
+  //     "qué es lo mejor para comer",
+  //     "qué debo probar del menú",
+  //     "cuál es el plato más popular",
+  //     "lo más vendido de la carta",
+  //     "recomiéndame un plato típico",
+  //     // España
+  //     "qué me recomendáis de la carta",
+  //     "cuál es el plato estrella",
+  //     "lo más típico del restaurante",
+  //     "qué piden los clientes siempre",
+  //     "vuestra especialidad de la casa",
+  //     "recomendadme un plato bueno",
+  //     // Latam (CO/EC/MX)
+  //     "qué me recomiendan para comer",
+  //     "lo más pedido del menú",
+  //     "sus recomendaciones de platos",
+  //     "qué piden usualmente los clientes",
+  //     "lo más famoso del restaurante",
+  //     "recomiéndenme algo rico",
+  //   ],
+  // },
   // {
   //   intentKey: "products:find",
   //   module: "products",
@@ -228,7 +223,6 @@ export const restaurantProducts: IntentExample<ProductIntentKey>[] = [
   //     "busco postres dulces del menú",
   //     "tienen opciones sin gluten en la carta",
   //     "hay platos veganos disponibles",
-
   //     // España
   //     "qué tienen vegetariano en la carta",
   //     "busco platos ligeros para cenar",
@@ -236,7 +230,6 @@ export const restaurantProducts: IntentExample<ProductIntentKey>[] = [
   //     "busco algo tradicional del menú",
   //     "qué hay sin lactosa en la carta",
   //     "platos sin carne disponibles",
-
   //     // Latam (CO/EC/MX)
   //     "busco comida picante del menú",
   //     "tienen platos vegetarianos hoy",

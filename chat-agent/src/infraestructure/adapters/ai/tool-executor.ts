@@ -11,7 +11,7 @@ import { createProductOrderSystemPrompt } from "@/application/services/rag/produ
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
 import { SpecializedDomain } from "../cms";
 import { chatHistoryAdapter } from "../cache";
-import { SendImagePayload } from "../whatsapp";
+import { MediaFile } from "../whatsapp";
 
 /**
  *
@@ -79,7 +79,7 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   businessId: string,
-): Promise<{ content: string; files: SendImagePayload["file"][] }> {
+): Promise<{ content: string; files: MediaFile[] }> {
   switch (name) {
     //
     case "search_products": {
@@ -137,7 +137,7 @@ export async function executeTool(
 export async function processToolCalls(
   toolCalls: ToolCall[],
   businessId: string,
-): Promise<{ text: ChatMessage; files?: SendImagePayload["file"][] }[]> {
+): Promise<{ text: ChatMessage; files?: MediaFile[] }[]> {
   return Promise.all(
     toolCalls.map(async (toolCall) => {
       let args: Record<string, unknown> = {};
