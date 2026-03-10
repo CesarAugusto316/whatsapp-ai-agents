@@ -29,9 +29,9 @@ const DOMAIN_VOCABULARY: Record<SpecializedDomain, DomainVocabulary> = {
     greetingContext: "restaurante",
     toolDescriptions: {
       searchProducts:
-        "Busca platos específicos por nombre o descripción. Úsalo cuando el usuario mencione un plato concreto o describa lo que quiere comer (ej: 'quiero una pizza', 'busco algo con pollo', '¿tienen opciones vegetarianas?').",
+        "Busca platos específicos por nombre o descripción. Úsalo cuando el usuario quiera saber si tienen algo específico o esté buscando un tipo de plato.",
       getMenu:
-        "Obtiene el menú completo o items por categoría (entradas, platos principales, postres, bebidas). Úsalo cuando el usuario quiera ver todas las opciones disponibles o explorar categorías del menú (ej: 'muéstrame el menú', '¿qué postres tienen?', 'quiero ver las bebidas').",
+        "Obtiene el menú completo EN FORMATO DE FOTO/IMAGEN. Úsalo SOLAMENTE cuando el usuario pida explícitamente ver el menú como imagen/foto.",
     },
   },
   medical: {
@@ -148,38 +148,37 @@ export function createProductOrderSystemPrompt(
     ${vocab.toolDescriptions.searchProducts}
 
     **Usa esta herramienta cuando:**
-    - El usuario menciona un ${vocab.productName} concreto por nombre (ej: "pizza", "apartamento")
-    - El usuario describe características específicas (ej: "con pollo", "de 2 habitaciones", "vegetariano")
-    - El usuario pregunta si tienen algo específico
+    - El usuario menciona un ${vocab.productName} concreto por nombre (ej: "pizza", "ensalada")
+    - El usuario pregunta si tienen algo (ej: "¿tienen pizzas?", "¿hay ensaladas?")
+    - El usuario busca un tipo de plato (ej: "busco pastas", "quiero pollo")
+    - El usuario pide recomendaciones (ej: "¿qué me recomiendan?")
 
     ### get_menu
     ${vocab.toolDescriptions.getMenu}
 
     **Usa esta herramienta cuando:**
-    - El usuario pide ver el ${vocab.menuWord} completo o la lista de opciones
-    - El usuario quiere explorar sin tener algo específico en mente
-    - El usuario pregunta por categorías generales (ej: "¿qué ${vocab.productPlural} tienen?", "¿qué postres hay?")
+    - El usuario pide EXPLÍCITAMENTE ver el menú en foto/imagen
+    - Frases como: "muéstrame el menú", "quiero ver el menú", "envíame la carta", "pasame el menú en foto"
+    - NUNCA uses esta herramienta para preguntas como "¿qué postres tienen?" o "¿tienen bebidas?"
 
     ## DETECCIÓN DE INTENCIÓN - GUÍA RÁPIDA
 
-    ### 🟢 "VER TODO" → get_menu
+    ### 🟢 "VER MENÚ EN FOTO" → get_menu
     **Frases típicas:**
-    - "Sí, quiero ver el ${vocab.menuWord}"
-    - "Muéstrame las opciones"
-    - "¿Qué ${vocab.productPlural} tienen?"
-    - "¿Qué hay disponible?"
+    - "Quiero ver el menú" (como foto)
+    - "Muéstrame el menú"
+    - "Envíame la carta"
+    - "Pasame el menú en foto"
 
-    ### 🟡 "VER CATEGORÍA" → get_menu (con filtro por categoría)
-    **Frases típicas:**
-    - "¿Qué postres tienen?" → usa la categoría "postres"
-    - "¿Tienen bebidas?" → usa la categoría "bebidas"
-    - "Quiero ver los platos principales" → usa la categoría "platos principales"
-
-    ### 🔴 "BUSCAR ESPECÍFICO" → search_products
-    **Frases típicas:**
-    - "Quiero una pizza" → busca "pizza"
-    - "¿Tienen algo con pollo?" → busca "pollo"
-    - "Busco opciones vegetarianas" → busca "vegetariano"
+    ### 🔴 "PREGUNTAR / BUSCAR ALGO" → search_products
+    **Frases típicas (TODAS estas van con search_products):**
+    - "¿Tienen pizzas?" → busca "pizza"
+    - "¿Hay ensaladas?" → busca "ensalada"
+    - "Busco pastas" → busca "pasta"
+    - "Quiero pollo" → busca "pollo"
+    - "¿Qué postres tienen?" → busca "postres"
+    - "¿Tienen bebidas?" → busca "bebidas"
+    - "¿Qué me recomiendan?" → busca recomendaciones
 
     ## REGLAS DE ORO
 
@@ -206,13 +205,17 @@ export function createProductOrderSystemPrompt(
     Tú: [LLAMAR get_menu]
     [Después de obtener resultados] "¡Acá tenés el ${vocab.menuWord} completo! ..."
 
-    Usuario: "¿Qué postres tienen?"
-    Tú: [LLAMAR get_menu con keywords "postres"]
-    [Después de obtener resultados] "Aqui tenemos estos postres deliciosos" (Sólo confirma, no listes elementos)
+    Usuario: "¿Tienen pizzas?"
+    Tú: [LLAMAR search_products con keywords "pizzas"]
+    [Después de obtener resultados] "¡Sí! Tenemos estas opciones de pizza: ..."
 
-    Usuario: "Quiero una pizza"
-    Tú: [LLAMAR search_products buscando "pizza"]
-    [Después de obtener resultados] "¡Sí! Tenemos estas opciones de pizza: ..." (Lista todos los elementos revelantes)
+    Usuario: "¿Qué postres tienen?"
+    Tú: [LLAMAR search_products con keywords "postres"]
+    [Después de obtener resultados] "Tenemos estos postres: ..."
+
+    Usuario: "Quiero pedir una ensalada"
+    Tú: [LLAMAR search_products con keywords "ensalada"]
+    [Después de obtener resultados] "Tenemos estas ensaladas: ..."
 
     ## IMPORTANTE
 
