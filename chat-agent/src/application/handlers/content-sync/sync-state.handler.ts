@@ -15,7 +15,7 @@ export const contentSyncStateHandler: Handler<ModuleCtx> = async (c) => {
   if (!businessId) {
     return c.json({ error: "Business ID not received" }, 400);
   }
-  await ragService.init();
+
   const data = await c.req.json<SyncStateRequest>();
 
   if (data.collection === "businesses") {
@@ -36,13 +36,13 @@ export const contentSyncStateHandler: Handler<ModuleCtx> = async (c) => {
     }
     logger.info("Business gallery update triggered 🔄");
   }
-
   //
   else if (data.collection === "products") {
     if (data.operation === "delete") {
       await ragService.deleteProductById(data.docId);
     } else {
       const product = await cmsAdapter.getProductById(data.docId);
+      console.log({ product });
       await ragService.upsertProduct(product);
     }
     logger.info("Product update triggered 🔄");

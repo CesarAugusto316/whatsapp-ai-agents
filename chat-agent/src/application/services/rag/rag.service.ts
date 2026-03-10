@@ -23,6 +23,7 @@ class RagService {
   private readonly EMBED_VERSION = "qwen3-0.6b";
   private readonly THRESHOLD = 0.6;
   private readonly CACHE_TTL = 60 * 60 * 24 * 30; // 30 días
+  private initPromise: Promise<void> | null = null;
 
   constructor(
     private vectorAdapter: IVectorStoreAdapter,
@@ -61,6 +62,7 @@ class RagService {
     return text
       .replace(/[.,!?;:()"'¡¿\-–—]/g, "") // eliminar puntuación
       .replace(/\s+/g, " ") // colapsar espacios
+      .toLowerCase()
       .trim();
   }
 
@@ -271,14 +273,14 @@ class RagService {
    */
   async upsertProduct(product: Product) {
     // 1. Preparar texto para embedding
-    const input = [product.name, product.description]
-      .map(this.normalizeText)
-      .filter(Boolean)
-      .join(". ");
+    // const input = [product.name, product.description]
+    //   .map(this.normalizeText)
+    //   .filter(Boolean)
+    //   .join(". ");
 
     // 2. Generar embedding
     const data = await this.aiAdapter.embedding({
-      input,
+      input: this.normalizeText(product.name),
       dimensions: this.vectorAdapter.dimension,
     });
 
@@ -368,9 +370,20 @@ class RagService {
 
   /**
    * Inicializa las colecciones vectoriales (solo una vez)
+   * Idempotente: safe para llamadas concurrentes
    */
   async init(): Promise<void> {
-    await this.vectorAdapter.ensureCollections();
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = this.vectorAdapter.ensureCollections().catch((error) => {
+      // Resetear para permitir reintento en próxima llamada
+      this.initPromise = null;
+      throw error;
+    });
+
+    return this.initPromise;
   }
 }
 

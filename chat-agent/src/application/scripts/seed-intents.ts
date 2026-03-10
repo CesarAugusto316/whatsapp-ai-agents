@@ -17,6 +17,11 @@ Usage:
     process.exit(1);
   }
 
+  // Inicializar colecciones vectoriales una vez al inicio
+  ragService.init().catch((err) => {
+    console.error("Failed to initialize RAG service:", err);
+  });
+
   switch (target) {
     case "reset":
       if (process.env.NODE_ENV === "production" && !forceFlag) {

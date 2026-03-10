@@ -13,8 +13,14 @@ import {
   testBookingHandler,
 } from "@/application/handlers";
 import { contentSyncStateHandler } from "./application/handlers/content-sync";
+import { ragService } from "@/application/services/rag";
 
 const app = new Hono();
+
+// Inicializar colecciones vectoriales una vez al inicio
+ragService.init().catch((err) => {
+  console.error("Failed to initialize RAG service:", err);
+});
 
 Sentry.init({
   dsn: env?.SENTRY_DSN,
