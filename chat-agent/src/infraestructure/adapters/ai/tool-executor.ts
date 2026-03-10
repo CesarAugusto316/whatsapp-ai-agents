@@ -60,6 +60,11 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
             description:
               "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', '¿qué postres tienen?', 'muéstrame las opciones')",
           },
+          keywords: {
+            type: "string",
+            description:
+              "Specific product keywords to search for (e.g., 'menu de pizzas', 'menu')",
+          },
           limit: {
             type: "integer",
             description: "Maximum number of results to return (default: 3)",
@@ -72,6 +77,13 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
   },
 ] as const;
 
+type ToolResult = {
+  success: boolean;
+  tool: string;
+  message: string;
+  files: (MediaFile & { alt: string })[];
+};
+
 /**
  * Ejecuta una herramienta específica
  */
@@ -79,7 +91,7 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   businessId: string,
-): Promise<{ content: string; files: MediaFile[] }> {
+): Promise<ToolResult> {
   switch (name) {
     //
     case "search_products": {
@@ -91,16 +103,28 @@ export async function executeTool(
         businessId,
         limit,
       );
-      return {
-        content: JSON.stringify({
-          products: results.points
-            ?.map(({ payload }) => ({
-              ...payload,
-              isAvailable: payload?.enabled,
-            }))
-            .filter((p) => p.isAvailable),
-        }),
 
+      const products = results.points?.map(({ payload }) => ({
+        ...payload,
+        isAvailable: payload?.enabled,
+      }));
+
+      if (!products?.length) {
+        return {
+          success: false,
+          tool: "search_products",
+          message:
+            "No se encontraron productos, se debe pedir alternativas al usuario",
+          files: [],
+        };
+      }
+
+      return {
+        success: true,
+        tool: "search_products",
+        message: JSON.stringify({
+          products,
+        }),
         files: [],
       };
     }
@@ -113,19 +137,37 @@ export async function executeTool(
         businessId,
         limit,
       );
-      return {
-        files: points?.map((p) => ({
+      const files =
+        points?.map((p) => ({
           filename: p.payload.filename ?? "",
           url: p.payload.url ?? "",
           mimetype: p.payload.mimeType ?? "",
-        })),
-        content: "Aquí tienes el menú:",
+          alt: p.payload.alt ?? "",
+        })) ?? [];
+
+      if (!files.length) {
+        return {
+          success: false,
+          tool: "get_menu",
+          message:
+            "No se encontraron los archivos, se debe pedir alternativas al usuario",
+          files: [],
+        };
+      }
+
+      return {
+        success: true,
+        tool: "get_menu",
+        message: "Menú encontrado, SUCCESS ✅",
+        files,
       };
     }
 
     default:
       return {
-        content: JSON.stringify({ error: `Unknown tool: ${name}` }),
+        success: false,
+        tool: "unknown_tool",
+        message: JSON.stringify({ error: `Unknown tool: ${name}` }),
         files: [],
       };
   }
@@ -137,7 +179,7 @@ export async function executeTool(
 export async function processToolCalls(
   toolCalls: ToolCall[],
   businessId: string,
-): Promise<{ text: ChatMessage; files?: MediaFile[] }[]> {
+): Promise<(ToolResult & { chatMsg: ChatMessage })[]> {
   return Promise.all(
     toolCalls.map(async (toolCall) => {
       let args: Record<string, unknown> = {};
@@ -153,13 +195,13 @@ export async function processToolCalls(
         businessId,
       );
       return {
-        text: {
+        ...result,
+        chatMsg: {
           role: "tool",
-          content: result.content,
+          content: result.message,
           tool_call_id: toolCall.id,
           name: toolCall.function.name,
         } satisfies ChatMessage,
-        files: result.files,
       };
     }),
   );
@@ -199,7 +241,14 @@ export async function handleProductOrderWithTools(
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx.businessId);
-  messages.push(...toolResults.map((r) => r.text));
+  const files = [
+    ...toolResults
+      .filter((r) => r.files?.length)
+      .map((r) => r.files)
+      .flat(),
+  ];
+
+  messages.push(...toolResults.map((r) => r.chatMsg));
 
   const finalResponse = await aiAdapter.generateText({
     messages,
@@ -213,6 +262,6 @@ export async function handleProductOrderWithTools(
       toolCalls,
       systemPrompt,
     },
-    ...toolResults.map((r) => r.files),
+    files,
   );
 }

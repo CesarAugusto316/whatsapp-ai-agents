@@ -5,7 +5,7 @@ export function formatSagaOutput(
   msg: string,
   description?: string,
   internal?: any,
-  files?: MediaFile[],
+  files?: (MediaFile & { alt: string })[],
 ): BookingSagaResult {
   return {
     bag: {},

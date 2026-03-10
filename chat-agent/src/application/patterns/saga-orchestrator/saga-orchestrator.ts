@@ -25,7 +25,7 @@ type SagaKey = string | number | bigint;
  */
 export type SagaBag = Record<string, unknown> & {
   result?: string;
-  files?: MediaFile[];
+  files?: (MediaFile & { alt: string })[];
   continue?: boolean;
   /**
    * @todo Esto puede ser usada en el futuro para desacoplar resolveNextState
