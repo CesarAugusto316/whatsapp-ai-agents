@@ -230,4 +230,112 @@ describe("executeTool - search_products", () => {
     }
     console.log("Result for 'sushi japonés tradicional':", result);
   });
+
+  test("should find products with keywords 'pollo'", async () => {
+    const result = await executeTool(
+      "search_products",
+      { keywords: "pollo", limit: 5 },
+      BUSINESS_ID,
+    );
+
+    expect(result.tool).toBe("search_products");
+    expect(result.files).toEqual([]);
+
+    if (result.success) {
+      const parsed = JSON.parse(result.message);
+      expect(parsed).toHaveProperty("products");
+      expect(Array.isArray(parsed.products)).toBe(true);
+      if (parsed.products.length > 0) {
+        expect(parsed.products[0]).toHaveProperty("name");
+        expect(parsed.products[0]).toHaveProperty("description");
+        expect(parsed.products[0]).toHaveProperty("isAvailable");
+      }
+    } else {
+      expect(result.message).toContain(
+        "No se encontraron productos, se debe pedir alternativas al usuario",
+      );
+    }
+    console.log("Result for 'pollo':", result);
+  });
+
+  test("should find products with keywords 'carne'", async () => {
+    const result = await executeTool(
+      "search_products",
+      { keywords: "carne", limit: 5 },
+      BUSINESS_ID,
+    );
+
+    expect(result.tool).toBe("search_products");
+    expect(result.files).toEqual([]);
+
+    if (result.success) {
+      const parsed = JSON.parse(result.message);
+      expect(parsed).toHaveProperty("products");
+      expect(Array.isArray(parsed.products)).toBe(true);
+      if (parsed.products.length > 0) {
+        expect(parsed.products[0]).toHaveProperty("name");
+        expect(parsed.products[0]).toHaveProperty("description");
+        expect(parsed.products[0]).toHaveProperty("isAvailable");
+      }
+    } else {
+      expect(result.message).toContain(
+        "No se encontraron productos, se debe pedir alternativas al usuario",
+      );
+    }
+    console.log("Result for 'carne':", result);
+  });
+
+  test("should find products with keywords 'hamburguesa'", async () => {
+    const result = await executeTool(
+      "search_products",
+      { keywords: "hamburguesa", limit: 5 },
+      BUSINESS_ID,
+    );
+
+    expect(result.tool).toBe("search_products");
+    expect(result.files).toEqual([]);
+
+    if (result.success) {
+      const parsed = JSON.parse(result.message);
+      expect(parsed).toHaveProperty("products");
+      expect(Array.isArray(parsed.products)).toBe(true);
+      if (parsed.products.length > 0) {
+        expect(parsed.products[0]).toHaveProperty("name");
+        expect(parsed.products[0]).toHaveProperty("description");
+        expect(parsed.products[0]).toHaveProperty("isAvailable");
+      }
+    } else {
+      expect(result.message).toContain(
+        "No se encontraron productos, se debe pedir alternativas al usuario",
+      );
+    }
+    console.log("Result for 'hamburguesa':", result);
+  });
+
+  test("should find products with keywords 'café'", async () => {
+    const result = await executeTool(
+      "search_products",
+      { keywords: "café", limit: 5 },
+      BUSINESS_ID,
+    );
+
+    expect(result.tool).toBe("search_products");
+    expect(result.files).toEqual([]);
+
+    if (result.success) {
+      const parsed = JSON.parse(result.message);
+      expect(parsed).toHaveProperty("products");
+      expect(Array.isArray(parsed.products)).toBe(true);
+      if (parsed.products.length > 0) {
+        expect(parsed.products[0]).toHaveProperty("name");
+        expect(parsed.products[0]).toHaveProperty("description");
+        expect(parsed.products[0]).toHaveProperty("isAvailable");
+      }
+    } else {
+      expect(result.message).toContain(
+        "No se encontraron productos, se debe pedir alternativas al usuario",
+      );
+    }
+    console.log("Result for 'café':", result);
+  });
 });

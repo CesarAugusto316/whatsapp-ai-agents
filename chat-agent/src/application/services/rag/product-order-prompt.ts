@@ -203,7 +203,7 @@ export function createProductOrderSystemPrompt(
 
     Usuario: "Sí, quiero ver el ${vocab.menuWord}"
     Tú: [LLAMAR get_menu]
-    [Después de obtener resultados] "¡Acá tenés el ${vocab.menuWord} completo! ..."
+    [Después de obtener resultados] "¡Acá tenés el ${vocab.menuWord} completo!" (NO menciones productos individuales)
 
     Usuario: "¿Tienen pizzas?"
     Tú: [LLAMAR search_products con keywords "pizzas"]
