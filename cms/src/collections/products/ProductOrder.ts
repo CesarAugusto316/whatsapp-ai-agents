@@ -65,7 +65,13 @@ export const ProductOrder: CollectionConfig = {
         en: "Description",
         es: "Descripción",
       },
-      required: true,
+      admin: {
+        description: {
+          en: "Order Description",
+          es: "Descripción del pedido",
+        },
+      },
+      required: false,
     },
     {
       name: "business",
@@ -108,6 +114,64 @@ export const ProductOrder: CollectionConfig = {
           );
         },
       },
+    },
+
+    {
+      /**
+       *
+       *  {
+       *    items: {
+       *      productId: string,
+       *      productName: string,
+       *      quantity: number,
+       *      price: number,
+       *      subTotal: number,
+       *      observations: string
+       *    } [],
+       *    total: number
+       *  }
+       */
+      type: "json",
+      name: "cart",
+      label: {
+        en: "Cart",
+        es: "Carrito",
+      },
+      required: true,
+    },
+
+    // status
+    {
+      name: "status",
+      type: "select",
+      label: {
+        en: "Status",
+        es: "Estado",
+      },
+      admin: {
+        description: {
+          en: "Status of the order",
+          es: "Estado del pedido",
+        },
+      },
+      required: true,
+      defaultValue: "confirmed",
+      access: {
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" &&
+            (req?.user?.role === "admin" || req?.user?.role === "business")
+          );
+        },
+      },
+      options: [
+        { value: "confirmed", label: { en: "Confirmed", es: "Confirmada" } },
+        { value: "cancelled", label: { en: "Cancelled", es: "Cancelada" } },
+        { value: "completed", label: { en: "Completed", es: "Completada" } },
+      ],
     },
   ],
   admin: {

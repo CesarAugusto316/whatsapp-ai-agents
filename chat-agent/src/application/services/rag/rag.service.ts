@@ -272,20 +272,15 @@ class RagService {
    * Inserta o actualiza un producto con embedding semántico
    */
   async upsertProduct(product: Product) {
-    // 1. Preparar texto para embedding
-    // const input = [product.name, product.description]
-    //   .map(this.normalizeText)
-    //   .filter(Boolean)
-    //   .join(". ");
-
     // 2. Generar embedding
     const data = await this.aiAdapter.embedding({
-      input: this.normalizeText(product.name),
+      input: this.normalizeText(product.name), // [product.name, product.category] (like products in ecommerce have categories)
       dimensions: this.vectorAdapter.dimension,
     });
 
     // 3. Preparar payload
     const payload = {
+      id: product.id,
       name: product.name,
       description: product.description,
       business:

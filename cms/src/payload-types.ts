@@ -77,7 +77,6 @@ export interface Config {
     products: Product;
     'products-media': ProductsMedia;
     'product-orders': ProductOrder;
-    'product-carts': ProductCart;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -95,7 +94,6 @@ export interface Config {
     products: ProductsSelect<false> | ProductsSelect<true>;
     'products-media': ProductsMediaSelect<false> | ProductsMediaSelect<true>;
     'product-orders': ProductOrdersSelect<false> | ProductOrdersSelect<true>;
-    'product-carts': ProductCartsSelect<false> | ProductCartsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -430,6 +428,9 @@ export interface BusinessesMedia {
  */
 export interface Product {
   id: string;
+  /**
+   * Choose whether the product is available
+   */
   enabled: boolean;
   /**
    * The name of the product
@@ -450,7 +451,7 @@ export interface Product {
   /**
    * The description of the product
    */
-  description: string;
+  description?: string | null;
   /**
    * Approximate time range needed to process this item before it is ready. This is informational only.
    */
@@ -502,21 +503,25 @@ export interface ProductsMedia {
  */
 export interface ProductOrder {
   id: string;
-  description: string;
+  /**
+   * Order Description
+   */
+  description?: string | null;
   business: string | Business;
   customer: string | Customer;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product-carts".
- */
-export interface ProductCart {
-  id: string;
-  quantity?: number | null;
-  product: string | Product;
-  order: string | ProductOrder;
+  cart:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Status of the order
+   */
+  status: 'confirmed' | 'cancelled' | 'completed';
   updatedAt: string;
   createdAt: string;
 }
@@ -671,10 +676,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'product-orders';
         value: string | ProductOrder;
-      } | null)
-    | ({
-        relationTo: 'product-carts';
-        value: string | ProductCart;
       } | null);
   globalSlug?: string | null;
   user:
@@ -988,17 +989,8 @@ export interface ProductOrdersSelect<T extends boolean = true> {
   description?: T;
   business?: T;
   customer?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product-carts_select".
- */
-export interface ProductCartsSelect<T extends boolean = true> {
-  quantity?: T;
-  product?: T;
-  order?: T;
+  cart?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

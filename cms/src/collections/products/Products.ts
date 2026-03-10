@@ -94,8 +94,14 @@ export const Products: CollectionConfig = {
       name: "enabled",
       type: "checkbox",
       label: {
-        en: "Enabled",
-        es: "Activo",
+        en: "Available",
+        es: "Disponible",
+      },
+      admin: {
+        description: {
+          en: "Choose whether the product is available",
+          es: "Decide si el producto está disponible",
+        },
       },
       required: true,
       defaultValue: true,
@@ -167,6 +173,17 @@ export const Products: CollectionConfig = {
             es: "Inventario",
           },
         },
+
+        // TODO: agregar un grupo de campos para categorías
+        // pueden ser de tipo checkbox o radio  buttons que se muestren condicionalmente dependiendo del tipo de negocio
+        // EJEMPLOS:
+        // business === "restaurant":
+        // vegetariano, bebida, alchool, sopa, entrada, postre
+        // business === "coffee-shop":
+        // café, té, chocolate, pastelería
+        // bussiness === "electronics":
+        // laptop, smartphone, tv
+
         {
           name: "business",
           type: "relationship",
@@ -213,7 +230,7 @@ export const Products: CollectionConfig = {
         en: "Description",
         es: "Descripción",
       },
-      required: true,
+      required: false,
     },
     {
       name: "estimatedProcessingTime",

@@ -8,11 +8,11 @@ const forceFlag = process.argv.includes("--force");
 async function main() {
   if (!target) {
     console.log(`
-Usage:
-  bun vector:reset          - Delete all collections
-  bun vector:seed           - Seed all intents
-  bun vector:refresh        - Update intents (no delete)
-  bun vector:verify         - Verify setup
+    Usage:
+      bun vector:reset          - Delete all collections
+      bun vector:seed           - Seed all intents
+      bun vector:refresh        - Update intents (no delete)
+      bun vector:verify         - Verify setup
     `);
     process.exit(1);
   }

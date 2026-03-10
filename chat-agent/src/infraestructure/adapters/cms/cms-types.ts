@@ -263,21 +263,20 @@ export interface ProductsMedia {
 export interface ProductOrder {
   id: string;
   description: string;
+  cart: {
+    items: {
+      productId: string;
+      productName: string;
+      quantity: number;
+      price: number;
+      subTotal: number;
+      observations: string;
+    }[];
+    total: number;
+  };
+  status: "confirmed" | "cancelled" | "completed";
   business: string | Business;
   customer: string | Customer;
-  updatedAt: string;
-  createdAt: string;
-}
-
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product-cart".
- */
-export interface ProductCart {
-  id: string;
-  quantity?: number | null;
-  product: string | Product; // product ID
-  order: string | ProductOrder; // order ID
   updatedAt: string;
   createdAt: string;
 }

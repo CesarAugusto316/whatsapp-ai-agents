@@ -17,7 +17,6 @@ import { Customers } from "./collections/Costumers";
 import { Products } from "./collections/products/Products";
 import { ProductsMedia } from "./collections/products/Media";
 import { ProductOrder } from "./collections/products/ProductOrder";
-import { ProductCarts } from "./collections/products/ProductCart";
 import { Business } from "./collections/business/Businesses";
 
 const filename = fileURLToPath(import.meta.url);
@@ -184,7 +183,6 @@ export default buildConfig({
     Products,
     ProductsMedia, // includes file uploads
     ProductOrder,
-    ProductCarts,
   ],
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {

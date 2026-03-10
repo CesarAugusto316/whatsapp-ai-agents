@@ -1,5 +1,5 @@
 {
-  "id": "db264c6d-4f5c-4244-b62d-e946b3b95d26",
+  "id": "33d5efee-9af9-4356-b838-0017aaad36b9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -510,6 +510,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "number_of_people": {
+          "name": "number_of_people",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 1
+        },
         "timezone": {
           "name": "timezone",
           "type": "varchar",
@@ -535,13 +542,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'pending'"
-        },
-        "number_of_people": {
-          "name": "number_of_people",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 1
         },
         "notes": {
           "name": "notes",
@@ -2149,7 +2149,7 @@
           "name": "description",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "estimated_processing_time_min": {
           "name": "estimated_processing_time_min",
@@ -2473,7 +2473,7 @@
           "name": "description",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "business_id": {
           "name": "business_id",
@@ -2486,6 +2486,20 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "cart": {
+          "name": "cart",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "enum_product_orders_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'confirmed'"
         },
         "updated_at": {
           "name": "updated_at",
@@ -2584,146 +2598,6 @@
           "tableTo": "customers",
           "columnsFrom": [
             "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.product_carts": {
-      "name": "product_carts",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "quantity": {
-          "name": "quantity",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "product_id": {
-          "name": "product_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "order_id": {
-          "name": "order_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp(3) with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "product_carts_product_idx": {
-          "name": "product_carts_product_idx",
-          "columns": [
-            {
-              "expression": "product_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "product_carts_order_idx": {
-          "name": "product_carts_order_idx",
-          "columns": [
-            {
-              "expression": "order_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "product_carts_updated_at_idx": {
-          "name": "product_carts_updated_at_idx",
-          "columns": [
-            {
-              "expression": "updated_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "product_carts_created_at_idx": {
-          "name": "product_carts_created_at_idx",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "product_carts_product_id_products_id_fk": {
-          "name": "product_carts_product_id_products_id_fk",
-          "tableFrom": "product_carts",
-          "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "product_carts_order_id_product_orders_id_fk": {
-          "name": "product_carts_order_id_product_orders_id_fk",
-          "tableFrom": "product_carts",
-          "tableTo": "product_orders",
-          "columnsFrom": [
-            "order_id"
           ],
           "columnsTo": [
             "id"
@@ -3308,12 +3182,6 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "product_carts_id": {
-          "name": "product_carts_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -3496,21 +3364,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "payload_locked_documents_rels_product_carts_id_idx": {
-          "name": "payload_locked_documents_rels_product_carts_id_idx",
-          "columns": [
-            {
-              "expression": "product_carts_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -3637,19 +3490,6 @@
           "tableTo": "product_orders",
           "columnsFrom": [
             "product_orders_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "payload_locked_documents_rels_product_carts_fk": {
-          "name": "payload_locked_documents_rels_product_carts_fk",
-          "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "product_carts",
-          "columnsFrom": [
-            "product_carts_id"
           ],
           "columnsTo": [
             "id"
@@ -4039,7 +3879,7 @@
         "restaurant",
         "medical",
         "legal",
-        "real_estate",
+        "real-estate",
         "erotic"
       ]
     },
@@ -4075,6 +3915,15 @@
         "minutes",
         "hours",
         "days"
+      ]
+    },
+    "public.enum_product_orders_status": {
+      "name": "enum_product_orders_status",
+      "schema": "public",
+      "values": [
+        "confirmed",
+        "cancelled",
+        "completed"
       ]
     },
     "public.enum_payload_jobs_log_task_slug": {
