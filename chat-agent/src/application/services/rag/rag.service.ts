@@ -301,15 +301,9 @@ class RagService {
   }
 
   async upsertBusinessMedia(media: BusinessesMedia) {
-    // 1. Preparar texto para embedding
-    const input = [media.alt, media.filename || ""]
-      .map(this.normalizeText)
-      .filter(Boolean)
-      .join(". ");
-
     // 2. Generar embedding
     const data = await this.aiAdapter.embedding({
-      input,
+      input: this.normalizeText(media.alt),
       dimensions: this.vectorAdapter.dimension,
     });
 

@@ -153,6 +153,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
   ): Promise<Schemas["QueryResponse"]> {
     return this.client.query("products", {
       query: vector,
+      with_payload: true,
       score_threshold: threshold,
       filter: {
         must: [
@@ -175,6 +176,7 @@ export class VectorStoreAdapter implements IVectorStoreAdapter {
   ): Promise<Schemas["QueryResponse"]> {
     return this.client.query("business-media", {
       query: vector,
+      with_payload: true,
       score_threshold: threshold,
       filter: {
         must: [

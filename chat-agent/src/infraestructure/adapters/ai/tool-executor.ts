@@ -13,6 +13,8 @@ import { SpecializedDomain } from "../cms";
 import { chatHistoryAdapter } from "../cache";
 
 /**
+ *
+ * @link https://developers.openai.com/api/docs/guides/function-calling/?lang=javascript
  * Tools predefinidos para pedidos de productos
  */
 const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
@@ -29,8 +31,13 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
             description:
               "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', 'busco platos con pollo', 'quiero pedir una pizza')",
           },
+          keywords: {
+            type: "string",
+            description:
+              "Specific product keywords to search for (e.g., 'pizza hawaiana', 'zapatos rojos', 'camisa azul')",
+          },
         },
-        required: ["description", "intent"],
+        required: ["intent", "keywords"],
         additionalProperties: false,
       },
     },
@@ -66,33 +73,30 @@ export async function executeTool(
 ): Promise<string> {
   switch (name) {
     case "search_products": {
-      const intent = args.intent as string;
-      if (!intent) {
-        return JSON.stringify({ error: "Missing description" });
-      }
-      console.log({ tool: "search_products", description: intent });
-      const results = await ragService.searchProducts(intent, businessId, 5);
+      const keywords = args.keywords as string;
+      // Usar keywords si está disponible, sino usar intent
+      const results = await ragService.searchProducts(keywords, businessId, 5);
       return JSON.stringify({
         products: results.points
           ?.map((p) => ({
             name: p.payload?.name,
             description: p.payload?.description,
             price: p.payload?.price,
-            enabled: p.payload?.enabled,
+            isAvailable: p.payload?.enabled,
+            estimatedProcessingTime: p.payload?.estimatedProcessingTime,
           }))
-          .filter((p) => p.enabled),
+          .filter((p) => p.isAvailable),
       });
     }
     case "get_menu": {
       const intent = args.intent as string | undefined;
-      const results = await ragService.searchBusinessMedia(
+      const { points } = await ragService.searchBusinessMedia(
         intent || "menu",
         businessId,
         3,
       );
-      console.log({ tool: "get_menu", intent, results, businessId });
       return JSON.stringify({
-        menuItems: results.points?.map((p) => ({
+        menuItems: points?.map((p) => ({
           url: p.payload?.url,
           thumbnailURL: p.payload?.thumbnailURL,
         })),

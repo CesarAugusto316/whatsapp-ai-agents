@@ -1,9 +1,8 @@
 import { describe, test, expect } from "bun:test";
 import { executeTool } from "@/infraestructure/adapters/ai/tool-executor";
-import { env } from "bun";
 
-// Use the actual business ID that has menu data in Qdrant
-const BUSINESS_ID = env.BUSINESS_ID_TEST!;
+// Business ID con datos de menú en Qdrant
+const BUSINESS_ID = "ec4978a3-a7fb-4dbc-8681-a1622bf31b57";
 
 describe("executeTool - get_menu", () => {
   test("should find menu with intent 'menu'", async () => {
@@ -16,6 +15,10 @@ describe("executeTool - get_menu", () => {
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
+    if (parsed.menuItems.length > 0) {
+      expect(parsed.menuItems[0]).toHaveProperty("url");
+      expect(parsed.menuItems[0]).toHaveProperty("thumbnailURL");
+    }
     console.log("Result for 'menu':", parsed);
   });
 
@@ -29,6 +32,10 @@ describe("executeTool - get_menu", () => {
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
+    if (parsed.menuItems.length > 0) {
+      expect(parsed.menuItems[0]).toHaveProperty("url");
+      expect(parsed.menuItems[0]).toHaveProperty("thumbnailURL");
+    }
     console.log("Result for 'quiero ver el menu':", parsed);
   });
 
@@ -42,6 +49,10 @@ describe("executeTool - get_menu", () => {
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
+    if (parsed.menuItems.length > 0) {
+      expect(parsed.menuItems[0]).toHaveProperty("url");
+      expect(parsed.menuItems[0]).toHaveProperty("thumbnailURL");
+    }
     console.log("Result for 'quiero ver el menú':", parsed);
   });
 
@@ -55,6 +66,10 @@ describe("executeTool - get_menu", () => {
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
+    if (parsed.menuItems.length > 0) {
+      expect(parsed.menuItems[0]).toHaveProperty("url");
+      expect(parsed.menuItems[0]).toHaveProperty("thumbnailURL");
+    }
     console.log("Result for 'muéstrame el menú':", parsed);
   });
 
@@ -68,6 +83,10 @@ describe("executeTool - get_menu", () => {
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
+    if (parsed.menuItems.length > 0) {
+      expect(parsed.menuItems[0]).toHaveProperty("url");
+      expect(parsed.menuItems[0]).toHaveProperty("thumbnailURL");
+    }
     console.log("Result for 'la carta por favor':", parsed);
   });
 
@@ -77,6 +96,10 @@ describe("executeTool - get_menu", () => {
 
     expect(parsed).toHaveProperty("menuItems");
     expect(Array.isArray(parsed.menuItems)).toBe(true);
+    if (parsed.menuItems.length > 0) {
+      expect(parsed.menuItems[0]).toHaveProperty("url");
+      expect(parsed.menuItems[0]).toHaveProperty("thumbnailURL");
+    }
     console.log("Result for undefined intent (fallback):", parsed);
   });
 });
