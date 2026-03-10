@@ -70,19 +70,19 @@ class AiAdapter implements IAiAdapter {
     // ============================================
     // TEST: Local Ollama (100% offline, gratis)
     // ============================================
-    if (envName === "test") {
-      return {
-        url: "http://localhost:11434/v1",
-        primaryModel: "granite4:micro-h",
-        auxModel: "granite4:micro-h",
-        embedding: "qwen3-embedding-0.6b",
-        headers: {
-          Authorization: "",
-          "Content-Type": "application/json",
-        },
-        provider: "ollama" as const,
-      };
-    }
+    // if (envName === "test") {
+    //   return {
+    //     url: "http://localhost:11434/v1",
+    //     primaryModel: "granite4:micro-h",
+    //     auxModel: "granite4:micro-h",
+    //     embedding: "qwen3-embedding-0.6b",
+    //     headers: {
+    //       Authorization: "",
+    //       "Content-Type": "application/json",
+    //     },
+    //     provider: "ollama" as const,
+    //   };
+    // }
 
     // ============================================
     // DEVELOPMENT: Cloudflare AI (gratis tier, rápido)

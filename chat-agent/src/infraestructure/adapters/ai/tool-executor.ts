@@ -90,7 +90,7 @@ export async function executeTool(
         businessId,
         3,
       );
-      console.log({ tool: "get_menu", intent, results });
+      console.log({ tool: "get_menu", intent, results, businessId });
       return JSON.stringify({
         menuItems: results.points?.map((p) => ({
           url: p.payload?.url,
