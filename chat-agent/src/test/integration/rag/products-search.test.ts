@@ -6,6 +6,34 @@ import { env } from "bun";
 const BUSINESS_ID = env.BUSINESS_ID_TEST!;
 
 describe("executeTool - search_products", () => {
+  //
+  test("should find products with keywords 'pizzas'", async () => {
+    const result = await executeTool(
+      "search_products",
+      { keywords: "pizzas", limit: 5 },
+      BUSINESS_ID,
+    );
+
+    expect(result.tool).toBe("search_products");
+    expect(result.files).toEqual([]);
+
+    if (result.success) {
+      const parsed = JSON.parse(result.message);
+      expect(parsed).toHaveProperty("products");
+      expect(Array.isArray(parsed.products)).toBe(true);
+      if (parsed.products.length > 0) {
+        expect(parsed.products[0]).toHaveProperty("name");
+        expect(parsed.products[0]).toHaveProperty("description");
+        expect(parsed.products[0]).toHaveProperty("isAvailable");
+      }
+    } else {
+      expect(result.message).toContain(
+        "No se encontraron productos, se debe pedir alternativas al usuario",
+      );
+    }
+    console.log("Result for 'pizzas':", result);
+  });
+
   test("should find products with keywords 'pizza vegetariana'", async () => {
     const result = await executeTool(
       "search_products",
@@ -36,7 +64,7 @@ describe("executeTool - search_products", () => {
   test("should find products with keywords 'pizzas de carne'", async () => {
     const result = await executeTool(
       "search_products",
-      { keywords: "pizzas con carne", limit: 5 },
+      { keywords: "pizza con carne", limit: 5 },
       BUSINESS_ID,
     );
 
@@ -139,6 +167,33 @@ describe("executeTool - search_products", () => {
       );
     }
     console.log("Result for 'postres':", result);
+  });
+
+  test("should find products with keywords 'ensaladas'", async () => {
+    const result = await executeTool(
+      "search_products",
+      { keywords: "ensaladas", limit: 5 },
+      BUSINESS_ID,
+    );
+
+    expect(result.tool).toBe("search_products");
+    expect(result.files).toEqual([]);
+
+    if (result.success) {
+      const parsed = JSON.parse(result.message);
+      expect(parsed).toHaveProperty("products");
+      expect(Array.isArray(parsed.products)).toBe(true);
+      if (parsed.products.length > 0) {
+        expect(parsed.products[0]).toHaveProperty("name");
+        expect(parsed.products[0]).toHaveProperty("description");
+        expect(parsed.products[0]).toHaveProperty("isAvailable");
+      }
+    } else {
+      expect(result.message).toContain(
+        "No se encontraron productos, se debe pedir alternativas al usuario",
+      );
+    }
+    console.log("Result for 'ensaladas':", result);
   });
 
   test("should handle empty keywords gracefully", async () => {
