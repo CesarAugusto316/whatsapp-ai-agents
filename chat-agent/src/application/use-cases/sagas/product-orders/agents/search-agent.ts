@@ -41,35 +41,35 @@ function createSearchAgentPrompt(domain: SpecializedDomain): string {
     ${vocab.toolDescriptions.searchProducts}
 
     **Usa esta herramienta cuando:**
-    - El usuario menciona un ${vocab.productName} concreto por nombre (ej: "pizza", "ensalada")
-    - El usuario pregunta si tienen algo (ej: "¿tienen pizzas?", "¿hay ensaladas?")
-    - El usuario busca un tipo de plato (ej: "busco pastas", "quiero pollo")
+    - El usuario menciona un ${vocab.productName} concreto por nombre (ej: "${vocab.productName}", "ensalada")
+    - El usuario pregunta si tienen algo (ej: "¿tienen ${vocab.productPlural}?", "¿hay ${vocab.productPlural}?")
+    - El usuario busca un tipo de ${vocab.productName} (ej: "busco ${vocab.productPlural}", "quiero ${vocab.productName}")
     - El usuario pide recomendaciones (ej: "¿qué me recomiendan?")
 
     ### get_menu
     ${vocab.toolDescriptions.getMenu}
 
     **Usa esta herramienta cuando:**
-    - El usuario pide EXPLÍCITAMENTE ver el menú en foto/imagen
-    - Frases como: "muéstrame el menú", "quiero ver el menú", "envíame la carta", "pasame el menú en foto"
-    - NUNCA uses esta herramienta para preguntas como "¿qué postres tienen?" o "¿tienen bebidas?"
+    - El usuario pide EXPLÍCITAMENTE ver el ${vocab.menuWord} en foto/imagen
+    - Frases como: "muéstrame el ${vocab.menuWord}", "quiero ver el ${vocab.menuWord}", "envíame la carta", "pasame el ${vocab.menuWord} en foto"
+    - NUNCA uses esta herramienta para preguntas como "¿qué ${vocab.productPlural} tienen?" o "¿tienen ${vocab.productPlural}?"
 
     ## DETECCIÓN DE INTENCIÓN - GUÍA RÁPIDA
 
-    ### 🟢 "VER MENÚ EN FOTO" → get_menu
+    ### 🟢 "VER ${vocab.menuWord.toUpperCase()} EN FOTO" → get_menu
     **Frases típicas:**
-    - "Quiero ver el menú" (como foto)
-    - "Muéstrame el menú"
+    - "Quiero ver el ${vocab.menuWord}" (como foto)
+    - "Muéstrame el ${vocab.menuWord}"
     - "Envíame la carta"
-    - "Pasame el menú en foto"
+    - "Pasame el ${vocab.menuWord} en foto"
 
     ### 🔴 "PREGUNTAR / BUSCAR ALGO" → search_products
     **Frases típicas (TODAS estas van con search_products):**
-    - "¿Tienen pizzas?" → busca "pizza"
-    - "¿Hay ensaladas?" → busca "ensalada"
-    - "Busco pastas con pollo" → busca "pasta con pollo"
+    - "¿Tienen ${vocab.productPlural}?" → busca "${vocab.productName}"
+    - "¿Hay ${vocab.productPlural}?" → busca "${vocab.productName}"
+    - "Busco ${vocab.productPlural} con pollo" → busca "${vocab.productName} con pollo"
     - "Quiero pollo" → busca "pollo"
-    - "¿Qué postres tienen?" → busca "postres"
+    - "¿Qué ${vocab.productPlural} tienen?" → busca "${vocab.productPlural}"
     - "¿Tienen bebidas sin alcohol?" → busca "bebidas sin alcohol"
     - "¿Qué me recomiendan?" → busca recomendaciones
 
@@ -96,7 +96,7 @@ function createSearchAgentPrompt(domain: SpecializedDomain): string {
 
     Usuario: "Sí, quiero ver el ${vocab.menuWord}"
     Tú: [LLAMAR get_menu]
-    [Después de obtener resultados] "¡Acá tenés el ${vocab.menuWord} completo!" (NO menciones productos individuales)
+    [Después de obtener resultados] "¡Acá tenés el ${vocab.menuWord} completo!" (NO menciones ${vocab.productPlural} individuales)
 
     Usuario: "¿Tienen pizzas?"
     Tú: [LLAMAR search_products con keywords "pizzas"]
@@ -106,7 +106,7 @@ function createSearchAgentPrompt(domain: SpecializedDomain): string {
     Tú: [LLAMAR search_products con keywords "postres de chocolate"]
     [Después de obtener resultados] "Tenemos estos postres de chocolate: ..."
 
-    Usuario: "Quiero pedir una ensalada"
+    Usuario: "Quiero ${vocab.actionVerb} una ensalada"
     Tú: [LLAMAR search_products con keywords "ensalada"]
     [Después de obtener resultados] "Tenemos estas ensaladas: ..."
 
@@ -120,8 +120,8 @@ function createSearchAgentPrompt(domain: SpecializedDomain): string {
 
     Historial:
     - Usuario: "Ensaladas"
-    - Asistente: "¿Querés ver el menú de ensaladas o querés agregar?"
-    - Usuario: "Sí, Ver opciones"
+    - Asistente: "¿Querés ver el ${vocab.menuWord} de ensaladas o querés agregar?"
+    - Usuario: "Sí, ver opciones"
     → [LLAMAR search_products con keywords "ensaladas"]
 
     Historial:
@@ -133,8 +133,8 @@ function createSearchAgentPrompt(domain: SpecializedDomain): string {
     Historial:
     - Usuario: "2 pastas"
     - Asistente: "¿Querés ver las opciones de pastas o querés agregar?"
-    - Usuario: "Ver el menú"
-    → [LLAMAR get_menu con keywords "menu de pastas"]
+    - Usuario: "Ver el ${vocab.menuWord}"
+    → [LLAMAR get_menu con keywords "${vocab.menuWord} de pastas"]
 
     **IMPORTANTE**: Después de una clarificación, el usuario YA expresó que quiere VER. Tu ÚNICA tarea es llamar a la herramienta de búsqueda correspondiente.
 

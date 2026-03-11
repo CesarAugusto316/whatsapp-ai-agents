@@ -49,6 +49,9 @@ const validateRouter = (raw: string): RouterOutput => {
 
 function createRouterAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
+  const orderWordCapitalized =
+    vocab.orderWord.charAt(0).toUpperCase() + vocab.orderWord.slice(1);
+
   return `
     Eres un router inteligente para un ${vocab.greetingContext}. Tu única función es analizar el mensaje del usuario y decidir a qué agente derivar.
 
@@ -80,16 +83,16 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     - El usuario quiere **agregar** ${vocab.productPlural} a su ${vocab.orderWord}
     - El usuario quiere **quitar/eliminar** ${vocab.productPlural} de su ${vocab.orderWord}
     - El usuario quiere **modificar** cantidades de su ${vocab.orderWord}
-    - El usuario quiere **ver** qué lleva en su ${vocab.orderWord}/carrito
+    - El usuario quiere **ver** qué lleva en su ${vocab.orderWord}
     - El usuario quiere **confirmar/finalizar** su ${vocab.orderWord}
     - El usuario da su **nombre** o datos de cliente
 
     **Acciones del cart_agent:**
-    - add: Agregar productos
-    - remove: Quitar productos
+    - add: Agregar ${vocab.productPlural}
+    - remove: Quitar ${vocab.productPlural}
     - update: Modificar cantidades
-    - view: Ver carrito
-    - confirm: Confirmar pedido
+    - view: Ver ${vocab.orderWord}
+    - confirm: Confirmar ${vocab.orderWord}
 
     **Frases típicas → cart_agent:**
     - "Agregame 2 pizzas"
@@ -100,8 +103,8 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     - "Eliminamelo"
     - "Cambiame a 3 en vez de 2"
     - "Mostrame mi ${vocab.orderWord}"
-    - "¿Qué llevo en el carrito?"
-    - "Ver carrito"
+    - "¿Qué llevo en mi ${vocab.orderWord}?"
+    - "Ver mi ${vocab.orderWord}"
     - "Confirmo"
     - "Listo, eso es todo"
     - "Finalizar ${vocab.orderWord}"
@@ -142,7 +145,7 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     1. **BUSCA PATRONES DE ACCIÓN**:
       - "agrega", "poné", "quiero agregar", "dame" → cart_agent
       - "quitá", "sacá", "eliminà" → cart_agent
-      - "mostrame mi", "ver carrito", "confirmo" → cart_agent
+      - "mostrame mi ${vocab.orderWord}", "ver mi ${vocab.orderWord}", "confirmo" → cart_agent
       - "quiero ver", "busco", "¿qué tienen?" → search_agent
       - "mi nombre es", "soy", "me llamo" → cart_agent
       - "${vocab.productName}" (solo, sin verbo) → ask_clarification
@@ -262,7 +265,7 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
 
     Respondé ÚNICAMENTE con una palabra:
     - "search_agent" → para derivar al Agente de Búsqueda
-    - "cart_agent" → para derivar al Agente de Carrito
+    - "cart_agent" → para derivar al Agente de Gestión de ${orderWordCapitalized}
     - "ask_clarification" → cuando no hay suficiente contexto para decidir
 
     Nada más. Sin explicaciones. Sin texto adicional.
@@ -307,7 +310,7 @@ export const clarifierAgent = async (
 
     El usuario envió un mensaje ambiguo (ej: "Pizza", "Ensaladas", "Cerveza") y no sabemos si quiere:
     1. **BUSCAR/EXPLORAR** ${vocab.productPlural} (ver el ${vocab.menuWord}, preguntar qué hay, etc.)
-    2. **GESTIONAR SU ${vocab.orderWord.toUpperCase()}** (agregar, quitar, modificar, ver, confirmar, etc.)
+    2. **GESTIONAR SU ${vocab.orderWord}** (agregar, quitar, modificar, ver, confirmar, etc.)
 
     ## ACCIONES DEL CART_AGENT
 
@@ -326,11 +329,11 @@ export const clarifierAgent = async (
     1. **SÉ BREVE**: Máximo 1-2 oraciones cortas
     2. **SÉ AMABLE**: Usá un tono cordial pero directo
     3. **OFRECÉ LAS 2 OPCIONES**:
-      - ¿Quiere ver/explorar? → search_agent
+      - ¿Quiere ver/explorar ${vocab.productPlural}? → search_agent
       - ¿Quiere gestionar su ${vocab.orderWord}? → cart_agent (agregar, quitar, modificar, ver, confirmar)
     4. **NO ASUMAS**: No asumas que quiere buscar o agregar
     5. **USÁ EL CONTEXTO**:
-      - Si el historial muestra que ya vio ${vocab.productPlural}, podés preguntar si quiere agregar
+      - Si el historial muestra que ya vio ${vocab.productPlural}, podés preguntar si quiere agregar al ${vocab.orderWord}
       - Si ya tiene ${vocab.productPlural} en el ${vocab.orderWord}, podés preguntar si quiere modificar/quitar
 
     ## ESTRUCTURA DE TU RESPUESTA
