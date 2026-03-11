@@ -22,6 +22,45 @@ import {
 
 /**
  *
+ * Genera un prompt para manejar errores de forma amable y contextual al dominio
+ */
+function errorPrompt(domain: SpecializedDomain): string {
+  const vocab = DOMAIN_VOCABULARY[domain];
+  return `
+    Tu respuesta anterior causó un error. Analizá el error y respondé al usuario en español de forma amable y clara.
+
+    ## Tipos de errores comunes:
+
+    1. **Falta nombre del cliente**: Si el error dice "No customer name provided" o similar
+      → Pedí amablemente el nombre del usuario para confirmar su ${vocab.orderWord}
+      → Ej: "Para confirmar tu ${vocab.orderWord}, ¿me podrías decir tu nombre?"
+
+    2. **Nombre inválido**: Si el error viene de validación de customerName
+      → Explicá que el nombre debe tener 3-30 caracteres, solo letras y espacios
+      → Ej: "¿Me podrías decir tu nombre completo? Solo letras, entre 3 y 30 caracteres"
+
+    3. **${vocab.orderWord} vacío**: Si el error dice "empty_cart"
+      → Recordá al usuario que su carrito está vacío y ofrecé ayudarle a ${vocab.actionVerbInfinitive}
+      → Ej: "Tu carrito está vacío. ¿Querés ver nuestro ${vocab.menuWord} y ${vocab.actionVerb} algo?"
+
+    4. **Error de parsing/argumentos**: Si hay un error técnico de validación
+      → Pedí al usuario que reformule su ${vocab.orderWord} de manera más clara
+      → Ej: "No entendí bien tu ${vocab.orderWord}. ¿Me lo podés decir de otra forma?"
+
+    5. **Cliente no existe**: Si el error dice "No customer does not exist"
+      → Explicá que hubo un problema y pedí el nombre nuevamente
+      → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
+
+    ## Reglas:
+    - Sé amable y profesional
+    - No menciones errores técnicos o de validación
+    - Hacé una pregunta clara para que el usuario pueda continuar o complete la información faltante
+    - Mantené el contexto del ${vocab.orderWord}.
+`.trim();
+}
+
+/**
+ *
  * @param domain
  * @returns
  */
@@ -46,10 +85,12 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     - **Modificar** cantidad: cuando el usuario diga "cambiame", "mejor dame X", "ahora quiero X"
     - **Ver** ${vocab.orderWord}: cuando el usuario diga "mostrame mi ${vocab.orderWord}", "¿qué llevo en el ${vocab.orderWord}?", "ver ${vocab.orderWord}"
     - **Confirmar** ${vocab.orderWord}: cuando el usuario diga "confirmo", "listo", "eso es todo", "finalizar ${vocab.orderWord}"
+    - **Ingresar nombre**: cuando el usuario proporcione su nombre para confirmar el ${vocab.orderWord}
 
     Parámetros:
-    - action: "add" | "remove" | "update" | "view" | "confirm"
+    - action: "add" | "remove" | "update" | "view" | "confirm" | "enterUsername"
     - item: { name, quantity (default: 1), notes (opcional) }
+    - customerName: string (solo para action: "enterUsername")
 
     ## DETECCIÓN DE INTENCIÓN - GUÍA RÁPIDA
 
@@ -161,44 +202,6 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     - NO busques ${vocab.productPlural} (eso lo hace el Agente de Búsqueda)
     - NO respondas preguntas sobre el menú (eso lo hace el Agente de Búsqueda)
     - Si el usuario pregunta "¿qué ${vocab.productPlural} tienen?", NO llames manage_cart, el Router te derivó mal
-`.trim();
-}
-
-function errorPrompt(domain: SpecializedDomain) {
-  const vocab = DOMAIN_VOCABULARY[domain];
-  const productExample1 = vocab.productExamples[0];
-  const productExample2 = vocab.productExamples[1] || productExample1;
-  const productExample3 = vocab.productExamples[2] || productExample1;
-  return `
-    Tu respuesta anterior causó un error. Analizá el error y respondé al usuario en español de forma amable y clara.
-
-    ## Tipos de errores comunes:
-
-    1. **Falta nombre del cliente**: Si el error dice "No customer name provided" o similar
-    → Pedí amablemente el nombre del usuario para confirmar su pedido
-    → Ej: "Para confirmar tu pedido, ¿me podrías decir tu nombre?"
-
-    2. **Nombre inválido**: Si el error viene de validación de customerName
-    → Explicá que el nombre debe tener al menos 2 caracteres
-    → Ej: "¿Me podrías decir tu nombre completo? Necesito al menos 2 caracteres"
-
-    3. **Carrito vacío**: Si el error dice "empty_cart"
-    → Recordá al usuario que su carrito está vacío
-    → Ej: "Tu carrito está vacío. ¿Querés ver nuestro menú y agregar algo?"
-
-    4. **Error de parsing/argumentos**: Si hay un error técnico de validación
-    → Pedí al usuario que reformule su pedido de manera más clara
-    → Ej: "No entendí bien tu pedido. ¿Me lo podés decir de otra forma?"
-
-    5. **Cliente no existe**: Si el error dice "No customer does not exist"
-    → Explicá que hubo un problema y pedí el nombre nuevamente
-    → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
-
-    ## Reglas:
-    - Sé amable y profesional
-    - No menciones errores técnicos o de validación
-    - Hacé una pregunta clara para que el usuario pueda continuar
-    - Mantené el contexto del pedido.
 `.trim();
 }
 
