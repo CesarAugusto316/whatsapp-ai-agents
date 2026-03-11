@@ -1,4 +1,4 @@
-import { SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { cmsAdapter, SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
 import {
   aiAdapter,
@@ -9,6 +9,7 @@ import {
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { formatSagaOutput } from "@/application/patterns";
 import { DomainCtx } from "@/domain/booking";
+import { productOrderStateManager } from "@/application/services/state-managers";
 
 /**
  *
@@ -191,65 +192,84 @@ type ToolResult = {
 };
 
 /**
- * Ejecuta una herramienta específica
- */
-export async function executeTool(
-  name: string,
-  args: Record<string, unknown>,
-  businessId: string,
-): Promise<ToolResult> {
-  switch (name) {
-    //
-    case "manage_cart": {
-      const keywords = (args.keywords as string) || "";
-
-      return {
-        success: true,
-        tool: "manage_cart",
-        message: "SUCCESS ✅",
-      };
-    }
-
-    default:
-      return {
-        success: false,
-        tool: "unknown_tool",
-        message: JSON.stringify({ error: `Unknown tool: ${name}` }),
-        // files: [],
-      };
-  }
-}
-
-/**
  * Procesa tool calls del LLM y ejecuta las herramientas
  */
 async function processToolCalls(
   toolCalls: ToolCall[],
-  businessId: string,
-): Promise<(ToolResult & { chatMsg: ChatMessage })[]> {
+  ctx: DomainCtx,
+): Promise<ChatMessage[]> {
+  //
+  const businessId = ctx.businessId!;
+  const orderKey = ctx.productOrderKey;
+
   return Promise.all(
     toolCalls.map(async (toolCall) => {
-      let args: Record<string, unknown> = {};
+      let args: {
+        action: string;
+        item?: { name: string; quantity: number; notes?: string };
+      } = { action: "" };
+
+      const chat = {
+        role: "tool",
+        content: "",
+        tool_call_id: toolCall.id,
+        name: toolCall.function.name,
+      } satisfies ChatMessage;
+
       try {
         args = JSON.parse(JSON.parse(toolCall.function.arguments));
+
+        switch (args.action) {
+          case "add":
+            const result = await productOrderStateManager.addProductToCart(
+              orderKey,
+              businessId,
+              args.item!,
+            );
+            return { ...chat };
+
+          case "remove":
+            const removeResult =
+              await productOrderStateManager.removeProductFromCart(
+                orderKey,
+                args.item!,
+              );
+            return { ...chat, content: removeResult.removed };
+
+          case "update":
+            const updateResult =
+              await productOrderStateManager.updateProductInCart(
+                orderKey,
+                businessId,
+                args.item!,
+              );
+            return { ...chat };
+
+          case "confirm":
+            const cart = await productOrderStateManager.viewCart(orderKey);
+            const r = await cmsAdapter.createProductOrder({
+              business: businessId,
+              cart: {
+                items: cart.products.map((p) => ({
+                  productId: p.productId,
+                  productName: p.productName,
+                  quantity: p.quantity,
+                  observations: p.notes,
+                })),
+              },
+              customer: "",
+            });
+
+            return { ...chat, content: r.id };
+
+          default:
+            return { ...chat, content: "" };
+        }
       } catch {
         // Usar args vacíos si falla el parse
       }
-      // Extraer el intent del usuario de los argumentos del tool call
-      const result = await executeTool(
-        toolCall.function.name,
-        args,
-        businessId,
-      );
-      return {
-        ...result,
-        chatMsg: {
-          role: "tool",
-          content: result.message,
-          tool_call_id: toolCall.id,
-          name: toolCall.function.name,
-        } satisfies ChatMessage,
-      };
+
+      return { ...chat, content: "" };
     }),
   );
 }
@@ -282,9 +302,8 @@ export const cartAgent = async (ctx: DomainCtx, chatHistory: ChatMessage[]) => {
     });
   }
 
-  const toolResults = await processToolCalls(toolCalls, ctx.businessId);
-
-  messages.push(...toolResults.map((r) => r.chatMsg));
+  const toolResults = await processToolCalls(toolCalls, ctx);
+  messages.push(...toolResults);
 
   const finalResponse = await aiAdapter.generateText({
     messages,

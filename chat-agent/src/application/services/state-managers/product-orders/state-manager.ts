@@ -28,8 +28,6 @@ interface ProductStateTransition {
  * Manager para el estado del proceso de reserva
  */
 class ProductOrderStateManager {
-  //
-
   /**
    * Deriva el siguiente estado basado en el estado actual y la acción del usuario.
    * Genera automáticamente el mensaje template para enviar al usuario.

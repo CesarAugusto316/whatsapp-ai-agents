@@ -268,11 +268,11 @@ export interface ProductOrder {
       productId: string;
       productName: string;
       quantity: number;
-      price: number;
-      subTotal: number;
+      price?: number;
+      subTotal?: number;
       observations?: string;
     }[];
-    total: number;
+    total?: number;
   };
   status: "confirmed" | "cancelled" | "completed";
   business: string | Business;
