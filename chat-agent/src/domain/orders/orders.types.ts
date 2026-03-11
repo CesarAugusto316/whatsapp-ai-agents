@@ -1,10 +1,11 @@
+import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
 import { FMStatus } from "../booking";
 import { OrderSchema } from "./parsers/schema";
+import { Product } from "@/infraestructure/adapters/cms";
 
 export interface ProductOrderState extends OrderSchema {
   id: string;
-  status: FMStatus;
+  status?: FMStatus;
   customerId: string;
-  businessId: string;
-  attempts: number;
+  searchedProducts: QuadrantPoint<Partial<Product>>[];
 }

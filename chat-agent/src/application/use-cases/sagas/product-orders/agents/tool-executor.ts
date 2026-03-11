@@ -14,6 +14,7 @@ import { MediaFile } from "@/infraestructure/adapters/whatsapp";
 import { createProductOrderSystemPrompt } from "@/application/use-cases/sagas/product-orders";
 import { routerAgent } from "./router-agent";
 import { cartAgent } from "./cart-agent";
+import { productOrderStateManager } from "@/application/services/state-managers";
 
 /**
  *
@@ -75,6 +76,7 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
   businessId: string,
+  orderKey?: string,
 ): Promise<ToolResult> {
   switch (name) {
     //
@@ -82,13 +84,15 @@ export async function executeTool(
       const keywords = (args.keywords as string) || "";
       const limit = 5;
       // Usar keywords si está disponible, sino usar intent
-      const results = await ragService.searchProducts(
+      const { points } = await ragService.searchProducts(
         keywords,
         businessId,
         limit,
       );
 
-      const products = results.points?.map(({ payload }) => ({
+      await productOrderStateManager.addSearchedProducts(orderKey!, points);
+
+      const products = points?.map(({ payload }) => ({
         ...payload,
         isAvailable: payload?.enabled,
       }));
@@ -162,8 +166,11 @@ export async function executeTool(
  */
 export async function processToolCalls(
   toolCalls: ToolCall[],
-  businessId: string,
+  ctx: DomainCtx,
 ): Promise<(ToolResult & { chatMsg: ChatMessage })[]> {
+  //
+  const businessId = ctx.businessId;
+
   return Promise.all(
     toolCalls.map(async (toolCall) => {
       let args: Record<string, unknown> = {};
@@ -177,6 +184,7 @@ export async function processToolCalls(
         toolCall.function.name,
         args,
         businessId,
+        ctx.productOrderKey,
       );
       return {
         ...result,
@@ -239,7 +247,7 @@ export async function handleProductOrderWithTools(
     });
   }
 
-  const toolResults = await processToolCalls(toolCalls, ctx.businessId);
+  const toolResults = await processToolCalls(toolCalls, ctx);
   const files = [
     ...toolResults
       .filter((r) => r.files?.length)

@@ -3,12 +3,12 @@ import {
   MainOptions,
   FMStatus,
   BookingStatuses,
-  BookingState,
 } from "@/domain/booking";
-import { BookingSchema } from "@/domain/booking/input-parser/booking-schemas";
-import { SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { Product, SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { stateMessages } from "./messages";
-import { ParsedBookingData } from "@/domain/booking/input-parser";
+import { ProductOrderState } from "@/domain/orders";
+import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 
 interface ProductStateTransition {
   nextState?: FMStatus;
@@ -39,12 +39,12 @@ class ProductOrderStateManager {
    * @param params.domain - Dominio especializado (restaurant, medical, etc.)
    * @param params.userName - Nombre del usuario (para mensajes personalizados)
    */
-  nextState(
+  nextTransition(
     status: string,
     params?: {
       timeZone?: string;
       domain?: SpecializedDomain;
-      data?: Partial<BookingState>;
+      data?: Partial<ProductOrderState>;
     },
   ): ProductStateTransition {
     const { data, timeZone, domain = "restaurant" } = params || {};
@@ -176,37 +176,33 @@ class ProductOrderStateManager {
     }
   }
 
-  /**
-   * Fusiona el estado entrante con el estado previo de la reserva
-   */
-  // mergeState(
-  //   incoming: Partial<BookingSchema> | ParsedBookingData,
-  //   previous?: Partial<BookingSchema>,
-  // ): BookingSchema {
-  //   return {
-  //     customerName:
-  //       incoming.customerName?.trim() || previous?.customerName?.trim() || "",
-  //     datetime: {
-  //       start: {
-  //         date:
-  //           incoming.datetime?.start?.date ||
-  //           previous?.datetime?.start?.date ||
-  //           "",
-  //         time:
-  //           incoming.datetime?.start?.time ||
-  //           previous?.datetime?.start?.time ||
-  //           "",
-  //       },
-  //       end: {
-  //         date:
-  //           incoming.datetime?.end?.date || previous?.datetime?.end?.date || "",
-  //         time:
-  //           incoming.datetime?.end?.time || previous?.datetime?.end?.time || "",
-  //       },
-  //     },
-  //     numberOfPeople: incoming.numberOfPeople || previous?.numberOfPeople || 0,
-  //   };
-  // }
+  async addSearchedProducts(
+    key: string,
+    products: QuadrantPoint<Partial<Product>>[],
+  ) {
+    const prev = await this.getState(key);
+
+    await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+      ...prev,
+      searchedProducts: [...(prev?.searchedProducts ?? []), ...products],
+    });
+  }
+
+  async addProductToCart(
+    key: string,
+    product: QuadrantPoint<Partial<Product>>,
+  ) {
+    const prev = await this.getState(key);
+
+    await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+      ...prev,
+      products: [...(prev?.products ?? [])],
+    });
+  }
+
+  async getState(key: string) {
+    return cacheAdapter.getObj<Partial<ProductOrderState>>(key);
+  }
 }
 
 export const productOrderStateManager = new ProductOrderStateManager();

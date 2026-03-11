@@ -9,6 +9,7 @@ import {
 } from "@/application/services/state-managers";
 import { formatSagaOutput } from "@/application/patterns";
 import { initChangeSteps } from "./booking/workflows";
+import { ProductOrderState } from "@/domain/orders";
 
 /**
  *
@@ -74,7 +75,7 @@ export async function initWorkflow(
 
   if (option === MainOptions.CREATE_ORDER) {
     // choice 2
-    const transition = productOrderStateManager.nextState(
+    const transition = productOrderStateManager.nextTransition(
       MainOptions.CREATE_ORDER,
       {
         domain: business.general.businessType,
@@ -85,9 +86,8 @@ export async function initWorkflow(
       },
     );
 
-    await cacheAdapter.save(productOrderKey, {
-      businessId: business?.id,
-      customerId: customer?.id,
+    await cacheAdapter.save<Partial<ProductOrderState>>(productOrderKey, {
+      customerId: customer?.id!,
       customerName: customer?.name || "",
       status: transition.nextState, // MAKE_STARTED
     });
