@@ -9,6 +9,7 @@ import { stateMessages } from "./messages";
 import { ProductOrderState } from "@/domain/orders";
 import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
+import { ragService } from "../../rag";
 
 interface ProductStateTransition {
   nextState?: FMStatus;
@@ -190,14 +191,47 @@ class ProductOrderStateManager {
 
   async addProductToCart(
     key: string,
-    product: QuadrantPoint<Partial<Product>>,
+    businessId: string,
+    product: { name: string; quantity: number; notes?: string },
   ) {
     const prev = await this.getState(key);
 
-    await cacheAdapter.save<Partial<ProductOrderState>>(key, {
-      ...prev,
-      products: [...(prev?.products ?? [])],
-    });
+    const searchedProducts = prev?.searchedProducts ?? [];
+
+    const productExists = searchedProducts.find(
+      (p) => p.payload.name === product.name,
+    );
+
+    if (!productExists) {
+      const { points } = await ragService.searchProducts(
+        product.name,
+        businessId,
+        1,
+      );
+      const productFound = points[0];
+      const payload = {
+        productId: productFound.payload.id!,
+        productName: productFound.payload.name!,
+        quantity: product.quantity,
+        observations: product.notes,
+      };
+      await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+        ...prev,
+        products: [...(prev?.products ?? []), payload],
+      });
+    } //
+    else {
+      const payload = {
+        productId: productExists.payload.id!,
+        productName: product.name,
+        quantity: product.quantity,
+        observations: product.notes,
+      };
+      await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+        ...prev,
+        products: [...(prev?.products ?? []), payload],
+      });
+    }
   }
 
   async getState(key: string) {
