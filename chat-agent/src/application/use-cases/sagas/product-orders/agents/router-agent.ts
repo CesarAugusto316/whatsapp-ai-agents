@@ -4,14 +4,19 @@ import z from "zod";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { DomainCtx } from "@/domain/booking";
 
-const routerSchema = z.enum(["search_agent", "cart_agent"]);
+const routerSchema = z.enum([
+  "search_agent",
+  "cart_agent",
+  "ask_clarification",
+]);
 
 type RouterOutput = z.infer<typeof routerSchema>;
 
 /**
  * Normaliza y valida el output del router
  *
- * El LLM puede retornar: "search", "cart", "search_agent", "cart_agent", "SEARCH", "Cart.", etc.
+ * El LLM puede retornar: "search", "cart", "search_agent", "cart_agent",
+ * "ask_clarification", "clarification", "SEARCH", "Cart.", etc.
  * Esta función normaliza antes de validar y hace fallback a "search_agent" si falla
  */
 const validateRouter = (raw: string): RouterOutput => {
@@ -21,11 +26,15 @@ const validateRouter = (raw: string): RouterOutput => {
     .toLowerCase()
     .replace(/["'.!¡¿?]/g, "")
     .replace(/^(search|search_agent).*$/, "search_agent")
-    .replace(/^(cart|cart_agent).*$/, "cart_agent");
+    .replace(/^(cart|cart_agent).*$/, "cart_agent")
+    .replace(
+      /^(ask_clarification|clarification|clarificacion|duda|ambiguo).*$/,
+      "ask_clarification",
+    );
 
   const result = routerSchema.safeParse(normalized);
 
-  // Fallback defensivo: si no es "cart_agent", default a "search_agent"
+  // Fallback defensivo: si no es "cart_agent" o "ask_clarification", default a "search_agent"
   if (!result.success) {
     console.warn(
       `Router validation failed for: "${raw}" → defaulting to "search_agent"`,
@@ -71,6 +80,14 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     - El usuario quiere **modificar** cantidades de su ${vocab.orderWord}
     - El usuario quiere **ver** qué lleva en su ${vocab.orderWord}/carrito
     - El usuario quiere **confirmar/finalizar** su ${vocab.orderWord}
+    - El usuario da su **nombre** o datos de cliente
+
+    **Acciones del cart_agent:**
+    - add: Agregar productos
+    - remove: Quitar productos
+    - update: Modificar cantidades
+    - view: Ver carrito
+    - confirm: Confirmar pedido
 
     **Frases típicas → cart_agent:**
     - "Agregame 2 pizzas"
@@ -86,41 +103,76 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     - "Confirmo"
     - "Listo, eso es todo"
     - "Finalizar ${vocab.orderWord}"
+    - "Mi nombre es César"
+    - "Pedro Rodriguez"
+    - "Soy María"
+
+    ### 3. PEDIR CLARIFICACIÓN (ask_clarification)
+    **Cuándo usar esto:**
+    - El mensaje es **demasiado corto** o **vago** sin contexto suficiente
+    - El usuario menciona un ${vocab.productName} suelto sin verbo de acción
+    - **No hay suficiente contexto** en el historial para decidir entre search_agent o cart_agent
+    - El LLM se pregunta: "¿El usuario quiere buscar o agregar?"
+
+    **Frases típicas → ask_clarification:**
+    - "Pizza" (solo, sin verbo)
+    - "Pizzas" (sin contexto de acción)
+    - "Ensaladas" (¿quiere ver o agregar?)
+    - "Cerveza" (¿busca o agrega?)
+    - Mensajes de 1-2 palabras sin intención clara
+
+    **Pregunta clave del LLM:**
+    - ¿El usuario quiere buscar ${vocab.productPlural} (search_agent) o quiere agregar ${vocab.productPlural} (cart_agent)?
+    - Si la respuesta es "no sé" → ask_clarification
 
     ## TU DECISIÓN
 
-    Solo tenés 2 opciones de output:
+    Tenés 3 opciones de output:
 
     **"search_agent"** → Cuando el usuario quiere explorar, buscar, preguntar sobre ${vocab.productPlural}
 
-    **"cart_agent"** → Cuando el usuario quiere gestionar su ${vocab.orderWord} (agregar, quitar, ver, confirmar)
+    **"cart_agent"** → Cuando el usuario quiere gestionar su ${vocab.orderWord} (agregar, quitar, ver, confirmar) o dar sus datos
+
+    **"ask_clarification"** → Cuando hay ambigüedad y no hay suficiente contexto para decidir
 
     ## REGLAS DE ORO
 
     1. **BUSCA PATRONES DE ACCIÓN**:
-      - "agrega", "poné", "quiero agregar" → cart_agent
+      - "agrega", "poné", "quiero agregar", "dame" → cart_agent
       - "quitá", "sacá", "eliminà" → cart_agent
       - "mostrame mi", "ver carrito", "confirmo" → cart_agent
       - "quiero ver", "busco", "¿qué tienen?" → search_agent
+      - "mi nombre es", "soy", "me llamo" → cart_agent
+      - "${vocab.productName}" (solo, sin verbo) → ask_clarification
 
-    2. **CUANDO HAY AMBIGÜEDAD**:
-      - "Quiero una pizza" → search_agent (primero busca, luego agrega)
-      - "Agregame una pizza" → cart_agent (ya sabe qué quiere)
-      - "¿Tienen pizzas?" → search_agent (está explorando)
-      - "Dame una pizza" → cart_agent (está pidiendo agregar)
-      - "2 pastas" → cart_agent (está pidiendo agregar)
-      - "Si, dale" → cart_agent (está confirmando)
+    2. **ANALIZÁ EL HISTORIAL**:
+      - Si el usuario viene de ver ${vocab.productPlural} y dice "quiero esa" → cart_agent (ya hay contexto)
+      - Si el usuario viene de agregar y dice "sí" → cart_agent (está confirmando)
+      - Si es el primer mensaje y dice "pizza" → ask_clarification (¿busca o agrega?)
+      - Si el usuario dice "2 pastas" después de ver el ${vocab.menuWord} → cart_agent
+      - Si el usuario dice "${vocab.productName}" sin referencia previa → ask_clarification
 
-    3. **CONTEXTO IMPORTA**:
+    3. **INTENCIÓN CLARA vs AMBIGÜEDAD**:
+      - "Quiero una pizza" → search_agent (primero busca)
+      - "Agregame una pizza" → cart_agent (acción clara)
+      - "¿Tienen pizzas?" → search_agent (explorando)
+      - "Dame una pizza" → cart_agent (acción clara de agregar)
+      - "2 pastas" → cart_agent (acción clara de agregar)
+      - "Sí, dale" → cart_agent (confirmando)
+      - "Pizza" → ask_clarification (¿busca o agrega?)
+      - "Ensaladas" → ask_clarification (¿ver o agregar?)
+
+    4. **CONTEXTO IMPORTA**:
       - Si el usuario ya está en proceso de ${vocab.actionVerbInfinitive} y dice "agregame" → cart_agent
       - Si el usuario recién empieza y dice "quiero ver" → search_agent
+      - Si el usuario menciona un producto sin verbo y no hay contexto → ask_clarification
 
-    4. **NO INVENTES**: Solo respondé "search_agent" o "cart_agent"
+    5. **NO INVENTES**: Solo respondé "search_agent", "cart_agent" o "ask_clarification"
 
-    5. **DEFAULT EN CASO DE DUDA**:
-      - Si no estás seguro de la intención → search_agent
-      - Si el usuario parece estar continuando una conversación sin acción clara → search_agent
-      - Mejor derivar a búsqueda que asumir mal una acción de carrito
+    6. **DEFAULT EN CASO DE DUDA**:
+      - Si el mensaje es muy corto (1-2 palabras) y no hay contexto → ask_clarification
+      - Si no podés determinar si quiere buscar o agregar → ask_clarification
+      - Es mejor pedir clarificación que derivar mal
 
     ## EJEMPLOS
 
@@ -152,16 +204,35 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     → search_agent
 
     Usuario: "Quiero una pizza margherita"
-    → search_agent (primero busca para ver si tienen)
+    → search_agent (primero busca)
 
     Usuario: "Dame esa pizza"
-    → cart_agent (ya vio la pizza, ahora la agrega)
+    → cart_agent (ya hay contexto, está agregando)
+
+    Usuario: "Pizza"
+    → ask_clarification (¿busca o agrega?)
+
+    Usuario: "Ensaladas"
+    → ask_clarification (¿ver o agregar?)
+
+    Usuario: "Cerveza"
+    → ask_clarification (¿busca o agrega?)
+
+    Usuario: "Mi nombre es César"
+    → cart_agent (datos del cliente)
+
+    Usuario: "Pedro Rodriguez"
+    → cart_agent (datos del cliente)
+
+    Usuario: "2 cervezas"
+    → cart_agent (acción clara de agregar)
 
     ## OUTPUT
 
     Respondé ÚNICAMENTE con una palabra:
     - "search_agent" → para derivar al Agente de Búsqueda
     - "cart_agent" → para derivar al Agente de Carrito
+    - "ask_clarification" → cuando no hay suficiente contexto para decidir
 
     Nada más. Sin explicaciones. Sin texto adicional.
 `.trim();
