@@ -16,20 +16,11 @@ import { MediaFile } from "@/infraestructure/adapters/whatsapp";
 import { productOrderStateManager } from "@/application/services/state-managers";
 
 /**
- * Genera un system prompt dinámico para el agente de pedidos según el dominio
  *
- * @param domain - El tipo de negocio (restaurant, medical, real-estate, etc.)
- * @returns El system prompt completo para configurar el comportamiento del agente
- *
- * @example
- * // Para un restaurante
- * const prompt = createProductOrderSystemPrompt("restaurant");
- *
- * @example
- * // Para un centro médico
- * const prompt = createProductOrderSystemPrompt("medical");
+ * @param domain
+ * @returns
  */
-function searchProductSystemPrompt(domain: SpecializedDomain): string {
+function createSearchAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
 
   return `
@@ -320,7 +311,7 @@ export async function searchAgent(
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
 
-  const systemPrompt = searchProductSystemPrompt(domain);
+  const systemPrompt = createSearchAgentPrompt(domain);
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },

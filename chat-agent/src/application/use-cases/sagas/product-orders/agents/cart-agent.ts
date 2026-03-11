@@ -280,7 +280,10 @@ async function processToolCalls(
   );
 }
 
-export const cartAgent = async (ctx: DomainCtx, chatHistory: ChatMessage[]) => {
+export const cartManagerAgent = async (
+  ctx: DomainCtx,
+  chatHistory: ChatMessage[],
+) => {
   //
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;

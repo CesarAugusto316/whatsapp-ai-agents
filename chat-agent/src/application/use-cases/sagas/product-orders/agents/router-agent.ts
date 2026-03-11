@@ -4,15 +4,15 @@ import z from "zod";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { DomainCtx } from "@/domain/booking";
 
-const routerSchema = z.enum(["search", "cart"]);
+const routerSchema = z.enum(["search_agent", "cart_agent"]);
 
 type RouterOutput = z.infer<typeof routerSchema>;
 
 /**
  * Normaliza y valida el output del router
  *
- * El LLM puede retornar: "search", "cart", "search.", "Cart", " SEARCH ", etc.
- * Esta función normaliza antes de validar y hace fallback a "search" si falla
+ * El LLM puede retornar: "search", "cart", "search_agent", "cart_agent", "SEARCH", "Cart.", etc.
+ * Esta función normaliza antes de validar y hace fallback a "search_agent" si falla
  */
 const validateRouter = (raw: string): RouterOutput => {
   // Normalizar: lowercase, trim, sacar puntuación y quotes
@@ -20,16 +20,17 @@ const validateRouter = (raw: string): RouterOutput => {
     .trim()
     .toLowerCase()
     .replace(/["'.!¡¿?]/g, "")
-    .replace(/^(search|cart).*$/, "$1"); // extraer solo la palabra clave
+    .replace(/^(search|search_agent).*$/, "search_agent")
+    .replace(/^(cart|cart_agent).*$/, "cart_agent");
 
   const result = routerSchema.safeParse(normalized);
 
-  // Fallback defensivo: si no es "cart", default a "search"
+  // Fallback defensivo: si no es "cart_agent", default a "search_agent"
   if (!result.success) {
     console.warn(
-      `Router validation failed for: "${raw}" → defaulting to "search"`,
+      `Router validation failed for: "${raw}" → defaulting to "search_agent"`,
     );
-    return "search";
+    return "search_agent";
   }
 
   return result.data;
@@ -37,7 +38,6 @@ const validateRouter = (raw: string): RouterOutput => {
 
 function createRouterAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
-
   return `
     Eres un router inteligente para un ${vocab.greetingContext}. Tu única función es analizar el mensaje del usuario y decidir a qué agente derivar.
 
@@ -91,77 +91,77 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
 
     Solo tenés 2 opciones de output:
 
-    **"search"** → Cuando el usuario quiere explorar, buscar, preguntar sobre ${vocab.productPlural}
+    **"search_agent"** → Cuando el usuario quiere explorar, buscar, preguntar sobre ${vocab.productPlural}
 
-    **"cart"** → Cuando el usuario quiere gestionar su ${vocab.orderWord} (agregar, quitar, ver, confirmar)
+    **"cart_agent"** → Cuando el usuario quiere gestionar su ${vocab.orderWord} (agregar, quitar, ver, confirmar)
 
     ## REGLAS DE ORO
 
     1. **BUSCA PATRONES DE ACCIÓN**:
-      - "agrega", "poné", "quiero agregar" → cart
-      - "quitá", "sacá", "eliminà" → cart
-      - "mostrame mi", "ver carrito", "confirmo" → cart
-      - "quiero ver", "busco", "¿qué tienen?" → search
+      - "agrega", "poné", "quiero agregar" → cart_agent
+      - "quitá", "sacá", "eliminà" → cart_agent
+      - "mostrame mi", "ver carrito", "confirmo" → cart_agent
+      - "quiero ver", "busco", "¿qué tienen?" → search_agent
 
     2. **CUANDO HAY AMBIGÜEDAD**:
-      - "Quiero una pizza" → search (primero busca, luego agrega)
-      - "Agregame una pizza" → cart (ya sabe qué quiere)
-      - "¿Tienen pizzas?" → search (está explorando)
-      - "Dame una pizza" → cart (está pidiendo agregar)
-      - "2 pastas" → cart (está pidiendo agregar)
-      - "Si, dale" → cart (está confirmando) -> cart
+      - "Quiero una pizza" → search_agent (primero busca, luego agrega)
+      - "Agregame una pizza" → cart_agent (ya sabe qué quiere)
+      - "¿Tienen pizzas?" → search_agent (está explorando)
+      - "Dame una pizza" → cart_agent (está pidiendo agregar)
+      - "2 pastas" → cart_agent (está pidiendo agregar)
+      - "Si, dale" → cart_agent (está confirmando)
 
     3. **CONTEXTO IMPORTA**:
-      - Si el usuario ya está en proceso de ${vocab.actionVerbInfinitive} y dice "agregame" → cart
-      - Si el usuario recién empieza y dice "quiero ver" → search
+      - Si el usuario ya está en proceso de ${vocab.actionVerbInfinitive} y dice "agregame" → cart_agent
+      - Si el usuario recién empieza y dice "quiero ver" → search_agent
 
-    4. **NO INVENTES**: Solo respondé "search" o "cart"
+    4. **NO INVENTES**: Solo respondé "search_agent" o "cart_agent"
 
     5. **DEFAULT EN CASO DE DUDA**:
-      - Si no estás seguro de la intención → "search"
-      - Si el usuario parece estar continuando una conversación sin acción clara → "search"
+      - Si no estás seguro de la intención → search_agent
+      - Si el usuario parece estar continuando una conversación sin acción clara → search_agent
       - Mejor derivar a búsqueda que asumir mal una acción de carrito
 
     ## EJEMPLOS
 
     Usuario: "Quiero ver el ${vocab.menuWord}"
-    → search
+    → search_agent
 
     Usuario: "¿Qué postres tienen?"
-    → search
+    → search_agent
 
     Usuario: "Busco pizzas"
-    → search
+    → search_agent
 
     Usuario: "Agregame 2 pizzas"
-    → cart
+    → cart_agent
 
     Usuario: "Poneme una ensalada césar"
-    → cart
+    → cart_agent
 
     Usuario: "Quitame la pizza"
-    → cart
+    → cart_agent
 
     Usuario: "Mostrame mi ${vocab.orderWord}"
-    → cart
+    → cart_agent
 
     Usuario: "Sí, confirmado"
-    → cart
+    → cart_agent
 
     Usuario: "¿Tienen opciones vegetarianas?"
-    → search
+    → search_agent
 
     Usuario: "Quiero una pizza margherita"
-    → search (primero busca para ver si tienen)
+    → search_agent (primero busca para ver si tienen)
 
     Usuario: "Dame esa pizza"
-    → cart (ya vio la pizza, ahora la agrega)
+    → cart_agent (ya vio la pizza, ahora la agrega)
 
     ## OUTPUT
 
     Respondé ÚNICAMENTE con una palabra:
-    - "search" → para derivar al Agente de Búsqueda
-    - "cart" → para derivar al Agente de Carrito
+    - "search_agent" → para derivar al Agente de Búsqueda
+    - "cart_agent" → para derivar al Agente de Carrito
 
     Nada más. Sin explicaciones. Sin texto adicional.
 `.trim();

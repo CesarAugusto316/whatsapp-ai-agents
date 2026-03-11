@@ -2,7 +2,7 @@ import { DomainCtx } from "@/domain/booking";
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { routerAgent } from "./router-agent";
-import { cartAgent } from "./cart-agent";
+import { cartManagerAgent } from "./cart-agent";
 import { searchAgent } from "./search-agent";
 
 /**
@@ -18,8 +18,8 @@ export async function productOrderWorkflow(
   const router = await routerAgent(ctx, chatHistory);
 
   // 2. CART AGENT
-  if (router === "cart") {
-    return cartAgent(ctx, chatHistory);
+  if (router === "cart_agent") {
+    return cartManagerAgent(ctx, chatHistory);
   }
 
   // 3. SEARCH AGENT
