@@ -37,12 +37,8 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
             description:
               "Specific product keywords to search for (e.g., 'pizza hawaiana', 'zapatos rojos', 'camisa azul')",
           },
-          limit: {
-            type: "integer",
-            description: "Maximum number of results to return (default: 5)",
-          },
         },
-        required: ["intent", "keywords", "limit"],
+        required: ["keywords"],
         additionalProperties: false,
       },
     },
@@ -65,12 +61,8 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
             description:
               "Specific product keywords to search for (e.g., 'menu de pizzas', 'menu')",
           },
-          limit: {
-            type: "integer",
-            description: "Maximum number of results to return (default: 3)",
-          },
         },
-        required: ["intent", "limit"],
+        required: ["keywords"],
         additionalProperties: false,
       },
     },
@@ -95,8 +87,8 @@ export async function executeTool(
   switch (name) {
     //
     case "search_products": {
-      const keywords = args.keywords as string;
-      const limit = Number(args.limit) || 5;
+      const keywords = (args.keywords as string) || "";
+      const limit = 5;
       // Usar keywords si está disponible, sino usar intent
       const results = await ragService.searchProducts(
         keywords,
@@ -108,8 +100,6 @@ export async function executeTool(
         ...payload,
         isAvailable: payload?.enabled,
       }));
-
-      console.log({ keywords, products });
 
       if (!products?.length) {
         return {
@@ -132,10 +122,10 @@ export async function executeTool(
     }
 
     case "get_menu": {
-      const intent = args.intent as string | undefined;
-      const limit = Number(args.limit) || 3;
+      const keywords = (args.keywords as string) || "menu";
+      const limit = 3;
       const { points } = await ragService.searchBusinessMedia(
-        intent || "menu",
+        keywords,
         businessId,
         limit,
       );
@@ -152,7 +142,7 @@ export async function executeTool(
           success: false,
           tool: "get_menu",
           message:
-            "No se encontraron los archivos, se debe pedir alternativas al usuario",
+            "No se encontró el menú, se debe pedir alternativas al usuario",
           files: [],
         };
       }
@@ -230,7 +220,7 @@ export async function handleProductOrderWithTools(
     useAuxModel: true,
     messages,
     tools: PRODUCT_ORDER_TOOLS,
-    response_format: { type: "json_object" },
+    response_format: { type: "json_schema" },
   });
 
   if (!toolCalls || toolCalls.length === 0) {

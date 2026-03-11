@@ -152,6 +152,11 @@ export default buildConfig({
             const controller = new AbortController();
             setTimeout(() => controller.abort(), 20_000); // 20 segundos
 
+            /**
+             *
+             * @todo INGEST INTO QUADRANT DIRECTLY INSTEAD OF VIA AGENT
+             * @link https://api.qdrant.tech/api-reference/search/query-points
+             */
             await fetch(
               `${process.env.AGENT_URL}/content/sync-state/${input.businessId}`,
               {

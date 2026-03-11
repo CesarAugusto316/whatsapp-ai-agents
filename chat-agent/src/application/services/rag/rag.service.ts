@@ -216,7 +216,7 @@ class RagService {
     businessId: string,
     limit = 3,
     lang = "es",
-    THRESHOLD = 0.7,
+    THRESHOLD = 0.68,
   ) {
     // 1. Generar clave de caché
     const normalizedQuery = this.normalizeText(query);

@@ -174,10 +174,10 @@ export function createProductOrderSystemPrompt(
     **Frases típicas (TODAS estas van con search_products):**
     - "¿Tienen pizzas?" → busca "pizza"
     - "¿Hay ensaladas?" → busca "ensalada"
-    - "Busco pastas" → busca "pasta"
+    - "Busco pastas con pollo" → busca "pasta con pollo"
     - "Quiero pollo" → busca "pollo"
     - "¿Qué postres tienen?" → busca "postres"
-    - "¿Tienen bebidas?" → busca "bebidas"
+    - "¿Tienen bebidas sin alcohol?" → busca "bebidas sin alcohol"
     - "¿Qué me recomiendan?" → busca recomendaciones
 
     ## REGLAS DE ORO
@@ -209,9 +209,9 @@ export function createProductOrderSystemPrompt(
     Tú: [LLAMAR search_products con keywords "pizzas"]
     [Después de obtener resultados] "¡Sí! Tenemos estas opciones de pizza: ..."
 
-    Usuario: "¿Qué postres tienen?"
-    Tú: [LLAMAR search_products con keywords "postres"]
-    [Después de obtener resultados] "Tenemos estos postres: ..."
+    Usuario: "¿Qué postres de chocolate tienen?"
+    Tú: [LLAMAR search_products con keywords "postres de chocolate"]
+    [Después de obtener resultados] "Tenemos estos postres de chocolate: ..."
 
     Usuario: "Quiero pedir una ensalada"
     Tú: [LLAMAR search_products con keywords "ensalada"]
@@ -221,6 +221,5 @@ export function createProductOrderSystemPrompt(
 
     - **SIEMPRE** llama a una herramienta antes de responder sobre ${vocab.productPlural}
     - La elección de herramienta depende de la **INTENCIÓN** del usuario
-    - Tu misión es hacer que el proceso de ${vocab.actionVerbInfinitive} sea simple, rápido y agradable.
 `.trim();
 }

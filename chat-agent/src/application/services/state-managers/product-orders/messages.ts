@@ -180,18 +180,18 @@ export const DOMAIN_ACTION_CONFIG: Record<
  * Cada mensaje confirma el inicio del proceso e invita al usuario a tomar acción
  */
 const ORDER_START_MESSAGES: string[] = [
-  "¡Perfecto! Empecemos tu pedido 🎉\n\n¿Querés que te muestre el menú completo o preferís que te recomiende algunos platos?",
-  "¡Excelente! Vamos a armar tu pedido 🍽️\n\n¿Te gustaría ver el menú completo o que te sugiera algunas opciones populares?",
-  "¡Genial! Ya estamos cocinando tu pedido 👨‍🍳\n\n¿Querés explorar el menú completo o preferís que te recomiende platos?",
-  "¡Muy bien! Comencemos con tu pedido 🥘\n\n¿Preferís ver todo el menú o que te recomiende algunos especiales?",
-  "¡Fantástico! Iniciemos tu pedido 🌟\n\n¿Querés que te muestre todas las opciones o te sugiera algunos platos?",
-  "¡De una! Empecemos con tu orden 🍴\n\n¿Te muestro el menú completo o preferís que te dé algunas recomendaciones?",
-  "¡Listo! Vamos con tu pedido 🎯\n\n¿Querés ver el menú completo o que te sugiera lo más rico?",
-  "¡Vamos allá! Iniciemos tu orden 🚀\n\n¿Preferís explorar el menú o que te recomiende algunos platos?",
-  "¡Buena! Arranquemos con tu pedido 🍕\n\n¿Querés que te pase el menú o que te cuente qué hay de bueno hoy?",
-  "¡Dale! Preparemos tu pedido 🥗\n\n¿Te muestro las opciones del menú o preferís que te sugiera algunos platos?",
-  "¡Genial! Comencemos la experiencia 🍜\n\n¿Querés ver todo el menú o que te recomiende nuestras especialidades?",
-  "¡Excelente! Iniciemos la aventura 🌮\n\n¿Preferís que te muestre el menú o prefieres buscar opciones?",
+  "¡Perfecto! Empecemos tu pedido 🎉\n\n¿Quieres que te muestre el menú completo o prefieres buscar algo específico?",
+  "¡Excelente! Vamos a armar tu pedido 🍽️\n\n¿Te gustaría ver el menú completo o buscar algún plato en particular?",
+  "¡Genial! Ya estamos con tu pedido 👨‍🍳\n\n¿Quieres explorar el menú completo o buscar algo que te guste?",
+  "¡Listo! Vamos con tu pedido 🎯\n\n¿Quieres ver el menú completo o tienes alguna preferencia (carne, pollo, etc.)?",
+  "¡Fantástico! Iniciemos tu pedido 🌟\n\n¿Quieres que te muestre todas las opciones o prefieres buscar algún plato?",
+  "¡De una! Empecemos con tu orden 🍴\n\n¿Te muestro el menú completo o quieres buscar algo en particular?",
+  "¡Listo! Vamos con tu pedido 🎯\n\n¿Quieres ver el menú completo o prefieres buscar algo específico?",
+  "¡Vamos allá! Iniciemos tu orden 🚀\n\n¿Prefieres explorar el menú o buscar algo que tengas en mente?",
+  "¡Buena! Arranquemos con tu pedido 🍕\n\n¿Quieres que te pase el menú o prefieres buscar algún plato?",
+  "¡Dale! Preparemos tu pedido 🥗\n\n¿Te muestro las opciones del menú o quieres buscar algo específico?",
+  "¡Genial! Comencemos 🍜\n\n¿Quieres ver todo el menú o buscar algún plato en particular?",
+  "¡Excelente! Empecemos 🌮\n\n¿Prefieres que te muestre el menú o buscar algo específico que te apetezca?",
 ];
 
 /**
