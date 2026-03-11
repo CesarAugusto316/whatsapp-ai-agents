@@ -135,7 +135,7 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
 
     ## TU DECISIÓN
 
-    Tenés 3 opciones de output:
+    Tienes 3 opciones de output:
 
     **"search_agent"** → Cuando el usuario quiere explorar, buscar, preguntar sobre ${vocab.productPlural}
 
@@ -146,9 +146,9 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     ## REGLAS DE ORO
 
     1. **BUSCA PATRONES DE ACCIÓN**:
-      - "agrega", "poné", "quiero agregar", "dame" → cart_agent
-      - "quitá", "sacá", "eliminà" → cart_agent
-      - "mostrame mi ${vocab.orderWord}", "ver mi ${vocab.orderWord}", "confirmo" → cart_agent
+      - "agrega", "pon", "quiero agregar", "dame" → cart_agent
+      - "quita", "saca", "elimina" → cart_agent
+      - "muestra mi ${vocab.orderWord}", "ver mi ${vocab.orderWord}", "confirmo" → cart_agent
       - "quiero ver", "busco", "¿qué tienen?" → search_agent
       - "mi nombre es", "soy", "me llamo" → cart_agent
       - "${vocab.productName}" (solo, sin verbo) → ask_clarification
@@ -178,11 +178,11 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
       - Si el usuario recién empieza y dice "quiero ver" → search_agent
       - Si el usuario menciona un producto sin verbo y no hay contexto → ask_clarification
 
-    5. **NO INVENTES**: Solo respondé "search_agent", "cart_agent" o "ask_clarification"
+    5. **NO INVENTES**: Solo responde "search_agent", "cart_agent" o "ask_clarification"
 
     6. **DEFAULT EN CASO DE DUDA**:
       - Si el mensaje es muy corto (1-2 palabras) y no hay contexto → ask_clarification
-      - Si no podés determinar si quiere buscar o agregar → ask_clarification
+      - Si no puedes determinar si quiere buscar o agregar → ask_clarification
       - Es mejor pedir clarificación que derivar mal
 
     ## EJEMPLOS
@@ -234,33 +234,33 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
 
     ## EJEMPLOS DE CLARIFICACIÓN
 
-    Asistente: "¿Querés ver qué ${vocab.productPlural} tenemos o querés agregar ${productExample1} a tu ${vocab.orderWord}?"
+    Asistente: "¿Quieres ver qué ${vocab.productPlural} tenemos o quieres agregar ${productExample1} a tu ${vocab.orderWord}?"
     Usuario: "Ver"
     → search_agent
 
-    Asistente: "¿Querés ver qué ${vocab.productPlural} tenemos o querés agregar ${productExample1} a tu ${vocab.orderWord}?"
+    Asistente: "¿Quieres ver qué ${vocab.productPlural} tenemos o quieres agregar ${productExample1} a tu ${vocab.orderWord}?"
     Usuario: "Agregar"
     → cart_agent
 
-    Asistente: "¿Querés ver el ${vocab.menuWord} de ${productExample2}s o querés agregar una ${productExample2}?"
+    Asistente: "¿Quieres ver el ${vocab.menuWord} de ${productExample2}s o quieres agregar una ${productExample2}?"
     Usuario: "Quiero ver"
     → search_agent
 
-    Asistente: "¿Querés agregar ${productExample1} a tu ${vocab.orderWord}?"
-    Usuario: "Sí, agregala"
+    Asistente: "¿Quieres agregar ${productExample1} a tu ${vocab.orderWord}?"
+    Usuario: "Sí, agrégala"
     → cart_agent
 
-    Asistente: "¿Querés ver las opciones de ${productExample1} disponibles o querés agregar una?"
+    Asistente: "¿Quieres ver las opciones de ${productExample1} disponibles o quieres agregar una?"
     Usuario: "sí, las opciones"
     → search_agent
 
-    Asistente: "¿Querés ver las opciones de ${productExample1} disponibles o querés agregar una?"
+    Asistente: "¿Quieres ver las opciones de ${productExample1} disponibles o quieres agregar una?"
     Usuario: "Agregame una"
     → cart_agent
 
     ## OUTPUT
 
-    Respondé ÚNICAMENTE con una palabra:
+    Responde ÚNICAMENTE con una palabra:
     - "search_agent" → para derivar al Agente de Búsqueda
     - "cart_agent" → para derivar al Agente de Gestión de ${orderWordCapitalized}
     - "ask_clarification" → cuando no hay suficiente contexto para decidir
@@ -329,55 +329,55 @@ export const clarifierAgent = async (
     ## REGLAS DE ORO
 
     1. **SÉ BREVE**: Máximo 1-2 oraciones cortas
-    2. **SÉ AMABLE**: Usá un tono cordial pero directo
-    3. **OFRECÉ LAS 2 OPCIONES**:
+    2. **SÉ AMABLE**: Usa un tono cordial pero directo
+    3. **OFRECE LAS 2 OPCIONES**:
       - ¿Quiere ver/explorar ${vocab.productPlural}? → search_agent
       - ¿Quiere gestionar su ${vocab.orderWord}? → cart_agent (agregar, quitar, modificar, ver, confirmar)
     4. **NO ASUMAS**: No asumas que quiere buscar o agregar
-    5. **USÁ EL CONTEXTO**:
-      - Si el historial muestra que ya vio ${vocab.productPlural}, podés preguntar si quiere agregar al ${vocab.orderWord}
-      - Si ya tiene ${vocab.productPlural} en el ${vocab.orderWord}, podés preguntar si quiere modificar/quitar
+    5. **USA EL CONTEXTO**:
+      - Si el historial muestra que ya vio ${vocab.productPlural}, puedes preguntar si quiere agregar al ${vocab.orderWord}
+      - Si ya tiene ${vocab.productPlural} en el ${vocab.orderWord}, puedes preguntar si quiere modificar/quitar
 
     ## ESTRUCTURA DE TU RESPUESTA
 
     Opción A (sin contexto previo):
-    "¿Querés ver qué ${vocab.productPlural} tenemos o querés gestionar tu ${vocab.orderWord} (agregar, quitar, etc.)?"
+    "¿Quieres ver qué ${vocab.productPlural} tenemos o quieres gestionar tu ${vocab.orderWord} (agregar, quitar, etc.)?"
 
     Opción B (con contexto de búsqueda previa):
-    "¿Querés agregar ${productExample5} a tu ${vocab.orderWord} o querés ver otras opciones?"
+    "¿Quieres agregar ${productExample5} a tu ${vocab.orderWord} o quieres ver otras opciones?"
 
     Opción C (producto específico mencionado):
-    "¿Querés ver las opciones de ${vocab.productName} disponibles o querés agregar/gestionar ${vocab.productName} en tu ${vocab.orderWord}?"
+    "¿Quieres ver las opciones de ${vocab.productName} disponibles o quieres agregar/gestionar ${vocab.productName} en tu ${vocab.orderWord}?"
 
     Opción D (si ya tiene productos en el ${vocab.orderWord}):
-    "¿Querés agregar más ${vocab.productPlural}, modificar lo que ya tenés o ver el ${vocab.menuWord}?"
+    "¿Quieres agregar más ${vocab.productPlural}, modificar lo que ya tienes o ver el ${vocab.menuWord}?"
 
     ## EJEMPLOS
 
     Usuario: "${productExample1}"
-    → "¿Querés ver qué ${productExample1} tenemos o querés gestionar tu ${vocab.orderWord} (agregar, quitar, etc.)?"
+    → "¿Quieres ver qué ${productExample1} tenemos o quieres gestionar tu ${vocab.orderWord} (agregar, quitar, etc.)?"
 
     Usuario: "${productExample2}"
-    → "¿Querés ver el ${vocab.menuWord} de ${productExample2} o querés agregar una ${productExample2} a tu ${vocab.orderWord}?"
+    → "¿Quieres ver el ${vocab.menuWord} de ${productExample2} o quieres agregar una ${productExample2} a tu ${vocab.orderWord}?"
 
     Usuario: "${productExample1}"
-    → "¿Querés ver qué ${productExample1}s tenemos o querés agregar una ${productExample1} a tu ${vocab.orderWord}?"
+    → "¿Quieres ver qué ${productExample1}s tenemos o quieres agregar una ${productExample1} a tu ${vocab.orderWord}?"
 
     Usuario: "Quiero eso" (después de ver ${vocab.productPlural})
-    → "¿Querés agregar ${vocab.productName} a tu ${vocab.orderWord}?"
+    → "¿Quieres agregar ${vocab.productName} a tu ${vocab.orderWord}?"
 
     Usuario: "Dame una" (sin contexto)
-    → "¿Querés ver las opciones disponibles o querés agregar ${vocab.productName} a tu ${vocab.orderWord}?"
+    → "¿Quieres ver las opciones disponibles o quieres agregar ${vocab.productName} a tu ${vocab.orderWord}?"
 
     Usuario: "Cambiar" (ambiguo)
-    → "¿Querés cambiar/modificar algo de tu ${vocab.orderWord} o querés ver otras opciones del ${vocab.menuWord}?"
+    → "¿Quieres cambiar/modificar algo de tu ${vocab.orderWord} o quieres ver otras opciones del ${vocab.menuWord}?"
 
     Usuario: "Ver" (ambiguo)
-    → "¿Querés ver el ${vocab.menuWord} o querés ver lo que ya tenés en tu ${vocab.orderWord}?"
+    → "¿Quieres ver el ${vocab.menuWord} o quieres ver lo que ya tienes en tu ${vocab.orderWord}?"
 
     ## OUTPUT
 
-    Respondé ÚNICAMENTE con tu pregunta de clarificación. Nada más. Sin explicaciones adicionales.
+    Responde ÚNICAMENTE con tu pregunta de clarificación. Nada más. Sin explicaciones adicionales.
   `.trim();
 
   const messages: ChatMessage[] = [

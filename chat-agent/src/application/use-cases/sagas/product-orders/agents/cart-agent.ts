@@ -27,35 +27,35 @@ import {
 function errorPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
   return `
-    Tu respuesta anterior causó un error. Analizá el error y respondé al usuario en español de forma amable y clara.
+    Tu respuesta anterior causó un error. Analiza el error y responde al usuario en español de forma amable y clara.
 
     ## Tipos de errores comunes:
 
     1. **Falta nombre del cliente**: Si el error dice "No customer name provided" o similar
-      → Pedí amablemente el nombre del usuario para confirmar su ${vocab.orderWord}
+      → Pide amablemente el nombre del usuario para confirmar su ${vocab.orderWord}
       → Ej: "Para confirmar tu ${vocab.orderWord}, ¿me podrías decir tu nombre?"
 
     2. **Nombre inválido**: Si el error viene de validación de customerName
-      → Explicá que el nombre debe tener 3-30 caracteres, solo letras y espacios
+      → Explica que el nombre debe tener 3-30 caracteres, solo letras y espacios
       → Ej: "¿Me podrías decir tu nombre completo? Solo letras, entre 3 y 30 caracteres"
 
     3. **${vocab.orderWord} vacío**: Si el error dice "empty_cart"
-      → Recordá al usuario que su carrito está vacío y ofrecé ayudarle a ${vocab.actionVerbInfinitive}
-      → Ej: "Tu carrito está vacío. ¿Querés ver nuestro ${vocab.menuWord} y ${vocab.actionVerb} algo?"
+      → Recuerda al usuario que su carrito está vacío y ofrécele ayudarle a ${vocab.actionVerbInfinitive}
+      → Ej: "Tu carrito está vacío. ¿Quieres ver nuestro ${vocab.menuWord} y ${vocab.actionVerb} algo?"
 
     4. **Error de parsing/argumentos**: Si hay un error técnico de validación
-      → Pedí al usuario que reformule su ${vocab.orderWord} de manera más clara
-      → Ej: "No entendí bien tu ${vocab.orderWord}. ¿Me lo podés decir de otra forma?"
+      → Pide al usuario que reformule su ${vocab.orderWord} de manera más clara
+      → Ej: "No entendí bien tu ${vocab.orderWord}. ¿Me lo puedes decir de otra forma?"
 
     5. **Cliente no existe**: Si el error dice "No customer does not exist"
-      → Explicá que hubo un problema y pedí el nombre nuevamente
+      → Explica que hubo un problema y pide el nombre nuevamente
       → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
 
     ## Reglas:
     - Sé amable y profesional
     - No menciones errores técnicos o de validación
-    - Hacé una pregunta clara para que el usuario pueda continuar o complete la información faltante
-    - Mantené el contexto del ${vocab.orderWord}.
+    - Haz una pregunta clara para que el usuario pueda continuar o complete la información faltante
+    - Mantén el contexto del ${vocab.orderWord}.
 `.trim();
 }
 
@@ -132,8 +132,8 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     ## REGLAS DE ORO
 
-    1. **EXTRAE EL PRODUCTO**: Identificá qué ${vocab.productName} menciona el usuario
-    2. **EXTRAE LA CANTIDAD**: Si no se menciona, asumí 1
+    1. **EXTRAE EL PRODUCTO**: Identifica qué ${vocab.productName} menciona el usuario
+    2. **EXTRAE LA CANTIDAD**: Si no se menciona, asume 1
     3. **EXTRAE NOTAS**: Si el usuario dice "sin cebolla", "con extra queso", etc.
     4. **UNA SOLA ACCIÓN POR MENSAJE**: No combines add + remove en la misma respuesta
     5. **OBLIGATORIO**: Tu ÚNICA forma de responder es llamando a **manage_cart**. NUNCA respondas texto sin llamar a la función primero.
@@ -141,7 +141,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     ## CUANDO VIENES DE UNA CLARIFICACIÓN (CRÍTICO)
 
     Si el historial muestra que el asistente hizo una pregunta de clarificación:
-    - Usuario: "${productExample1}" → Asistente: "¿Querés ver o agregar?" → Usuario: "Agregar"
+    - Usuario: "${productExample1}" → Asistente: "¿Quieres ver o agregar?" → Usuario: "Agregar"
       → **OBLIGATORIO**: manage_cart("add", { name: "${productExample1}", quantity: 1 })
     - Usuario: "${productExample2}" → Asistente: "¿Ver o agregar?" → Usuario: "Ver"
       → **OBLIGATORIO**: manage_cart("view")
@@ -158,8 +158,8 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     ## CUANDO HAY AMBIGÜEDAD
 
     Si el usuario menciona un ${vocab.productName} genérico ("${productExample1}", "${productExample2}") y hay múltiples opciones:
-    - Llamá manage_cart igual
-    - El sistema preguntará "¿Qué ${productExample1} querés? tenemos ..."
+    - Llama manage_cart igual
+    - El sistema preguntará "¿Qué ${productExample1} quieres? tenemos ..."
 
     ## EJEMPLOS ESENCIALES
 
@@ -185,7 +185,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     Historial:
     - Usuario: "${productExample1}"
-    - Asistente: "¿Querés ver o agregar?"
+    - Asistente: "¿Quieres ver o agregar?"
     - Usuario: "Agregar"
     → manage_cart("add", { name: "${productExample1}", quantity: 1 })
 
