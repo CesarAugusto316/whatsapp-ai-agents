@@ -12,6 +12,8 @@ import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { MediaFile } from "@/infraestructure/adapters/whatsapp";
 import { createProductOrderSystemPrompt } from "@/application/use-cases/sagas/product-orders";
+import { routerAgent } from "./router-agent";
+import { cartAgent } from "./cart-agent";
 
 /**
  *
@@ -204,11 +206,27 @@ export async function processToolCalls(
  */
 export async function handleProductOrderWithTools(
   ctx: DomainCtx,
-  userMessage: string,
 ): Promise<BookingSagaResult> {
+  const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
-  const systemPrompt = createProductOrderSystemPrompt(domain);
   const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
+
+  // ----------------------------------------------------------
+  // ROUTER AGENT
+  // ----------------------------------------------------------
+  const router = await routerAgent(ctx, chatHistory);
+
+  // ----------------------------------------------------------
+  // CART AGENT
+  // ----------------------------------------------------------
+  if (router === "cart") {
+    return cartAgent(ctx, chatHistory);
+  }
+
+  // ----------------------------------------------------------
+  // SEARCH AGENT
+  // ----------------------------------------------------------
+  const systemPrompt = createProductOrderSystemPrompt(domain);
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
@@ -246,6 +264,7 @@ export async function handleProductOrderWithTools(
   });
 
   await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
+
   return formatSagaOutput(
     finalResponse,
     "tools called",

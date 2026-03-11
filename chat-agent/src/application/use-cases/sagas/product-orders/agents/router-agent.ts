@@ -1,7 +1,41 @@
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
+import z from "zod";
+import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
+import { DomainCtx } from "@/domain/booking";
 
-export function createRouterAgentPrompt(domain: SpecializedDomain): string {
+const routerSchema = z.enum(["search", "cart"]);
+
+type RouterOutput = z.infer<typeof routerSchema>;
+
+/**
+ * Normaliza y valida el output del router
+ *
+ * El LLM puede retornar: "search", "cart", "search.", "Cart", " SEARCH ", etc.
+ * Esta función normaliza antes de validar y hace fallback a "search" si falla
+ */
+const validateRouter = (raw: string): RouterOutput => {
+  // Normalizar: lowercase, trim, sacar puntuación y quotes
+  const normalized = raw
+    .trim()
+    .toLowerCase()
+    .replace(/["'.!¡¿?]/g, "")
+    .replace(/^(search|cart).*$/, "$1"); // extraer solo la palabra clave
+
+  const result = routerSchema.safeParse(normalized);
+
+  // Fallback defensivo: si no es "cart", default a "search"
+  if (!result.success) {
+    console.warn(
+      `Router validation failed for: "${raw}" → defaulting to "search"`,
+    );
+    return "search";
+  }
+
+  return result.data;
+};
+
+function createRouterAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
 
   return `
@@ -81,6 +115,11 @@ export function createRouterAgentPrompt(domain: SpecializedDomain): string {
 
     4. **NO INVENTES**: Solo respondé "search" o "cart"
 
+    5. **DEFAULT EN CASO DE DUDA**:
+      - Si no estás seguro de la intención → "search"
+      - Si el usuario parece estar continuando una conversación sin acción clara → "search"
+      - Mejor derivar a búsqueda que asumir mal una acción de carrito
+
     ## EJEMPLOS
 
     Usuario: "Quiero ver el ${vocab.menuWord}"
@@ -125,3 +164,26 @@ export function createRouterAgentPrompt(domain: SpecializedDomain): string {
     Nada más. Sin explicaciones. Sin texto adicional.
 `.trim();
 }
+
+export const routerAgent = async (
+  ctx: DomainCtx,
+  chatHistory: ChatMessage[],
+): Promise<RouterOutput> => {
+  //
+  const userMessage = ctx.customerMessage!;
+  const domain: SpecializedDomain = ctx.business.general.businessType;
+  const systemPrompt = createRouterAgentPrompt(domain);
+
+  const messages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
+    ...(chatHistory ?? []),
+    { role: "user", content: userMessage },
+  ];
+
+  const response = await aiAdapter.generateText({
+    messages,
+    useAuxModel: true,
+  });
+
+  return validateRouter(response);
+};

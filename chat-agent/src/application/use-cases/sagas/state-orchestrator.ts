@@ -72,7 +72,7 @@ export const stateOrchestrator = async (
   }
 
   if (productOrdeStatus) {
-    return handleProductOrderWithTools(ctx, message);
+    return handleProductOrderWithTools(ctx);
   }
 
   // ============================================
