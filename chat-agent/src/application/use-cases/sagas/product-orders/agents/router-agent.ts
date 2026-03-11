@@ -120,7 +120,7 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     - El mensaje es **demasiado corto** o **vago** sin contexto suficiente
     - El usuario menciona un ${vocab.productName} suelto sin verbo de acción
     - **No hay suficiente contexto** en el historial para decidir entre search_agent o cart_agent
-    - El LLM se pregunta: "¿El usuario quiere buscar o agregar?"
+    - El LLM se pregunta: "¿El usuario quiere buscar o agregar|modifcar|remover|confirmar algo?"
 
     **Frases típicas → ask_clarification:**
     - "${productExample1}" (solo, sin verbo)
@@ -153,7 +153,7 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
       - "mi nombre es", "soy", "me llamo" → cart_agent
       - "${vocab.productName}" (solo, sin verbo) → ask_clarification
 
-    2. **ANALIZÁ EL HISTORIAL**:
+    2. **ANALIZA EL HISTORIAL**:
       - Si el usuario viene de ver ${vocab.productPlural} y dice "quiero esa" → cart_agent (ya hay contexto)
       - Si el usuario viene de agregar y dice "sí" → cart_agent (está confirmando)
       - Si es el primer mensaje y dice "${productExample1}" → ask_clarification (¿busca o agrega?)

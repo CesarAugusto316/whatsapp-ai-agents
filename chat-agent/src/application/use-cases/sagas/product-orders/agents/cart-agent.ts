@@ -62,7 +62,6 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     - "Cambiame a 3 ${productExample1}s en lugar de 2" → { action: "update", item: { name: "${productExample1}", quantity: 3 } }
     - "Mejor dame 4 ${productExample2}s" → { action: "update", item: { name: "${productExample2}", quantity: 4 } }
 
-
     ### 👁️ VER (action: "view")
     **Frases típicas:**
     - "Mostrame mi ${vocab.orderWord}" → { action: "view" }
