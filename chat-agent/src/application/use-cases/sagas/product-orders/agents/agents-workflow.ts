@@ -17,6 +17,8 @@ export async function productOrderWorkflow(
   // 1. ROUTER AGENT
   const router = await routerAgent(ctx, chatHistory);
 
+  // if (router === "ask_clarification" && ctx.alreadyClarified) {
+  //   return searchAgent(ctx, chatHistory);
   if (router === "ask_clarification") {
     return clarifierAgent(ctx, chatHistory);
   }

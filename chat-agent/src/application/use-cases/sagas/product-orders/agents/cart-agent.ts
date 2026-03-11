@@ -434,12 +434,24 @@ async function processToolCalls(
           }
 
           default:
-            return { success: false, chatMsg: chat };
+            return {
+              success: false,
+              chatMsg: {
+                ...chat,
+                content: "Hubo un error, puedes reformular tu solicitud",
+              },
+            };
         }
       } catch {
         // Usar args vacíos si falla el parse
       }
-      return { success: false, chatMsg: chat };
+      return {
+        success: false,
+        chatMsg: {
+          ...chat,
+          content: "Hubo un error, puedes reformular tu solicitud",
+        },
+      };
     }),
   );
 }
