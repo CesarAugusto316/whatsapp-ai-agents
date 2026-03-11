@@ -13,23 +13,23 @@ export const orderActionSchema = z.enum([
   "update",
   "view",
   "confirm",
+  "enterUsername",
 ]);
+
+export const customerNameSchema = z
+  .string()
+  .min(3, "too_short: Mínimo 3 caracteres")
+  .max(30, "too_long: Máximo 30 caracteres")
+  .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "invalid_format: Solo letras y espacios");
 
 export const orderArgSchema = z.object({
   action: orderActionSchema,
-  item: productItemSchema,
+  item: productItemSchema.optional(),
 });
 
 export const orderSchema = z
   .object({
-    customerName: z
-      .string()
-      .min(3, "too_short: Mínimo 3 caracteres")
-      .max(30, "too_long: Máximo 30 caracteres")
-      .regex(
-        /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
-        "invalid_format: Solo letras y espacios",
-      ),
+    customerName: customerNameSchema,
     products: z.array(productItemSchema).refine(
       (products) => {
         const productIds = products.map((p) => p.id);

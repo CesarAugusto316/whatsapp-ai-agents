@@ -310,9 +310,21 @@ class ProductOrderStateManager {
   async viewCart(key: string) {
     const prev = await this.getState(key);
     return {
+      viewed: true,
       products: prev?.products ?? [],
       totalItems: prev?.products?.length ?? 0,
+      customerName: prev?.customerName,
+      customerId: prev?.customerId,
     };
+  }
+
+  async enterUsername(key: string, customerName: string) {
+    const prev = await this.getState(key);
+    await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+      ...prev,
+      customerName,
+    });
+    return { enteredUsername: true, customerName };
   }
 
   async getState(key: string) {

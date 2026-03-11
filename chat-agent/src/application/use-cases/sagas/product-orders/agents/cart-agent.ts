@@ -1,4 +1,8 @@
-import { cmsAdapter, SpecializedDomain } from "@/infraestructure/adapters/cms";
+import {
+  cmsAdapter,
+  Customer,
+  SpecializedDomain,
+} from "@/infraestructure/adapters/cms";
 import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
 import {
   aiAdapter,
@@ -10,7 +14,11 @@ import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { formatSagaOutput } from "@/application/patterns";
 import { DomainCtx } from "@/domain/booking";
 import { productOrderStateManager } from "@/application/services/state-managers";
-import { orderArgSchema } from "@/domain/orders";
+import {
+  customerNameSchema,
+  OrderAction,
+  orderArgSchema,
+} from "@/domain/orders";
 
 /**
  *
@@ -179,8 +187,19 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
         properties: {
           action: {
             type: "string",
-            enum: ["add", "remove", "update", "view", "confirm"],
+            enum: [
+              "add",
+              "remove",
+              "update",
+              "view",
+              "confirm",
+              "enterUsername",
+            ] satisfies OrderAction[],
             description: "The action to perform on the cart",
+          },
+          customerName: {
+            type: "string",
+            description: "Customer name (optional)",
           },
           item: {
             type: "object",
@@ -215,15 +234,21 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
   },
 ] as const;
 
+type ToolResult = {
+  success: boolean;
+  action?: string;
+};
+
 /**
  * Procesa tool calls del LLM y ejecuta las herramientas
  */
 async function processToolCalls(
   toolCalls: ToolCall[],
   ctx: DomainCtx,
-): Promise<ChatMessage[]> {
+): Promise<(ToolResult & { chatMsg: ChatMessage })[]> {
   //
   const businessId = ctx.businessId!;
+  const customerPhone = ctx.customerPhone!;
   const orderKey = ctx.productOrderKey;
 
   return Promise.all(
@@ -234,52 +259,171 @@ async function processToolCalls(
         tool_call_id: toolCall.id!,
         name: toolCall.function.name!,
       } satisfies ChatMessage;
-      const { success, data, error } = orderArgSchema.safeParse(
-        JSON.parse(toolCall.function.arguments),
-      );
+      const rawObj =
+        typeof JSON.parse(toolCall.function.arguments) === "string"
+          ? JSON.parse(JSON.parse(toolCall.function.arguments))
+          : JSON.parse(toolCall.function.arguments);
+
+      const { success, data, error } = orderArgSchema.safeParse(rawObj);
       if (!success) {
         return {
-          ...chat,
-          content: JSON.stringify({ success: false, error }),
-        } satisfies ChatMessage;
+          success: false,
+          chatMsg: {
+            ...chat,
+            content: JSON.stringify({ success: false, error }),
+          },
+        };
       }
+
       try {
         switch (data.action) {
+          //
           case "add": {
             const result = await productOrderStateManager.addProductToCart(
               orderKey,
               businessId,
-              data.item,
+              data.item!,
             );
             return {
-              ...chat,
-              content: JSON.stringify(result),
-            } satisfies ChatMessage;
+              success: true,
+              action: data.action,
+              chatMsg: {
+                ...chat,
+                content: JSON.stringify(result),
+              },
+            };
           }
+
           case "remove": {
             const result = await productOrderStateManager.removeProductFromCart(
               orderKey,
-              data.item,
+              data.item!,
             );
             return {
-              ...chat,
-              content: JSON.stringify(result),
-            } satisfies ChatMessage;
+              success: true,
+              action: data.action,
+              chatMsg: {
+                ...chat,
+                content: JSON.stringify(result),
+              },
+            };
           }
+
           case "update": {
             const result = await productOrderStateManager.updateProductInCart(
               orderKey,
               businessId,
-              data.item,
+              data.item!,
             );
             return {
-              ...chat,
-              content: JSON.stringify(result),
-            } satisfies ChatMessage;
+              success: true,
+              action: data.action,
+              chatMsg: {
+                ...chat,
+                content: JSON.stringify(result),
+              },
+            };
           }
+
+          case "view": {
+            const result = await productOrderStateManager.viewCart(orderKey);
+
+            if (!result.totalItems) {
+              return {
+                success: false,
+                action: data.action,
+                chatMsg: {
+                  ...chat,
+                  content: JSON.stringify({ message: "empty_cart" }),
+                },
+              };
+            }
+            return {
+              success: true,
+              action: data.action,
+              chatMsg: {
+                ...chat,
+                content: JSON.stringify(result),
+              },
+            };
+          }
+
+          case "enterUsername": {
+            const {
+              success,
+              data: customerName,
+              error,
+            } = customerNameSchema.safeParse(rawObj?.customerName);
+            if (!success) {
+              return {
+                success: false,
+                action: data.action,
+                chatMsg: {
+                  ...chat,
+                  content: JSON.stringify({ error }),
+                },
+              };
+            }
+            const result = await productOrderStateManager.enterUsername(
+              orderKey,
+              customerName,
+            );
+            return {
+              success: true,
+              action: data.action,
+              chatMsg: {
+                ...chat,
+                content: JSON.stringify(result),
+              },
+            };
+          }
+
           case "confirm": {
             const cartPayload =
               await productOrderStateManager.viewCart(orderKey);
+
+            if (!cartPayload.customerName) {
+              return {
+                success: false,
+                action: data.action,
+                chatMsg: {
+                  ...chat,
+                  content: JSON.stringify({
+                    error:
+                      "No customer name provided, ask the user for their name",
+                  }),
+                },
+              };
+            }
+
+            let customerId = cartPayload.customerId || ctx.customer?.id;
+
+            if (!customerId && cartPayload.customerName) {
+              // register user
+              const newCustomer = (
+                (await (
+                  await cmsAdapter.createCostumer({
+                    business: businessId,
+                    phoneNumber: customerPhone || "",
+                    name: cartPayload.customerName,
+                  })
+                ).json()) as { doc: Customer }
+              )?.doc;
+
+              customerId = newCustomer?.id;
+            }
+
+            if (!customerId) {
+              return {
+                success: false,
+                action: data.action,
+                chatMsg: {
+                  ...chat,
+                  content: JSON.stringify({ error: "No customer id provided" }),
+                },
+              };
+            }
+
             const result = await cmsAdapter.createProductOrder({
               business: businessId,
               cart: {
@@ -290,21 +434,26 @@ async function processToolCalls(
                   observations: p.notes,
                 })),
               },
-              customer: "",
+              customer: cartPayload.customerId!,
             });
+
             return {
-              ...chat,
-              content: JSON.stringify({ result, created: true }),
-            } satisfies ChatMessage;
+              success: true,
+              action: data.action,
+              chatMsg: {
+                ...chat,
+                content: JSON.stringify({ result, created: true }),
+              },
+            };
           }
+
           default:
-            return { ...chat, content: "" } satisfies ChatMessage;
+            return { success: false, chatMsg: chat };
         }
       } catch {
         // Usar args vacíos si falla el parse
       }
-
-      return { ...chat };
+      return { success: false, chatMsg: chat };
     }),
   );
 }
@@ -341,7 +490,27 @@ export const cartManagerAgent = async (
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx);
-  messages.push(...toolResults);
+  messages.push(...toolResults.map((r) => r.chatMsg));
+
+  const hasSomeError = toolResults.find((r) => !r.success);
+
+  if (hasSomeError) {
+    const finalResponse = await aiAdapter.generateText({
+      messages: [
+        {
+          role: "system",
+          content:
+            "Debes pedir|completar la información faltante de acuerdo al tipo de error. ej: customerName",
+        },
+        ...(chatHistory ?? []),
+        { role: "user", content: userMessage },
+        hasSomeError.chatMsg,
+      ],
+    });
+    return formatSagaOutput(finalResponse, "Error calling tools", {
+      messages,
+    });
+  }
 
   const finalResponse = await aiAdapter.generateText({
     messages,
