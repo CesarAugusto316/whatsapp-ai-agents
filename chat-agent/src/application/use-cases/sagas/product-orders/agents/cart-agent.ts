@@ -133,24 +133,51 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 /**
  *
  * @link https://developers.openai.com/api/docs/guides/function-calling/?lang=javascript
- * Tools predefinidos para pedidos de productos
+ * @link https://json-schema.org/understanding-json-schema/about
+ * Tools predefinidos para gestión del carrito
  */
 const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
   {
     type: "function" as const,
     function: {
       name: "manage_cart",
-      description: "Manage the cart by adding, removing, or clearing items.",
+      description:
+        "Manage the cart by adding, removing, updating items, or viewing/confirming the order.",
       parameters: {
         type: "object" as const,
         properties: {
           action: {
             type: "string",
+            enum: ["add", "remove", "update", "view", "confirm"],
+            description: "The action to perform on the cart",
+          },
+          item: {
+            type: "object",
             description:
-              "The action to perform on the cart (add, update, remove, confirm)",
+              "Single item to add/remove/update (not needed for view/confirm)",
+            properties: {
+              name: {
+                type: "string",
+                description:
+                  "Product name or pronoun (e.g., 'pizza', 'ensalada césar', 'eso')",
+              },
+              quantity: {
+                type: "integer",
+                minimum: 1,
+                default: 1,
+                description: "Quantity (default: 1)",
+              },
+              notes: {
+                type: "string",
+                description:
+                  "Special instructions (e.g., 'sin cebolla', 'con extra queso')",
+              },
+            },
+            required: ["name", "quantity"],
+            additionalProperties: false,
           },
         },
-        required: ["keywords"],
+        required: ["action"],
         additionalProperties: false,
       },
     },
