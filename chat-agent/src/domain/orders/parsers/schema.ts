@@ -4,10 +4,7 @@ const productItemSchema = z.object({
   productId: z.string().min(1, "productId es requerido"),
   productName: z.string().min(1, "productName es requerido"),
   quantity: z.number().int().positive("quantity debe ser mayor a 0"),
-  observations: z
-    .string()
-    .max(200, "too_long: Máximo 200 caracteres")
-    .optional(),
+  notes: z.string().max(200, "too_long: Máximo 200 caracteres").optional(),
 });
 
 export const orderSchema = z

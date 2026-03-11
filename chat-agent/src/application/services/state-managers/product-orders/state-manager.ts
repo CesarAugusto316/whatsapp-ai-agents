@@ -11,6 +11,8 @@ import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { ragService } from "../../rag";
 
+type ProductArg = { name: string; quantity: number; notes?: string };
+
 interface ProductStateTransition {
   nextState?: FMStatus;
   /**
@@ -189,11 +191,7 @@ class ProductOrderStateManager {
     });
   }
 
-  async addProductToCart(
-    key: string,
-    businessId: string,
-    product: { name: string; quantity: number; notes?: string },
-  ) {
+  async addProductToCart(key: string, businessId: string, product: ProductArg) {
     const prev = await this.getState(key);
 
     const searchedProducts = prev?.searchedProducts ?? [];
@@ -210,10 +208,9 @@ class ProductOrderStateManager {
       );
       const productFound = points[0];
       const payload = {
+        ...product,
         productId: productFound.payload.id!,
         productName: productFound.payload.name!,
-        quantity: product.quantity,
-        observations: product.notes,
       };
       await cacheAdapter.save<Partial<ProductOrderState>>(key, {
         ...prev,
@@ -222,16 +219,92 @@ class ProductOrderStateManager {
     } //
     else {
       const payload = {
+        ...product,
         productId: productExists.payload.id!,
         productName: product.name,
-        quantity: product.quantity,
-        observations: product.notes,
       };
       await cacheAdapter.save<Partial<ProductOrderState>>(key, {
         ...prev,
         products: [...(prev?.products ?? []), payload],
       });
     }
+  }
+
+  async removeProductFromCart(
+    key: string,
+    product: { name: string; quantity?: number },
+  ) {
+    const prev = await this.getState(key);
+    const products = prev?.products ?? [];
+
+    // Si no hay quantity, eliminamos todos los que coincidan con el nombre
+    if (!product.quantity) {
+      const filtered = products.filter((p) => p.productName !== product.name);
+      await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+        ...prev,
+        products: filtered,
+      });
+      return { removed: products.length - filtered.length };
+    }
+
+    // Si hay quantity, reducimos o eliminamos
+    const updated = products
+      .map((p) => {
+        if (p.productName === product.name) {
+          return {
+            ...p,
+            quantity: Math.max(0, p.quantity - product.quantity!),
+          };
+        }
+        return p;
+      })
+      .filter((p) => p.quantity > 0);
+
+    await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+      ...prev,
+      products: updated,
+    });
+    return { removed: products.length - updated.length };
+  }
+
+  async updateProductInCart(
+    key: string,
+    businessId: string,
+    product: ProductArg,
+  ) {
+    const prev = await this.getState(key);
+    const products = prev?.products ?? [];
+
+    const productIndex = products.findIndex(
+      (p) => p.productName === product.name,
+    );
+
+    if (productIndex === -1) {
+      // No existe, lo agregamos
+      await this.addProductToCart(key, businessId, product);
+      return { updated: false, added: true };
+    }
+
+    // Actualizamos la cantidad
+    const updated = [...products];
+    updated[productIndex] = {
+      ...updated[productIndex],
+      quantity: product.quantity,
+    };
+
+    await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+      ...prev,
+      products: updated,
+    });
+    return { updated: true, added: false };
+  }
+
+  async viewCart(key: string) {
+    const prev = await this.getState(key);
+    return {
+      products: prev?.products ?? [],
+      totalItems: prev?.products?.length ?? 0,
+    };
   }
 
   async getState(key: string) {
