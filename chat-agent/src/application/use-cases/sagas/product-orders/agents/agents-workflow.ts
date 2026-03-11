@@ -1,7 +1,7 @@
 import { DomainCtx } from "@/domain/booking";
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
-import { routerAgent } from "./router-agent";
+import { clarifierAgent, routerAgent } from "./router-agent";
 import { cartManagerAgent } from "./cart-agent";
 import { searchAgent } from "./search-agent";
 
@@ -16,6 +16,10 @@ export async function productOrderWorkflow(
 
   // 1. ROUTER AGENT
   const router = await routerAgent(ctx, chatHistory);
+  
+  if(router === "ask_clarification") {
+    return clarifierAgent(ctx, chatHistory);
+  }
 
   // 2. CART AGENT
   if (router === "cart_agent") {
