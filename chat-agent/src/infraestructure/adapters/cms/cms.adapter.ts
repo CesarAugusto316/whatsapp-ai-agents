@@ -5,8 +5,10 @@ import {
   BusinessesMedia,
   CreateBooking,
   CreateCustomer,
+  CreateProductOrder,
   Customer,
   Product,
+  ProductOrder,
   QuestionsToReview,
 } from "./cms-types";
 import { cacheAdapter, ICacheAdapter } from "@/infraestructure/adapters/cache";
@@ -296,6 +298,21 @@ class CMSAdapter {
         throw new Error(`Failed to fetch product: ${res.status}`);
       }
       return res.json() as Promise<Product>;
+    }, resilientConfig);
+  }
+
+  public createProductOrder(payload: CreateProductOrder) {
+    const url = generateUrl(`product-orders`, { depth: 0 });
+    return resilientQuery(async () => {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to create product order: ${res.status}`);
+      }
+      return res.json() as Promise<ProductOrder>;
     }, resilientConfig);
   }
 

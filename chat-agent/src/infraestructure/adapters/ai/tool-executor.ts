@@ -7,11 +7,11 @@ import { DomainCtx } from "@/domain/booking";
 import { ragService } from "@/application/services/rag";
 import aiAdapter from "./ai.adapter";
 import { formatSagaOutput } from "@/application/patterns";
-import { createProductOrderSystemPrompt } from "@/application/services/rag/product-order-prompt";
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
 import { SpecializedDomain } from "../cms";
 import { chatHistoryAdapter } from "../cache";
 import { MediaFile } from "../whatsapp";
+import { createProductOrderSystemPrompt } from "@/application/use-cases/sagas/product-orders";
 
 /**
  *

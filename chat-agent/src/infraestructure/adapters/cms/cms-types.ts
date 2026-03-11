@@ -262,7 +262,7 @@ export interface ProductsMedia {
  */
 export interface ProductOrder {
   id: string;
-  description: string;
+  description?: string;
   cart: {
     items: {
       productId: string;
@@ -270,7 +270,7 @@ export interface ProductOrder {
       quantity: number;
       price: number;
       subTotal: number;
-      observations: string;
+      observations?: string;
     }[];
     total: number;
   };
@@ -280,3 +280,8 @@ export interface ProductOrder {
   updatedAt: string;
   createdAt: string;
 }
+
+export interface CreateProductOrder extends Omit<
+  ProductOrder,
+  "id" | "updatedAt" | "createdAt" | "status"
+> {}
