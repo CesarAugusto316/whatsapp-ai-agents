@@ -82,6 +82,13 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     - "Listo, eso es todo" → { action: "confirm" }
     - "Finalizar ${vocab.orderWord}" → { action: "confirm" }
 
+    ### 👤 INGRESAR NOMBRE (action: "enterUsername")
+    **Cuándo usar:** Cuando el usuario proporciona su nombre después de que se lo solicitaron para confirmar el ${vocab.orderWord}.
+    **Frases típicas:**
+    - "Me llamo Juan" → { action: "enterUsername", customerName: "Juan" }
+    - "Soy María" → { action: "enterUsername", customerName: "María" }
+    - "Mi nombre es Carlos" → { action: "enterUsername", customerName: "Carlos" }
+
     ## REGLAS DE ORO
 
     1. **EXTRAE EL PRODUCTO**: Identificá qué ${vocab.productName} menciona el usuario
@@ -113,7 +120,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     - Llamá manage_cart igual
     - El sistema preguntará "¿Qué ${productExample1} querés? tenemos ..."
 
-    ## EJEMPLOS COMPLETOS
+    ## EJEMPLOS ESENCIALES
 
     Usuario: "Agregame 2 ${productExample1}s"
     → manage_cart("add", { name: "${productExample1}", quantity: 2 })
@@ -130,32 +137,20 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     Usuario: "Agregame una ${productExample3} sin cebolla"
     → manage_cart("add", { name: "${productExample3}", quantity: 1, notes: "sin cebolla" })
 
-    Usuario: "Cambiame a 4 ${productExample1}s en vez de 2"
-    → manage_cart("update", { name: "${productExample1}", quantity: 4 })
+    Usuario: "Me llamo Juan" (después de pedir nombre)
+    → manage_cart("enterUsername", { customerName: "Juan" })
 
-    ## EJEMPLOS DESPUÉS DE CLARIFICACIÓN
+    ## DESPUÉS DE CLARIFICACIÓN
 
     Historial:
     - Usuario: "${productExample1}"
-    - Asistente: "¿Querés ver qué ${vocab.productPlural} tenemos o querés agregar ${productExample1} a tu ${vocab.orderWord}?"
+    - Asistente: "¿Querés ver o agregar?"
     - Usuario: "Agregar"
     → manage_cart("add", { name: "${productExample1}", quantity: 1 })
 
     Historial:
-    - Usuario: "${productExample2}"
-    - Asistente: "¿Querés ver el ${vocab.menuWord} o agregar?"
-    - Usuario: "Ver"
-    → manage_cart("view")
-
-    Historial:
-    - Usuario: "${productExample3}"
-    - Asistente: "¿Querés ver o agregar?"
-    - Usuario: "Sí"
-    → manage_cart("add", { name: "${productExample3}", quantity: 1 })
-
-    Historial:
     - Usuario: "2 ${productExample1}s"
-    - Asistente: "¿Querés ver o agregar?"
+    - Asistente: "¿Ver o agregar?"
     - Usuario: "Agregar"
     → manage_cart("add", { name: "${productExample1}", quantity: 2 })
 
@@ -166,6 +161,44 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     - NO busques ${vocab.productPlural} (eso lo hace el Agente de Búsqueda)
     - NO respondas preguntas sobre el menú (eso lo hace el Agente de Búsqueda)
     - Si el usuario pregunta "¿qué ${vocab.productPlural} tienen?", NO llames manage_cart, el Router te derivó mal
+`.trim();
+}
+
+function errorPrompt(domain: SpecializedDomain) {
+  const vocab = DOMAIN_VOCABULARY[domain];
+  const productExample1 = vocab.productExamples[0];
+  const productExample2 = vocab.productExamples[1] || productExample1;
+  const productExample3 = vocab.productExamples[2] || productExample1;
+  return `
+    Tu respuesta anterior causó un error. Analizá el error y respondé al usuario en español de forma amable y clara.
+
+    ## Tipos de errores comunes:
+
+    1. **Falta nombre del cliente**: Si el error dice "No customer name provided" o similar
+    → Pedí amablemente el nombre del usuario para confirmar su pedido
+    → Ej: "Para confirmar tu pedido, ¿me podrías decir tu nombre?"
+
+    2. **Nombre inválido**: Si el error viene de validación de customerName
+    → Explicá que el nombre debe tener al menos 2 caracteres
+    → Ej: "¿Me podrías decir tu nombre completo? Necesito al menos 2 caracteres"
+
+    3. **Carrito vacío**: Si el error dice "empty_cart"
+    → Recordá al usuario que su carrito está vacío
+    → Ej: "Tu carrito está vacío. ¿Querés ver nuestro menú y agregar algo?"
+
+    4. **Error de parsing/argumentos**: Si hay un error técnico de validación
+    → Pedí al usuario que reformule su pedido de manera más clara
+    → Ej: "No entendí bien tu pedido. ¿Me lo podés decir de otra forma?"
+
+    5. **Cliente no existe**: Si el error dice "No customer does not exist"
+    → Explicá que hubo un problema y pedí el nombre nuevamente
+    → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
+
+    ## Reglas:
+    - Sé amable y profesional
+    - No menciones errores técnicos o de validación
+    - Hacé una pregunta clara para que el usuario pueda continuar
+    - Mantené el contexto del pedido.
 `.trim();
 }
 
@@ -419,7 +452,9 @@ async function processToolCalls(
                 action: data.action,
                 chatMsg: {
                   ...chat,
-                  content: JSON.stringify({ error: "No customer id provided" }),
+                  content: JSON.stringify({
+                    error: "No customer does not exist",
+                  }),
                 },
               };
             }
@@ -499,8 +534,7 @@ export const cartManagerAgent = async (
       messages: [
         {
           role: "system",
-          content:
-            "Debes pedir|completar la información faltante de acuerdo al tipo de error. ej: customerName",
+          content: errorPrompt(domain),
         },
         ...(chatHistory ?? []),
         { role: "user", content: userMessage },
