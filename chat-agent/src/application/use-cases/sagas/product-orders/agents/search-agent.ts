@@ -110,6 +110,34 @@ function createSearchAgentPrompt(domain: SpecializedDomain): string {
     Tú: [LLAMAR search_products con keywords "ensalada"]
     [Después de obtener resultados] "Tenemos estas ensaladas: ..."
 
+    ## EJEMPLOS DESPUÉS DE CLARIFICACIÓN
+
+    Historial:
+    - Usuario: "Pizza"
+    - Asistente: "¿Querés ver qué pizzas tenemos o querés agregar una pizza a tu ${vocab.orderWord}?"
+    - Usuario: "Ver"
+    → [LLAMAR search_products con keywords "pizza"]
+
+    Historial:
+    - Usuario: "Ensaladas"
+    - Asistente: "¿Querés ver el menú de ensaladas o querés agregar?"
+    - Usuario: "Sí, Ver opciones"
+    → [LLAMAR search_products con keywords "ensaladas"]
+
+    Historial:
+    - Usuario: "Cerveza"
+    - Asistente: "¿Querés ver qué cervezas tenemos o querés agregar?"
+    - Usuario: "Sí, ver cervezas"
+    → [LLAMAR search_products con keywords "cerveza"]
+
+    Historial:
+    - Usuario: "2 pastas"
+    - Asistente: "¿Querés ver las opciones de pastas o querés agregar?"
+    - Usuario: "Ver el menú"
+    → [LLAMAR get_menu con keywords "menu de pastas"]
+
+    **IMPORTANTE**: Después de una clarificación, el usuario YA expresó que quiere VER. Tu ÚNICA tarea es llamar a la herramienta de búsqueda correspondiente.
+
     ## IMPORTANTE
 
     - **SIEMPRE** llama a una herramienta antes de responder sobre ${vocab.productPlural}

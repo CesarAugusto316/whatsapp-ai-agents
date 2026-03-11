@@ -39,6 +39,7 @@ export interface LegacyToolDefinition {
   name: string;
   description: string;
   parameters: FunctionParameters;
+  strict?: boolean;
 }
 
 export type ToolDefinition = ToolFunction | LegacyToolDefinition;
