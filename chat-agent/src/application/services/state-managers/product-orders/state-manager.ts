@@ -6,12 +6,10 @@ import {
 } from "@/domain/booking";
 import { Product, SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { stateMessages } from "./messages";
-import { ProductOrderState } from "@/domain/orders";
+import { ProductItem, ProductOrderState } from "@/domain/orders";
 import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { ragService } from "../../rag";
-
-type ProductArg = { name: string; quantity: number; notes?: string };
 
 interface ProductStateTransition {
   nextState?: FMStatus;
@@ -189,7 +187,11 @@ class ProductOrderStateManager {
     });
   }
 
-  async addProductToCart(key: string, businessId: string, product: ProductArg) {
+  async addProductToCart(
+    key: string,
+    businessId: string,
+    product: Omit<ProductItem, "id">,
+  ) {
     const prev = await this.getState(key);
 
     const searchedProducts = prev?.searchedProducts ?? [];
@@ -207,25 +209,28 @@ class ProductOrderStateManager {
       const productFound = points[0];
       const payload = {
         ...product,
-        productId: productFound.payload.id!,
-        productName: productFound.payload.name!,
+        id: productFound.payload.id!,
+        name: productFound.payload.name!,
       };
+      const products = [...(prev?.products ?? []), payload];
       await cacheAdapter.save<Partial<ProductOrderState>>(key, {
         ...prev,
-        products: [...(prev?.products ?? []), payload],
+        products,
       });
-    } //
-    else {
-      const payload = {
-        ...product,
-        productId: productExists.payload.id!,
-        productName: product.name,
-      };
-      await cacheAdapter.save<Partial<ProductOrderState>>(key, {
-        ...prev,
-        products: [...(prev?.products ?? []), payload],
-      });
+      return { added: true, products };
     }
+
+    const payload = {
+      ...product,
+      id: productExists.payload.id!,
+      name: product.name,
+    };
+    const products = [...(prev?.products ?? []), payload];
+    await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+      ...prev,
+      products,
+    });
+    return { added: true, products };
   }
 
   async removeProductFromCart(
@@ -233,22 +238,23 @@ class ProductOrderStateManager {
     product: { name: string; quantity?: number },
   ) {
     const prev = await this.getState(key);
-    const products = prev?.products ?? [];
+    const prevProducts = prev?.products ?? [];
 
     // Si no hay quantity, eliminamos todos los que coincidan con el nombre
     if (!product.quantity) {
-      const filtered = products.filter((p) => p.productName !== product.name);
+      const filtered = prevProducts.filter((p) => p.name !== product.name);
       await cacheAdapter.save<Partial<ProductOrderState>>(key, {
         ...prev,
         products: filtered,
       });
-      return { removed: products.length - filtered.length };
+
+      return { removed: true, products: filtered };
     }
 
     // Si hay quantity, reducimos o eliminamos
-    const updated = products
+    const updated = prevProducts
       .map((p) => {
-        if (p.productName === product.name) {
+        if (p.name === product.name) {
           return {
             ...p,
             quantity: Math.max(0, p.quantity - product.quantity!),
@@ -262,25 +268,29 @@ class ProductOrderStateManager {
       ...prev,
       products: updated,
     });
-    return { removed: products.length - updated.length };
+
+    return { removed: true, products: updated };
   }
 
   async updateProductInCart(
     key: string,
     businessId: string,
-    product: ProductArg,
+    product: Omit<ProductItem, "id">,
   ) {
     const prev = await this.getState(key);
     const products = prev?.products ?? [];
 
-    const productIndex = products.findIndex(
-      (p) => p.productName === product.name,
-    );
+    const productIndex = products.findIndex((p) => p.name === product.name);
 
     if (productIndex === -1) {
       // No existe, lo agregamos
-      await this.addProductToCart(key, businessId, product);
-      return { updated: false, added: true };
+      const { products } = await this.addProductToCart(
+        key,
+        businessId,
+        product,
+      );
+
+      return { updated: true, products };
     }
 
     // Actualizamos la cantidad
@@ -294,7 +304,7 @@ class ProductOrderStateManager {
       ...prev,
       products: updated,
     });
-    return { updated: true, added: false };
+    return { updated: true, products: updated };
   }
 
   async viewCart(key: string) {

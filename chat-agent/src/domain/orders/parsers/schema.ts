@@ -1,10 +1,23 @@
 import z from "zod";
 
-const productItemSchema = z.object({
-  productId: z.string().min(1, "productId es requerido"),
-  productName: z.string().min(1, "productName es requerido"),
+export const productItemSchema = z.object({
+  id: z.string().min(1, "productId es requerido"),
+  name: z.string().min(1, "productName es requerido"),
   quantity: z.number().int().positive("quantity debe ser mayor a 0"),
-  notes: z.string().max(200, "too_long: Máximo 200 caracteres").optional(),
+  notes: z.string().max(300, "too_long: Máximo 200 caracteres").optional(),
+});
+
+export const orderActionSchema = z.enum([
+  "add",
+  "remove",
+  "update",
+  "view",
+  "confirm",
+]);
+
+export const orderArgSchema = z.object({
+  action: orderActionSchema,
+  item: productItemSchema,
 });
 
 export const orderSchema = z
@@ -19,7 +32,7 @@ export const orderSchema = z
       ),
     products: z.array(productItemSchema).refine(
       (products) => {
-        const productIds = products.map((p) => p.productId);
+        const productIds = products.map((p) => p.id);
         return productIds.length === new Set(productIds).size;
       },
       {
@@ -31,5 +44,5 @@ export const orderSchema = z
   .partial({ products: true });
 
 export type OrderSchema = z.infer<typeof orderSchema>;
-
+export type OrderAction = z.infer<typeof orderActionSchema>;
 export type ProductItem = z.infer<typeof productItemSchema>;

@@ -108,6 +108,8 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
       - "Agregame una pizza" → cart (ya sabe qué quiere)
       - "¿Tienen pizzas?" → search (está explorando)
       - "Dame una pizza" → cart (está pidiendo agregar)
+      - "2 pastas" → cart (está pidiendo agregar)
+      - "Si, dale" → cart (está confirmando) -> cart
 
     3. **CONTEXTO IMPORTA**:
       - Si el usuario ya está en proceso de ${vocab.actionVerbInfinitive} y dice "agregame" → cart
@@ -143,7 +145,7 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     Usuario: "Mostrame mi ${vocab.orderWord}"
     → cart
 
-    Usuario: "Confirmo"
+    Usuario: "Sí, confirmado"
     → cart
 
     Usuario: "¿Tienen opciones vegetarianas?"

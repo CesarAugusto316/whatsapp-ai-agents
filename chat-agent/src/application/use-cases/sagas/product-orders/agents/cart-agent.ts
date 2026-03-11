@@ -10,6 +10,7 @@ import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { formatSagaOutput } from "@/application/patterns";
 import { DomainCtx } from "@/domain/booking";
 import { productOrderStateManager } from "@/application/services/state-managers";
+import { orderArgSchema } from "@/domain/orders";
 
 /**
  *
@@ -28,7 +29,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     ### manage_cart
     Gestiona el carrito del usuario. Úsala para:
-    - **Agregar** ${vocab.productPlural}: cuando el usuario diga "agregame", "quiero", "dame", "poneme"
+    - **Agregar** ${vocab.productPlural}: cuando el usuario diga "agregame", "quiero", "dame", "poneme", "un item", "2 platos" (cantidad de algo)
     - **Quitar** ${vocab.productPlural}: cuando el usuario diga "quitame", "sacame", "eliminame", "borrame"
     - **Modificar** cantidad: cuando el usuario diga "cambiame", "mejor dame X", "ahora quiero X"
     - **Ver** carrito: cuando el usuario diga "mostrame mi ${vocab.orderWord}", "¿qué llevo?", "ver carrito"
@@ -185,12 +186,6 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
   },
 ] as const;
 
-type ToolResult = {
-  success: boolean;
-  tool: string;
-  message: string;
-};
-
 /**
  * Procesa tool calls del LLM y ejecuta las herramientas
  */
@@ -204,72 +199,83 @@ async function processToolCalls(
 
   return Promise.all(
     toolCalls.map(async (toolCall) => {
-      let args: {
-        action: string;
-        item?: { name: string; quantity: number; notes?: string };
-      } = { action: "" };
-
       const chat = {
         role: "tool",
         content: "",
-        tool_call_id: toolCall.id,
-        name: toolCall.function.name,
+        tool_call_id: toolCall.id!,
+        name: toolCall.function.name!,
       } satisfies ChatMessage;
-
+      const { success, data, error } = orderArgSchema.safeParse(
+        JSON.parse(toolCall.function.arguments),
+      );
+      if (!success) {
+        return {
+          ...chat,
+          content: JSON.stringify({ success: false, error }),
+        } satisfies ChatMessage;
+      }
       try {
-        args = JSON.parse(JSON.parse(toolCall.function.arguments));
-
-        switch (args.action) {
-          case "add":
+        switch (data.action) {
+          case "add": {
             const result = await productOrderStateManager.addProductToCart(
               orderKey,
               businessId,
-              args.item!,
+              data.item,
             );
-            return { ...chat };
-
-          case "remove":
-            const removeResult =
-              await productOrderStateManager.removeProductFromCart(
-                orderKey,
-                args.item!,
-              );
-            return { ...chat, content: removeResult.removed };
-
-          case "update":
-            const updateResult =
-              await productOrderStateManager.updateProductInCart(
-                orderKey,
-                businessId,
-                args.item!,
-              );
-            return { ...chat };
-
-          case "confirm":
-            const cart = await productOrderStateManager.viewCart(orderKey);
-            const r = await cmsAdapter.createProductOrder({
+            return {
+              ...chat,
+              content: JSON.stringify(result),
+            } satisfies ChatMessage;
+          }
+          case "remove": {
+            const result = await productOrderStateManager.removeProductFromCart(
+              orderKey,
+              data.item,
+            );
+            return {
+              ...chat,
+              content: JSON.stringify(result),
+            } satisfies ChatMessage;
+          }
+          case "update": {
+            const result = await productOrderStateManager.updateProductInCart(
+              orderKey,
+              businessId,
+              data.item,
+            );
+            return {
+              ...chat,
+              content: JSON.stringify(result),
+            } satisfies ChatMessage;
+          }
+          case "confirm": {
+            const cartPayload =
+              await productOrderStateManager.viewCart(orderKey);
+            const result = await cmsAdapter.createProductOrder({
               business: businessId,
               cart: {
-                items: cart.products.map((p) => ({
-                  productId: p.productId,
-                  productName: p.productName,
+                items: cartPayload.products.map((p) => ({
+                  productId: p.id,
+                  productName: p.name,
                   quantity: p.quantity,
                   observations: p.notes,
                 })),
               },
               customer: "",
             });
-
-            return { ...chat, content: r.id };
-
+            return {
+              ...chat,
+              content: JSON.stringify({ result, created: true }),
+            } satisfies ChatMessage;
+          }
           default:
-            return { ...chat, content: "" };
+            return { ...chat, content: "" } satisfies ChatMessage;
         }
       } catch {
         // Usar args vacíos si falla el parse
       }
 
-      return { ...chat, content: "" };
+      return { ...chat };
     }),
   );
 }

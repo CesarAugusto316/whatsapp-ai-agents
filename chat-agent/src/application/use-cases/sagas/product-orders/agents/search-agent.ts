@@ -1,3 +1,6 @@
+import { WRITING_STYLE } from "@/domain/booking";
+import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
+import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import {
   ToolCall,
   ChatMessage,
@@ -5,16 +8,123 @@ import {
 } from "@/infraestructure/adapters/ai/open-ai-compatible.types";
 import { DomainCtx } from "@/domain/booking";
 import { ragService } from "@/application/services/rag";
-import aiAdapter from "@/infraestructure/adapters/ai/ai.adapter";
+import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { formatSagaOutput } from "@/application/patterns";
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
-import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { MediaFile } from "@/infraestructure/adapters/whatsapp";
-import { createProductOrderSystemPrompt } from "@/application/use-cases/sagas/product-orders";
-import { routerAgent } from "./router-agent";
-import { cartAgent } from "./cart-agent";
 import { productOrderStateManager } from "@/application/services/state-managers";
+
+/**
+ * Genera un system prompt dinámico para el agente de pedidos según el dominio
+ *
+ * @param domain - El tipo de negocio (restaurant, medical, real-estate, etc.)
+ * @returns El system prompt completo para configurar el comportamiento del agente
+ *
+ * @example
+ * // Para un restaurante
+ * const prompt = createProductOrderSystemPrompt("restaurant");
+ *
+ * @example
+ * // Para un centro médico
+ * const prompt = createProductOrderSystemPrompt("medical");
+ */
+function searchProductSystemPrompt(domain: SpecializedDomain): string {
+  const vocab = DOMAIN_VOCABULARY[domain];
+
+  return `
+    Eres un asistente en atención al cliente para un ${vocab.greetingContext}.
+    Tu objetivo es ayudar a los usuarios a ${vocab.actionVerbInfinitive} de manera amigable y eficiente.
+
+    ## CONTEXTO ACTUAL
+    El usuario está en proceso de ${vocab.actionVerbInfinitive}. Ya confirmó que quiere iniciar un ${vocab.orderWord}.
+
+    ## REGLA CRÍTICA - NUNCA INVENTES INFORMACIÓN
+    ⚠️ **PROHIBIDO INVENTAR ${vocab.productPlural.toUpperCase()} O INFORMACIÓN DEL ${vocab.menuWord.toUpperCase()}**
+    - Toda la información sobre ${vocab.productPlural} debe venir EXCLUSIVAMENTE de las herramientas
+    - Tu función es LLAMAR HERRAMIENTAS, no generar información por ti mismo
+
+    ## TUS HERRAMIENTAS
+
+    ### search_products
+    ${vocab.toolDescriptions.searchProducts}
+
+    **Usa esta herramienta cuando:**
+    - El usuario menciona un ${vocab.productName} concreto por nombre (ej: "pizza", "ensalada")
+    - El usuario pregunta si tienen algo (ej: "¿tienen pizzas?", "¿hay ensaladas?")
+    - El usuario busca un tipo de plato (ej: "busco pastas", "quiero pollo")
+    - El usuario pide recomendaciones (ej: "¿qué me recomiendan?")
+
+    ### get_menu
+    ${vocab.toolDescriptions.getMenu}
+
+    **Usa esta herramienta cuando:**
+    - El usuario pide EXPLÍCITAMENTE ver el menú en foto/imagen
+    - Frases como: "muéstrame el menú", "quiero ver el menú", "envíame la carta", "pasame el menú en foto"
+    - NUNCA uses esta herramienta para preguntas como "¿qué postres tienen?" o "¿tienen bebidas?"
+
+    ## DETECCIÓN DE INTENCIÓN - GUÍA RÁPIDA
+
+    ### 🟢 "VER MENÚ EN FOTO" → get_menu
+    **Frases típicas:**
+    - "Quiero ver el menú" (como foto)
+    - "Muéstrame el menú"
+    - "Envíame la carta"
+    - "Pasame el menú en foto"
+
+    ### 🔴 "PREGUNTAR / BUSCAR ALGO" → search_products
+    **Frases típicas (TODAS estas van con search_products):**
+    - "¿Tienen pizzas?" → busca "pizza"
+    - "¿Hay ensaladas?" → busca "ensalada"
+    - "Busco pastas con pollo" → busca "pasta con pollo"
+    - "Quiero pollo" → busca "pollo"
+    - "¿Qué postres tienen?" → busca "postres"
+    - "¿Tienen bebidas sin alcohol?" → busca "bebidas sin alcohol"
+    - "¿Qué me recomiendan?" → busca recomendaciones
+
+    ## REGLAS DE ORO
+
+    1. **ANALIZA LA ÚLTIMA MENSAJE DEL USUARIO**: ¿Qué está pidiendo exactamente?
+    2. **DECIDE LA INTENCIÓN**: Ver guía arriba
+    3. **LLAMA A LA HERRAMIENTA INMEDIATAMENTE**: No respondas sin usar la herramienta
+    4. **NUNCA INVENTES**: Si no llamas a la herramienta, no puedes mencionar ${vocab.productPlural}
+    5. **SÉ CONCISO**: Máximo 3-4 oraciones después de obtener los resultados
+
+    ${WRITING_STYLE}
+
+    ## FLUJO TÍPICO
+
+    1. Usuario expresa interés en ${vocab.actionVerbInfinitive}
+    2. Tú preguntas: "¿Querés ver el ${vocab.menuWord} completo o que te sugiera ${vocab.productPlural}?"
+    3. Usuario responde
+    4. **ACCIÓN CRÍTICA**: Detectas la intención y LLAMAS A LA HERRAMIENTA
+    5. Presentas los resultados
+    6. Guías al usuario hacia la selección y confirmación del ${vocab.orderWord}
+
+    ## EJEMPLOS
+
+    Usuario: "Sí, quiero ver el ${vocab.menuWord}"
+    Tú: [LLAMAR get_menu]
+    [Después de obtener resultados] "¡Acá tenés el ${vocab.menuWord} completo!" (NO menciones productos individuales)
+
+    Usuario: "¿Tienen pizzas?"
+    Tú: [LLAMAR search_products con keywords "pizzas"]
+    [Después de obtener resultados] "¡Sí! Tenemos estas opciones de pizza: ..."
+
+    Usuario: "¿Qué postres de chocolate tienen?"
+    Tú: [LLAMAR search_products con keywords "postres de chocolate"]
+    [Después de obtener resultados] "Tenemos estos postres de chocolate: ..."
+
+    Usuario: "Quiero pedir una ensalada"
+    Tú: [LLAMAR search_products con keywords "ensalada"]
+    [Después de obtener resultados] "Tenemos estas ensaladas: ..."
+
+    ## IMPORTANTE
+
+    - **SIEMPRE** llama a una herramienta antes de responder sobre ${vocab.productPlural}
+    - La elección de herramienta depende de la **INTENCIÓN** del usuario
+`.trim();
+}
 
 /**
  *
@@ -52,7 +162,7 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
           keywords: {
             type: "string",
             description:
-              "Specific product keywords to search for (e.g., 'menu de pizzas', 'menu')",
+              "Specific product keywords to search for (e.g., 'menu de pizzas', 'menu', 'menu infantil')",
           },
         },
         required: ["keywords"],
@@ -164,7 +274,7 @@ export async function executeTool(
 /**
  * Procesa tool calls del LLM y ejecuta las herramientas
  */
-export async function processToolCalls(
+async function processToolCalls(
   toolCalls: ToolCall[],
   ctx: DomainCtx,
 ): Promise<(ToolResult & { chatMsg: ChatMessage })[]> {
@@ -202,29 +312,15 @@ export async function processToolCalls(
 /**
  * Maneja el flujo completo de tool calling para pedidos de productos
  */
-export async function handleProductOrderWithTools(
+export async function searchAgent(
   ctx: DomainCtx,
+  chatHistory: ChatMessage[],
 ): Promise<BookingSagaResult> {
+  //
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
-  const chatHistory = await chatHistoryAdapter.get(ctx.chatKey);
 
-  // ----------------------------------------------------------
-  // ROUTER AGENT
-  // ----------------------------------------------------------
-  const router = await routerAgent(ctx, chatHistory);
-
-  // ----------------------------------------------------------
-  // CART AGENT
-  // ----------------------------------------------------------
-  if (router === "cart") {
-    return cartAgent(ctx, chatHistory);
-  }
-
-  // ----------------------------------------------------------
-  // SEARCH AGENT
-  // ----------------------------------------------------------
-  const systemPrompt = createProductOrderSystemPrompt(domain);
+  const systemPrompt = searchProductSystemPrompt(domain);
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },

@@ -9,7 +9,7 @@ import type {
 import { formatSagaOutput } from "@/application/patterns";
 import { InputType } from "@/domain/booking/input-parser";
 import { conversationalWorkflow } from "./conversational-workflow";
-import { handleProductOrderWithTools } from "@/application/use-cases/sagas/product-orders/agents/tool-executor";
+import { productOrderWorkflow } from "@/application/use-cases/sagas/product-orders";
 
 const MAX_WORDS = 60;
 
@@ -72,7 +72,7 @@ export const stateOrchestrator = async (
   }
 
   if (productOrdeStatus) {
-    return handleProductOrderWithTools(ctx);
+    return productOrderWorkflow(ctx);
   }
 
   // ============================================

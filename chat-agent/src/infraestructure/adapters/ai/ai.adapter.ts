@@ -224,7 +224,7 @@ class AiAdapter implements IAiAdapter {
             : this.config.primaryModel,
           messages: request.messages,
           tools: request.tools,
-          temperature: request.temperature ?? 0.5,
+          temperature: request.temperature ?? 0.3,
           max_tokens: request.max_tokens ?? 512,
         }),
       });
