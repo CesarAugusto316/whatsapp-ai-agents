@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
-import { executeTool } from "@/infraestructure/adapters/ai/tool-executor";
 import { env } from "bun";
+import { executeTool } from "@/application/use-cases/sagas/product-orders";
 
 // Business ID con datos de menú en Qdrant
 const BUSINESS_ID = env.BUSINESS_ID_TEST!;

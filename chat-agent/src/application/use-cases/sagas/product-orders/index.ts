@@ -1,2 +1,7 @@
 export { productFindWorkflow } from "./initial-options-workflow";
-export { createProductOrderSystemPrompt } from "./product-order-prompt";
+export { createProductOrderSystemPrompt } from "./agents/product-order-prompt";
+export {
+  handleProductOrderWithTools,
+  executeTool,
+  processToolCalls,
+} from "./agents/tool-executor";

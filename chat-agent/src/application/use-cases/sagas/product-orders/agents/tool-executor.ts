@@ -2,15 +2,15 @@ import {
   ToolCall,
   ChatMessage,
   ToolDefinition,
-} from "./open-ai-compatible.types";
+} from "@/infraestructure/adapters/ai/open-ai-compatible.types";
 import { DomainCtx } from "@/domain/booking";
 import { ragService } from "@/application/services/rag";
-import aiAdapter from "./ai.adapter";
+import aiAdapter from "@/infraestructure/adapters/ai/ai.adapter";
 import { formatSagaOutput } from "@/application/patterns";
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
-import { SpecializedDomain } from "../cms";
-import { chatHistoryAdapter } from "../cache";
-import { MediaFile } from "../whatsapp";
+import { SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
+import { MediaFile } from "@/infraestructure/adapters/whatsapp";
 import { createProductOrderSystemPrompt } from "@/application/use-cases/sagas/product-orders";
 
 /**

@@ -9,7 +9,7 @@ import type {
 import { formatSagaOutput } from "@/application/patterns";
 import { InputType } from "@/domain/booking/input-parser";
 import { conversationalWorkflow } from "./conversational-workflow";
-import { handleProductOrderWithTools } from "@/infraestructure/adapters/ai/tool-executor";
+import { handleProductOrderWithTools } from "@/application/use-cases/sagas/product-orders/agents/tool-executor";
 
 const MAX_WORDS = 60;
 

@@ -22,4 +22,4 @@ export {
   isToolFunction,
   isMessagesBasedRequest,
 } from "./open-ai-compatible.types";
-export { handleProductOrderWithTools } from "./tool-executor";
+// export { handleProductOrderWithTools } from "@/application/use-cases/sagas/product-orders/agents/tool-executor";
