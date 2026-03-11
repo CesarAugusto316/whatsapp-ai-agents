@@ -10,9 +10,13 @@ import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { formatSagaOutput } from "@/application/patterns";
 import { DomainCtx } from "@/domain/booking";
 
+/**
+ *
+ * @param domain
+ * @returns
+ */
 function createCartAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
-
   return `
     Eres un asistente especializado en gestionar ${vocab.orderWord}s de clientes para un ${vocab.greetingContext}.
 
@@ -106,7 +110,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     → manage_cart("confirm", [])
 
     Usuario: "Agregame una pasta carbonara sin cebolla"
-    → manage_cart("add", [{ name: "pasta carbonara", quantity: 1, notes: "sin cebolla" }])
+    → manage_cart("add", [{ name: "pasta carbonara", quantity: 1, observations: "sin cebolla" }])
 
     Usuario: "Cambiame a 4 pizzas en vez de 2"
     → manage_cart("update", [{ name: "pizza", quantity: 4 }])
@@ -137,44 +141,15 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
   {
     type: "function" as const,
     function: {
-      name: "search_products",
-      description: "Search for products by name or description.",
+      name: "manage_cart",
+      description: "Manage the cart by adding, removing, or clearing items.",
       parameters: {
         type: "object" as const,
         properties: {
-          intent: {
+          action: {
             type: "string",
             description:
-              "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', 'busco platos con pollo', 'quiero pedir una pizza')",
-          },
-          keywords: {
-            type: "string",
-            description:
-              "Specific product keywords to search for (e.g., 'pizza hawaiana', 'zapatos rojos', 'camisa azul')",
-          },
-        },
-        required: ["keywords"],
-        additionalProperties: false,
-      },
-    },
-  },
-  {
-    type: "function" as const,
-    function: {
-      name: "get_menu",
-      description: "Get menu items by category or full menu.",
-      parameters: {
-        type: "object" as const,
-        properties: {
-          intent: {
-            type: "string",
-            description:
-              "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', '¿qué postres tienen?', 'muéstrame las opciones')",
-          },
-          keywords: {
-            type: "string",
-            description:
-              "Specific product keywords to search for (e.g., 'menu de pizzas', 'menu')",
+              "The action to perform on the cart (add, update, remove, confirm)",
           },
         },
         required: ["keywords"],
@@ -200,72 +175,13 @@ export async function executeTool(
 ): Promise<ToolResult> {
   switch (name) {
     //
-    case "search_products": {
+    case "manage_cart": {
       const keywords = (args.keywords as string) || "";
-      const limit = 5;
-      // Usar keywords si está disponible, sino usar intent
-      // const results = await ragService.searchProducts(
-      //   keywords,
-      //   businessId,
-      //   limit,
-      // );
-
-      // const products = results.points?.map(({ payload }) => ({
-      //   ...payload,
-      //   isAvailable: payload?.enabled,
-      // }));
-
-      // if (!products?.length) {
-      //   return {
-      //     success: false,
-      //     tool: "search_products",
-      //     message:
-      //       "No se encontraron productos, se debe pedir alternativas al usuario",
-      //     // files: [],
-      //   };
-      // }
 
       return {
         success: true,
-        tool: "search_products",
-        message: JSON.stringify({
-          // products,
-        }),
-        // files: [],
-      };
-    }
-
-    case "get_menu": {
-      const keywords = (args.keywords as string) || "menu";
-      const limit = 3;
-      // const { points } = await ragService.searchBusinessMedia(
-      //   keywords,
-      //   businessId,
-      //   limit,
-      // );
-      // const files =
-      //   points?.map((p) => ({
-      //     filename: p.payload.filename ?? "",
-      //     url: p.payload.url ?? "",
-      //     mimetype: p.payload.mimeType ?? "",
-      //     alt: p.payload.alt ?? "",
-      //   })) ?? [];
-
-      // if (!files.length) {
-      //   return {
-      //     success: false,
-      //     tool: "get_menu",
-      //     message:
-      //       "No se encontró el menú, se debe pedir alternativas al usuario",
-      //     files: [],
-      //   };
-      // }
-
-      return {
-        success: true,
-        tool: "get_menu",
-        message: "Menú encontrado, SUCCESS ✅",
-        // files,
+        tool: "manage_cart",
+        message: "SUCCESS ✅",
       };
     }
 
