@@ -19,6 +19,10 @@ import { orderArgSchema } from "@/domain/orders";
  */
 function createCartAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
+  const productExample1 = vocab.productExamples[0];
+  const productExample2 = vocab.productExamples[1] || productExample1;
+  const productExample3 = vocab.productExamples[2] || productExample1;
+
   return `
     Eres un asistente especializado en gestionar ${vocab.orderWord}s de clientes para un ${vocab.greetingContext}.
 
@@ -43,24 +47,21 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     ### ➕ AGREGAR (action: "add")
     **Frases típicas:**
-    - "Agregame 2 pizzas" → { action: "add", item: { name: "pizza", quantity: 2 } }
-    - "Quiero una ensalada césar" → { action: "add", item: { name: "ensalada césar", quantity: 1 } }
-    - "Dame la pasta carbonara" → { action: "add", item: { name: "pasta carbonara", quantity: 1 } }
-    - "Poneme eso también" → { action: "add", item: { name: "eso", quantity: 1 } }
-    - "Me llevo 3 cervezas" → { action: "add", item: { name: "cerveza", quantity: 3 } }
+    - "Agregame 2 ${productExample1}s" → { action: "add", item: { name: "${productExample1}", quantity: 2 } }
+    - "Quiero una ${productExample2}" → { action: "add", item: { name: "${productExample2}", quantity: 1 } }
+    - "Dame un ${productExample3}" → { action: "add", item: { name: "${productExample3}", quantity: 1 } }
+    - "Me llevo 3 ${productExample1}s" → { action: "add", item: { name: "${productExample1}", quantity: 3 } }
 
     ### ➖ QUITAR (action: "remove")
     **Frases típicas:**
-    - "Quitame la pizza" → { action: "remove", item: { name: "pizza", quantity: 1 } }
-    - "Sacame 2 ensaladas" → { action: "remove", item: { name: "ensalada", quantity: 2 } }
-    - "Eliminamelo" → { action: "remove", item: { name: "ello", quantity: 1 } }
-    - "No quiero eso" → { action: "remove", item: { name: "eso", quantity: 1 } }
+    - "Quitame ${productExample1}" → { action: "remove", item: { name: "${productExample1}", quantity: 1 } }
+    - "Sacame 2 ${productExample2}s" → { action: "remove", item: { name: "${productExample2}", quantity: 2 } }
 
     ### 🔄 MODIFICAR (action: "update")
     **Frases típicas:**
-    - "Cambiame a 3 pizzas en lugar de 2" → { action: "update", item: { name: "pizza", quantity: 3 } }
-    - "Mejor dame 4 cervezas" → { action: "update", item: { name: "cerveza", quantity: 4 } }
-    - "Ahora quiero 5" → { action: "update", item: { name: "anterior", quantity: 5 } }
+    - "Cambiame a 3 ${productExample1}s en lugar de 2" → { action: "update", item: { name: "${productExample1}", quantity: 3 } }
+    - "Mejor dame 4 ${productExample2}s" → { action: "update", item: { name: "${productExample2}", quantity: 4 } }
+
 
     ### 👁️ VER (action: "view")
     **Frases típicas:**
@@ -85,40 +86,33 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     ## CUANDO VIENES DE UNA CLARIFICACIÓN (CRÍTICO)
 
     Si el historial muestra que el asistente hizo una pregunta de clarificación:
-    - Usuario: "Pizza" → Asistente: "¿Querés ver o agregar?" → Usuario: "Agregar"
-      → **OBLIGATORIO**: manage_cart("add", { name: "pizza", quantity: 1 })
-    - Usuario: "Ensaladas" → Asistente: "¿Ver o agregar?" → Usuario: "Ver"
+    - Usuario: "${productExample1}" → Asistente: "¿Querés ver o agregar?" → Usuario: "Agregar"
+      → **OBLIGATORIO**: manage_cart("add", { name: "${productExample1}", quantity: 1 })
+    - Usuario: "${productExample2}" → Asistente: "¿Ver o agregar?" → Usuario: "Ver"
       → **OBLIGATORIO**: manage_cart("view")
-    - Usuario: "Cerveza" → Asistente: "¿Ver o agregar?" → Usuario: "Sí"
-      → **OBLIGATORIO**: manage_cart("add", { name: "cerveza", quantity: 1 })
+    - Usuario: "${productExample3}" → Asistente: "¿Ver o agregar?" → Usuario: "Sí"
+      → **OBLIGATORIO**: manage_cart("add", { name: "${productExample3}", quantity: 1 })
 
     **EXTRAE DEL CONTEXTO**:
-    - Si el usuario mencionó un producto antes ("Pizza", "Ensaladas") y ahora dice "Agregar", "Sí", "Quiero"
-      → manage_cart("add", { name: "pizza"/"ensalada", quantity: 1 })
-    - Si el usuario dijo "2 pastas" y responde "Agregar" → manage_cart("add", { name: "pasta", quantity: 2 })
+    - Si el usuario mencionó un producto antes ("${productExample3}", "${productExample1}") y ahora dice "Agregar", "Sí", "Quiero"
+      → manage_cart("add", { name: "${productExample3}"/"${productExample1}", quantity: 1 })
+    - Si el usuario dijo "2 ${productExample1}" y responde "Agregar" → manage_cart("add", { name: "${productExample1}", quantity: 2 })
 
     **IMPORTANTE**: Después de una clarificación, el usuario YA expresó su intención. Tu ÚNICA tarea es ejecutar manage_cart con esa intención.
 
-    ## CUANDO EL USUARIO DICE "ESO", "ESTO", "AQUELLO"
-
-    Si el usuario usa pronombres ("eso", "esto", "aquello", "ello"):
-    - Usá manage_cart con el nombre literal "eso"
-    - El sistema buscará en el contexto previo qué producto se mencionó antes
-    - Ejemplo: Usuario ve "Pizza Margherita" → dice "agregame eso" → manage_cart("add", { name: "eso", quantity: 1 })
-
     ## CUANDO HAY AMBIGÜEDAD
 
-    Si el usuario menciona un ${vocab.productName} genérico ("pizza", "ensalada") y hay múltiples opciones:
+    Si el usuario menciona un ${vocab.productName} genérico ("${productExample1}", "${productExample2}") y hay múltiples opciones:
     - Llamá manage_cart igual
-    - El sistema preguntará "¿Qué pizza querés? Tenemos Margherita, Pepperoni, Vegetariana"
+    - El sistema preguntará "¿Qué ${productExample1} querés? tenemos ..."
 
     ## EJEMPLOS COMPLETOS
 
-    Usuario: "Agregame 2 pizzas margherita"
-    → manage_cart("add", { name: "pizza margherita", quantity: 2 })
+    Usuario: "Agregame 2 ${productExample1}s"
+    → manage_cart("add", { name: "${productExample1}", quantity: 2 })
 
-    Usuario: "Quitame una ensalada"
-    → manage_cart("remove", { name: "ensalada", quantity: 1 })
+    Usuario: "Quitame una ${productExample2}"
+    → manage_cart("remove", { name: "${productExample2}", quantity: 1 })
 
     Usuario: "Mostrame qué llevo"
     → manage_cart("view")
@@ -126,45 +120,37 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     Usuario: "Confirmo mi ${vocab.orderWord}"
     → manage_cart("confirm")
 
-    Usuario: "Agregame una pasta carbonara sin cebolla"
-    → manage_cart("add", { name: "pasta carbonara", quantity: 1, notes: "sin cebolla" })
+    Usuario: "Agregame una ${productExample3} sin cebolla"
+    → manage_cart("add", { name: "${productExample3}", quantity: 1, notes: "sin cebolla" })
 
-    Usuario: "Cambiame a 4 pizzas en vez de 2"
-    → manage_cart("update", { name: "pizza", quantity: 4 })
+    Usuario: "Cambiame a 4 ${productExample1}s en vez de 2"
+    → manage_cart("update", { name: "${productExample1}", quantity: 4 })
 
     ## EJEMPLOS DESPUÉS DE CLARIFICACIÓN
 
     Historial:
-    - Usuario: "Pizza"
-    - Asistente: "¿Querés ver qué pizzas tenemos o querés agregar una pizza a tu ${vocab.orderWord}?"
+    - Usuario: "${productExample1}"
+    - Asistente: "¿Querés ver qué ${vocab.productPlural} tenemos o querés agregar ${productExample1} a tu ${vocab.orderWord}?"
     - Usuario: "Agregar"
-    → manage_cart("add", { name: "pizza", quantity: 1 })
+    → manage_cart("add", { name: "${productExample1}", quantity: 1 })
 
     Historial:
-    - Usuario: "Ensaladas"
-    - Asistente: "¿Querés ver el menú o agregar?"
+    - Usuario: "${productExample2}"
+    - Asistente: "¿Querés ver el ${vocab.menuWord} o agregar?"
     - Usuario: "Ver"
     → manage_cart("view")
 
     Historial:
-    - Usuario: "Cerveza"
+    - Usuario: "${productExample3}"
     - Asistente: "¿Querés ver o agregar?"
     - Usuario: "Sí"
-    → manage_cart("add", { name: "cerveza", quantity: 1 })
+    → manage_cart("add", { name: "${productExample3}", quantity: 1 })
 
     Historial:
-    - Usuario: "2 pastas"
+    - Usuario: "2 ${productExample1}s"
     - Asistente: "¿Querés ver o agregar?"
     - Usuario: "Agregar"
-    → manage_cart("add", { name: "pasta", quantity: 2 })
-
-    ## ESTILO DE ESCRITURA
-
-    - Claro, conciso y amigable
-    - Usá emojis cuando sea apropiado 🛒✅❌
-    - Confirmá cada acción: "✅ 2 ${vocab.productPlural} agregados"
-    - Después de agregar, preguntá: "¿Algo más o confirmamos el ${vocab.orderWord}?"
-    - NUNCA menciones que sos un asistente, sistema o IA
+    → manage_cart("add", { name: "${productExample1}", quantity: 2 })
 
     ## IMPORTANTE
 

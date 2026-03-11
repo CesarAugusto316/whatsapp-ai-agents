@@ -8,6 +8,7 @@ interface DomainVocabulary {
   actionVerb: string;
   actionVerbInfinitive: string;
   greetingContext: string;
+  productExamples: string[]; // Ejemplos en singular: ["pizza", "hamburguesa", "pasta"]
   toolDescriptions: {
     searchProducts: string;
     getMenu: string;
@@ -26,6 +27,13 @@ export const DOMAIN_VOCABULARY: Record<SpecializedDomain, DomainVocabulary> = {
     actionVerb: "pedir",
     actionVerbInfinitive: "hacer un pedido",
     greetingContext: "restaurante",
+    productExamples: [
+      "pizza",
+      "hamburguesa de pollo",
+      "pasta con carne",
+      "ensalada",
+      "cerveza",
+    ],
     toolDescriptions: {
       searchProducts:
         "Busca platos específicos por nombre o descripción. Úsalo cuando el usuario quiera saber si tienen algo específico o esté buscando un tipo de plato.",
@@ -41,6 +49,13 @@ export const DOMAIN_VOCABULARY: Record<SpecializedDomain, DomainVocabulary> = {
     actionVerb: "solicitar",
     actionVerbInfinitive: "agendar una cita",
     greetingContext: "centro médico",
+    productExamples: [
+      "consulta general",
+      "examen de laboratorio",
+      "vacunación",
+      "rayos X",
+      "ecografía",
+    ],
     toolDescriptions: {
       searchProducts:
         "Busca servicios médicos específicos por nombre o descripción. Úsalo cuando el usuario mencione un servicio concreto (ej: 'consulta general', 'examen de laboratorio', 'vacunación').",
@@ -56,6 +71,14 @@ export const DOMAIN_VOCABULARY: Record<SpecializedDomain, DomainVocabulary> = {
     actionVerb: "agendar",
     actionVerbInfinitive: "agendar una visita",
     greetingContext: "inmobiliaria",
+    productExamples: [
+      "casa",
+      "apartamento",
+      "habitación",
+      "piso",
+      "local comercial",
+      "terreno",
+    ],
     toolDescriptions: {
       searchProducts:
         "Busca propiedades específicas por características o ubicación. Úsalo cuando el usuario describa lo que busca (ej: 'apartamento de 2 habitaciones', 'casa en el centro').",
@@ -71,6 +94,7 @@ export const DOMAIN_VOCABULARY: Record<SpecializedDomain, DomainVocabulary> = {
     actionVerb: "reservar",
     actionVerbInfinitive: "reservar una cita",
     greetingContext: "establecimiento",
+    productExamples: ["masaje", "sesión", "paquete VIP", "servicio premium"],
     toolDescriptions: {
       searchProducts:
         "Busca servicios específicos por nombre o descripción. Úsalo cuando el usuario mencione un servicio concreto.",
@@ -86,6 +110,7 @@ export const DOMAIN_VOCABULARY: Record<SpecializedDomain, DomainVocabulary> = {
     actionVerb: "pedir",
     actionVerbInfinitive: "hacer un pedido",
     greetingContext: "tienda",
+    productExamples: ["ropa", "zapatos", "accesorios", "bolso", "reloj"],
     toolDescriptions: {
       searchProducts:
         "Busca productos específicos por nombre o descripción. Úsalo cuando el usuario mencione un producto concreto o describa lo que busca.",
@@ -101,6 +126,13 @@ export const DOMAIN_VOCABULARY: Record<SpecializedDomain, DomainVocabulary> = {
     actionVerb: "agendar",
     actionVerbInfinitive: "agendar una consulta",
     greetingContext: "bufete",
+    productExamples: [
+      "consulta laboral",
+      "divorcio",
+      "testamento",
+      "demanda",
+      "asesoría fiscal",
+    ],
     toolDescriptions: {
       searchProducts:
         "Busca servicios legales específicos por área de práctica. Úsalo cuando el usuario mencione un tipo de consulta (ej: 'derecho laboral', 'divorcio').",

@@ -51,6 +51,9 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
   const orderWordCapitalized =
     vocab.orderWord.charAt(0).toUpperCase() + vocab.orderWord.slice(1);
+  const productExample1 = vocab.productExamples[0];
+  const productExample2 = vocab.productExamples[1] || productExample1;
+  const productExample3 = vocab.productExamples[2] || productExample1;
 
   return `
     Eres un router inteligente para un ${vocab.greetingContext}. Tu única función es analizar el mensaje del usuario y decidir a qué agente derivar.
@@ -69,14 +72,14 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     - "Quiero ver el ${vocab.menuWord}"
     - "¿Qué ${vocab.productPlural} tienen?"
     - "Busco ${vocab.productPlural}"
-    - "¿Tienen pizzas?"
-    - "¿Qué postres hay?"
+    - "¿Tienen ${productExample1}s?"
+    - "¿Qué ${productExample2}s hay?"
     - "Muéstrame el ${vocab.menuWord}"
-    - "Envíame la carta"
-    - "Quiero una pizza"
-    - "Busco algo con pollo"
-    - "¿Qué me recomiendan?"
-    - "¿Tienen opciones vegetarianas?"
+    - "Envíame el ${vocab.menuWord}"
+    - "Quiero ${productExample1}"
+    - "Busco ${productExample2}"
+    - "¿Qué ${productExample2} me recomiendan?"
+    - "¿Tienen opciones de ${productExample3}"
 
     ### 2. AGENTE DE CARRITO (cart_agent)
     **Cuándo derivar aquí:**
@@ -95,11 +98,11 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     - confirm: Confirmar ${vocab.orderWord}
 
     **Frases típicas → cart_agent:**
-    - "Agregame 2 pizzas"
+    - "Agregame 2 ${productExample1}s"
     - "Quiero agregar esto a mi ${vocab.orderWord}"
-    - "Poneme una ensalada"
-    - "Quitame la pizza"
-    - "Sacame 2 cervezas"
+    - "Poneme una ${productExample2}"
+    - "Quitame ${productExample1}"
+    - "Sacame 2 ${productExample3}s"
     - "Eliminamelo"
     - "Cambiame a 3 en vez de 2"
     - "Mostrame mi ${vocab.orderWord}"
@@ -120,10 +123,10 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     - El LLM se pregunta: "¿El usuario quiere buscar o agregar?"
 
     **Frases típicas → ask_clarification:**
-    - "Pizza" (solo, sin verbo)
-    - "Pizzas" (sin contexto de acción)
-    - "Ensaladas" (¿quiere ver o agregar?)
-    - "Cerveza" (¿busca o agrega?)
+    - "${productExample1}" (solo, sin verbo)
+    - "${productExample1}s" (sin contexto de acción)
+    - "${productExample2}s" (¿quiere ver o agregar?)
+    - "${productExample3}" (¿busca o agrega?)
     - Mensajes de 1-2 palabras sin intención clara
 
     **Pregunta clave del LLM:**
@@ -153,22 +156,22 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     2. **ANALIZÁ EL HISTORIAL**:
       - Si el usuario viene de ver ${vocab.productPlural} y dice "quiero esa" → cart_agent (ya hay contexto)
       - Si el usuario viene de agregar y dice "sí" → cart_agent (está confirmando)
-      - Si es el primer mensaje y dice "pizza" → ask_clarification (¿busca o agrega?)
-      - Si el usuario dice "2 pastas" después de ver el ${vocab.menuWord} → cart_agent
+      - Si es el primer mensaje y dice "${productExample1}" → ask_clarification (¿busca o agrega?)
+      - Si el usuario dice "2 ${productExample1}s" después de ver el ${vocab.menuWord} → cart_agent
       - Si el usuario dice "${vocab.productName}" sin referencia previa → ask_clarification
       - **Si el asistente pidió clarificación y el usuario respondió "ver" o "explorar" → search_agent**
       - **Si el asistente pidió clarificación y el usuario respondió "agregar" o "poner" → cart_agent**
       - **Si el último mensaje del asistente fue una pregunta de clarificación, el usuario YA CLARIFICÓ su intención**
 
     3. **INTENCIÓN CLARA vs AMBIGÜEDAD**:
-      - "Quiero una pizza" → search_agent (primero busca)
-      - "Agregame una pizza" → cart_agent (acción clara)
-      - "¿Tienen pizzas?" → search_agent (explorando)
-      - "Dame una pizza" → cart_agent (acción clara de agregar)
-      - "2 pastas" → cart_agent (acción clara de agregar)
+      - "Quiero una ${productExample1}" → search_agent (primero busca)
+      - "Agregame una ${productExample1}" → cart_agent (acción clara)
+      - "¿Tienen ${productExample1}s?" → search_agent (explorando)
+      - "Dame una ${productExample1}" → cart_agent (acción clara de agregar)
+      - "2 ${productExample1}s" → cart_agent (acción clara de agregar)
       - "Sí, dale" → cart_agent (confirmando)
-      - "Pizza" → ask_clarification (¿busca o agrega?)
-      - "Ensaladas" → ask_clarification (¿ver o agregar?)
+      - "${productExample1}" → ask_clarification (¿busca o agrega?)
+      - "${productExample2}s" → ask_clarification (¿ver o agregar?)
 
     4. **CONTEXTO IMPORTA**:
       - Si el usuario ya está en proceso de ${vocab.actionVerbInfinitive} y dice "agregame" → cart_agent
@@ -187,77 +190,71 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     Usuario: "Quiero ver el ${vocab.menuWord}"
     → search_agent
 
-    Usuario: "¿Qué postres tienen?"
+    Usuario: "¿Qué ${vocab.productPlural} tienen?"
     → search_agent
 
-    Usuario: "Busco pizzas"
+    Usuario: "Busco ${productExample1}s"
     → search_agent
 
-    Usuario: "Agregame 2 pizzas"
+    Usuario: "Agregame 2 ${productExample1}s"
     → cart_agent
 
-    Usuario: "Poneme una ensalada césar"
+    Usuario: "Poneme una ${productExample2}"
     → cart_agent
 
-    Usuario: "Quitame la pizza"
+    Usuario: "Quitame ${productExample1}"
     → cart_agent
 
     Usuario: "Mostrame mi ${vocab.orderWord}"
     → cart_agent
 
-    Usuario: "Sí, confirmado"
+    Usuario: "Sí, ${vocab.orderWord} confirmado"
     → cart_agent
 
     Usuario: "¿Tienen opciones vegetarianas?"
     → search_agent
 
-    Usuario: "Quiero una pizza margherita"
+    Usuario: "Quiero una ${productExample1}"
     → search_agent (primero busca)
 
-    Usuario: "Dame esa pizza"
+    Usuario: "Dame esa ${productExample1}"
     → cart_agent (ya hay contexto, está agregando)
 
-    Usuario: "Pizza"
-    → ask_clarification (¿busca o agrega?)
-
-    Usuario: "Ensaladas"
-    → ask_clarification (¿ver o agregar?)
-
-    Usuario: "Cerveza"
+    Usuario: "${productExample1}"
     → ask_clarification (¿busca o agrega?)
 
     Usuario: "Mi nombre es César"
     → cart_agent (datos del cliente)
 
-    Usuario: "Pedro Rodriguez"
+    Usuario: "Pedro Rodriguez" (nombre del cliente)
     → cart_agent (datos del cliente)
 
-    Usuario: "2 cervezas"
+    Usuario: "2 ${productExample1}s"
     → cart_agent (acción clara de agregar)
 
     ## EJEMPLOS DE CLARIFICACIÓN
 
-    Asistente: "¿Querés ver qué pizzas tenemos o querés agregar una pizza a tu ${vocab.orderWord}?"
+    Asistente: "¿Querés ver qué ${vocab.productPlural} tenemos o querés agregar ${productExample1} a tu ${vocab.orderWord}?"
     Usuario: "Ver"
     → search_agent
 
-    Asistente: "¿Querés ver qué pizzas tenemos o querés agregar una pizza a tu ${vocab.orderWord}?"
+    Asistente: "¿Querés ver qué ${vocab.productPlural} tenemos o querés agregar ${productExample1} a tu ${vocab.orderWord}?"
     Usuario: "Agregar"
     → cart_agent
 
-    Asistente: "¿Querés ver el menú de ensaladas o querés agregar una ensalada?"
+    Asistente: "¿Querés ver el ${vocab.menuWord} de ${productExample2}s o querés agregar una ${productExample2}?"
     Usuario: "Quiero ver"
     → search_agent
 
-    Asistente: "¿Querés agregar una pizza a tu ${vocab.orderWord}?"
+    Asistente: "¿Querés agregar ${productExample1} a tu ${vocab.orderWord}?"
     Usuario: "Sí, agregala"
     → cart_agent
 
-    Asistente: "¿Querés ver las opciones de pizza disponibles o querés agregar una?"
-    Usuario: "Mostrame las opciones"
+    Asistente: "¿Querés ver las opciones de ${productExample1} disponibles o querés agregar una?"
+    Usuario: "sí, las opciones"
     → search_agent
 
-    Asistente: "¿Querés ver las opciones de pizza disponibles o querés agregar una?"
+    Asistente: "¿Querés ver las opciones de ${productExample1} disponibles o querés agregar una?"
     Usuario: "Agregame una"
     → cart_agent
 
@@ -302,21 +299,26 @@ export const clarifierAgent = async (
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
   const vocab = DOMAIN_VOCABULARY[domain];
+  const productExample1 = vocab.productExamples[0];
+  const productExample2 = vocab.productExamples[1] || productExample1;
+  const productExample3 = vocab.productExamples[2] || productExample1;
+  const productExample4 = vocab.productExamples[3] || productExample1;
+  const productExample5 = vocab.productExamples[4] || productExample1;
 
   const systemPrompt = `
     Eres un asistente de clarificación para un ${vocab.greetingContext}. Tu única función es hacer preguntas cortas y amables para entender qué quiere el usuario.
 
     ## TU CONTEXTO
 
-    El usuario envió un mensaje ambiguo (ej: "Pizza", "Ensaladas", "Cerveza") y no sabemos si quiere:
+    El usuario envió un mensaje ambiguo (ej: "${productExample1}", "${productExample2}") y no sabemos si quiere:
     1. **BUSCAR/EXPLORAR** ${vocab.productPlural} (ver el ${vocab.menuWord}, preguntar qué hay, etc.)
     2. **GESTIONAR SU ${vocab.orderWord}** (agregar, quitar, modificar, ver, confirmar, etc.)
 
     ## ACCIONES DEL CART_AGENT
 
-    - **add**: Agregar ${vocab.productPlural} al ${vocab.orderWord}
-    - **remove**: Quitar/eliminar ${vocab.productPlural} del ${vocab.orderWord}
-    - **update**: Modificar cantidades de ${vocab.productPlural} en el ${vocab.orderWord}
+    - **add**: Agregar ${productExample2} al ${vocab.orderWord}
+    - **remove**: Quitar/eliminar ${productExample3} del ${vocab.orderWord}
+    - **update**: Modificar cantidades de ${productExample4} en el ${vocab.orderWord}
     - **view**: Ver qué lleva en el ${vocab.orderWord}
     - **confirm**: Confirmar/finalizar el ${vocab.orderWord}
 
@@ -342,7 +344,7 @@ export const clarifierAgent = async (
     "¿Querés ver qué ${vocab.productPlural} tenemos o querés gestionar tu ${vocab.orderWord} (agregar, quitar, etc.)?"
 
     Opción B (con contexto de búsqueda previa):
-    "¿Querés agregar ${vocab.productName} a tu ${vocab.orderWord} o querés ver otras opciones?"
+    "¿Querés agregar ${productExample5} a tu ${vocab.orderWord} o querés ver otras opciones?"
 
     Opción C (producto específico mencionado):
     "¿Querés ver las opciones de ${vocab.productName} disponibles o querés agregar/gestionar ${vocab.productName} en tu ${vocab.orderWord}?"
@@ -352,14 +354,14 @@ export const clarifierAgent = async (
 
     ## EJEMPLOS
 
-    Usuario: "Pizza"
-    → "¿Querés ver qué pizzas tenemos o querés gestionar tu ${vocab.orderWord} (agregar, quitar, etc.)?"
+    Usuario: "${productExample1}"
+    → "¿Querés ver qué ${productExample1} tenemos o querés gestionar tu ${vocab.orderWord} (agregar, quitar, etc.)?"
 
-    Usuario: "Ensaladas"
-    → "¿Querés ver el ${vocab.menuWord} de ensaladas o querés agregar una ensalada a tu ${vocab.orderWord}?"
+    Usuario: "${productExample2}"
+    → "¿Querés ver el ${vocab.menuWord} de ${productExample2} o querés agregar una ${productExample2} a tu ${vocab.orderWord}?"
 
-    Usuario: "Cerveza"
-    → "¿Querés ver qué cervezas tenemos o querés agregar una cerveza a tu ${vocab.orderWord}?"
+    Usuario: "${productExample1}"
+    → "¿Querés ver qué ${productExample1}s tenemos o querés agregar una ${productExample1} a tu ${vocab.orderWord}?"
 
     Usuario: "Quiero eso" (después de ver ${vocab.productPlural})
     → "¿Querés agregar ${vocab.productName} a tu ${vocab.orderWord}?"
