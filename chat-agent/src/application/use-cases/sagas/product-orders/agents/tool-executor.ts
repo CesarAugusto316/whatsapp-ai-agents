@@ -29,11 +29,6 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
       parameters: {
         type: "object" as const,
         properties: {
-          intent: {
-            type: "string",
-            description:
-              "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', 'busco platos con pollo', 'quiero pedir una pizza')",
-          },
           keywords: {
             type: "string",
             description:
@@ -53,11 +48,6 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
       parameters: {
         type: "object" as const,
         properties: {
-          intent: {
-            type: "string",
-            description:
-              "User's original intent that triggered this tool call (e.g., 'quiero ver el menú', '¿qué postres tienen?', 'muéstrame las opciones')",
-          },
           keywords: {
             type: "string",
             description:

@@ -35,44 +35,42 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     Parámetros:
     - action: "add" | "remove" | "update" | "view" | "confirm"
-    - items: lista de productos con { name, quantity, notes (opcional) }
+    - item: { name, quantity (default: 1), notes (opcional) }
 
     ## DETECCIÓN DE INTENCIÓN - GUÍA RÁPIDA
 
     ### ➕ AGREGAR (action: "add")
     **Frases típicas:**
-    - "Agregame 2 pizzas" → { action: "add", items: [{ name: "pizza", quantity: 2 }] }
-    - "Quiero una ensalada césar" → { action: "add", items: [{ name: "ensalada césar", quantity: 1 }] }
-    - "Dame la pasta carbonara" → { action: "add", items: [{ name: "pasta carbonara", quantity: 1 }] }
-    - "Poneme eso también" → { action: "add", items: [{ name: "eso", quantity: 1 }] } (el sistema resolverá "eso")
-    - "Me llevo 3 cervezas" → { action: "add", items: [{ name: "cerveza", quantity: 3 }] }
+    - "Agregame 2 pizzas" → { action: "add", item: { name: "pizza", quantity: 2 } }
+    - "Quiero una ensalada césar" → { action: "add", item: { name: "ensalada césar", quantity: 1 } }
+    - "Dame la pasta carbonara" → { action: "add", item: { name: "pasta carbonara", quantity: 1 } }
+    - "Poneme eso también" → { action: "add", item: { name: "eso", quantity: 1 } }
+    - "Me llevo 3 cervezas" → { action: "add", item: { name: "cerveza", quantity: 3 } }
 
     ### ➖ QUITAR (action: "remove")
     **Frases típicas:**
-    - "Quitame la pizza" → { action: "remove", items: [{ name: "pizza", quantity: 1 }] }
-    - "Sacame 2 ensaladas" → { action: "remove", items: [{ name: "ensalada", quantity: 2 }] }
-    - "Eliminamelo" → { action: "remove", items: [{ name: "ello", quantity: 1 }] }
-    - "No quiero eso" → { action: "remove", items: [{ name: "eso", quantity: 1 }] }
+    - "Quitame la pizza" → { action: "remove", item: { name: "pizza", quantity: 1 } }
+    - "Sacame 2 ensaladas" → { action: "remove", item: { name: "ensalada", quantity: 2 } }
+    - "Eliminamelo" → { action: "remove", item: { name: "ello", quantity: 1 } }
+    - "No quiero eso" → { action: "remove", item: { name: "eso", quantity: 1 } }
 
     ### 🔄 MODIFICAR (action: "update")
     **Frases típicas:**
-    - "Cambiame a 3 pizzas en lugar de 2" → { action: "update", items: [{ name: "pizza", quantity: 3 }] }
-    - "Mejor dame 4 cervezas" → { action: "update", items: [{ name: "cerveza", quantity: 4 }] }
-    - "Ahora quiero 5" (refiriéndose a algo previo) → { action: "update", items: [{ name: "anterior", quantity: 5 }] }
+    - "Cambiame a 3 pizzas en lugar de 2" → { action: "update", item: { name: "pizza", quantity: 3 } }
+    - "Mejor dame 4 cervezas" → { action: "update", item: { name: "cerveza", quantity: 4 } }
+    - "Ahora quiero 5" → { action: "update", item: { name: "anterior", quantity: 5 } }
 
     ### 👁️ VER (action: "view")
     **Frases típicas:**
-    - "Mostrame mi ${vocab.orderWord}" → { action: "view", items: [] }
-    - "¿Qué llevo en el carrito?" → { action: "view", items: [] }
-    - "Ver carrito" → { action: "view", items: [] }
-    - "¿Cuánto llevo?" → { action: "view", items: [] }
+    - "Mostrame mi ${vocab.orderWord}" → { action: "view" }
+    - "¿Qué llevo en el carrito?" → { action: "view" }
+    - "Ver carrito" → { action: "view" }
 
     ### ✅ CONFIRMAR (action: "confirm")
     **Frases típicas:**
-    - "Confirmo" → { action: "confirm", items: [] }
-    - "Listo, eso es todo" → { action: "confirm", items: [] }
-    - "Finalizar ${vocab.orderWord}" → { action: "confirm", items: [] }
-    - "Sí, confirmo mi ${vocab.orderWord}" → { action: "confirm", items: [] }
+    - "Confirmo" → { action: "confirm" }
+    - "Listo, eso es todo" → { action: "confirm" }
+    - "Finalizar ${vocab.orderWord}" → { action: "confirm" }
 
     ## REGLAS DE ORO
 
@@ -87,7 +85,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     Si el usuario usa pronombres ("eso", "esto", "aquello", "ello"):
     - Usá manage_cart con el nombre literal "eso"
     - El sistema buscará en el contexto previo qué producto se mencionó antes
-    - Ejemplo: Usuario ve "Pizza Margherita" → dice "agregame eso" → manage_cart("add", [{ name: "eso", quantity: 1 }])
+    - Ejemplo: Usuario ve "Pizza Margherita" → dice "agregame eso" → manage_cart("add", { name: "eso", quantity: 1 })
 
     ## CUANDO HAY AMBIGÜEDAD
 
@@ -98,22 +96,22 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     ## EJEMPLOS COMPLETOS
 
     Usuario: "Agregame 2 pizzas margherita"
-    → manage_cart("add", [{ name: "pizza margherita", quantity: 2 }])
+    → manage_cart("add", { name: "pizza margherita", quantity: 2 })
 
     Usuario: "Quitame una ensalada"
-    → manage_cart("remove", [{ name: "ensalada", quantity: 1 }])
+    → manage_cart("remove", { name: "ensalada", quantity: 1 })
 
     Usuario: "Mostrame qué llevo"
-    → manage_cart("view", [])
+    → manage_cart("view")
 
     Usuario: "Confirmo mi pedido"
-    → manage_cart("confirm", [])
+    → manage_cart("confirm")
 
     Usuario: "Agregame una pasta carbonara sin cebolla"
-    → manage_cart("add", [{ name: "pasta carbonara", quantity: 1, observations: "sin cebolla" }])
+    → manage_cart("add", { name: "pasta carbonara", quantity: 1, notes: "sin cebolla" })
 
     Usuario: "Cambiame a 4 pizzas en vez de 2"
-    → manage_cart("update", [{ name: "pizza", quantity: 4 }])
+    → manage_cart("update", { name: "pizza", quantity: 4 })
 
     ## ESTILO DE ESCRITURA
 
