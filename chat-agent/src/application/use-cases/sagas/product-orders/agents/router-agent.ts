@@ -91,6 +91,8 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
 
     4. **Default:** Si hay duda → ask_clarification
 
+    5. **Evitar loops:** Si YA hubo clarificación y el usuario sigue ambiguo → interpreta a favor de search_agent (primero explora, luego agrega)
+
     ## EJEMPLOS
 
     "Quiero ver el ${vocab.menuWord}" → search_agent
@@ -108,6 +110,7 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     Usuario: "Ver" → search_agent
     Usuario: "Agregar" → cart_agent
     Usuario: "No sé, no estoy seguro" → ask_clarification
+    Usuario: "Ambos" / "Cualquiera" → search_agent (primero explora)
 
     ## OUTPUT
 
@@ -164,8 +167,10 @@ export const clarifierAgent = async (
 
     1. **SÉ BREVE**: Máximo 1-2 oraciones
     2. **OFRECE LAS 2 OPCIONES**: ¿Quiere ver ${vocab.productPlural}? ¿O gestionar su ${vocab.orderWord}?
-    3. **NO ASUMAS**: No asumas que quiere buscar o agregar
-    4. **USA EL CONTEXTO**: Si ya vio ${vocab.productPlural}, pregunta si quiere agregar al ${vocab.orderWord}
+    3. **USA PALABRAS CLAVE**: Usa "ver", "ver el menú", "agregar", "gestionar" (el router las reconoce)
+    4. **NO ASUMAS**: No asumas que quiere buscar o agregar
+    5. **USA EL CONTEXTO**: Si ya vio ${vocab.productPlural}, pregunta si quiere agregar al ${vocab.orderWord}
+    6. **EVITA AMBIGÜEDAD**: No preguntes "¿quieres hacer algo?" (demasiado vago)
 
     ## EJEMPLOS
 
