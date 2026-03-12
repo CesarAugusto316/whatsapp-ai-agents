@@ -237,18 +237,21 @@ async function processToolCalls(
 
   return Promise.all(
     toolCalls.map(async (toolCall) => {
+      //
       const chat = {
         role: "tool",
         content: "",
         tool_call_id: toolCall.id!,
         name: toolCall.function.name!,
       } satisfies ChatMessage;
+
       const rawObj =
         typeof JSON.parse(toolCall.function.arguments) === "string"
           ? JSON.parse(JSON.parse(toolCall.function.arguments))
           : JSON.parse(toolCall.function.arguments);
 
       const { success, data, error } = orderArgSchema.safeParse(rawObj);
+
       if (!success) {
         return {
           success: false,
@@ -404,7 +407,7 @@ async function processToolCalls(
                 chatMsg: {
                   ...chat,
                   content: JSON.stringify({
-                    error: "No customer does not exist",
+                    error: "Customer does not exist",
                   }),
                 },
               };
@@ -420,7 +423,7 @@ async function processToolCalls(
                   observations: p.notes,
                 })),
               },
-              customer: cartPayload.customerId!,
+              customer: customerId,
             });
 
             return {

@@ -172,7 +172,10 @@ export async function executeTool(
       await productOrderStateManager.addSearchedProducts(orderKey!, points);
 
       const products = points?.map(({ payload }) => ({
-        ...payload,
+        name: payload?.name,
+        description: payload?.description,
+        price: payload?.price,
+        estimatedProcessingTime: payload?.estimatedProcessingTime,
         isAvailable: payload?.enabled,
       }));
 

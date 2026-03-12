@@ -39,9 +39,9 @@ const validateRouter = (raw: string): RouterOutput => {
   // Fallback defensivo: si no es "cart_agent" o "ask_clarification", default a "search_agent"
   if (!result.success) {
     console.warn(
-      `Router validation failed for: "${raw}" → defaulting to "search_agent"`,
+      `Router validation failed for: "${raw}" → defaulting to "ask_clarification"`,
     );
-    return "search_agent";
+    return "ask_clarification";
   }
 
   return result.data;
@@ -64,7 +64,7 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     ### cart_agent
     **Cuándo:** El usuario quiere gestionar su ${vocab.orderWord} (agregar, quitar, modificar, ver, confirmar),
       dar su nombre, o menciona cantidades de ${vocab.productPlural} (ej: "2 ${productExample1}s", "una ${productExample2}").
-    **Frases:** "agregame", "quitame", "cambiame", "mostrame mi ${vocab.orderWord}", "confirmo", "mi nombre es...", "2 ${productExample1}s"
+    **Frases:** "agregame", "quitame", "cambiame", "mostrame mi ${vocab.orderWord}", "sí, confirmado", "mi nombre es...", "2 ${productExample1}s"
 
     ### ask_clarification
     **Cuándo:** Mensaje corto/vago sin contexto. Producto suelto sin verbo de acción.
