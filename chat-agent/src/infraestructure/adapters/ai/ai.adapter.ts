@@ -90,10 +90,10 @@ class AiAdapter implements IAiAdapter {
     if (envName === "development") {
       return {
         url: `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
-        primaryModel: "@cf/zai-org/glm-4.7-flash",
+        primaryModel: "@cf/zai-org/glm-4.7-flash", // 30b
         // primaryModel: "@cf/ibm-granite/granite-4.0-h-micro",
         // auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
-        auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
+        auxModel: "@cf/ibm-granite/granite-4.0-h-micro", // 3b
         embedding: "@cf/qwen/qwen3-embedding-0.6b",
         headers: {
           Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,

@@ -5,6 +5,7 @@ import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { DomainCtx } from "@/domain/booking";
 import { formatSagaOutput } from "@/application/patterns";
 import { BookingSagaResult } from "../../booking/booking-saga";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
 
 const routerSchema = z.enum([
   "search_agent",
@@ -78,7 +79,10 @@ function createRouterAgentPrompt2(domain: SpecializedDomain): string {
 `.trim();
 }
 
-function createRouterAgentPrompt(domain: SpecializedDomain): string {
+function createRouterAgentPrompt(
+  domain: SpecializedDomain,
+  lastAgentRouted?: string,
+): string {
   const vocab = DOMAIN_VOCABULARY[domain];
   const productExample1 = vocab.productExamples[0];
   const productExample2 = vocab.productExamples[1] || productExample1;
@@ -95,13 +99,15 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
     ### cart_agent
     **Cuándo:** El usuario quiere gestionar su ${vocab.orderWord} (agregar, quitar, modificar, ver, confirmar),
       dar su nombre, o menciona cantidades de ${vocab.productPlural} (ej: "2 ${productExample1}s", "una ${productExample2}").
-    **Frases:** "agregame", "quitame", "cambiame", "mostrame mi ${vocab.orderWord}", "sí, confirmado", "mi nombre es...", "2 ${productExample1}s"
+    **Frases:** "agrega 1 ...", "quiero 2 ...", "cambia este plato por ...", "mostrame mi ${vocab.orderWord} por ...", "sí, confirmado", "mi nombre es...", "2 ${productExample1}s"
 
     ### ask_clarification
     **Cuándo:** Mensaje corto/vago sin contexto. Producto suelto sin verbo de acción.
     **Frases:** "${productExample1}" (solo), "${productExample2}s" (sin contexto)
 
     ## REGLAS
+
+    lastAgentRouted: ${lastAgentRouted}
 
     1. **Patrones de acción:**
       - "agrega", "pon", "dame", "quita", "saca" → cart_agent
@@ -116,7 +122,9 @@ function createRouterAgentPrompt(domain: SpecializedDomain): string {
 
     3. **Intención clara:**
       - "Quiero una ${productExample1}" → search_agent (primero busca)
-      - "Agregame una ${productExample1}" → cart_agent
+      - "Agrega una ${productExample1}" → cart_agent
+      - "quiero 1 ${productExample2}" → cart_agent
+      - "necesito 1 ${productExample2}" → cart_agent
       - "2 ${productExample1}s" → cart_agent
       - "${productExample1}" (solo) → ask_clarification
 
@@ -156,7 +164,8 @@ export const routerAgent = async (
   //
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
-  const systemPrompt = createRouterAgentPrompt(domain);
+  const lastAgentRouted = await cacheAdapter.getStr("routerAgent");
+  const systemPrompt = createRouterAgentPrompt(domain, lastAgentRouted);
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
@@ -167,7 +176,7 @@ export const routerAgent = async (
   const response = await aiAdapter.generateText({
     messages,
     temperature: 0,
-    useAuxModel: true,
+    max_tokens: 2_048,
     response_format: {
       type: "json_schema",
       json_schema: {
@@ -177,7 +186,10 @@ export const routerAgent = async (
     },
   });
 
-  return validateRouter(response);
+  const result = validateRouter(response);
+  await cacheAdapter.save("routerAgent", result);
+
+  return result;
 };
 
 export const clarifierAgent = async (

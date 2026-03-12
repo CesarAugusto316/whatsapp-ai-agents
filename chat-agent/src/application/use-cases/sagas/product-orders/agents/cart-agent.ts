@@ -478,7 +478,7 @@ export const cartManagerAgent = async (
   const { toolCalls, content } = await aiAdapter.generateTextWithTools({
     messages,
     tools: PRODUCT_ORDER_TOOLS,
-    // response_format: { type: "json_schema" },
+    tool_choice: "required",
   });
 
   if (!toolCalls || toolCalls.length === 0) {
@@ -490,6 +490,12 @@ export const cartManagerAgent = async (
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx);
+  await chatHistoryAdapter.push(
+    ctx.chatKey,
+    userMessage,
+    undefined,
+    toolResults.at(-1)?.chatMsg,
+  );
   messages.push(...toolResults.map((r) => r.chatMsg));
 
   const hasSomeError = toolResults.find((r) => !r.success);
@@ -507,6 +513,8 @@ export const cartManagerAgent = async (
         hasSomeError.chatMsg,
       ],
     });
+
+    await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
     return formatSagaOutput(finalResponse, "Error calling tools", {
       messages,
     });

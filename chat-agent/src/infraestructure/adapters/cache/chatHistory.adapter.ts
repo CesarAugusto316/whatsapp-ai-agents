@@ -4,9 +4,11 @@ import { env } from "bun";
 import { logger } from "@/infraestructure/logging";
 
 type StoredMessage = {
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant" | "system" | "tool";
   content: string;
   timestamp: number;
+  name?: string;
+  tool_call_id?: string;
 };
 
 // COMMANDS REDDIS
@@ -35,7 +37,9 @@ class ChatHistory {
         return {
           role: msg.role,
           content: msg.content,
-        };
+          name: msg.name,
+          tool_call_id: msg.tool_call_id,
+        } satisfies ChatMessage;
       })
       .filter((msg) => msg.role !== "system"); // ← CRITICAL: Never persist system prompts
 
@@ -63,8 +67,17 @@ class ChatHistory {
   async push(
     chatKey: string,
     customerMessage: string,
-    assistantResponse: string,
+    assistantResponse?: string,
+    toolCall?: ChatMessage,
   ) {
+    const lastMessage = assistantResponse
+      ? JSON.stringify({
+          role: "assistant",
+          content: assistantResponse,
+          timestamp: Date.now(),
+        } satisfies StoredMessage)
+      : JSON.stringify({ ...toolCall, timestamp: Date.now() });
+
     // Validate: Never store system prompts
     await redisClient.rpush(
       chatKey,
@@ -73,11 +86,7 @@ class ChatHistory {
         content: customerMessage,
         timestamp: Date.now(),
       } satisfies StoredMessage),
-      JSON.stringify({
-        role: "assistant",
-        content: assistantResponse,
-        timestamp: Date.now(),
-      } satisfies StoredMessage),
+      lastMessage,
     );
     await redisClient.ltrim(chatKey, -this.MAX_MESSAGES, -1);
     await redisClient.expire(chatKey, this.EXPIRATION_TIME);
