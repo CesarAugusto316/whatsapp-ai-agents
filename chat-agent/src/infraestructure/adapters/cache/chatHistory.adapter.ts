@@ -67,7 +67,7 @@ class ChatHistory {
   async push(
     chatKey: string,
     customerMessage: string,
-    assistantResponse?: string,
+    assistantResponse: string,
     toolCall?: ChatMessage,
   ) {
     const lastMessage = assistantResponse

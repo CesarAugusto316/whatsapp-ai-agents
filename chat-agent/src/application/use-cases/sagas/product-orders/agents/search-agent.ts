@@ -315,12 +315,6 @@ export async function searchAgent(
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx);
-  await chatHistoryAdapter.push(
-    ctx.chatKey,
-    userMessage,
-    undefined,
-    toolResults.at(-1)?.chatMsg,
-  );
   const files = [
     ...toolResults
       .filter((r) => r.files?.length)

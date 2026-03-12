@@ -60,37 +60,6 @@ const validateRouter = (raw: string): RouterOutput => {
   return result.data;
 };
 
-function createRouterAgentPrompt2(domain: SpecializedDomain): string {
-  const vocab = DOMAIN_VOCABULARY[domain];
-  const product1 = vocab.productExamples[0];
-  const product2 = vocab.productExamples[1] || product1;
-
-  return `
-    Eres un clasificador de intenciones. Tu única tarea es mapear el input del usuario a un agente.
-
-    ## INPUT QUE RECIBES
-    - user_message: "${"{{user_message}}"}"
-    - last_action: "${"{{last_action}}"}"  // ej: "menu_displayed", "clarification_asked", null
-    - has_cart_items: ${"{{has_cart_items}}"}  // boolean
-
-    ## AGENTES (Elige UNO)
-    1. search_agent → Usuario quiere explorar, ver ${vocab.menuWord}, buscar ${vocab.productPlural}.
-    2. cart_agent → Usuario quiere agregar, quitar, modificar, confirmar ${vocab.orderWord}, o dar datos personales.
-    3. ask_clarification → Mensaje ambiguo, producto sin verbo, o información insuficiente.
-
-    ## REGLAS (Prioridad descendente)
-    1. Si user_message contiene verbo de acción ("agrega", "quita", "dame", "compro") → cart_agent
-    2. Si user_message contiene verbo de exploración ("ver", "buscar", "qué hay") → search_agent
-    3. Si user_message es solo un producto ("${product1}") Y last_action != "menu_displayed" → ask_clarification
-    4. Si user_message es solo un producto ("${product1}") Y last_action == "menu_displayed" → cart_agent
-    5. Default → ask_clarification
-
-    ## OUTPUT (STRICT)
-    Responde SOLO con este JSON, sin texto antes ni después:
-    {"agent": "search_agent" | "cart_agent" | "ask_clarification"}
-`.trim();
-}
-
 function createRouterAgentPrompt(
   domain: SpecializedDomain,
   historyContext?: string,
@@ -129,14 +98,15 @@ function createRouterAgentPrompt(
       - Producto solo (sin verbo) → ask_clarification
 
     2. **Analiza el historial:**
-      - Si el último routing fue "search_agent" y dice "esa", "esa quiero", "la quiero" → cart_agent
-      - Si el último routing fue "ask_clarification" y responde "ver" / "explorar" → search_agent
-      - Si el último routing fue "ask_clarification" y responde "agregar" / "comprar" → cart_agent
-      - Si es el primer mensaje (historial vacío) y dice "${productExample1}" → ask_clarification
+      - Si "Último routing" = "search_agent" y dice "esa", "esa quiero", "la quiero" → cart_agent
+      - Si "Último routing" = "ask_clarification" y responde "ver" / "explorar" → search_agent
+      - Si "Último routing" = "ask_clarification" y responde "agregar" / "comprar" → cart_agent
+      - Si historial vacío y dice "${productExample1}" → ask_clarification
 
-    3. **Evitar loops de clarificación:**
-      - Si ves 2+ "ask_clarification" consecutivos en el historial → elige search_agent (mejor mostrar ${vocab.menuWord} que preguntar de nuevo)
-      - Máximo 1 clarificación consecutiva
+    3. **Evitar loops (CRÍTICO):**
+      - Si "Clarificaciones consecutivas" >= 2 → elige search_agent (rompe el loop)
+      - Si "Clarificaciones consecutivas" = 1 y usuario sigue ambiguo → search_agent
+      - Máximo 1 clarificación por flujo
 
     4. **Patrones comunes de flujo:**
       - search_agent → cart_agent (flujo normal: explora luego compra)
@@ -149,9 +119,9 @@ function createRouterAgentPrompt(
       - "quiero 1 ${productExample2}" → cart_agent (implícito: agregar)
       - "necesito 1 ${productExample2}" → cart_agent
       - "2 ${productExample1}s" → cart_agent
-      - "${productExample1}" (solo) → ask_clarification (o search_agent si último routing = search_agent)
+      - "${productExample1}" (solo) → ask_clarification (o search_agent si "Último routing" = search_agent)
 
-    6. **Default:** Si hay duda → ask_clarification (excepto si hay 2+ clarificaciones consecutivas → search_agent)
+    6. **Default:** Si hay duda → ask_clarification (EXCEPTO si "Clarificaciones consecutivas" >= 2 → search_agent)
 
     ## EJEMPLOS
 
@@ -262,6 +232,21 @@ const getFormattedHistory = async (): Promise<string> => {
     return "null (primer mensaje)";
   }
 
+  // Calcular métricas para ayudar al LLM
+  const consecutiveClarifications = history.reduce((acc, entry, idx) => {
+    if (entry.agent === "ask_clarification") {
+      const prev = history[idx - 1];
+      if (!prev || prev.agent === "ask_clarification") {
+        return acc + 1;
+      }
+    }
+    return acc;
+  }, 0);
+
+  const lastAgent = history[0].agent;
+  const lastMessage = history[0].userMessage;
+  const timeAgo = Math.floor((Date.now() - history[0].timestamp) / 1000);
+
   // Mostrar últimos 3 routings
   const recentHistory = history
     .slice(0, 3)
@@ -272,7 +257,10 @@ const getFormattedHistory = async (): Promise<string> => {
     .join("\n    ");
 
   return `
-    Historial reciente (últimos ${history.length} routings):
+    Último routing: ${lastAgent} (${timeAgo}s atrás) ← "${lastMessage}"
+    Clarificaciones consecutivas: ${consecutiveClarifications}
+
+    Historial reciente:
     ${recentHistory}
   `.trim();
 };

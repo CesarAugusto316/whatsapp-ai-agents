@@ -494,12 +494,6 @@ export const cartManagerAgent = async (
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx);
-  await chatHistoryAdapter.push(
-    ctx.chatKey,
-    userMessage,
-    undefined,
-    toolResults.at(-1)?.chatMsg,
-  );
   messages.push(...toolResults.map((r) => r.chatMsg));
 
   const hasSomeError = toolResults.find((r) => !r.success);
