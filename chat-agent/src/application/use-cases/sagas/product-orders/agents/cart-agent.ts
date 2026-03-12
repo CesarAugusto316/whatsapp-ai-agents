@@ -14,6 +14,7 @@ import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { formatSagaOutput } from "@/application/patterns";
 import { DomainCtx } from "@/domain/booking";
 import { productOrderStateManager } from "@/application/services/state-managers";
+import { resetRouterHistory } from "./router-agent";
 import {
   customerNameSchema,
   OrderAction,
@@ -425,6 +426,9 @@ async function processToolCalls(
               },
               customer: customerId,
             });
+
+            // Resetear el historial de routing después de confirmar el pedido
+            await resetRouterHistory();
 
             return {
               success: true,

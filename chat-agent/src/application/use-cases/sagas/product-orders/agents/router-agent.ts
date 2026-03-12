@@ -107,7 +107,7 @@ function createRouterAgentPrompt(
 
     ## REGLAS
 
-    lastAgentRouted: ${lastAgentRouted}
+    lastAgentRouted: ${lastAgentRouted || "null (primer mensaje)"}
 
     1. **Patrones de acción:**
       - "agrega", "pon", "dame", "quita", "saca" → cart_agent
@@ -115,22 +115,30 @@ function createRouterAgentPrompt(
       - "mi nombre es", "soy" → cart_agent
       - Producto solo (sin verbo) → ask_clarification
 
-    2. **Historial importa:**
-      - Si viene de ver ${vocab.productPlural} y dice "quiero esa" → cart_agent
-      - Si es el primer mensaje y dice "${productExample1}" → ask_clarification
-      - **Si hubo clarificación y responde "ver" → search_agent, "agregar" → cart_agent**
+    2. **Historial importa (lastAgentRouted):**
+      - Si lastAgentRouted = "search_agent" y dice "esa", "esa quiero", "la quiero" → cart_agent
+      - Si lastAgentRouted = "ask_clarification" y responde "ver" / "explorar" → search_agent
+      - Si lastAgentRouted = "ask_clarification" y responde "agregar" / "comprar" → cart_agent
+      - Si es el primer mensaje (lastAgentRouted = null) y dice "${productExample1}" → ask_clarification
 
-    3. **Intención clara:**
+    3. **Evitar loops de clarificación:**
+      - Si lastAgentRouted = "ask_clarification" y el usuario sigue ambiguo → search_agent (mejor mostrar ${vocab.menuWord} que preguntar de nuevo)
+      - Máximo 1 clarificación consecutiva
+
+    4. **Patrones comunes de flujo:**
+      - search_agent → cart_agent (flujo normal: explora luego compra)
+      - ask_clarification → search_agent → cart_agent (flujo con clarificación)
+      - cart_agent → cart_agent (modificaciones sucesivas)
+
+    5. **Intención clara:**
       - "Quiero una ${productExample1}" → search_agent (primero busca)
       - "Agrega una ${productExample1}" → cart_agent
-      - "quiero 1 ${productExample2}" → cart_agent
+      - "quiero 1 ${productExample2}" → cart_agent (implícito: agregar)
       - "necesito 1 ${productExample2}" → cart_agent
       - "2 ${productExample1}s" → cart_agent
-      - "${productExample1}" (solo) → ask_clarification
+      - "${productExample1}" (solo) → ask_clarification (o search_agent si lastAgentRouted = search_agent)
 
-    4. **Default:** Si hay duda → ask_clarification
-
-    5. **Evitar loops:** Si YA hubo clarificación y el usuario sigue ambiguo → interpreta a favor de search_agent (primero explora, luego agrega)
+    6. **Default:** Si hay duda → ask_clarification (excepto si lastAgentRouted = ask_clarification → search_agent)
 
     ## EJEMPLOS
 
@@ -143,12 +151,32 @@ function createRouterAgentPrompt(
     "${productExample1}" → ask_clarification
     "Mi nombre es César" → cart_agent
 
+    ## EJEMPLOS CON lastAgentRouted
+
+    lastAgentRouted = "search_agent":
+    - "esa quiero" → cart_agent
+    - "la quiero agregar" → cart_agent
+    - "¿cuál es más barata?" → search_agent (sigue explorando)
+    - "${productExample1}" → cart_agent (asume que quiere la que vio)
+
+    lastAgentRouted = "ask_clarification":
+    - "ver" → search_agent
+    - "explorar" → search_agent
+    - "agregar" → cart_agent
+    - "comprar" → cart_agent
+    - "no sé" → search_agent (evitar segundo loop de clarificación)
+
+    lastAgentRouted = "cart_agent":
+    - "también quiero ${productExample2}" → cart_agent
+    - "mejor muestra otras" → search_agent
+    - "ok listo" → cart_agent (confirmar)
+
     ## CLARIFICACIÓN
 
     Asistente: "¿Quieres ver ${vocab.productPlural} o agregar a tu ${vocab.orderWord}?"
     Usuario: "Ver" → search_agent
     Usuario: "Agregar" → cart_agent
-    Usuario: "No sé, no estoy seguro" → ask_clarification
+    Usuario: "No sé, no estoy seguro" → search_agent (evitar loops)
     Usuario: "Ambos" / "Cualquiera" → search_agent (primero explora)
 
     ## OUTPUT
@@ -190,6 +218,14 @@ export const routerAgent = async (
   await cacheAdapter.save("routerAgent", result);
 
   return result;
+};
+
+/**
+ * Resetea el historial de routing cuando el flujo termina
+ * (ej: después de confirmar un pedido, cancelar, o sesión nueva)
+ */
+export const resetRouterHistory = async (): Promise<void> => {
+  await cacheAdapter.del("routerAgent");
 };
 
 export const clarifierAgent = async (
