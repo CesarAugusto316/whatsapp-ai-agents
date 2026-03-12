@@ -47,6 +47,37 @@ const validateRouter = (raw: string): RouterOutput => {
   return result.data;
 };
 
+function createRouterAgentPrompt2(domain: SpecializedDomain): string {
+  const vocab = DOMAIN_VOCABULARY[domain];
+  const product1 = vocab.productExamples[0];
+  const product2 = vocab.productExamples[1] || product1;
+
+  return `
+    Eres un clasificador de intenciones. Tu única tarea es mapear el input del usuario a un agente.
+
+    ## INPUT QUE RECIBES
+    - user_message: "${"{{user_message}}"}"
+    - last_action: "${"{{last_action}}"}"  // ej: "menu_displayed", "clarification_asked", null
+    - has_cart_items: ${"{{has_cart_items}}"}  // boolean
+
+    ## AGENTES (Elige UNO)
+    1. search_agent → Usuario quiere explorar, ver ${vocab.menuWord}, buscar ${vocab.productPlural}.
+    2. cart_agent → Usuario quiere agregar, quitar, modificar, confirmar ${vocab.orderWord}, o dar datos personales.
+    3. ask_clarification → Mensaje ambiguo, producto sin verbo, o información insuficiente.
+
+    ## REGLAS (Prioridad descendente)
+    1. Si user_message contiene verbo de acción ("agrega", "quita", "dame", "compro") → cart_agent
+    2. Si user_message contiene verbo de exploración ("ver", "buscar", "qué hay") → search_agent
+    3. Si user_message es solo un producto ("${product1}") Y last_action != "menu_displayed" → ask_clarification
+    4. Si user_message es solo un producto ("${product1}") Y last_action == "menu_displayed" → cart_agent
+    5. Default → ask_clarification
+
+    ## OUTPUT (STRICT)
+    Responde SOLO con este JSON, sin texto antes ni después:
+    {"agent": "search_agent" | "cart_agent" | "ask_clarification"}
+`.trim();
+}
+
 function createRouterAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
   const productExample1 = vocab.productExamples[0];
@@ -135,7 +166,15 @@ export const routerAgent = async (
 
   const response = await aiAdapter.generateText({
     messages,
+    temperature: 0,
     useAuxModel: true,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        type: "string",
+        enum: ["search_agent", "cart_agent", "ask_clarification"],
+      },
+    },
   });
 
   return validateRouter(response);
@@ -199,7 +238,8 @@ export const clarifierAgent = async (
   const response = await aiAdapter.generateText({
     messages,
     useAuxModel: true,
+    temperature: 0,
   });
 
-  return formatSagaOutput(response, "ask_clarification", { systemPrompt });
+  return formatSagaOutput(response, "clarifier agent", { systemPrompt });
 };

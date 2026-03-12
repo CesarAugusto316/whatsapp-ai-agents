@@ -476,10 +476,9 @@ export const cartManagerAgent = async (
   ];
 
   const { toolCalls, content } = await aiAdapter.generateTextWithTools({
-    useAuxModel: true,
     messages,
     tools: PRODUCT_ORDER_TOOLS,
-    response_format: { type: "json_schema" },
+    // response_format: { type: "json_schema" },
   });
 
   if (!toolCalls || toolCalls.length === 0) {
@@ -497,6 +496,7 @@ export const cartManagerAgent = async (
 
   if (hasSomeError) {
     const finalResponse = await aiAdapter.generateText({
+      max_tokens: 2_048,
       messages: [
         {
           role: "system",
@@ -513,12 +513,13 @@ export const cartManagerAgent = async (
   }
 
   const finalResponse = await aiAdapter.generateText({
+    max_tokens: 2_048,
     messages,
   });
 
   await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
 
-  return formatSagaOutput(finalResponse, "tools called", {
+  return formatSagaOutput(finalResponse, "cart manager agent", {
     toolCalls,
     systemPrompt,
   });

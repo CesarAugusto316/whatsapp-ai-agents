@@ -96,6 +96,7 @@ export interface MessagesBasedRequest {
   }>;
   enable_thinking?: boolean;
   tools?: ToolDefinition[];
+  tool_choice?: "auto" | "required" | "none";
   response_format?: ResponseFormat;
   raw?: boolean;
   stream?: boolean;

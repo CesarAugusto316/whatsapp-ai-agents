@@ -90,7 +90,7 @@ class AiAdapter implements IAiAdapter {
     if (envName === "development") {
       return {
         url: `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
-        primaryModel: "@cf/qwen/qwen3-30b-a3b-fp8",
+        primaryModel: "@cf/zai-org/glm-4.7-flash",
         // primaryModel: "@cf/ibm-granite/granite-4.0-h-micro",
         // auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
         auxModel: "@cf/ibm-granite/granite-4.0-h-micro",
@@ -151,7 +151,7 @@ class AiAdapter implements IAiAdapter {
     // ============================================
     return {
       url: `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
-      primaryModel: "@cf/qwen/qwen3-30b-a3b-fp8", // 30b
+      primaryModel: "@cf/zai-org/glm-4.7-flash", // 30b
       auxModel: "@cf/ibm-granite/granite-4.0-h-micro", // 3b
       embedding: "@cf/qwen/qwen3-embedding-0.6b", // 0.6b
       headers: {
@@ -168,7 +168,7 @@ class AiAdapter implements IAiAdapter {
      * must be set to 0 in some cases
      * @link https://www.ibm.com/granite/docs/models/granite
      */
-    temperature = 0.5,
+    temperature = 0.4,
     response_format,
     /**
      * Max tokens for response generation.
@@ -200,7 +200,12 @@ class AiAdapter implements IAiAdapter {
       const result = (await response.json()) as ChatCompletionResponse;
       const content = result.choices?.[0]?.message?.content?.trim();
       if (!content) {
-        throw new Error("No se recibió respuesta de la AI");
+        if (result.choices?.[0].finish_reason === "length") {
+          throw new Error(
+            "Respuesta incompleta: se excedió el límite de tokens",
+          );
+        }
+        return "No se recibió respuesta de la AI";
       }
       return content;
     }, chatConfig);
@@ -225,7 +230,11 @@ class AiAdapter implements IAiAdapter {
           messages: request.messages,
           tools: request.tools,
           temperature: request.temperature ?? 0.3,
-          max_tokens: request.max_tokens ?? 512,
+          // Function calling con modelos reasoner necesita más tokens para:
+          // 1. Razonamiento interno (~500-1500 tokens)
+          // 2. Justificación de la decisión (~200-500 tokens)
+          // 3. Tool call structure (~100-300 tokens)
+          max_tokens: request.max_tokens ?? 4096,
         }),
       });
       if (!httpResp.ok) {

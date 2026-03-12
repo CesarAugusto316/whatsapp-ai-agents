@@ -4,6 +4,8 @@ import { aiAdapter } from "@/infraestructure/adapters/ai";
 export async function humanizerAgent(message: string, temp = 0) {
   const content = await aiAdapter.generateText({
     messages: [{ role: "system", content: humanizerPrompt(message) }],
+    useAuxModel: true,
+    temperature: temp,
   });
   if (!content) {
     throw new Error("No se recibió respuesta del humanizer agent");

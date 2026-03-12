@@ -301,10 +301,9 @@ export async function searchAgent(
   ];
 
   const { toolCalls, content } = await aiAdapter.generateTextWithTools({
-    useAuxModel: true,
     messages,
     tools: PRODUCT_ORDER_TOOLS,
-    response_format: { type: "json_schema" },
+    // response_format: { type: "json_schema" },
   });
 
   if (!toolCalls || toolCalls.length === 0) {
@@ -326,6 +325,7 @@ export async function searchAgent(
   messages.push(...toolResults.map((r) => r.chatMsg));
 
   const finalResponse = await aiAdapter.generateText({
+    max_tokens: 2_048,
     messages,
   });
 
@@ -333,7 +333,7 @@ export async function searchAgent(
 
   return formatSagaOutput(
     finalResponse,
-    "tools called",
+    "search agent",
     {
       toolCalls,
       systemPrompt,
