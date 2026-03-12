@@ -16,6 +16,18 @@ const routerSchema = z.enum([
 type RouterOutput = z.infer<typeof routerSchema>;
 
 /**
+ * Historial de routing con ventana deslizante (últimos 5 eventos)
+ */
+type RoutingHistoryEntry = {
+  agent: RouterOutput;
+  timestamp: number;
+  userMessage: string;
+};
+
+const ROUTING_HISTORY_KEY = "routerAgent:history";
+const MAX_HISTORY_LENGTH = 5;
+
+/**
  * Normaliza y valida el output del router
  *
  * El LLM puede retornar: "search", "cart", "search_agent", "cart_agent",
@@ -81,7 +93,7 @@ function createRouterAgentPrompt2(domain: SpecializedDomain): string {
 
 function createRouterAgentPrompt(
   domain: SpecializedDomain,
-  lastAgentRouted?: string,
+  historyContext?: string,
 ): string {
   const vocab = DOMAIN_VOCABULARY[domain];
   const productExample1 = vocab.productExamples[0];
@@ -107,7 +119,8 @@ function createRouterAgentPrompt(
 
     ## REGLAS
 
-    lastAgentRouted: ${lastAgentRouted || "null (primer mensaje)"}
+    Historial de routing:
+    ${historyContext || "null (primer mensaje)"}
 
     1. **Patrones de acción:**
       - "agrega", "pon", "dame", "quita", "saca" → cart_agent
@@ -115,14 +128,14 @@ function createRouterAgentPrompt(
       - "mi nombre es", "soy" → cart_agent
       - Producto solo (sin verbo) → ask_clarification
 
-    2. **Historial importa (lastAgentRouted):**
-      - Si lastAgentRouted = "search_agent" y dice "esa", "esa quiero", "la quiero" → cart_agent
-      - Si lastAgentRouted = "ask_clarification" y responde "ver" / "explorar" → search_agent
-      - Si lastAgentRouted = "ask_clarification" y responde "agregar" / "comprar" → cart_agent
-      - Si es el primer mensaje (lastAgentRouted = null) y dice "${productExample1}" → ask_clarification
+    2. **Analiza el historial:**
+      - Si el último routing fue "search_agent" y dice "esa", "esa quiero", "la quiero" → cart_agent
+      - Si el último routing fue "ask_clarification" y responde "ver" / "explorar" → search_agent
+      - Si el último routing fue "ask_clarification" y responde "agregar" / "comprar" → cart_agent
+      - Si es el primer mensaje (historial vacío) y dice "${productExample1}" → ask_clarification
 
     3. **Evitar loops de clarificación:**
-      - Si lastAgentRouted = "ask_clarification" y el usuario sigue ambiguo → search_agent (mejor mostrar ${vocab.menuWord} que preguntar de nuevo)
+      - Si ves 2+ "ask_clarification" consecutivos en el historial → elige search_agent (mejor mostrar ${vocab.menuWord} que preguntar de nuevo)
       - Máximo 1 clarificación consecutiva
 
     4. **Patrones comunes de flujo:**
@@ -136,9 +149,9 @@ function createRouterAgentPrompt(
       - "quiero 1 ${productExample2}" → cart_agent (implícito: agregar)
       - "necesito 1 ${productExample2}" → cart_agent
       - "2 ${productExample1}s" → cart_agent
-      - "${productExample1}" (solo) → ask_clarification (o search_agent si lastAgentRouted = search_agent)
+      - "${productExample1}" (solo) → ask_clarification (o search_agent si último routing = search_agent)
 
-    6. **Default:** Si hay duda → ask_clarification (excepto si lastAgentRouted = ask_clarification → search_agent)
+    6. **Default:** Si hay duda → ask_clarification (excepto si hay 2+ clarificaciones consecutivas → search_agent)
 
     ## EJEMPLOS
 
@@ -189,11 +202,10 @@ export const routerAgent = async (
   ctx: DomainCtx,
   chatHistory: ChatMessage[],
 ): Promise<RouterOutput> => {
-  //
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
-  const lastAgentRouted = await cacheAdapter.getStr("routerAgent");
-  const systemPrompt = createRouterAgentPrompt(domain, lastAgentRouted);
+  const historyContext = await getFormattedHistory();
+  const systemPrompt = createRouterAgentPrompt(domain, historyContext);
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
@@ -215,9 +227,54 @@ export const routerAgent = async (
   });
 
   const result = validateRouter(response);
-  await cacheAdapter.save("routerAgent", result);
+
+  // Guardar en el historial con ventana deslizante
+  const history: RoutingHistoryEntry[] =
+    (await cacheAdapter.getObj(ROUTING_HISTORY_KEY)) || [];
+  const newEntry: RoutingHistoryEntry = {
+    agent: result,
+    timestamp: Date.now(),
+    userMessage: userMessage.substring(0, 100),
+  };
+  const updatedHistory = [newEntry, ...history].slice(0, MAX_HISTORY_LENGTH);
+  await cacheAdapter.save(ROUTING_HISTORY_KEY, updatedHistory);
 
   return result;
+};
+
+/**
+ * Obtiene el último agente ruteado (para backward compatibility)
+ */
+const getLastAgentRouted = async (): Promise<string | null> => {
+  const history: RoutingHistoryEntry[] =
+    (await cacheAdapter.getObj(ROUTING_HISTORY_KEY)) || [];
+  return history.length > 0 ? history[0].agent : null;
+};
+
+/**
+ * Obtiene el historial completo formateado para el prompt
+ */
+const getFormattedHistory = async (): Promise<string> => {
+  const history: RoutingHistoryEntry[] =
+    (await cacheAdapter.getObj(ROUTING_HISTORY_KEY)) || [];
+
+  if (history.length === 0) {
+    return "null (primer mensaje)";
+  }
+
+  // Mostrar últimos 3 routings
+  const recentHistory = history
+    .slice(0, 3)
+    .map((entry, idx) => {
+      const timeAgo = Math.floor((Date.now() - entry.timestamp) / 1000);
+      return `${idx + 1}. [${timeAgo}s atrás] ${entry.agent} ← "${entry.userMessage}"`;
+    })
+    .join("\n    ");
+
+  return `
+    Historial reciente (últimos ${history.length} routings):
+    ${recentHistory}
+  `.trim();
 };
 
 /**
@@ -225,7 +282,7 @@ export const routerAgent = async (
  * (ej: después de confirmar un pedido, cancelar, o sesión nueva)
  */
 export const resetRouterHistory = async (): Promise<void> => {
-  await cacheAdapter.del("routerAgent");
+  await cacheAdapter.delete(ROUTING_HISTORY_KEY);
 };
 
 export const clarifierAgent = async (
