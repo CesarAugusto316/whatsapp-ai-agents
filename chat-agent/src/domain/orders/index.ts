@@ -1,4 +1,4 @@
-export { ProductOrderState } from "./orders.types";
+export type { ProductOrderState } from "./orders.types";
 export {
   orderSchema,
   productItemSchema,
