@@ -98,14 +98,14 @@ function createRouterAgentPrompt(
       - Producto solo (sin verbo) → ask_clarification
 
     2. **Analiza el historial:**
-      - Si "Último routing" = "search_agent" y dice "esa", "esa quiero", "la quiero" → cart_agent
-      - Si "Último routing" = "ask_clarification" y responde "ver" / "explorar" → search_agent
-      - Si "Último routing" = "ask_clarification" y responde "agregar" / "comprar" → cart_agent
+      - Si "ÚltimoAgente" = "search_agent" y dice "esa", "esa quiero", "la quiero" → cart_agent
+      - Si "ÚltimoAgente" = "ask_clarification" y responde "ver" / "explorar" → search_agent
+      - Si "ÚltimoAgente" = "ask_clarification" y responde "agregar" / "comprar" → cart_agent
       - Si historial vacío y dice "${productExample1}" → ask_clarification
 
     3. **Evitar loops (CRÍTICO):**
-      - Si "Clarificaciones consecutivas" >= 2 → elige search_agent (rompe el loop)
-      - Si "Clarificaciones consecutivas" = 1 y usuario sigue ambiguo → search_agent
+      - Si "ClarificacionesConsecutivas" >= 2 → elige search_agent (rompe el loop)
+      - Si "ClarificacionesConsecutivas" = 1 y usuario sigue ambiguo → search_agent
       - Máximo 1 clarificación por flujo
 
     4. **Patrones comunes de flujo:**
@@ -119,9 +119,9 @@ function createRouterAgentPrompt(
       - "quiero 1 ${productExample2}" → cart_agent (implícito: agregar)
       - "necesito 1 ${productExample2}" → cart_agent (implícito: agregar)
       - "2 ${productExample1}s" → cart_agent
-      - "${productExample1}" (solo) → ask_clarification (o search_agent si "Último routing" = search_agent)
+      - "${productExample1}" (solo) → ask_clarification (o search_agent si "ÚltimoAgente" = search_agent)
 
-    6. **Default:** Si hay duda → ask_clarification (EXCEPTO si "Clarificaciones consecutivas" >= 2 → search_agent)
+    6. **Default:** Si hay duda → ask_clarification (EXCEPTO si "ClarificacionesConsecutivas" >= 2 → search_agent)
 
     ## EJEMPLOS
 
@@ -134,22 +134,22 @@ function createRouterAgentPrompt(
     "${productExample1}" → ask_clarification
     "Mi nombre es César" → cart_agent
 
-    ## EJEMPLOS CON lastAgentRouted
+    ## EJEMPLOS CON ÚltimoAgente
 
-    lastAgentRouted = "search_agent":
+    ÚltimoAgente = "search_agent":
     - "esa quiero" → cart_agent
     - "la quiero agregar" → cart_agent
     - "¿cuál es más barata?" → search_agent (sigue explorando)
     - "${productExample1}" → cart_agent (asume que quiere la que vio)
 
-    lastAgentRouted = "ask_clarification":
+    ÚltimoAgente = "ask_clarification":
     - "ver" → search_agent
     - "explorar" → search_agent
     - "agregar" → cart_agent
     - "comprar" → cart_agent
     - "no sé" → search_agent (evitar segundo loop de clarificación)
 
-    lastAgentRouted = "cart_agent":
+    ÚltimoAgente = "cart_agent":
     - "también quiero ${productExample2}" → cart_agent
     - "mejor muestra otras" → search_agent
     - "ok listo" → cart_agent (confirmar)
@@ -249,10 +249,10 @@ const getFormattedHistory = async (
     .join("\n    ");
 
   return `
-    Último routing: ${lastAgent} (${timeAgo}s atrás) ← "${lastMessage}"
-    Clarificaciones consecutivas: ${consecutiveClarifications}
+    ÚltimoAgente: ${lastAgent} (${timeAgo}s atrás) ← "${lastMessage}"
+    ClarificacionesConsecutivas: ${consecutiveClarifications}
 
-    Historial reciente:
+    HistorialReciente:
     ${recentHistory}
   `.trim();
 };
