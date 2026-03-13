@@ -117,7 +117,7 @@ function createRouterAgentPrompt(
       - "Quiero una ${productExample1}" → search_agent (primero busca)
       - "Agrega una ${productExample1}" → cart_agent
       - "quiero 1 ${productExample2}" → cart_agent (implícito: agregar)
-      - "necesito 1 ${productExample2}" → cart_agent
+      - "necesito 1 ${productExample2}" → cart_agent (implícito: agregar)
       - "2 ${productExample1}s" → cart_agent
       - "${productExample1}" (solo) → ask_clarification (o search_agent si "Último routing" = search_agent)
 
@@ -174,7 +174,10 @@ export const routerAgent = async (
 ): Promise<RouterOutput> => {
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
-  const historyContext = await getFormattedHistory();
+  const history =
+    (await cacheAdapter.getObj<RoutingHistoryEntry[]>(ROUTING_HISTORY_KEY)) ||
+    [];
+  const historyContext = await getFormattedHistory(history);
   const systemPrompt = createRouterAgentPrompt(domain, historyContext);
 
   const messages: ChatMessage[] = [
@@ -199,8 +202,6 @@ export const routerAgent = async (
   const result = validateRouter(response);
 
   // Guardar en el historial con ventana deslizante
-  const history: RoutingHistoryEntry[] =
-    (await cacheAdapter.getObj(ROUTING_HISTORY_KEY)) || [];
   const newEntry: RoutingHistoryEntry = {
     agent: result,
     timestamp: Date.now(),
@@ -213,21 +214,12 @@ export const routerAgent = async (
 };
 
 /**
- * Obtiene el último agente ruteado (para backward compatibility)
- */
-const getLastAgentRouted = async (): Promise<string | null> => {
-  const history: RoutingHistoryEntry[] =
-    (await cacheAdapter.getObj(ROUTING_HISTORY_KEY)) || [];
-  return history.length > 0 ? history[0].agent : null;
-};
-
-/**
  * Obtiene el historial completo formateado para el prompt
  */
-const getFormattedHistory = async (): Promise<string> => {
-  const history: RoutingHistoryEntry[] =
-    (await cacheAdapter.getObj(ROUTING_HISTORY_KEY)) || [];
-
+const getFormattedHistory = async (
+  history: RoutingHistoryEntry[],
+): Promise<string> => {
+  //
   if (history.length === 0) {
     return "null (primer mensaje)";
   }
