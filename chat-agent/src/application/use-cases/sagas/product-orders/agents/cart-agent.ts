@@ -12,7 +12,7 @@ import {
 } from "@/infraestructure/adapters/ai";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { formatSagaOutput } from "@/application/patterns";
-import { DomainCtx } from "@/domain/booking";
+import { DomainCtx, WRITING_STYLE } from "@/domain/booking";
 import { productOrderStateManager } from "@/application/services/state-managers";
 import { resetRouterHistory } from "./router-agent";
 import {
@@ -463,6 +463,32 @@ async function processToolCalls(
   );
 }
 
+/**
+ * Prompt para convertir acciones técnicas en mensaje humano
+ */
+function humanizePrompt(domain: SpecializedDomain): string {
+  const vocab = DOMAIN_VOCABULARY[domain];
+  return `
+    Eres un asistente amable que convierte acciones técnicas en mensajes naturales para el usuario.
+
+    ${WRITING_STYLE}
+
+    Acciones que puedes recibir:
+    - added : se agregaron productos al ${vocab.orderWord}
+    - removed: se eliminaron productos del ${vocab.orderWord}
+    - updated: se modificó el ${vocab.orderWord}
+    - viewed: se mostró el ${vocab.orderWord}
+    - confirmed: se confirmó el ${vocab.orderWord}
+    - enteredUsername: el usuario proporcionó su nombre
+
+    Instrucciones:
+    - Responde en español, tono amable y profesional
+    - Sé breve (1-2 oraciones)
+    - No menciones JSON, herramientas o detalles técnicos
+    - Usa el contexto del ${vocab.orderWord} del usuario
+`.trim();
+}
+
 export const cartManagerAgent = async (
   ctx: DomainCtx,
   chatHistory: ChatMessage[],
@@ -500,7 +526,8 @@ export const cartManagerAgent = async (
 
   if (hasSomeError) {
     const finalResponse = await aiAdapter.generateText({
-      max_tokens: 4_096,
+      useAuxModel: true,
+      temperature: 0,
       messages: [
         {
           role: "system",
@@ -518,9 +545,15 @@ export const cartManagerAgent = async (
     });
   }
 
+  // Generar respuesta humana usando el prompt dedicado
   const finalResponse = await aiAdapter.generateText({
-    max_tokens: 4_096,
-    messages,
+    temperature: 0,
+    useAuxModel: true,
+    messages: [
+      { role: "system", content: humanizePrompt(domain) },
+      ...chatHistory.filter((m) => m.role !== "system"),
+      ...toolResults.map((r) => r.chatMsg),
+    ],
   });
 
   await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);

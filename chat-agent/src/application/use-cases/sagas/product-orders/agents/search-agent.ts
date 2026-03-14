@@ -310,7 +310,6 @@ export async function searchAgent(
   const { toolCalls, content } = await aiAdapter.generateTextWithTools({
     messages,
     tools: PRODUCT_ORDER_TOOLS,
-    // response_format: { type: "json_schema" },
   });
 
   if (!toolCalls || toolCalls.length === 0) {
@@ -332,7 +331,8 @@ export async function searchAgent(
   messages.push(...toolResults.map((r) => r.chatMsg));
 
   const finalResponse = await aiAdapter.generateText({
-    max_tokens: 2_048,
+    useAuxModel: true,
+    temperature: 0,
     messages,
   });
 
