@@ -14,6 +14,7 @@ import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { MediaFile } from "@/infraestructure/adapters/whatsapp";
 import { productOrderStateManager } from "@/application/services/state-managers";
+import { logger } from "@/infraestructure/logging";
 
 /**
  *
@@ -179,6 +180,8 @@ export async function executeTool(
         isAvailable: payload?.enabled,
       }));
 
+      logger.info("search_products", { products });
+
       if (!products?.length) {
         return {
           success: false,
@@ -257,9 +260,13 @@ async function processToolCalls(
     toolCalls.map(async (toolCall) => {
       let args: Record<string, unknown> = {};
       try {
-        args = JSON.parse(JSON.parse(toolCall.function.arguments));
-      } catch {
+        args =
+          typeof JSON.parse(toolCall.function.arguments) === "string"
+            ? JSON.parse(JSON.parse(toolCall.function.arguments))
+            : JSON.parse(toolCall.function.arguments);
+      } catch (error) {
         // Usar args vacíos si falla el parse
+        logger.error("Failed to parse tool call arguments", error as Error);
       }
       // Extraer el intent del usuario de los argumentos del tool call
       const result = await executeTool(
@@ -336,6 +343,7 @@ export async function searchAgent(
     "search agent",
     {
       toolCalls,
+      toolResults,
       systemPrompt,
     },
     files,

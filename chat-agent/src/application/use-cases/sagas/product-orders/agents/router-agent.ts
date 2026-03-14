@@ -189,7 +189,7 @@ export const routerAgent = async (
   const response = await aiAdapter.generateText({
     messages,
     temperature: 0,
-    max_tokens: 2_048,
+    max_tokens: 4_096,
     response_format: {
       type: "json_schema",
       json_schema: {

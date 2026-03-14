@@ -418,7 +418,7 @@ async function processToolCalls(
               business: businessId,
               cart: {
                 items: cartPayload.products.map((p) => ({
-                  productId: p.id,
+                  productId: p.id!,
                   productName: p.name,
                   quantity: p.quantity,
                   observations: p.notes,
@@ -500,7 +500,7 @@ export const cartManagerAgent = async (
 
   if (hasSomeError) {
     const finalResponse = await aiAdapter.generateText({
-      max_tokens: 2_048,
+      max_tokens: 4_096,
       messages: [
         {
           role: "system",
@@ -519,7 +519,7 @@ export const cartManagerAgent = async (
   }
 
   const finalResponse = await aiAdapter.generateText({
-    max_tokens: 2_048,
+    max_tokens: 4_096,
     messages,
   });
 
@@ -527,6 +527,7 @@ export const cartManagerAgent = async (
 
   return formatSagaOutput(finalResponse, "cart manager agent", {
     toolCalls,
+    toolResults,
     systemPrompt,
   });
 };

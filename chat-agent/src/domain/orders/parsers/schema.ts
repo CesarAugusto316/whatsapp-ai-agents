@@ -1,9 +1,9 @@
 import z from "zod";
 
 export const productItemSchema = z.object({
-  id: z.string().min(1, "productId es requerido"),
+  id: z.string().optional(),
   name: z.string().min(1, "productName es requerido"),
-  quantity: z.number().int().positive("quantity debe ser mayor a 0"),
+  quantity: z.number().min(1, "quantity debe ser mayor a 0").default(1),
   notes: z.string().max(300, "too_long: Máximo 200 caracteres").optional(),
 });
 

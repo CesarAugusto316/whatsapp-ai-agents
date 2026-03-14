@@ -200,11 +200,11 @@ class AiAdapter implements IAiAdapter {
       const result = (await response.json()) as ChatCompletionResponse;
       const content = result.choices?.[0]?.message?.content?.trim();
       if (!content) {
-        if (result.choices?.[0].finish_reason === "length") {
-          throw new Error(
-            "Respuesta incompleta: se excedió el límite de tokens",
-          );
-        }
+        // if (result.choices?.[0].finish_reason === "length") {
+        //   throw new Error(
+        //     "Respuesta incompleta: se excedió el límite de tokens",
+        //   );
+        // }
         return "No se recibió respuesta de la AI";
       }
       return content;
