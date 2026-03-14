@@ -10,7 +10,6 @@ import { ProductItem, ProductOrderState } from "@/domain/orders";
 import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { ragService } from "../../rag";
-import { findMatchingProduct, findMatchingProductInCart } from "./helpers";
 
 interface ProductStateTransition {
   nextState?: FMStatus;
@@ -194,9 +193,12 @@ class ProductOrderStateManager {
     product: Omit<ProductItem, "id">,
   ) {
     const prev = await this.getState(key);
+
     const searchedProducts = prev?.searchedProducts ?? [];
 
-    const productExists = findMatchingProduct(searchedProducts, product.name);
+    const productExists = searchedProducts.find(
+      (p) => p.payload.name === product.name,
+    );
 
     if (!productExists) {
       const { points } = await ragService.searchProducts(
@@ -221,7 +223,7 @@ class ProductOrderStateManager {
     const payload = {
       ...product,
       id: productExists.payload.id!,
-      name: productExists.payload.name!,
+      name: product.name,
     };
     const products = [...(prev?.products ?? []), payload];
     await cacheAdapter.save<Partial<ProductOrderState>>(key, {
@@ -238,12 +240,9 @@ class ProductOrderStateManager {
     const prev = await this.getState(key);
     const prevProducts = prev?.products ?? [];
 
+    // Si no hay quantity, eliminamos todos los que coincidan con el nombre
     if (!product.quantity) {
-      const match = findMatchingProductInCart(prevProducts, product.name);
-      const filtered = match
-        ? prevProducts.filter((_, i) => i !== match.index)
-        : prevProducts;
-
+      const filtered = prevProducts.filter((p) => p.name !== product.name);
       await cacheAdapter.save<Partial<ProductOrderState>>(key, {
         ...prev,
         products: filtered,
@@ -252,24 +251,25 @@ class ProductOrderStateManager {
       return { removed: true, products: filtered };
     }
 
-    const match = findMatchingProductInCart(prevProducts, product.name);
-    if (!match) {
-      return { removed: false, products: prevProducts };
-    }
-
-    const updated = [...prevProducts];
-    updated[match.index] = {
-      ...updated[match.index],
-      quantity: Math.max(0, updated[match.index].quantity - product.quantity!),
-    };
-    const filtered = updated.filter((p) => p.quantity > 0);
+    // Si hay quantity, reducimos o eliminamos
+    const updated = prevProducts
+      .map((p) => {
+        if (p.name === product.name) {
+          return {
+            ...p,
+            quantity: Math.max(0, p.quantity - product.quantity!),
+          };
+        }
+        return p;
+      })
+      .filter((p) => p.quantity > 0);
 
     await cacheAdapter.save<Partial<ProductOrderState>>(key, {
       ...prev,
-      products: filtered,
+      products: updated,
     });
 
-    return { removed: true, products: filtered };
+    return { removed: true, products: updated };
   }
 
   async updateProductInCart(
@@ -280,20 +280,23 @@ class ProductOrderStateManager {
     const prev = await this.getState(key);
     const products = prev?.products ?? [];
 
-    const match = findMatchingProductInCart(products, product.name);
+    const productIndex = products.findIndex((p) => p.name === product.name);
 
-    if (!match) {
+    if (productIndex === -1) {
+      // No existe, lo agregamos
       const { products } = await this.addProductToCart(
         key,
         businessId,
         product,
       );
+
       return { updated: true, products };
     }
 
+    // Actualizamos la cantidad
     const updated = [...products];
-    updated[match.index] = {
-      ...updated[match.index],
+    updated[productIndex] = {
+      ...updated[productIndex],
       quantity: product.quantity,
     };
 
