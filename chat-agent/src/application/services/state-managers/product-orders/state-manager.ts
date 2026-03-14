@@ -10,6 +10,7 @@ import { ProductItem, ProductOrderState } from "@/domain/orders";
 import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { ragService } from "../../rag";
+import { fuzzyMatch } from "../../fuzzy-matching";
 
 interface ProductStateTransition {
   nextState?: FMStatus;
@@ -196,8 +197,8 @@ class ProductOrderStateManager {
 
     const searchedProducts = prev?.searchedProducts ?? [];
 
-    const productExists = searchedProducts.find(
-      (p) => p.payload.name === product.name,
+    const productExists = searchedProducts.find((p) =>
+      fuzzyMatch(p.payload?.name!, product.name),
     );
 
     if (!productExists) {
@@ -242,7 +243,8 @@ class ProductOrderStateManager {
 
     // Si no hay quantity, eliminamos todos los que coincidan con el nombre
     if (!product.quantity) {
-      const filtered = prevProducts.filter((p) => p.name !== product.name);
+      const found = prevProducts.find((p) => fuzzyMatch(p.name, product.name));
+      const filtered = prevProducts.filter((p) => p.name !== found?.name);
       await cacheAdapter.save<Partial<ProductOrderState>>(key, {
         ...prev,
         products: filtered,
@@ -252,9 +254,10 @@ class ProductOrderStateManager {
     }
 
     // Si hay quantity, reducimos o eliminamos
+    const found = prevProducts.find((p) => fuzzyMatch(p.name, product.name));
     const updated = prevProducts
       .map((p) => {
-        if (p.name === product.name) {
+        if (p.name === found?.name) {
           return {
             ...p,
             quantity: Math.max(0, p.quantity - product.quantity!),
@@ -280,7 +283,9 @@ class ProductOrderStateManager {
     const prev = await this.getState(key);
     const products = prev?.products ?? [];
 
-    const productIndex = products.findIndex((p) => p.name === product.name);
+    const productIndex = products.findIndex((p) =>
+      fuzzyMatch(p.name, product.name),
+    );
 
     if (productIndex === -1) {
       // No existe, lo agregamos
