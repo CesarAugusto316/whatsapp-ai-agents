@@ -23,8 +23,8 @@ export async function productOrderWorkflow(
     return clarifierAgent(ctx, chatHistory);
   }
 
-  // 2. CART AGENT
-  if (router === "cart_agent") {
+  // 2. CART AGENT (incluye ask_final_confirmation)
+  if (router === "cart_agent" || router === "ask_final_confirmation") {
     return cartManagerAgent(ctx, chatHistory);
   }
 

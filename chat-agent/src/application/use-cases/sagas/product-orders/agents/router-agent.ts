@@ -11,6 +11,7 @@ const routerSchema = z.enum([
   "search_agent",
   "cart_agent",
   "ask_clarification",
+  "ask_final_confirmation",
 ]);
 
 type RouterOutput = z.infer<typeof routerSchema>;
@@ -22,6 +23,7 @@ type RoutingHistoryEntry = {
   agent: RouterOutput;
   timestamp: number;
   userMessage: string;
+  cartAction?: string; // Para tracking de acciones del cart_agent (add, remove, view, confirm)
 };
 
 const ROUTING_HISTORY_KEY = "routerAgent:history";
@@ -45,11 +47,15 @@ const validateRouter = (raw: string): RouterOutput => {
     .replace(
       /^(ask_clarification|clarification|clarificacion|duda|ambiguo).*$/,
       "ask_clarification",
+    )
+    .replace(
+      /^(ask_final_confirmation|final_confirmation|confirmar|finalizar|listo|nada_mas|eso_es_todo).*$/,
+      "ask_final_confirmation",
     );
 
   const result = routerSchema.safeParse(normalized);
 
-  // Fallback defensivo: si no es "cart_agent" o "ask_clarification", default a "search_agent"
+  // Fallback defensivo: si no es "cart_agent", "ask_clarification" o "ask_final_confirmation", default a "ask_clarification"
   if (!result.success) {
     console.warn(
       `Router validation failed for: "${raw}" → defaulting to "ask_clarification"`,
@@ -86,6 +92,10 @@ function createRouterAgentPrompt(
     **Cuándo:** Mensaje corto/vago sin contexto. Producto suelto sin verbo de acción.
     **Frases:** "${productExample1}" (solo), "${productExample2}s" (sin contexto)
 
+    ### ask_final_confirmation
+    **Cuándo:** El usuario quiere terminar/finalizar su ${vocab.orderWord}. Indica que ya terminó de agregar.
+    **Frases:** "nada más", "eso es todo", "quiero confirmar", "finalizar", "quiero terminar", "es todo", "nada más eso", "quiero cerrar mi pedido"
+
     ## REGLAS
 
     Historial de routing:
@@ -95,25 +105,32 @@ function createRouterAgentPrompt(
       - "agrega", "pon", "dame", "quita", "saca" → cart_agent
       - "quiero ver", "busco", "¿qué tienen?" → search_agent
       - "mi nombre es", "soy" → cart_agent
+      - "nada más", "eso es todo", "listo", "quiero confirmar", "finalizar" → ask_final_confirmation
       - Producto solo (sin verbo) → ask_clarification
 
-    2. **Analiza el historial:**
+    2. **CONDICIÓN CRÍTICA para ask_final_confirmation:**
+      - SOLO elige "ask_final_confirmation" si "HuboAgregadoReciente: SÍ"
+      - Si "HuboAgregadoReciente: NO" y usuario dice "nada más", "eso es todo" → cart_agent (para que haga view y muestre carrito vacío o pida agregar)
+      - El usuario debe haber agregado al menos 1 producto antes de confirmar
+
+    3. **Analiza el historial:**
       - Si "ÚltimoAgente" = "search_agent" y dice "esa", "esa quiero", "la quiero" → cart_agent
       - Si "ÚltimoAgente" = "ask_clarification" y responde "ver" / "explorar" → search_agent
       - Si "ÚltimoAgente" = "ask_clarification" y responde "agregar" / "comprar" → cart_agent
       - Si historial vacío y dice "${productExample1}" → ask_clarification
 
-    3. **Evitar loops (CRÍTICO):**
+    4. **Evitar loops (CRÍTICO):**
       - Si "ClarificacionesConsecutivas" >= 2 → elige search_agent (rompe el loop)
       - Si "ClarificacionesConsecutivas" = 1 y usuario sigue ambiguo → search_agent
       - Máximo 1 clarificación por flujo
 
-    4. **Patrones comunes de flujo:**
+    5. **Patrones comunes de flujo:**
       - search_agent → cart_agent (flujo normal: explora luego compra)
       - ask_clarification → search_agent → cart_agent (flujo con clarificación)
+      - cart_agent[add] → cart_agent[add] → ask_final_confirmation (flujo con confirmación)
       - cart_agent → cart_agent (modificaciones sucesivas)
 
-    5. **Intención clara:**
+    6. **Intención clara:**
       - "Quiero una ${productExample1}" → search_agent (primero busca)
       - "Agrega una ${productExample1}" → cart_agent
       - "quiero 1 ${productExample2}" → cart_agent (implícito: agregar)
@@ -121,18 +138,27 @@ function createRouterAgentPrompt(
       - "2 ${productExample1}s" → cart_agent
       - "${productExample1}" (solo) → ask_clarification (o search_agent si "ÚltimoAgente" = search_agent)
 
-    6. **Default:** Si hay duda → ask_clarification (EXCEPTO si "ClarificacionesConsecutivas" >= 2 → search_agent)
+    7. **Default:** Si hay duda → ask_clarification (EXCEPTO si "ClarificacionesConsecutivas" >= 2 → search_agent)
 
     ## EJEMPLOS
 
     "Quiero ver el ${vocab.menuWord}" → search_agent
     "¿Qué ${vocab.productPlural} tienen?" → search_agent
-    "Agregame 2 ${productExample1}s" → cart_agent
-    "1 ${productExample2}" → cart_agent
-    "Quitame ${productExample1}" → cart_agent
-    "Mostrame mi ${vocab.orderWord}" → cart_agent
+    "Agregame 2 ${productExample1}s" → cart_agent [add]
+    "1 ${productExample2}" → cart_agent [add]
+    "Quitame ${productExample1}" → cart_agent [remove]
+    "Mostrame mi ${vocab.orderWord}" → cart_agent [view]
     "${productExample1}" → ask_clarification
-    "Mi nombre es César" → cart_agent
+    "Mi nombre es César" → cart_agent [enterUsername]
+
+    Si HuboAgregadoReciente: SÍ:
+      "Nada más, eso es todo" → ask_final_confirmation
+      "Listo, quiero confirmar" → ask_final_confirmation
+      "Es todo por ahora" → ask_final_confirmation
+
+    Si HuboAgregadoReciente: NO:
+      "Nada más" → cart_agent (para hacer view y mostrar carrito vacío)
+      "Eso es todo" → cart_agent (para hacer view y mostrar carrito vacío)
 
     ## EJEMPLOS CON ÚltimoAgente
 
@@ -164,7 +190,7 @@ function createRouterAgentPrompt(
 
     ## OUTPUT
 
-    Responde ÚNICAMENTE: "search_agent", "cart_agent" o "ask_clarification"
+    Responde ÚNICAMENTE: "search_agent", "cart_agent", "ask_clarification" o "ask_final_confirmation"
 `.trim();
 }
 
@@ -194,18 +220,44 @@ export const routerAgent = async (
       type: "json_schema",
       json_schema: {
         type: "string",
-        enum: ["search_agent", "cart_agent", "ask_clarification"],
+        enum: [
+          "search_agent",
+          "cart_agent",
+          "ask_clarification",
+          "ask_final_confirmation",
+        ],
       },
     },
   });
 
   const result = validateRouter(response);
 
+  // Extraer la acción del cart_agent del último tool result (si existe)
+  let cartAction: string | undefined;
+  if (result === "cart_agent" && chatHistory && chatHistory.length > 0) {
+    // Buscar el último tool result de manage_cart
+    const lastToolResult = [...chatHistory].findLast(
+      (m) => m.role === "tool" && m.name === "manage_cart",
+    );
+
+    if (lastToolResult?.content) {
+      try {
+        const parsed = JSON.parse(lastToolResult.content);
+        if (parsed?.success && parsed?.action) {
+          cartAction = parsed.action;
+        }
+      } catch {
+        // Ignorar si no se puede parsear
+      }
+    }
+  }
+
   // Guardar en el historial con ventana deslizante
   const newEntry: RoutingHistoryEntry = {
     agent: result,
     timestamp: Date.now(),
     userMessage: userMessage.substring(0, 100),
+    cartAction,
   };
   const updatedHistory = [newEntry, ...history].slice(0, MAX_HISTORY_LENGTH);
   await cacheAdapter.save(ROUTING_HISTORY_KEY, updatedHistory);
@@ -235,8 +287,14 @@ const getFormattedHistory = async (
     return acc;
   }, 0);
 
+  // Verificar si hubo un "add" reciente (necesario para ask_final_confirmation)
+  const hasRecentAdd = history.some(
+    (entry) => entry.agent === "cart_agent" && entry.cartAction === "add",
+  );
+
   const lastAgent = history[0].agent;
   const lastMessage = history[0].userMessage;
+  const lastCartAction = history[0].cartAction;
   const timeAgo = Math.floor((Date.now() - history[0].timestamp) / 1000);
 
   // Mostrar últimos 3 routings
@@ -244,13 +302,15 @@ const getFormattedHistory = async (
     .slice(0, 3)
     .map((entry, idx) => {
       const timeAgo = Math.floor((Date.now() - entry.timestamp) / 1000);
-      return `${idx + 1}. [${timeAgo}s atrás] ${entry.agent} ← "${entry.userMessage}"`;
+      const actionInfo = entry.cartAction ? ` [${entry.cartAction}]` : "";
+      return `${idx + 1}. [${timeAgo}s atrás] ${entry.agent}${actionInfo} ← "${entry.userMessage}"`;
     })
     .join("\n    ");
 
   return `
-    ÚltimoAgente: ${lastAgent} (${timeAgo}s atrás) ← "${lastMessage}"
+    ÚltimoAgente: ${lastAgent}${lastCartAction ? ` [${lastCartAction}]` : ""} (${timeAgo}s atrás) ← "${lastMessage}"
     ClarificacionesConsecutivas: ${consecutiveClarifications}
+    HuboAgregadoReciente: ${hasRecentAdd ? "SÍ (puede confirmar)" : "NO (primero debe agregar)"}
 
     HistorialReciente:
     ${recentHistory}

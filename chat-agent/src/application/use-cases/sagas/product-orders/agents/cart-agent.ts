@@ -110,6 +110,12 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     ### ✅ CONFIRMAR (action: "confirm")
     - "Confirmo" → { action: "confirm" }
 
+    ### 👁️ VER ANTES DE CONFIRMAR (action: "view" → luego "confirm")
+    - "Nada más", "eso es todo", "listo", "quiero confirmar" →
+      PRIMERO: manage_cart("view") para mostrar resumen
+      LUEGO: El sistema preguntará "¿Confirmas tu pedido con X productos?"
+      USUARIO: "sí, confirmo" → manage_cart("confirm")
+
     ### 👤 INGRESAR NOMBRE (action: "enterUsername")
     - "Me llamo Juan" → { action: "enterUsername", customerName: "Juan" }
 
@@ -277,7 +283,11 @@ async function processToolCalls(
               action: data.action,
               chatMsg: {
                 ...chat,
-                content: JSON.stringify(result),
+                content: JSON.stringify({
+                  success: true,
+                  action: data.action,
+                  ...result,
+                }),
               },
             };
           }
@@ -292,7 +302,11 @@ async function processToolCalls(
               action: data.action,
               chatMsg: {
                 ...chat,
-                content: JSON.stringify(result),
+                content: JSON.stringify({
+                  success: true,
+                  action: data.action,
+                  ...result,
+                }),
               },
             };
           }
@@ -308,7 +322,11 @@ async function processToolCalls(
               action: data.action,
               chatMsg: {
                 ...chat,
-                content: JSON.stringify(result),
+                content: JSON.stringify({
+                  success: true,
+                  action: data.action,
+                  ...result,
+                }),
               },
             };
           }
@@ -322,7 +340,11 @@ async function processToolCalls(
                 action: data.action,
                 chatMsg: {
                   ...chat,
-                  content: JSON.stringify({ message: "empty_cart" }),
+                  content: JSON.stringify({
+                    success: false,
+                    action: data.action,
+                    error: "empty_cart",
+                  }),
                 },
               };
             }
@@ -331,7 +353,11 @@ async function processToolCalls(
               action: data.action,
               chatMsg: {
                 ...chat,
-                content: JSON.stringify(result),
+                content: JSON.stringify({
+                  success: true,
+                  action: data.action,
+                  ...result,
+                }),
               },
             };
           }
@@ -348,7 +374,11 @@ async function processToolCalls(
                 action: data.action,
                 chatMsg: {
                   ...chat,
-                  content: JSON.stringify({ error }),
+                  content: JSON.stringify({
+                    action: data.action,
+                    success: false,
+                    error,
+                  }),
                 },
               };
             }
@@ -361,7 +391,11 @@ async function processToolCalls(
               action: data.action,
               chatMsg: {
                 ...chat,
-                content: JSON.stringify(result),
+                content: JSON.stringify({
+                  success: true,
+                  action: data.action,
+                  ...result,
+                }),
               },
             };
           }
@@ -377,6 +411,8 @@ async function processToolCalls(
                 chatMsg: {
                   ...chat,
                   content: JSON.stringify({
+                    success: false,
+                    action: data.action,
                     error:
                       "No customer name provided, ask the user for their name",
                   }),
@@ -408,6 +444,8 @@ async function processToolCalls(
                 chatMsg: {
                   ...chat,
                   content: JSON.stringify({
+                    success: false,
+                    action: data.action,
                     error: "Customer does not exist",
                   }),
                 },
@@ -435,7 +473,11 @@ async function processToolCalls(
               action: data.action,
               chatMsg: {
                 ...chat,
-                content: JSON.stringify({ result, created: true }),
+                content: JSON.stringify({
+                  success: true,
+                  action: data.action,
+                  orderCreated: result,
+                }),
               },
             };
           }
@@ -445,7 +487,10 @@ async function processToolCalls(
               success: false,
               chatMsg: {
                 ...chat,
-                content: "Hubo un error, puedes reformular tu solicitud",
+                content: JSON.stringify({
+                  success: false,
+                  error: "Hubo un error, puedes reformular tu solicitud",
+                }),
               },
             };
         }
@@ -456,7 +501,10 @@ async function processToolCalls(
         success: false,
         chatMsg: {
           ...chat,
-          content: "Hubo un error, puedes reformular tu solicitud",
+          content: JSON.stringify({
+            success: false,
+            error: "Hubo un error, puedes reformular tu solicitud",
+          }),
         },
       };
     }),
@@ -474,15 +522,19 @@ function humanizePrompt(domain: SpecializedDomain): string {
     ${WRITING_STYLE}
 
     Acciones que puedes recibir:
-    - added : se agregaron productos al ${vocab.orderWord}
-    - removed: se eliminaron productos del ${vocab.orderWord}
-    - updated: se modificó el ${vocab.orderWord}
-    - viewed: se mostró el ${vocab.orderWord}
-    - confirmed: se confirmó el ${vocab.orderWord}
-    - enteredUsername: el usuario proporcionó su nombre
+    - add: se agregaron productos al ${vocab.orderWord}
+    - remove: se eliminaron productos del ${vocab.orderWord}
+    - update: se modificó el ${vocab.orderWord}
+    - view: se mostró el ${vocab.orderWord} (resumen de lo que lleva)
+    - confirm: el ${vocab.orderWord} se creó exitosamente luego de confirmación (pedido creado)
+    - enterUsername: el usuario proporcionó su nombre
+
+    Casos especiales:
+    - Si el usuario dijo "nada más", "eso es todo", "listo" y se ejecutó "view" →
+      Muestra el resumen del ${vocab.orderWord} y pregunta "¿Confirmas tu ${vocab.orderWord}?"
+    - Si se ejecutó "confirm" → Confirma que el ${vocab.orderWord} fue creado con éxito
 
     Instrucciones:
-    - Responde en español, tono amable y profesional
     - Sé breve (1-2 oraciones)
     - No menciones JSON, herramientas o detalles técnicos
     - Usa el contexto del ${vocab.orderWord} del usuario

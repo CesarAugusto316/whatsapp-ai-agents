@@ -197,7 +197,7 @@ class ProductOrderStateManager {
 
     const searchedProducts = prev?.searchedProducts ?? [];
 
-    const productExists = searchedProducts.find((p) =>
+    const productExists = searchedProducts.findLast((p) =>
       fuzzyMatch(p.payload?.name!, product.name),
     );
 
@@ -218,7 +218,7 @@ class ProductOrderStateManager {
         ...prev,
         products,
       });
-      return { added: true, products };
+      return { products };
     }
 
     const payload = {
@@ -231,7 +231,7 @@ class ProductOrderStateManager {
       ...prev,
       products,
     });
-    return { added: true, products };
+    return { products };
   }
 
   async removeProductFromCart(
@@ -243,18 +243,22 @@ class ProductOrderStateManager {
 
     // Si no hay quantity, eliminamos todos los que coincidan con el nombre
     if (!product.quantity) {
-      const found = prevProducts.find((p) => fuzzyMatch(p.name, product.name));
+      const found = prevProducts.findLast((p) =>
+        fuzzyMatch(p.name, product.name),
+      );
       const filtered = prevProducts.filter((p) => p.name !== found?.name);
       await cacheAdapter.save<Partial<ProductOrderState>>(key, {
         ...prev,
         products: filtered,
       });
 
-      return { removed: true, products: filtered };
+      return { products: filtered };
     }
 
     // Si hay quantity, reducimos o eliminamos
-    const found = prevProducts.find((p) => fuzzyMatch(p.name, product.name));
+    const found = prevProducts.findLast((p) =>
+      fuzzyMatch(p.name, product.name),
+    );
     const updated = prevProducts
       .map((p) => {
         if (p.name === found?.name) {
@@ -272,7 +276,7 @@ class ProductOrderStateManager {
       products: updated,
     });
 
-    return { removed: true, products: updated };
+    return { products: updated };
   }
 
   async updateProductInCart(
@@ -283,7 +287,7 @@ class ProductOrderStateManager {
     const prev = await this.getState(key);
     const products = prev?.products ?? [];
 
-    const productIndex = products.findIndex((p) =>
+    const productIndex = products.findLastIndex((p) =>
       fuzzyMatch(p.name, product.name),
     );
 
@@ -295,7 +299,7 @@ class ProductOrderStateManager {
         product,
       );
 
-      return { updated: true, products };
+      return { products };
     }
 
     // Actualizamos la cantidad
@@ -309,13 +313,12 @@ class ProductOrderStateManager {
       ...prev,
       products: updated,
     });
-    return { updated: true, products: updated };
+    return { products: updated };
   }
 
   async viewCart(key: string) {
     const prev = await this.getState(key);
     return {
-      viewed: true,
       products: prev?.products ?? [],
       totalItems: prev?.products?.length ?? 0,
       customerName: prev?.customerName,
@@ -329,7 +332,7 @@ class ProductOrderStateManager {
       ...prev,
       customerName,
     });
-    return { enteredUsername: true, customerName };
+    return { customerName };
   }
 
   async getState(key: string) {
