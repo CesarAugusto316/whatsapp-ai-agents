@@ -11,6 +11,7 @@ import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { ragService } from "../../rag";
 import { fuzzyMatch } from "../../fuzzy-matching";
+import { success } from "zod/mini";
 
 interface ProductStateTransition {
   nextState?: FMStatus;
@@ -218,7 +219,7 @@ class ProductOrderStateManager {
         ...prev,
         products,
       });
-      return { added: true, products };
+      return { success: true, products };
     }
 
     const payload = {
@@ -231,7 +232,7 @@ class ProductOrderStateManager {
       ...prev,
       products,
     });
-    return { added: true, products };
+    return { success: true, products };
   }
 
   async removeProductFromCart(
@@ -250,7 +251,7 @@ class ProductOrderStateManager {
         products: filtered,
       });
 
-      return { removed: true, products: filtered };
+      return { success: true, products: filtered };
     }
 
     // Si hay quantity, reducimos o eliminamos
@@ -272,7 +273,7 @@ class ProductOrderStateManager {
       products: updated,
     });
 
-    return { removed: true, products: updated };
+    return { success: true, products: updated };
   }
 
   async updateProductInCart(
@@ -295,7 +296,7 @@ class ProductOrderStateManager {
         product,
       );
 
-      return { updated: true, products };
+      return { success: true, products };
     }
 
     // Actualizamos la cantidad
@@ -309,7 +310,7 @@ class ProductOrderStateManager {
       ...prev,
       products: updated,
     });
-    return { updated: true, products: updated };
+    return { success: true, products: updated };
   }
 
   async viewCart(key: string) {
@@ -329,7 +330,7 @@ class ProductOrderStateManager {
       ...prev,
       customerName,
     });
-    return { enteredUsername: true, customerName };
+    return { success: true, customerName };
   }
 
   async getState(key: string) {
