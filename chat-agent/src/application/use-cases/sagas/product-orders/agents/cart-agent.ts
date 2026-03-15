@@ -14,151 +14,14 @@ import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { formatSagaOutput } from "@/application/patterns";
 import { DomainCtx, WRITING_STYLE } from "@/domain/booking";
 import { productOrderStateManager } from "@/application/services/state-managers";
-import { resetRouterHistory } from "./router-agent";
 import {
   customerNameSchema,
   OrderAction,
   orderArgSchema,
 } from "@/domain/orders";
+import { RouterOutput } from "./router-agent";
 
-/**
- *
- * Genera un prompt para manejar errores de forma amable y contextual al dominio
- */
-function errorPrompt(domain: SpecializedDomain): string {
-  const vocab = DOMAIN_VOCABULARY[domain];
-  return `
-    Tu respuesta anterior causó un error. Analiza el error y responde al usuario en español de forma amable y clara.
-
-    ## Tipos de errores comunes:
-
-    1. **Falta nombre del cliente**: Si el error dice "No customer name provided" o similar
-      → Pide amablemente el nombre del usuario para confirmar su ${vocab.orderWord}
-      → Ej: "Para confirmar tu ${vocab.orderWord}, ¿me podrías decir tu nombre?"
-
-    2. **Nombre inválido**: Si el error viene de validación de customerName
-      → Explica que el nombre debe tener 3-30 caracteres, solo letras y espacios
-      → Ej: "¿Me podrías decir tu nombre completo? Solo letras, entre 3 y 30 caracteres"
-
-    3. **${vocab.orderWord} vacío**: Si el error dice "empty_cart"
-      → Recuerda al usuario que su carrito está vacío y ofrécele ayudarle a ${vocab.actionVerbInfinitive}
-      → Ej: "Tu carrito está vacío. ¿Quieres ver nuestro ${vocab.menuWord} y ${vocab.actionVerb} algo?"
-
-    4. **Error de parsing/argumentos**: Si hay un error técnico de validación
-      → Pide al usuario que reformule su ${vocab.orderWord} de manera más clara
-      → Ej: "No entendí bien tu ${vocab.orderWord}. ¿Me lo puedes decir de otra forma?"
-
-    5. **Cliente no existe**: Si el error dice "No customer does not exist"
-      → Explica que hubo un problema y pide el nombre nuevamente
-      → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
-
-    ## Reglas:
-    - Sé amable y profesional
-    - No menciones errores técnicos o de validación
-    - Haz una pregunta clara para que el usuario pueda continuar o complete la información faltante
-    - Mantén el contexto del ${vocab.orderWord}.
-`.trim();
-}
-
-/**
- *
- * @param domain
- * @returns
- */
-function createCartAgentPrompt(domain: SpecializedDomain): string {
-  const vocab = DOMAIN_VOCABULARY[domain];
-  const productExample1 = vocab.productExamples[0];
-  const productExample2 = vocab.productExamples[1] || productExample1;
-
-  return `
-    Eres un asistente especializado en gestionar ${vocab.orderWord}s de clientes para un ${vocab.greetingContext}.
-
-    ## TU ÚNICA FUNCIÓN
-    Gestionar el ${vocab.orderWord} del usuario: agregar, quitar, modificar ${vocab.productPlural} y confirmar el ${vocab.orderWord}.
-
-    ## TUS HERRAMIENTAS
-
-    ### manage_cart
-    Gestiona el ${vocab.orderWord}. Úsala para:
-    - **Agregar**: "agregame", "quiero", "dame", "poneme", "2 platos"
-    - **Quitar**: "quitame", "sacame", "eliminame", "borrame"
-    - **Modificar**: "cambiame", "mejor dame X", "ahora quiero X"
-    - **Ver**: "mostrame mi ${vocab.orderWord}", "¿qué llevo?", "ver ${vocab.orderWord}"
-    - **Confirmar**: "confirmo", "listo", "eso es todo", "finalizar"
-    - **Ingresar nombre**: cuando el usuario da su nombre para confirmar
-
-    Parámetros:
-    - action: "add" | "remove" | "update" | "view" | "confirm" | "enterUsername"
-    - item: { name, quantity (default: 1), notes (opcional) }
-    - customerName: string (solo para "enterUsername")
-
-    ## DETECCIÓN DE INTENCIÓN
-
-    ### ➕ AGREGAR (action: "add")
-    - "Agregame 2 ${productExample1}s" → { action: "add", item: { name: "${productExample1}", quantity: 2 } }
-    - "Quiero una ${productExample2}" → { action: "add", item: { name: "${productExample2}", quantity: 1 } }
-
-    ### ➖ QUITAR (action: "remove")
-    - "Quitame ${productExample1}" → { action: "remove", item: { name: "${productExample1}", quantity: 1 } }
-
-    ### 🔄 MODIFICAR (action: "update")
-    - "Cambiame a 3 ${productExample1}s en lugar de 2" → { action: "update", item: { name: "${productExample1}", quantity: 3 } }
-
-    ### 👁️ VER (action: "view")
-    - "Mostrame mi ${vocab.orderWord}" → { action: "view" }
-
-    ### ✅ CONFIRMAR (action: "confirm")
-    - "Confirmo" → { action: "confirm" }
-
-    ### 👁️ VER ANTES DE CONFIRMAR (action: "view" → luego "confirm")
-    - "Nada más", "eso es todo", "listo", "quiero confirmar" →
-      PRIMERO: manage_cart("view") para mostrar resumen
-      LUEGO: El sistema preguntará "¿Confirmas tu pedido con X productos?"
-      USUARIO: "sí, confirmo" → manage_cart("confirm")
-
-    ### 👤 INGRESAR NOMBRE (action: "enterUsername")
-    - "Me llamo Juan" → { action: "enterUsername", customerName: "Juan" }
-
-    ## REGLAS DE ORO
-
-    1. **EXTRAE EL PRODUCTO**: Identifica qué ${vocab.productName} menciona el usuario
-    2. **EXTRAE LA CANTIDAD**: Si no se menciona, asume 1
-    3. **EXTRAE NOTAS**: Si el usuario dice "sin cebolla", "con extra queso", etc.
-    4. **UNA SOLA ACCIÓN POR MENSAJE**: No combines add + remove
-    5. **OBLIGATORIO**: Tu ÚNICA forma de responder es llamando a **manage_cart**
-
-    ## CLARIFICACIÓN (CRÍTICO)
-
-    Si el asistente hizo una pregunta de clarificación y el usuario respondió:
-    - Usuario: "${productExample1}" → Asistente: "¿Quieres ver o agregar?" → Usuario: "Agregar"
-      → **OBLIGATORIO**: manage_cart("add", { name: "${productExample1}", quantity: 1 })
-    - Usuario: "2 ${productExample1}s" → Asistente: "¿Ver o agregar?" → Usuario: "Agregar"
-      → manage_cart("add", { name: "${productExample1}", quantity: 2 })
-
-    **IMPORTANTE**: Después de clarificación, el usuario YA expresó su intención. Solo ejecuta manage_cart.
-
-    ## CUANDO HAY AMBIGÜEDAD
-
-    Si el usuario menciona un ${vocab.productName} genérico y hay múltiples opciones:
-    - Llama manage_cart igual
-    - El sistema preguntará "¿Qué ${productExample1} quieres? tenemos ..."
-
-    ## EJEMPLOS
-
-    "Agregame 2 ${productExample1}s" → manage_cart("add", { name: "${productExample1}", quantity: 2 })
-    "Quitame una ${productExample2}" → manage_cart("remove", { name: "${productExample2}", quantity: 1 })
-    "Mostrame qué llevo" → manage_cart("view")
-    "Confirmo mi ${vocab.orderWord}" → manage_cart("confirm")
-    "Agregame una ${productExample1} sin cebolla" → manage_cart("add", { name: "${productExample1}", quantity: 1, notes: "sin cebolla" })
-    "Me llamo Juan" → manage_cart("enterUsername", { customerName: "Juan" })
-
-    ## IMPORTANTE
-
-    - Tu ÚNICA función es gestionar el ${vocab.orderWord}
-    - NO busques ${vocab.productPlural} (eso lo hace el Agente de Búsqueda)
-    - Si el usuario pregunta "¿qué ${vocab.productPlural} tienen?", NO llames manage_cart
-`.trim();
-}
+const TOOL_NAME = "manage_cart";
 
 /**
  *
@@ -170,7 +33,7 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
   {
     type: "function" as const,
     function: {
-      name: "manage_cart",
+      name: TOOL_NAME,
       description:
         "Manage the cart by adding, removing, updating items, or viewing/confirming the order.",
       parameters: {
@@ -224,6 +87,146 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
     },
   },
 ] as const;
+
+/**
+ *
+ * Genera un prompt para manejar errores de forma amable y contextual al dominio
+ */
+function errorPrompt(domain: SpecializedDomain): string {
+  const vocab = DOMAIN_VOCABULARY[domain];
+  return `
+    Tu respuesta anterior causó un error. Analiza el error y responde al usuario en español de forma amable y clara.
+
+    ## Tipos de errores comunes:
+
+    1. **Falta nombre del cliente**: Si el error dice "No customer name provided" o similar
+      → Pide amablemente el nombre del usuario para confirmar su ${vocab.orderWord}
+      → Ej: "Para confirmar tu ${vocab.orderWord}, ¿me podrías decir tu nombre?"
+
+    2. **Nombre inválido**: Si el error viene de validación de customerName
+      → Explica que el nombre debe tener 3-30 caracteres, solo letras y espacios
+      → Ej: "¿Me podrías decir tu nombre completo? Solo letras, entre 3 y 30 caracteres"
+
+    3. **${vocab.orderWord} vacío**: Si el error dice "empty_cart"
+      → Recuerda al usuario que su carrito está vacío y ofrécele ayudarle a ${vocab.actionVerbInfinitive}
+      → Ej: "Tu carrito está vacío. ¿Quieres ver nuestro ${vocab.menuWord} y ${vocab.actionVerb} algo?"
+
+    4. **Error de parsing/argumentos**: Si hay un error técnico de validación
+      → Pide al usuario que reformule su ${vocab.orderWord} de manera más clara
+      → Ej: "No entendí bien tu ${vocab.orderWord}. ¿Me lo puedes decir de otra forma?"
+
+    5. **Cliente no existe**: Si el error dice "No customer does not exist"
+      → Explica que hubo un problema y pide el nombre nuevamente
+      → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
+
+    ## Reglas:
+    - Sé amable y profesional
+    - No menciones errores técnicos o de validación
+    - Haz una pregunta clara para que el usuario pueda continuar o complete la información faltante
+    - Mantén el contexto del ${vocab.orderWord}.
+`.trim();
+}
+
+/**
+ *
+ * @param domain
+ * @returns
+ */
+function createCartAgentPrompt(domain: SpecializedDomain): string {
+  const vocab = DOMAIN_VOCABULARY[domain];
+  const productExample1 = vocab.productExamples[0];
+  const productExample2 = vocab.productExamples[1] || productExample1;
+  const toolName = TOOL_NAME;
+
+  return `
+    Eres un asistente especializado en gestionar ${vocab.orderWord}s de clientes para un ${vocab.greetingContext}.
+
+    ## TU ÚNICA FUNCIÓN
+    Gestionar el ${vocab.orderWord} del usuario: agregar, quitar, modificar ${vocab.productPlural} y confirmar el ${vocab.orderWord}.
+
+    ## TUS HERRAMIENTAS
+
+    ### ${toolName}
+    Gestiona el ${vocab.orderWord}. Úsala para:
+    - **Agregar**: "agregame", "quiero", "dame", "poneme", "2 platos"
+    - **Quitar**: "quitame", "sacame", "eliminame", "borrame"
+    - **Modificar**: "cambiame", "mejor dame X", "ahora quiero X"
+    - **Ver**: "mostrame mi ${vocab.orderWord}", "¿qué llevo?", "ver ${vocab.orderWord}"
+    - **Confirmar**: "confirmo", "listo", "eso es todo", "finalizar"
+    - **Ingresar nombre**: cuando el usuario da su nombre para confirmar
+
+    Parámetros:
+    - action: "add" | "remove" | "update" | "view" | "confirm" | "enterUsername"
+    - item: { name, quantity (default: 1), notes (opcional) }
+    - customerName: string (solo para "enterUsername")
+
+    ## DETECCIÓN DE INTENCIÓN
+
+    ### ➕ AGREGAR (action: "add")
+    - "Agregame 2 ${productExample1}s" → { action: "add", item: { name: "${productExample1}", quantity: 2 } }
+    - "Quiero una ${productExample2}" → { action: "add", item: { name: "${productExample2}", quantity: 1 } }
+
+    ### ➖ QUITAR (action: "remove")
+    - "Quitame ${productExample1}" → { action: "remove", item: { name: "${productExample1}", quantity: 1 } }
+
+    ### 🔄 MODIFICAR (action: "update")
+    - "Cambiame a 3 ${productExample1}s en lugar de 2" → { action: "update", item: { name: "${productExample1}", quantity: 3 } }
+
+    ### 👁️ VER (action: "view")
+    - "Mostrame mi ${vocab.orderWord}" → { action: "view" }
+
+    ### ✅ CONFIRMAR (action: "confirm")
+    - "Confirmo" → { action: "confirm" }
+
+    ### 👁️ VER ANTES DE CONFIRMAR (action: "view" → luego "confirm")
+    - "Nada más", "eso es todo", "listo", "quiero confirmar" →
+      PRIMERO: ${toolName}("view") para mostrar resumen
+      LUEGO: El sistema preguntará "¿Confirmas tu pedido con X productos?"
+      USUARIO: "sí, confirmo" → ${toolName}("confirm")
+
+    ### 👤 INGRESAR NOMBRE (action: "enterUsername")
+    - "Me llamo Juan" → { action: "enterUsername", customerName: "Juan" }
+
+    ## REGLAS DE ORO
+
+    1. **EXTRAE EL PRODUCTO**: Identifica qué ${vocab.productName} menciona el usuario
+    2. **EXTRAE LA CANTIDAD**: Si no se menciona, asume 1
+    3. **EXTRAE NOTAS**: Si el usuario dice "sin cebolla", "con extra queso", etc.
+    4. **UNA SOLA ACCIÓN POR MENSAJE**: No combines add + remove
+    5. **OBLIGATORIO**: Tu ÚNICA forma de responder es llamando a **${toolName}**
+
+    ## CLARIFICACIÓN (CRÍTICO)
+
+    Si el asistente hizo una pregunta de clarificación y el usuario respondió:
+    - Usuario: "${productExample1}" → Asistente: "¿Quieres ver o agregar?" → Usuario: "Agregar"
+      → **OBLIGATORIO**: ${toolName}("add", { name: "${productExample1}", quantity: 1 })
+    - Usuario: "2 ${productExample1}s" → Asistente: "¿Ver o agregar?" → Usuario: "Agregar"
+      → ${toolName}("add", { name: "${productExample1}", quantity: 2 })
+
+      **IMPORTANTE**: Después de clarificación, el usuario YA expresó su intención. Solo ejecuta ${toolName}.
+
+    ## CUANDO HAY AMBIGÜEDAD
+
+    Si el usuario menciona un ${vocab.productName} genérico y hay múltiples opciones:
+    - Llama ${toolName} igual
+    - El sistema preguntará "¿Qué ${productExample1} quieres? tenemos ..."
+
+    ## EJEMPLOS
+
+    "Agregame 2 ${productExample1}s" → ${toolName}("add", { name: "${productExample1}", quantity: 2 })
+    "Quitame una ${productExample2}" → ${toolName}("remove", { name: "${productExample2}", quantity: 1 })
+    "Mostrame qué llevo" → ${toolName}("view")
+    "Confirmo mi ${vocab.orderWord}" → ${toolName}("confirm")
+    "Agregame una ${productExample1} sin cebolla" → ${toolName}("add", { name: "${productExample1}", quantity: 1, notes: "sin cebolla" })
+    "Me llamo Juan" → ${toolName}("enterUsername", { customerName: "Juan" })
+
+    ## IMPORTANTE
+
+    - Tu ÚNICA función es gestionar el ${vocab.orderWord}
+    - NO busques ${vocab.productPlural} (eso lo hace el Agente de Búsqueda)
+    - Si el usuario pregunta "¿qué ${vocab.productPlural} tienen?", NO llames manage_cart
+`.trim();
+}
 
 type ToolResult = {
   success: boolean;
@@ -466,7 +469,7 @@ async function processToolCalls(
             });
 
             // Resetear el historial de routing después de confirmar el pedido
-            await resetRouterHistory();
+            await productOrderStateManager.resetRouterHistory(orderKey);
 
             return {
               success: true,
@@ -561,6 +564,7 @@ function humanizePrompt(domain: SpecializedDomain): string {
 export const cartManagerAgent = async (
   ctx: DomainCtx,
   chatHistory: ChatMessage[],
+  routerAgent: RouterOutput,
 ) => {
   //
   const userMessage = ctx.customerMessage!;
@@ -631,6 +635,17 @@ export const cartManagerAgent = async (
     userMessage,
     finalResponse,
     toolMessages,
+  );
+
+  await Promise.all(
+    toolResults.map((tool) => {
+      return productOrderStateManager.saveRouterHistory(ctx.chatKey, {
+        agent: routerAgent,
+        toolName: tool.chatMsg.name,
+        action: tool.action,
+        userMessage,
+      });
+    }),
   );
 
   return formatSagaOutput(finalResponse, "cart manager agent", {

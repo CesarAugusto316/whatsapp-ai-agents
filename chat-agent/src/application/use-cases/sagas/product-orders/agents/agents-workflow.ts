@@ -17,17 +17,15 @@ export async function productOrderWorkflow(
   // 1. ROUTER AGENT
   const router = await routerAgent(ctx, chatHistory);
 
-  // if (router === "ask_clarification" && ctx.alreadyClarified) {
-  //   return searchAgent(ctx, chatHistory);
   if (router === "ask_clarification") {
-    return clarifierAgent(ctx, chatHistory);
+    return clarifierAgent(ctx, chatHistory, router);
   }
 
   // 2. CART AGENT (incluye ask_final_confirmation)
   if (router === "cart_agent" || router === "ask_final_confirmation") {
-    return cartManagerAgent(ctx, chatHistory);
+    return cartManagerAgent(ctx, chatHistory, router);
   }
 
   // 3. SEARCH AGENT
-  return searchAgent(ctx, chatHistory);
+  return searchAgent(ctx, chatHistory, router);
 }

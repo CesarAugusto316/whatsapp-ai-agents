@@ -15,6 +15,7 @@ import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { MediaFile } from "@/infraestructure/adapters/whatsapp";
 import { productOrderStateManager } from "@/application/services/state-managers";
 import { logger } from "@/infraestructure/logging";
+import { RouterOutput } from "./router-agent";
 
 /**
  *
@@ -294,6 +295,7 @@ async function processToolCalls(
 export async function searchAgent(
   ctx: DomainCtx,
   chatHistory: ChatMessage[],
+  routerAgent: RouterOutput,
 ): Promise<BookingSagaResult> {
   //
   const userMessage = ctx.customerMessage!;
@@ -342,6 +344,16 @@ export async function searchAgent(
     userMessage,
     finalResponse,
     toolMessages,
+  );
+
+  await Promise.all(
+    toolResults.map((tool) => {
+      return productOrderStateManager.saveRouterHistory(ctx.chatKey, {
+        agent: routerAgent,
+        toolName: tool.chatMsg.name,
+        userMessage,
+      });
+    }),
   );
 
   return formatSagaOutput(

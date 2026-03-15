@@ -14,7 +14,7 @@ class CacheAdapter implements ICacheAdapter {
   async getObj<D>(key: string): Promise<D | undefined> {
     const payload = await redisClient.get(key);
     if (!payload) return;
-    return JSON.parse(payload) satisfies Partial<D>;
+    return JSON.parse(payload) satisfies D;
   }
 
   async getStr(key: string): Promise<string | undefined> {

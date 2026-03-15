@@ -5,7 +5,8 @@ import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { DomainCtx } from "@/domain/booking";
 import { formatSagaOutput } from "@/application/patterns";
 import { BookingSagaResult } from "../../booking/booking-saga";
-import { cacheAdapter } from "@/infraestructure/adapters/cache";
+import { productOrderStateManager } from "@/application/services/state-managers";
+import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 
 const routerSchema = z.enum([
   "search_agent",
@@ -14,20 +15,18 @@ const routerSchema = z.enum([
   "ask_final_confirmation",
 ]);
 
-type RouterOutput = z.infer<typeof routerSchema>;
+export type RouterOutput = z.infer<typeof routerSchema>;
 
 /**
  * Historial de routing con ventana deslizante (últimos 5 eventos)
  */
-type RoutingHistoryEntry = {
-  agent: RouterOutput;
+export type RoutingHistoryEntry = {
   timestamp: number;
   userMessage: string;
-  cartAction?: string; // Para tracking de acciones del cart_agent (add, remove, view, confirm)
+  agent: RouterOutput;
+  toolName?: string;
+  action?: string; // Para tracking de acciones del cart_agent (add, remove, view, confirm)
 };
-
-const ROUTING_HISTORY_KEY = "routerAgent:history";
-const MAX_HISTORY_LENGTH = 5;
 
 /**
  * Normaliza y valida el output del router
@@ -194,12 +193,52 @@ function createRouterAgentPrompt(
 `.trim();
 }
 
+export const routerAgent = async (
+  ctx: DomainCtx,
+  chatHistory: ChatMessage[],
+): Promise<RouterOutput> => {
+  //
+  const userMessage = ctx.customerMessage!;
+  const domain: SpecializedDomain = ctx.business.general.businessType;
+  const routerHistory = await productOrderStateManager.getRouterHistory(
+    ctx.productOrderKey,
+  );
+  const systemPrompt = createRouterAgentPrompt(
+    domain,
+    createHistoryCtx(routerHistory),
+  );
+
+  const messages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
+    ...(chatHistory ?? []),
+    { role: "user", content: userMessage },
+  ];
+
+  const response = await aiAdapter.generateText({
+    messages,
+    temperature: 0,
+    max_tokens: 4_096,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        type: "string",
+        enum: [
+          "search_agent",
+          "cart_agent",
+          "ask_clarification",
+          "ask_final_confirmation",
+        ] satisfies RouterOutput[],
+      },
+    },
+  });
+
+  return validateRouter(response);
+};
+
 /**
  * Obtiene el historial completo formateado para el prompt
  */
-const getFormattedHistory = async (
-  history: RoutingHistoryEntry[],
-): Promise<string> => {
+function createHistoryCtx(history: RoutingHistoryEntry[]): string {
   //
   if (history.length === 0) {
     return "null (primer mensaje)";
@@ -221,12 +260,11 @@ const getFormattedHistory = async (
 
   // Verificar si hubo un "add" reciente (necesario para ask_final_confirmation)
   const hasRecentAdd = history.some(
-    (entry) => entry.agent === "cart_agent" && entry.cartAction === "add",
+    (entry) => entry.agent === "cart_agent" && entry.action === "add",
   );
 
   const lastAgent = history[0].agent;
-  const lastMessage = history[0].userMessage;
-  const lastCartAction = history[0].cartAction;
+  const lastToolCalled = history[0].toolName;
   const timeAgo = Math.floor((Date.now() - history[0].timestamp) / 1000);
 
   // Mostrar últimos 3 routings
@@ -234,99 +272,22 @@ const getFormattedHistory = async (
     .slice(0, 3)
     .map((entry, idx) => {
       const timeAgo = Math.floor((Date.now() - entry.timestamp) / 1000);
-      const actionInfo = entry.cartAction ? ` [${entry.cartAction}]` : "";
+      const actionInfo = entry.action ? ` [${entry.action}]` : "";
       return `${idx + 1}. [${timeAgo}s atrás] ${entry.agent}${actionInfo} ← "${entry.userMessage}"`;
     })
     .join("\n    ");
 
   return `
-    ÚltimoAgente: ${lastAgent}${lastCartAction ? ` [${lastCartAction}]` : ""} (${timeAgo}s atrás) ← "${lastMessage}"
-    ClarificacionesConsecutivas: ${consecutiveClarifications}
-    HuboAgregadoReciente: ${hasRecentAdd ? "SÍ (puede confirmar)" : "NO (primero debe agregar)"}
+      ÚltimoAgente: ${lastAgent} (${timeAgo}s atrás)
+      lastToolCalled: ${lastToolCalled}
+      HuboAgregadoReciente: ${hasRecentAdd ? "SÍ (se puede confirmar)" : "NO (primero debe agregar)"}
 
-    HistorialReciente:
-    ${recentHistory}
-  `.trim();
-};
+      ClarificacionesConsecutivas: ${consecutiveClarifications}
 
-/**
- * Resetea el historial de routing cuando el flujo termina
- * (ej: después de confirmar un pedido, cancelar, o sesión nueva)
- */
-export const resetRouterHistory = async (): Promise<void> => {
-  await cacheAdapter.delete(ROUTING_HISTORY_KEY);
-};
-
-export const routerAgent = async (
-  ctx: DomainCtx,
-  chatHistory: ChatMessage[],
-): Promise<RouterOutput> => {
-  const userMessage = ctx.customerMessage!;
-  const domain: SpecializedDomain = ctx.business.general.businessType;
-  const history =
-    (await cacheAdapter.getObj<RoutingHistoryEntry[]>(ROUTING_HISTORY_KEY)) ||
-    [];
-  const historyContext = await getFormattedHistory(history);
-  const systemPrompt = createRouterAgentPrompt(domain, historyContext);
-
-  const messages: ChatMessage[] = [
-    { role: "system", content: systemPrompt },
-    ...(chatHistory ?? []),
-    { role: "user", content: userMessage },
-  ];
-
-  const response = await aiAdapter.generateText({
-    messages,
-    temperature: 0,
-    max_tokens: 4_096,
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        type: "string",
-        enum: [
-          "search_agent",
-          "cart_agent",
-          "ask_clarification",
-          "ask_final_confirmation",
-        ],
-      },
-    },
-  });
-
-  const result = validateRouter(response);
-
-  // Extraer la acción del cart_agent del último tool result (si existe)
-  let cartAction: string | undefined;
-  if (result === "cart_agent" && chatHistory && chatHistory.length > 0) {
-    // Buscar el último tool result de manage_cart
-    const lastToolResult = [...chatHistory].findLast(
-      (m) => m.role === "tool" && m.name === "manage_cart",
-    );
-
-    if (lastToolResult?.content) {
-      try {
-        const parsed = JSON.parse(lastToolResult.content);
-        if (parsed?.success && parsed?.action) {
-          cartAction = parsed.action;
-        }
-      } catch {
-        // Ignorar si no se puede parsear
-      }
-    }
-  }
-
-  // Guardar en el historial con ventana deslizante
-  const newEntry: RoutingHistoryEntry = {
-    agent: result,
-    timestamp: Date.now(),
-    userMessage: userMessage.substring(0, 100),
-    cartAction,
-  };
-  const updatedHistory = [newEntry, ...history].slice(0, MAX_HISTORY_LENGTH);
-  await cacheAdapter.save(ROUTING_HISTORY_KEY, updatedHistory);
-
-  return result;
-};
+      HistorialReciente:
+      ${recentHistory}
+    `.trim();
+}
 
 /**
  *
@@ -337,6 +298,7 @@ export const routerAgent = async (
 export const clarifierAgent = async (
   ctx: DomainCtx,
   chatHistory: ChatMessage[],
+  routerAgent: RouterOutput,
 ): Promise<BookingSagaResult> => {
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
@@ -393,6 +355,12 @@ export const clarifierAgent = async (
     messages,
     useAuxModel: true,
     temperature: 0,
+  });
+
+  await chatHistoryAdapter.push(ctx.chatKey, userMessage, response);
+  await productOrderStateManager.saveRouterHistory(ctx.chatKey, {
+    agent: routerAgent,
+    userMessage,
   });
 
   return formatSagaOutput(response, "clarifier agent", { systemPrompt });

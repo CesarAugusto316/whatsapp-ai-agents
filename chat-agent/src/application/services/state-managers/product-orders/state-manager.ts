@@ -11,6 +11,11 @@ import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { ragService } from "../../rag";
 import { fuzzyMatch } from "../../fuzzy-matching";
+import { RoutingHistoryEntry } from "@/application/use-cases/sagas/product-orders";
+
+const MAX_HISTORY_LENGTH = 5;
+
+type HistoryArg = Omit<RoutingHistoryEntry, "timestamp">;
 
 interface ProductStateTransition {
   nextState?: FMStatus;
@@ -336,7 +341,42 @@ class ProductOrderStateManager {
   }
 
   async getState(key: string) {
-    return cacheAdapter.getObj<Partial<ProductOrderState>>(key);
+    return cacheAdapter.getObj<ProductOrderState>(key);
+  }
+
+  async saveRouterHistory(
+    key: string,
+    { agent, action, userMessage, toolName }: HistoryArg,
+  ) {
+    //
+    const newEntry: RoutingHistoryEntry = {
+      agent,
+      action,
+      toolName,
+      userMessage: userMessage.substring(0, 100),
+      timestamp: Date.now(),
+    };
+    const prev = (await this.getState(key)) ?? ({} as ProductOrderState);
+    const history = prev?.routerHistory ?? [];
+    const updatedHistory = [newEntry, ...history].slice(0, MAX_HISTORY_LENGTH);
+
+    await cacheAdapter.save<ProductOrderState>(key, {
+      ...prev,
+      routerHistory: updatedHistory,
+    });
+  }
+
+  async getRouterHistory(key: string): Promise<RoutingHistoryEntry[]> {
+    const state = (await cacheAdapter.getObj<ProductOrderState>(key))! || [];
+    return state?.routerHistory ?? [];
+  }
+
+  async resetRouterHistory(key: string) {
+    const prev = (await this.getState(key)) ?? ({} as ProductOrderState);
+    await cacheAdapter.save<ProductOrderState>(key, {
+      ...prev,
+      routerHistory: [],
+    });
   }
 }
 
