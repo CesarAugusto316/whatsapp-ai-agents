@@ -31,6 +31,8 @@ export const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
       "ok vamos",
       "sí claro",
       "exactamente eso",
+      "confirmado",
+      "afirmativo",
     ],
   },
   {

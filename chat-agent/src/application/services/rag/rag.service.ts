@@ -21,7 +21,7 @@ import { IntentExample, IntentExampleKey, intentExamples } from "../pomdp";
  */
 class RagService {
   private readonly EMBED_VERSION = "qwen3-0.6b";
-  private readonly THRESHOLD = 0.6;
+  private readonly THRESHOLD = 0.65;
   private readonly CACHE_TTL = 60 * 60 * 24 * 30; // 30 días
   private initPromise: Promise<void> | null = null;
 
@@ -121,6 +121,7 @@ class RagService {
     activeModules: ModuleKind[],
     domain: SpecializedDomain,
     limit = 3,
+    threshold = this.THRESHOLD,
     lang = "es",
     version = "1.0",
   ) {
@@ -150,7 +151,7 @@ class RagService {
       lang,
       domain,
       limit,
-      this.THRESHOLD,
+      threshold,
     ) as Promise<{ points: QuadrantPoint<IntentPayload>[] }>;
   }
 

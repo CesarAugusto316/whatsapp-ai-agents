@@ -136,7 +136,6 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
   const vocab = DOMAIN_VOCABULARY[domain];
   const productExample1 = vocab.productExamples[0];
   const productExample2 = vocab.productExamples[1] || productExample1;
-  const toolName = TOOL_NAME;
 
   return `
     Eres un asistente especializado en gestionar ${vocab.orderWord}s de clientes para un ${vocab.greetingContext}.
@@ -146,7 +145,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     ## TUS HERRAMIENTAS
 
-    ### ${toolName}
+    ### ${TOOL_NAME}
     Gestiona el ${vocab.orderWord}. Úsala para:
     - **Agregar**: "agregame", "quiero", "dame", "poneme", "2 platos"
     - **Quitar**: "quitame", "sacame", "eliminame", "borrame"
@@ -174,15 +173,16 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     ### 👁️ VER (action: "view")
     - "Mostrame mi ${vocab.orderWord}" → { action: "view" }
+    - "Quiero ver cuantos ${vocab.productPlural} llevo agregados" → { action: "view" }
 
     ### ✅ CONFIRMAR (action: "confirm")
     - "Confirmo" → { action: "confirm" }
 
     ### 👁️ VER ANTES DE CONFIRMAR (action: "view" → luego "confirm")
     - "Nada más", "eso es todo", "listo", "quiero confirmar" →
-      PRIMERO: ${toolName}("view") para mostrar resumen
+      PRIMERO: ${TOOL_NAME}("view") para mostrar resumen
       LUEGO: El sistema preguntará "¿Confirmas tu pedido con X productos?"
-      USUARIO: "sí, confirmo" → ${toolName}("confirm")
+      USUARIO: "sí, confirmo" → ${TOOL_NAME}("confirm")
 
     ### 👤 INGRESAR NOMBRE (action: "enterUsername")
     - "Me llamo Juan" → { action: "enterUsername", customerName: "Juan" }
@@ -193,32 +193,32 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     2. **EXTRAE LA CANTIDAD**: Si no se menciona, asume 1
     3. **EXTRAE NOTAS**: Si el usuario dice "sin cebolla", "con extra queso", etc.
     4. **UNA SOLA ACCIÓN POR MENSAJE**: No combines add + remove
-    5. **OBLIGATORIO**: Tu ÚNICA forma de responder es llamando a **${toolName}**
+    5. **OBLIGATORIO**: Tu ÚNICA forma de responder es llamando a **${TOOL_NAME}**
 
     ## CLARIFICACIÓN (CRÍTICO)
 
     Si el asistente hizo una pregunta de clarificación y el usuario respondió:
     - Usuario: "${productExample1}" → Asistente: "¿Quieres ver o agregar?" → Usuario: "Agregar"
-      → **OBLIGATORIO**: ${toolName}("add", { name: "${productExample1}", quantity: 1 })
+      → **OBLIGATORIO**: ${TOOL_NAME}("add", { name: "${productExample1}", quantity: 1 })
     - Usuario: "2 ${productExample1}s" → Asistente: "¿Ver o agregar?" → Usuario: "Agregar"
-      → ${toolName}("add", { name: "${productExample1}", quantity: 2 })
+      → ${TOOL_NAME}("add", { name: "${productExample1}", quantity: 2 })
 
-      **IMPORTANTE**: Después de clarificación, el usuario YA expresó su intención. Solo ejecuta ${toolName}.
+      **IMPORTANTE**: Después de clarificación, el usuario YA expresó su intención. Solo ejecuta ${TOOL_NAME}.
 
     ## CUANDO HAY AMBIGÜEDAD
 
     Si el usuario menciona un ${vocab.productName} genérico y hay múltiples opciones:
-    - Llama ${toolName} igual
+    - Llama ${TOOL_NAME} igual
     - El sistema preguntará "¿Qué ${productExample1} quieres? tenemos ..."
 
     ## EJEMPLOS
 
-    "Agregame 2 ${productExample1}s" → ${toolName}("add", { name: "${productExample1}", quantity: 2 })
-    "Quitame una ${productExample2}" → ${toolName}("remove", { name: "${productExample2}", quantity: 1 })
-    "Mostrame qué llevo" → ${toolName}("view")
-    "Confirmo mi ${vocab.orderWord}" → ${toolName}("confirm")
-    "Agregame una ${productExample1} sin cebolla" → ${toolName}("add", { name: "${productExample1}", quantity: 1, notes: "sin cebolla" })
-    "Me llamo Juan" → ${toolName}("enterUsername", { customerName: "Juan" })
+    "Agregame 2 ${productExample1}s" → ${TOOL_NAME}("add", { name: "${productExample1}", quantity: 2 })
+    "Quitame una ${productExample2}" → ${TOOL_NAME}("remove", { name: "${productExample2}", quantity: 1 })
+    "Mostrame qué llevo" → ${TOOL_NAME}("view")
+    "Confirmo mi ${vocab.orderWord}" → ${TOOL_NAME}("confirm")
+    "Agregame una ${productExample1} sin cebolla" → ${TOOL_NAME}("add", { name: "${productExample1}", quantity: 1, notes: "sin cebolla" })
+    "Me llamo Juan" → ${TOOL_NAME}("enterUsername", { customerName: "Juan" })
 
     ## IMPORTANTE
 
@@ -517,7 +517,7 @@ async function processToolCalls(
 /**
  * Prompt para convertir acciones técnicas en mensaje humano
  */
-function humanizePrompt(domain: SpecializedDomain): string {
+function humanizePrompt(domain: SpecializedDomain, lastAction: string): string {
   const vocab = DOMAIN_VOCABULARY[domain];
   return `
     Eres un asistente amable que convierte acciones técnicas en mensajes naturales para el usuario.
@@ -536,7 +536,7 @@ function humanizePrompt(domain: SpecializedDomain): string {
 
     1. **add/remove/update** → Preguntar si desea algo más o terminar
        - "¿Te gustaría agregar algo más o eso es todo?"
-       - "¿Quieres agregar otro ${vocab.productName} o procedemos a confirmar?"
+       - "¿Quieres agregar otro ${vocab.productName} o procedemos a confirmar tu ${vocab.orderWord}?"
        - "¿Algo más para tu ${vocab.orderWord} o confirmamos?"
        - Varía las frases para que no suenen repetitivas
 
@@ -552,6 +552,9 @@ function humanizePrompt(domain: SpecializedDomain): string {
 
     4. **enterUsername** → Confirmar recepción del nombre
        - "¡Gracias! Nombre registrado"
+
+    CONTEXT:
+    - lastAction: ${lastAction}
 
     Instrucciones:
     - Sé breve (1-2 oraciones)
@@ -620,11 +623,15 @@ export const cartManagerAgent = async (
   }
 
   // Generar respuesta humana usando el prompt dedicado
+  const lastAction = toolResults.at(-1)?.action!;
   const finalResponse = await aiAdapter.generateText({
     temperature: 0,
     useAuxModel: true,
     messages: [
-      { role: "system", content: humanizePrompt(domain) },
+      {
+        role: "system",
+        content: humanizePrompt(domain, lastAction),
+      },
       ...chatHistory.filter((m) => m.role !== "system"),
       ...toolMessages,
     ],

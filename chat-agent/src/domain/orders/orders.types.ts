@@ -10,4 +10,5 @@ export interface ProductOrderState extends OrderSchema {
   customerId: string;
   searchedProducts: QuadrantPoint<Partial<Product>>[];
   routerHistory: RoutingHistoryEntry[];
+  hasAskedForConfirmation: boolean;
 }
