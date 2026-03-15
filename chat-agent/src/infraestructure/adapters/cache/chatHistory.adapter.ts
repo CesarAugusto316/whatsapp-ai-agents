@@ -68,26 +68,47 @@ class ChatHistory {
     chatKey: string,
     customerMessage: string,
     assistantResponse: string,
-    toolCall?: ChatMessage,
+    toolCalls?: ChatMessage[],
   ) {
-    const lastMessage = assistantResponse
-      ? JSON.stringify({
+    //
+    const toolMessages = toolCalls
+      ? toolCalls.map((call) => JSON.stringify({ call, timestamp: Date.now() }))
+      : undefined;
+
+    // Validate: Never store system prompts
+    if (toolMessages?.length) {
+      await redisClient.rpush(
+        chatKey,
+        JSON.stringify({
+          role: "user",
+          content: customerMessage,
+          timestamp: Date.now(),
+        } satisfies StoredMessage),
+
+        ...toolMessages,
+
+        JSON.stringify({
           role: "assistant",
           content: assistantResponse,
           timestamp: Date.now(),
-        } satisfies StoredMessage)
-      : JSON.stringify({ ...toolCall, timestamp: Date.now() });
-
-    // Validate: Never store system prompts
-    await redisClient.rpush(
-      chatKey,
-      JSON.stringify({
-        role: "user",
-        content: customerMessage,
-        timestamp: Date.now(),
-      } satisfies StoredMessage),
-      lastMessage,
-    );
+        } satisfies StoredMessage),
+      );
+    } //
+    else {
+      await redisClient.rpush(
+        chatKey,
+        JSON.stringify({
+          role: "user",
+          content: customerMessage,
+          timestamp: Date.now(),
+        } satisfies StoredMessage),
+        JSON.stringify({
+          role: "assistant",
+          content: assistantResponse,
+          timestamp: Date.now(),
+        } satisfies StoredMessage),
+      );
+    }
     await redisClient.ltrim(chatKey, -this.MAX_MESSAGES, -1);
     await redisClient.expire(chatKey, this.EXPIRATION_TIME);
 

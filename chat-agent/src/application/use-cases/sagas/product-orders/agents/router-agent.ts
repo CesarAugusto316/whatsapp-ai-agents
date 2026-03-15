@@ -94,7 +94,7 @@ function createRouterAgentPrompt(
 
     ### ask_final_confirmation
     **Cuándo:** El usuario quiere terminar/finalizar su ${vocab.orderWord}. Indica que ya terminó de agregar.
-    **Frases:** "nada más", "eso es todo", "quiero confirmar", "finalizar", "quiero terminar", "es todo", "nada más eso", "quiero cerrar mi pedido"
+    **Frases:** "nada más", "eso es todo", "quiero confirmar", "finalizar", "quiero terminar", "eso es todo", "nada más eso", "quiero cerrar mi pedido"
 
     ## REGLAS
 
@@ -105,8 +105,8 @@ function createRouterAgentPrompt(
       - "agrega", "pon", "dame", "quita", "saca" → cart_agent
       - "quiero ver", "busco", "¿qué tienen?" → search_agent
       - "mi nombre es", "soy" → cart_agent
-      - "nada más", "eso es todo", "listo", "quiero confirmar", "finalizar" → ask_final_confirmation
-      - Producto solo (sin verbo) → ask_clarification
+      - "nada más", "eso es todo", "quiero confirmar", "finalizar" → ask_final_confirmation
+      - ${vocab.productName} solo (sin verbo) → ask_clarification
 
     2. **CONDICIÓN CRÍTICA para ask_final_confirmation:**
       - SOLO elige "ask_final_confirmation" si "HuboAgregadoReciente: SÍ"
@@ -194,6 +194,69 @@ function createRouterAgentPrompt(
 `.trim();
 }
 
+/**
+ * Obtiene el historial completo formateado para el prompt
+ */
+const getFormattedHistory = async (
+  history: RoutingHistoryEntry[],
+): Promise<string> => {
+  //
+  if (history.length === 0) {
+    return "null (primer mensaje)";
+  }
+
+  // Calcular métricas para ayudar al LLM
+  const consecutiveClarifications: number = history.reduce(
+    (acc, entry, idx) => {
+      if (entry.agent === "ask_clarification") {
+        const prev = history[idx - 1];
+        if (!prev || prev.agent === "ask_clarification") {
+          return acc + 1;
+        }
+      }
+      return acc;
+    },
+    0,
+  );
+
+  // Verificar si hubo un "add" reciente (necesario para ask_final_confirmation)
+  const hasRecentAdd = history.some(
+    (entry) => entry.agent === "cart_agent" && entry.cartAction === "add",
+  );
+
+  const lastAgent = history[0].agent;
+  const lastMessage = history[0].userMessage;
+  const lastCartAction = history[0].cartAction;
+  const timeAgo = Math.floor((Date.now() - history[0].timestamp) / 1000);
+
+  // Mostrar últimos 3 routings
+  const recentHistory = history
+    .slice(0, 3)
+    .map((entry, idx) => {
+      const timeAgo = Math.floor((Date.now() - entry.timestamp) / 1000);
+      const actionInfo = entry.cartAction ? ` [${entry.cartAction}]` : "";
+      return `${idx + 1}. [${timeAgo}s atrás] ${entry.agent}${actionInfo} ← "${entry.userMessage}"`;
+    })
+    .join("\n    ");
+
+  return `
+    ÚltimoAgente: ${lastAgent}${lastCartAction ? ` [${lastCartAction}]` : ""} (${timeAgo}s atrás) ← "${lastMessage}"
+    ClarificacionesConsecutivas: ${consecutiveClarifications}
+    HuboAgregadoReciente: ${hasRecentAdd ? "SÍ (puede confirmar)" : "NO (primero debe agregar)"}
+
+    HistorialReciente:
+    ${recentHistory}
+  `.trim();
+};
+
+/**
+ * Resetea el historial de routing cuando el flujo termina
+ * (ej: después de confirmar un pedido, cancelar, o sesión nueva)
+ */
+export const resetRouterHistory = async (): Promise<void> => {
+  await cacheAdapter.delete(ROUTING_HISTORY_KEY);
+};
+
 export const routerAgent = async (
   ctx: DomainCtx,
   chatHistory: ChatMessage[],
@@ -266,65 +329,11 @@ export const routerAgent = async (
 };
 
 /**
- * Obtiene el historial completo formateado para el prompt
+ *
+ * @param ctx
+ * @param chatHistory
+ * @returns
  */
-const getFormattedHistory = async (
-  history: RoutingHistoryEntry[],
-): Promise<string> => {
-  //
-  if (history.length === 0) {
-    return "null (primer mensaje)";
-  }
-
-  // Calcular métricas para ayudar al LLM
-  const consecutiveClarifications = history.reduce((acc, entry, idx) => {
-    if (entry.agent === "ask_clarification") {
-      const prev = history[idx - 1];
-      if (!prev || prev.agent === "ask_clarification") {
-        return acc + 1;
-      }
-    }
-    return acc;
-  }, 0);
-
-  // Verificar si hubo un "add" reciente (necesario para ask_final_confirmation)
-  const hasRecentAdd = history.some(
-    (entry) => entry.agent === "cart_agent" && entry.cartAction === "add",
-  );
-
-  const lastAgent = history[0].agent;
-  const lastMessage = history[0].userMessage;
-  const lastCartAction = history[0].cartAction;
-  const timeAgo = Math.floor((Date.now() - history[0].timestamp) / 1000);
-
-  // Mostrar últimos 3 routings
-  const recentHistory = history
-    .slice(0, 3)
-    .map((entry, idx) => {
-      const timeAgo = Math.floor((Date.now() - entry.timestamp) / 1000);
-      const actionInfo = entry.cartAction ? ` [${entry.cartAction}]` : "";
-      return `${idx + 1}. [${timeAgo}s atrás] ${entry.agent}${actionInfo} ← "${entry.userMessage}"`;
-    })
-    .join("\n    ");
-
-  return `
-    ÚltimoAgente: ${lastAgent}${lastCartAction ? ` [${lastCartAction}]` : ""} (${timeAgo}s atrás) ← "${lastMessage}"
-    ClarificacionesConsecutivas: ${consecutiveClarifications}
-    HuboAgregadoReciente: ${hasRecentAdd ? "SÍ (puede confirmar)" : "NO (primero debe agregar)"}
-
-    HistorialReciente:
-    ${recentHistory}
-  `.trim();
-};
-
-/**
- * Resetea el historial de routing cuando el flujo termina
- * (ej: después de confirmar un pedido, cancelar, o sesión nueva)
- */
-export const resetRouterHistory = async (): Promise<void> => {
-  await cacheAdapter.delete(ROUTING_HISTORY_KEY);
-};
-
 export const clarifierAgent = async (
   ctx: DomainCtx,
   chatHistory: ChatMessage[],

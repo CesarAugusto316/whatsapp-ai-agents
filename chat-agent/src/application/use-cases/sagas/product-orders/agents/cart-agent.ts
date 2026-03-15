@@ -529,15 +529,32 @@ function humanizePrompt(domain: SpecializedDomain): string {
     - confirm: el ${vocab.orderWord} se creó exitosamente luego de confirmación (pedido creado)
     - enterUsername: el usuario proporcionó su nombre
 
-    Casos especiales:
-    - Si el usuario dijo "nada más", "eso es todo", "listo" y se ejecutó "view" →
-      Muestra el resumen del ${vocab.orderWord} y pregunta "¿Confirmas tu ${vocab.orderWord}?"
-    - Si se ejecutó "confirm" → Confirma que el ${vocab.orderWord} fue creado con éxito
+    Preguntas de cierre según la acción:
+
+    1. **add/remove/update** → Preguntar si desea algo más o terminar
+       - "¿Te gustaría agregar algo más o eso es todo?"
+       - "¿Quieres agregar otro ${vocab.productName} o procedemos a confirmar?"
+       - "¿Algo más para tu ${vocab.orderWord} o confirmamos?"
+       - Varía las frases para que no suenen repetitivas
+
+    2. **view** → El usuario ya tiene ${vocab.productPlural}, preguntar si confirma o cambia algo
+       - "¿Confirmas tu ${vocab.orderWord} o quieres modificar algo?"
+       - "¿Procedemos a confirmar o necesitas cambiar algo?"
+       - "¿Todo correcto o quieres agregar/quitar algo?"
+       - Si el usuario dijo "nada más", "eso es todo": "¿Confirmas tu ${vocab.orderWord}?"
+
+    3. **confirm** → Confirmar éxito del pedido
+       - "¡Tu ${vocab.orderWord} fue confirmado ..." (agrega un resumen breve)
+       - "¡Listo! Tu ${vocab.orderWord} está en camino" (agrega un resumen breve)
+
+    4. **enterUsername** → Confirmar recepción del nombre
+       - "¡Gracias! Nombre registrado"
 
     Instrucciones:
     - Sé breve (1-2 oraciones)
     - No menciones JSON, herramientas o detalles técnicos
     - Usa el contexto del ${vocab.orderWord} del usuario
+    - Varía las preguntas de cierre para que no suenen robóticas
 `.trim();
 }
 
@@ -572,7 +589,8 @@ export const cartManagerAgent = async (
   }
 
   const toolResults = await processToolCalls(toolCalls, ctx);
-  messages.push(...toolResults.map((r) => r.chatMsg));
+  const toolMessages = toolResults.map((r) => r.chatMsg);
+  messages.push(...toolMessages);
 
   const hasSomeError = toolResults.find((r) => !r.success);
 
@@ -604,11 +622,16 @@ export const cartManagerAgent = async (
     messages: [
       { role: "system", content: humanizePrompt(domain) },
       ...chatHistory.filter((m) => m.role !== "system"),
-      ...toolResults.map((r) => r.chatMsg),
+      ...toolMessages,
     ],
   });
 
-  await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
+  await chatHistoryAdapter.push(
+    ctx.chatKey,
+    userMessage,
+    finalResponse,
+    toolMessages,
+  );
 
   return formatSagaOutput(finalResponse, "cart manager agent", {
     toolCalls,

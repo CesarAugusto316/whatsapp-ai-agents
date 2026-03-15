@@ -328,7 +328,8 @@ export async function searchAgent(
       .flat(),
   ];
 
-  messages.push(...toolResults.map((r) => r.chatMsg));
+  const toolMessages = toolResults.map((r) => r.chatMsg);
+  messages.push(...toolMessages);
 
   const finalResponse = await aiAdapter.generateText({
     useAuxModel: true,
@@ -336,7 +337,12 @@ export async function searchAgent(
     messages,
   });
 
-  await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
+  await chatHistoryAdapter.push(
+    ctx.chatKey,
+    userMessage,
+    finalResponse,
+    toolMessages,
+  );
 
   return formatSagaOutput(
     finalResponse,
