@@ -1,9 +1,10 @@
 import { DomainCtx } from "@/domain/booking";
 import { BookingSagaResult } from "@/application/use-cases/sagas/booking/booking-saga";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
-import { clarifierAgent, routerAgent } from "./router-agent";
+import { routerAgent } from "./router-agent";
 import { cartManagerAgent } from "./cart-agent";
 import { searchAgent } from "./search-agent";
+import { clarifierAgent } from "./clarifier-agent";
 
 /**
  * Maneja el flujo completo de tool calling para pedidos de productos
