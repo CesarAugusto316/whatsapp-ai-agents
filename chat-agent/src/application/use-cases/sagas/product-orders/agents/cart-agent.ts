@@ -639,7 +639,7 @@ export const cartManagerAgent = async (
 
   await Promise.all(
     toolResults.map((tool) => {
-      return productOrderStateManager.saveRouterHistory(ctx.chatKey, {
+      return productOrderStateManager.saveRouterHistory(ctx.productOrderKey, {
         agent: routerAgent,
         toolName: tool.chatMsg.name,
         action: tool.action,

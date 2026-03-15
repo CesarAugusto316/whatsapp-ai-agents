@@ -358,7 +358,7 @@ export const clarifierAgent = async (
   });
 
   await chatHistoryAdapter.push(ctx.chatKey, userMessage, response);
-  await productOrderStateManager.saveRouterHistory(ctx.chatKey, {
+  await productOrderStateManager.saveRouterHistory(ctx.productOrderKey, {
     agent: routerAgent,
     userMessage,
   });

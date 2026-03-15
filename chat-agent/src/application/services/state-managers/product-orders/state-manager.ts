@@ -104,74 +104,74 @@ class ProductOrderStateManager {
           }),
         };
 
-        // UPDATE
-        // case MainOptions.UPDATE_BOOKING:
-        //   return {
-        //     nextState: BookingStatuses.UPDATE_STARTED,
-        //     message: stateMessages[BookingStatuses.UPDATE_STARTED]({
-        //       domain,
-        //       data,
-        //       timeZone,
-        //     }),
-        //   };
-        // case BookingStatuses.UPDATE_STARTED:
-        //   return {
-        //     nextState: BookingStatuses.UPDATE_VALIDATED,
-        //     message: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
-        //       domain,
-        //       data,
-        //       timeZone,
-        //     }),
-        //   };
-        // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.CONFIRM:
-        //   return {
-        //     nextState: BookingStatuses.UPDATE_CONFIRMED,
-        //     message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
-        //       domain,
-        //       signal: CustomerSignals.CONFIRM,
-        //       data,
-        //       timeZone,
-        //     }),
-        //   };
-        // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.EXIT:
-        //   return {
-        //     nextState: undefined,
-        //     message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
-        //       domain,
-        //       signal: CustomerSignals.EXIT,
-        //       data,
-        //       timeZone,
-        //     }),
-        //   };
-        // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.RESTART:
-        return {
-          nextState: BookingStatuses.UPDATE_STARTED,
-          message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
-            domain,
-            signal: CustomerSignals.RESTART,
-            data,
-            timeZone,
-          }),
-        };
+      // UPDATE
+      // case MainOptions.UPDATE_BOOKING:
+      //   return {
+      //     nextState: BookingStatuses.UPDATE_STARTED,
+      //     message: stateMessages[BookingStatuses.UPDATE_STARTED]({
+      //       domain,
+      //       data,
+      //       timeZone,
+      //     }),
+      //   };
+      // case BookingStatuses.UPDATE_STARTED:
+      //   return {
+      //     nextState: BookingStatuses.UPDATE_VALIDATED,
+      //     message: stateMessages[BookingStatuses.UPDATE_VALIDATED]({
+      //       domain,
+      //       data,
+      //       timeZone,
+      //     }),
+      //   };
+      // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.CONFIRM:
+      //   return {
+      //     nextState: BookingStatuses.UPDATE_CONFIRMED,
+      //     message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
+      //       domain,
+      //       signal: CustomerSignals.CONFIRM,
+      //       data,
+      //       timeZone,
+      //     }),
+      //   };
+      // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.EXIT:
+      //   return {
+      //     nextState: undefined,
+      //     message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
+      //       domain,
+      //       signal: CustomerSignals.EXIT,
+      //       data,
+      //       timeZone,
+      //     }),
+      //   };
+      // case BookingStatuses.UPDATE_VALIDATED + CustomerSignals.RESTART:
+      // return {
+      //   nextState: BookingStatuses.UPDATE_STARTED,
+      //   message: stateMessages[BookingStatuses.UPDATE_CONFIRMED]({
+      //     domain,
+      //     signal: CustomerSignals.RESTART,
+      //     data,
+      //     timeZone,
+      //   }),
+      // };
 
-        // CANCEL
-        // case MainOptions.CANCEL_BOOKING:
-        //   return {
-        //     nextState: BookingStatuses.CANCEL_VALIDATED,
-        //     message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
-        //       domain,
-        //       data,
-        //       timeZone,
-        //     }),
-        //   };
-        // case BookingStatuses.CANCEL_VALIDATED + CustomerSignals.CONFIRM:
-        return {
-          nextState: BookingStatuses.CANCEL_CONFIRMED,
-          message: stateMessages[BookingStatuses.CANCEL_CONFIRMED]({
-            domain,
-            data,
-          }),
-        };
+      // CANCEL
+      // case MainOptions.CANCEL_BOOKING:
+      //   return {
+      //     nextState: BookingStatuses.CANCEL_VALIDATED,
+      //     message: stateMessages[BookingStatuses.CANCEL_VALIDATED]({
+      //       domain,
+      //       data,
+      //       timeZone,
+      //     }),
+      //   };
+      // case BookingStatuses.CANCEL_VALIDATED + CustomerSignals.CONFIRM:
+      // return {
+      //   nextState: BookingStatuses.CANCEL_CONFIRMED,
+      //   message: stateMessages[BookingStatuses.CANCEL_CONFIRMED]({
+      //     domain,
+      //     data,
+      //   }),
+      // };
 
       default:
         return {

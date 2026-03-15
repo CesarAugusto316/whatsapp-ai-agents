@@ -348,7 +348,7 @@ export async function searchAgent(
 
   await Promise.all(
     toolResults.map((tool) => {
-      return productOrderStateManager.saveRouterHistory(ctx.chatKey, {
+      return productOrderStateManager.saveRouterHistory(ctx.productOrderKey, {
         agent: routerAgent,
         toolName: tool.chatMsg.name,
         userMessage,
