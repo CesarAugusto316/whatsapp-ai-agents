@@ -144,7 +144,7 @@ function createRouterAgentPrompt(
 
     ### ask_final_confirmation
     **Cuándo:** El usuario quiere terminar/finalizar su ${vocab.orderWord}. Indica que ya terminó de agregar.
-    **Frases:** "nada más", "eso es todo", "quiero confirmar", "finalizar", "quiero terminar", "eso es todo", "nada más eso", "quiero cerrar mi pedido"
+    **Frases:** "nada más", "eso es todo", "quiero confirmar", "finalizar", "quiero terminar", "eso es todo", "nada más eso", "quiero cerrar mi pedido", "cómo termino la orden?"
 
     ## REGLAS
 

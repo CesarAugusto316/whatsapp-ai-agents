@@ -25,39 +25,6 @@ export async function productOrderWorkflow(
   const hasAskedForConfirmation =
     ctx.productOrderState?.hasAskedForConfirmation ?? false; //
 
-  const limit = 1;
-  const domain: SpecializedDomain = ctx.business.general.businessType; // ej: restaurant | retail | real-estate
-  const { points } = await ragService.searchIntent(
-    ctx.customerMessage,
-    ["informational"], // ej: ["informational", "booking", "products"],
-    domain,
-    limit,
-    0.8,
-  );
-
-  const intent = points[0].payload;
-
-  if (intent.module === "informational") {
-    const key = intent.intentKey as InformationalIntentKey;
-    const systemPrompt = businessInfoChunck(key, ctx);
-    const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
-      systemPrompt,
-      msg: ctx.customerMessage,
-      chatHistory,
-      useAuxModel: true,
-    });
-    await chatHistoryAdapter.push(
-      ctx.chatKey,
-      ctx.customerMessage,
-      ASSISTANT_MSG,
-    );
-    return formatSagaOutput(
-      ASSISTANT_MSG,
-      intent?.intentKey, // optional
-      { systemPrompt },
-    );
-  }
-
   // when user has confirmed after hasAskedForConfirmation=true debemos ejecutar
   // de forma determinista sin LLM (en la medida de lo posible)
   if (hasAskedForConfirmation) {
@@ -82,10 +49,9 @@ export async function productOrderWorkflow(
     const domain: SpecializedDomain = ctx.business.general.businessType; // ej: restaurant | retail | real-estate
     const { points } = await ragService.searchIntent(
       ctx.customerMessage,
-      ["conversational-signal", "informational"], // ej: ["informational", "booking", "products"],
+      ["conversational-signal"], // ej: ["informational", "booking", "products"],
       domain,
       limit,
-      0.7,
     );
 
     const intent = points[0].payload;
@@ -101,6 +67,39 @@ export async function productOrderWorkflow(
   const router = await routerAgent(ctx, chatHistory);
 
   if (router === "ask_clarification") {
+    const limit = 1;
+    const domain: SpecializedDomain = ctx.business.general.businessType; // ej: restaurant | retail | real-estate
+    const { points } = await ragService.searchIntent(
+      ctx.customerMessage,
+      ["informational"], // ej: ["informational", "booking", "products"],
+      domain,
+      limit,
+      0.7,
+    );
+
+    const intent = points[0].payload;
+
+    if (intent.module === "informational") {
+      const key = intent.intentKey as InformationalIntentKey;
+      const systemPrompt = businessInfoChunck(key, ctx);
+      const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
+        systemPrompt,
+        msg: ctx.customerMessage,
+        chatHistory,
+        useAuxModel: true,
+      });
+      await chatHistoryAdapter.push(
+        ctx.chatKey,
+        ctx.customerMessage,
+        ASSISTANT_MSG,
+      );
+      return formatSagaOutput(
+        ASSISTANT_MSG,
+        intent?.intentKey, // optional
+        { systemPrompt },
+      );
+    }
+
     return clarifierAgent(ctx, chatHistory, router);
   }
 

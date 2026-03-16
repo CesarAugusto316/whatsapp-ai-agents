@@ -1,10 +1,7 @@
 import { describe, test, expect, beforeEach, beforeAll } from "bun:test";
 import { cacheAdapter } from "@/infraestructure/adapters/cache";
 import { env } from "bun";
-import {
-  routerAgent,
-  resetRouterHistory,
-} from "@/application/use-cases/sagas/product-orders/agents/router-agent";
+import { routerAgent } from "@/application/use-cases/sagas/product-orders";
 import { DomainCtx } from "@/domain/booking";
 import {
   Business,
@@ -12,6 +9,7 @@ import {
   SpecializedDomain,
 } from "@/infraestructure/adapters/cms";
 import { ChatMessage } from "@/infraestructure/adapters/ai";
+import { productOrderStateManager } from "@/application/services/state-managers";
 
 const BUSINESS_ID = env.BUSINESS_ID_TEST!;
 const CUSTOMER_PHONE = "+3455555558";
@@ -65,8 +63,8 @@ describe("Router Agent - Clasificación directa de intenciones", () => {
 
   beforeEach(async () => {
     // Limpiar historial de routing antes de cada test
-    await resetRouterHistory();
-    await cacheAdapter.delete(`product-order:${BUSINESS_ID}:${CUSTOMER_PHONE}`);
+    const orderKey = `product-order:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
+    await cacheAdapter.delete(orderKey);
   });
 
   describe("Flujo básico - Primer mensaje sin historial", () => {

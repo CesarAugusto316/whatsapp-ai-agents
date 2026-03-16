@@ -16,6 +16,9 @@ export const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
+      "sí",
+      "sí, vale",
+      "ok, vale",
       "sí por favor",
       "claro que sí",
       "sí por supuesto",
@@ -42,6 +45,7 @@ export const conversationalSignals: IntentExample<SocialProtocolIntent>[] = [
     requiresConfirmation: "never",
     lang: "es",
     examples: [
+      "no",
       "no gracias",
       "no por ahora",
       "no creo",
