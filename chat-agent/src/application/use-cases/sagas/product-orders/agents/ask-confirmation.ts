@@ -64,8 +64,6 @@ function buildProductsSummary(
   }>,
 ) {
   let total = 0;
-  let hasUnavailable = false;
-
   const summary = products
     .map((item) => {
       const price = item.price ?? 0;
@@ -74,14 +72,13 @@ function buildProductsSummary(
       const isAvailable = item.isAvailable !== false;
 
       if (!isAvailable) {
-        hasUnavailable = true;
         return `  • ${item.quantity}× ${item.name} - $${price} c/u = $${itemTotal} ⚠️ AGOTADO`;
       }
       return `  • ${item.quantity}× ${item.name} - $${price} c/u = $${itemTotal}`;
     })
     .join("\n");
 
-  return { summary, total, hasUnavailable };
+  return { summary, total };
 }
 
 function getRandomConfirmationQuestion(orderWord: string): string {
@@ -116,9 +113,9 @@ function createConfirmationPrompt(
     return buildEmptyCartPrompt(vocab);
   }
 
-  const { summary, total, hasUnavailable } = buildProductsSummary(products);
+  const { summary, total } = buildProductsSummary(products);
   const randomQuestion = getRandomConfirmationQuestion(vocab.orderWord);
-  const warning = hasUnavailable
+  const warning = products.some((p) => p.isAvailable === false)
     ? "\n\n⚠️ Algunos productos están agotados y no podrán ser procesados."
     : "";
 

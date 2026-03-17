@@ -6,7 +6,7 @@ import { cartManagerAgent } from "./cart-agent";
 import { searchAgent } from "./search-agent";
 import { clarifierAgent } from "./clarifier-agent";
 import { confirmationAgent } from "./ask-confirmation";
-import { processOrderAgent } from "./confirm-order";
+import { processOrderAgent } from "./confirmation-agent";
 
 /**
  * Maneja el flujo completo de tool calling para pedidos de productos
