@@ -99,10 +99,7 @@ function createConfirmationPrompt(
 `.trim();
 }
 
-export const confirmationAgent = async (
-  ctx: DomainCtx,
-  chatHistory: ChatMessage[],
-) => {
+export const confirmationAgent = async (ctx: DomainCtx) => {
   //
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
@@ -129,7 +126,6 @@ export const confirmationAgent = async (
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
-    ...(chatHistory ?? []),
     { role: "user", content: userMessage },
   ];
 

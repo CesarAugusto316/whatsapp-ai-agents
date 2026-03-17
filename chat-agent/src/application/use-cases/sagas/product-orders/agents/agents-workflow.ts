@@ -105,7 +105,7 @@ export async function productOrderWorkflow(
   }
 
   if (router === "ask_final_confirmation") {
-    return confirmationAgent(ctx, chatHistory);
+    return confirmationAgent(ctx);
   }
 
   // 2. CART AGENT (incluye ask_final_confirmation)

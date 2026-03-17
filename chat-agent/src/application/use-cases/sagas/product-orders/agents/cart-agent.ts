@@ -45,9 +45,9 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
               "add",
               "remove",
               "update",
-              "view",
-              "confirm",
               "enterUsername",
+              // "view",
+              // "confirm",
             ] satisfies OrderAction[],
             description: "The action to perform on the cart",
           },
@@ -292,7 +292,6 @@ async function processToolCalls(
 ): Promise<(ToolResult & { chatMsg: ChatMessage })[]> {
   //
   const businessId = ctx.businessId!;
-  const customerPhone = ctx.customerPhone!;
   const orderKey = ctx.productOrderKey;
 
   return Promise.all(
@@ -384,37 +383,6 @@ async function processToolCalls(
             };
           }
 
-          case "view": {
-            const result = await productOrderStateManager.viewCart(orderKey);
-
-            if (!result.totalItems) {
-              return {
-                success: false,
-                action: data.action,
-                chatMsg: {
-                  ...chat,
-                  content: JSON.stringify({
-                    success: false,
-                    action: data.action,
-                    error: "empty_cart",
-                  }),
-                },
-              };
-            }
-            return {
-              success: true,
-              action: data.action,
-              chatMsg: {
-                ...chat,
-                content: JSON.stringify({
-                  success: true,
-                  action: data.action,
-                  ...result,
-                }),
-              },
-            };
-          }
-
           case "enterUsername": {
             const {
               success,
@@ -453,87 +421,118 @@ async function processToolCalls(
             };
           }
 
-          case "confirm": {
-            const cartPayload =
-              await productOrderStateManager.viewCart(orderKey);
+          // case "view": {
+          //   const result = await productOrderStateManager.viewCart(orderKey);
 
-            if (!cartPayload.customerName) {
-              return {
-                success: false,
-                action: data.action,
-                chatMsg: {
-                  ...chat,
-                  content: JSON.stringify({
-                    success: false,
-                    action: data.action,
-                    error:
-                      "No customer name provided, ask the user for their name",
-                  }),
-                },
-              };
-            }
+          //   if (!result.totalItems) {
+          //     return {
+          //       success: false,
+          //       action: data.action,
+          //       chatMsg: {
+          //         ...chat,
+          //         content: JSON.stringify({
+          //           success: false,
+          //           action: data.action,
+          //           error: "empty_cart",
+          //         }),
+          //       },
+          //     };
+          //   }
+          //   return {
+          //     success: true,
+          //     action: data.action,
+          //     chatMsg: {
+          //       ...chat,
+          //       content: JSON.stringify({
+          //         success: true,
+          //         action: data.action,
+          //         ...result,
+          //       }),
+          //     },
+          //   };
+          // }
 
-            let customerId = cartPayload.customerId || ctx.customer?.id;
+          // case "confirm": {
+          //   const cartPayload =
+          //     await productOrderStateManager.viewCart(orderKey);
 
-            if (!customerId && cartPayload.customerName) {
-              // register user
-              const newCustomer = (
-                (await (
-                  await cmsAdapter.createCostumer({
-                    business: businessId,
-                    phoneNumber: customerPhone || "",
-                    name: cartPayload.customerName,
-                  })
-                ).json()) as { doc: Customer }
-              )?.doc;
+          //   if (!cartPayload.customerName) {
+          //     return {
+          //       success: false,
+          //       action: data.action,
+          //       chatMsg: {
+          //         ...chat,
+          //         content: JSON.stringify({
+          //           success: false,
+          //           action: data.action,
+          //           error:
+          //             "No customer name provided, ask the user for their name",
+          //         }),
+          //       },
+          //     };
+          //   }
 
-              customerId = newCustomer?.id;
-            }
+          //   let customerId = cartPayload.customerId || ctx.customer?.id;
 
-            if (!customerId) {
-              return {
-                success: false,
-                action: data.action,
-                chatMsg: {
-                  ...chat,
-                  content: JSON.stringify({
-                    success: false,
-                    action: data.action,
-                    error: "Customer does not exist",
-                  }),
-                },
-              };
-            }
+          //   if (!customerId && cartPayload.customerName) {
+          //     // register user
+          //     const newCustomer = (
+          //       (await (
+          //         await cmsAdapter.createCostumer({
+          //           business: businessId,
+          //           phoneNumber: customerPhone || "",
+          //           name: cartPayload.customerName,
+          //         })
+          //       ).json()) as { doc: Customer }
+          //     )?.doc;
 
-            const result = await cmsAdapter.createProductOrder({
-              business: businessId,
-              cart: {
-                items: cartPayload.products.map((p) => ({
-                  productId: p.id!,
-                  productName: p.name,
-                  quantity: p.quantity,
-                  observations: p.notes,
-                })),
-              },
-              customer: customerId,
-            });
+          //     customerId = newCustomer?.id;
+          //   }
 
-            // Resetear el historial de routing después de confirmar el pedido
-            await productOrderStateManager.resetRouterHistory(orderKey);
+          //   if (!customerId) {
+          //     return {
+          //       success: false,
+          //       action: data.action,
+          //       chatMsg: {
+          //         ...chat,
+          //         content: JSON.stringify({
+          //           success: false,
+          //           action: data.action,
+          //           error: "Customer does not exist",
+          //         }),
+          //       },
+          //     };
+          //   }
 
-            return {
-              success: true,
-              action: data.action,
-              chatMsg: {
-                ...chat,
-                content: JSON.stringify({
-                  success: true,
-                  action: data.action,
-                  orderCreated: result,
-                }),
-              },
-            };
-          }
+          //   const result = await cmsAdapter.createProductOrder({
+          //     business: businessId,
+          //     cart: {
+          //       items: cartPayload.products.map((p) => ({
+          //         productId: p.id!,
+          //         productName: p.name,
+          //         quantity: p.quantity,
+          //         observations: p.notes,
+          //       })),
+          //     },
+          //     customer: customerId,
+          //   });
+
+          //   // Resetear el historial de routing después de confirmar el pedido
+          //   await productOrderStateManager.resetRouterHistory(orderKey);
+
+          //   return {
+          //     success: true,
+          //     action: data.action,
+          //     chatMsg: {
+          //       ...chat,
+          //       content: JSON.stringify({
+          //         success: true,
+          //         action: data.action,
+          //         orderCreated: result,
+          //       }),
+          //     },
+          //   };
+          // }
 
           default:
             return {
