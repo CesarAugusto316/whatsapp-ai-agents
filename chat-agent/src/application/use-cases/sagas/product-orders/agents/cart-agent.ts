@@ -1,8 +1,4 @@
-import {
-  cmsAdapter,
-  Customer,
-  SpecializedDomain,
-} from "@/infraestructure/adapters/cms";
+import { SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
 import {
   aiAdapter,
@@ -46,8 +42,6 @@ const PRODUCT_ORDER_TOOLS: ToolDefinition[] = [
               "remove",
               "update",
               "enterUsername",
-              // "view",
-              // "confirm",
             ] satisfies OrderAction[],
             description: "The action to perform on the cart",
           },
@@ -107,15 +101,11 @@ function errorPrompt(domain: SpecializedDomain): string {
       → Explica que el nombre debe tener 3-30 caracteres, solo letras y espacios
       → Ej: "¿Me podrías decir tu nombre completo? Solo letras, entre 3 y 30 caracteres"
 
-    3. **${vocab.orderWord} vacío**: Si el error dice "empty_cart"
-      → Recuerda al usuario que su carrito está vacío y ofrécele ayudarle a ${vocab.actionVerbInfinitive}
-      → Ej: "Tu carrito está vacío. ¿Quieres ver nuestro ${vocab.menuWord} y ${vocab.actionVerb} algo?"
-
-    4. **Error de parsing/argumentos**: Si hay un error técnico de validación
+    3. **Error de parsing/argumentos**: Si hay un error técnico de validación
       → Pide al usuario que reformule su ${vocab.orderWord} de manera más clara
       → Ej: "No entendí bien tu ${vocab.orderWord}. ¿Me lo puedes decir de otra forma?"
 
-    5. **Cliente no existe**: Si el error dice "No customer does not exist"
+    4. **Cliente no existe**: Si el error dice "No customer does not exist"
       → Explica que hubo un problema y pide el nombre nuevamente
       → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
 
@@ -141,30 +131,19 @@ function humanizePrompt(domain: SpecializedDomain, lastAction: string): string {
     - add: se agregaron productos al ${vocab.orderWord}
     - remove: se eliminaron productos del ${vocab.orderWord}
     - update: se modificó el ${vocab.orderWord}
-    - view: se mostró el ${vocab.orderWord} (resumen de lo que lleva)
-    - confirm: el ${vocab.orderWord} se creó exitosamente luego de confirmación (pedido creado)
     - enterUsername: el usuario proporcionó su nombre
 
     Preguntas de cierre según la acción:
 
-    1. **add/remove/update** → Preguntar si desea algo más o terminar
+    1. **add/remove/update** → Preguntar si desea algo más o si quiere confirmar
        - "¿Te gustaría agregar algo más o eso es todo?"
        - "¿Quieres agregar otro ${vocab.productName} o procedemos a confirmar tu ${vocab.orderWord}?"
        - "¿Algo más para tu ${vocab.orderWord} o confirmamos?"
        - Varía las frases para que no suenen repetitivas
 
-    2. **view** → El usuario ya tiene ${vocab.productPlural}, preguntar si confirma o cambia algo
-       - "¿Confirmas tu ${vocab.orderWord} o quieres modificar algo?"
-       - "¿Procedemos a confirmar o necesitas cambiar algo?"
-       - "¿Todo correcto o quieres agregar/quitar algo?"
-       - Si el usuario dijo "nada más", "eso es todo": "¿Confirmas tu ${vocab.orderWord}?"
-
-    3. **confirm** → Confirmar éxito del pedido
-       - "¡Tu ${vocab.orderWord} fue confirmado ..." (agrega un resumen breve)
-       - "¡Listo! Tu ${vocab.orderWord} está en camino" (agrega un resumen breve)
-
-    4. **enterUsername** → Confirmar recepción del nombre
+    2. **enterUsername** → Confirmar recepción del nombre
        - "¡Gracias! Nombre registrado"
+       - "¡Perfecto! Ya tengo tu nombre"
 
     CONTEXT:
     - lastAction: ${lastAction}
@@ -191,7 +170,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     Eres un asistente especializado en gestionar ${vocab.orderWord}s de clientes para un ${vocab.greetingContext}.
 
     ## TU ÚNICA FUNCIÓN
-    Gestionar el ${vocab.orderWord} del usuario: agregar, quitar, modificar ${vocab.productPlural} y confirmar el ${vocab.orderWord}.
+    Gestionar el ${vocab.orderWord} del usuario: agregar, quitar, modificar ${vocab.productPlural}.
 
     ## TUS HERRAMIENTAS
 
@@ -200,12 +179,10 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     - **Agregar**: "agregame", "quiero", "dame", "poneme", "2 platos"
     - **Quitar**: "quitame", "sacame", "eliminame", "borrame"
     - **Modificar**: "cambiame", "mejor dame X", "ahora quiero X"
-    - **Ver**: "mostrame mi ${vocab.orderWord}", "¿qué llevo?", "ver ${vocab.orderWord}"
-    - **Confirmar**: "confirmo", "listo", "eso es todo", "finalizar"
     - **Ingresar nombre**: cuando el usuario da su nombre para confirmar
 
     Parámetros:
-    - action: "add" | "remove" | "update" | "view" | "confirm" | "enterUsername"
+    - action: "add" | "remove" | "update" | "enterUsername"
     - item: { name, quantity (default: 1), notes (opcional) }
     - customerName: string (solo para "enterUsername")
 
@@ -220,19 +197,6 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     ### 🔄 MODIFICAR (action: "update")
     - "Cambiame a 3 ${productExample1}s en lugar de 2" → { action: "update", item: { name: "${productExample1}", quantity: 3 } }
-
-    ### 👁️ VER (action: "view")
-    - "Mostrame mi ${vocab.orderWord}" → { action: "view" }
-    - "Quiero ver cuantos ${vocab.productPlural} llevo agregados" → { action: "view" }
-
-    ### ✅ CONFIRMAR (action: "confirm")
-    - "Confirmo" → { action: "confirm" }
-
-    ### 👁️ VER ANTES DE CONFIRMAR (action: "view" → luego "confirm")
-    - "Nada más", "eso es todo", "listo", "quiero confirmar" →
-      PRIMERO: ${TOOL_NAME}("view") para mostrar resumen
-      LUEGO: El sistema preguntará "¿Confirmas tu pedido con X productos?"
-      USUARIO: "sí, confirmo" → ${TOOL_NAME}("confirm")
 
     ### 👤 INGRESAR NOMBRE (action: "enterUsername")
     - "Me llamo Juan" → { action: "enterUsername", customerName: "Juan" }
@@ -265,8 +229,7 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
 
     "Agregame 2 ${productExample1}s" → ${TOOL_NAME}("add", { name: "${productExample1}", quantity: 2 })
     "Quitame una ${productExample2}" → ${TOOL_NAME}("remove", { name: "${productExample2}", quantity: 1 })
-    "Mostrame qué llevo" → ${TOOL_NAME}("view")
-    "Confirmo mi ${vocab.orderWord}" → ${TOOL_NAME}("confirm")
+    "Confirmo mi ${vocab.orderWord}" → El sistema se encargará de confirmar
     "Agregame una ${productExample1} sin cebolla" → ${TOOL_NAME}("add", { name: "${productExample1}", quantity: 1, notes: "sin cebolla" })
     "Me llamo Juan" → ${TOOL_NAME}("enterUsername", { customerName: "Juan" })
 
@@ -275,6 +238,8 @@ function createCartAgentPrompt(domain: SpecializedDomain): string {
     - Tu ÚNICA función es gestionar el ${vocab.orderWord}
     - NO busques ${vocab.productPlural} (eso lo hace el Agente de Búsqueda)
     - Si el usuario pregunta "¿qué ${vocab.productPlural} tienen?", NO llames manage_cart
+    - Las acciones de "ver carrito" y "confirmar pedido" las maneja otro agente
+    - No confirmes ${vocab.orderWord}.
 `.trim();
 }
 
@@ -420,119 +385,6 @@ async function processToolCalls(
               },
             };
           }
-
-          // case "view": {
-          //   const result = await productOrderStateManager.viewCart(orderKey);
-
-          //   if (!result.totalItems) {
-          //     return {
-          //       success: false,
-          //       action: data.action,
-          //       chatMsg: {
-          //         ...chat,
-          //         content: JSON.stringify({
-          //           success: false,
-          //           action: data.action,
-          //           error: "empty_cart",
-          //         }),
-          //       },
-          //     };
-          //   }
-          //   return {
-          //     success: true,
-          //     action: data.action,
-          //     chatMsg: {
-          //       ...chat,
-          //       content: JSON.stringify({
-          //         success: true,
-          //         action: data.action,
-          //         ...result,
-          //       }),
-          //     },
-          //   };
-          // }
-
-          // case "confirm": {
-          //   const cartPayload =
-          //     await productOrderStateManager.viewCart(orderKey);
-
-          //   if (!cartPayload.customerName) {
-          //     return {
-          //       success: false,
-          //       action: data.action,
-          //       chatMsg: {
-          //         ...chat,
-          //         content: JSON.stringify({
-          //           success: false,
-          //           action: data.action,
-          //           error:
-          //             "No customer name provided, ask the user for their name",
-          //         }),
-          //       },
-          //     };
-          //   }
-
-          //   let customerId = cartPayload.customerId || ctx.customer?.id;
-
-          //   if (!customerId && cartPayload.customerName) {
-          //     // register user
-          //     const newCustomer = (
-          //       (await (
-          //         await cmsAdapter.createCostumer({
-          //           business: businessId,
-          //           phoneNumber: customerPhone || "",
-          //           name: cartPayload.customerName,
-          //         })
-          //       ).json()) as { doc: Customer }
-          //     )?.doc;
-
-          //     customerId = newCustomer?.id;
-          //   }
-
-          //   if (!customerId) {
-          //     return {
-          //       success: false,
-          //       action: data.action,
-          //       chatMsg: {
-          //         ...chat,
-          //         content: JSON.stringify({
-          //           success: false,
-          //           action: data.action,
-          //           error: "Customer does not exist",
-          //         }),
-          //       },
-          //     };
-          //   }
-
-          //   const result = await cmsAdapter.createProductOrder({
-          //     business: businessId,
-          //     cart: {
-          //       items: cartPayload.products.map((p) => ({
-          //         productId: p.id!,
-          //         productName: p.name,
-          //         quantity: p.quantity,
-          //         observations: p.notes,
-          //       })),
-          //     },
-          //     customer: customerId,
-          //   });
-
-          //   // Resetear el historial de routing después de confirmar el pedido
-          //   await productOrderStateManager.resetRouterHistory(orderKey);
-
-          //   return {
-          //     success: true,
-          //     action: data.action,
-          //     chatMsg: {
-          //       ...chat,
-          //       content: JSON.stringify({
-          //         success: true,
-          //         action: data.action,
-          //         orderCreated: result,
-          //       }),
-          //     },
-          //   };
-          // }
 
           default:
             return {

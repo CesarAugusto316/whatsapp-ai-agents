@@ -19,6 +19,7 @@ export async function productOrderWorkflow(
   const hasAskedForConfirmation =
     ctx.productOrderState?.hasAskedForConfirmation ?? false; //
 
+  // 6. PROCESS ORDER AGENT
   if (hasAskedForConfirmation) {
     return processOrderAgent(ctx, chatHistory);
   }
