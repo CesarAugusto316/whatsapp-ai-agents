@@ -134,17 +134,17 @@ function createRouterAgentPrompt(
     **Frases:** "ver ${vocab.menuWord}", "¿qué ${vocab.productPlural} tienen?", "busco ${productExample1}", "¿tienen ${productExample2}?"
 
     ### cart_agent
-    **Cuándo:** El usuario quiere gestionar su ${vocab.orderWord} (agregar, quitar, modificar, ver, confirmar),
-      dar su nombre, o menciona cantidades de ${vocab.productPlural} (ej: "2 ${productExample1}s", "una ${productExample2}").
-    **Frases:** "agrega 1 ...", "quiero 2 ...", "cambia este plato por ...", "mostrame mi ${vocab.orderWord} por ...", "sí, confirmado", "mi nombre es...", "2 ${productExample1}s"
+    **Cuándo:** El usuario quiere agregar, quitar o modificar ${vocab.productPlural} de su ${vocab.orderWord},
+      o dar su nombre para confirmar. También cuando menciona cantidades de ${vocab.productPlural} (ej: "2 ${productExample1}s", "una ${productExample2}").
+    **Frases:** "agrega 1 ...", "quiero 2 ...", "cambia este plato por ...", "quitame ...", "mi nombre es...", "2 ${productExample1}s"
 
     ### ask_clarification
     **Cuándo:** Mensaje corto/vago sin contexto. Producto suelto sin verbo de acción.
     **Frases:** "${productExample1}" (solo), "${productExample2}s" (sin contexto)
 
     ### ask_final_confirmation
-    **Cuándo:** El usuario quiere terminar/finalizar su ${vocab.orderWord}. Indica que ya terminó de agregar.
-    **Frases:** "nada más", "eso es todo", "quiero confirmar", "finalizar", "quiero terminar", "eso es todo", "nada más eso", "quiero cerrar mi pedido", "cómo termino la orden?"
+    **Cuándo:** El usuario quiere ver/mostrar su ${vocab.orderWord}, confirmar/finalizar su ${vocab.orderWord}, o indica que ya terminó de agregar.
+    **Frases:** "mostrame mi ${vocab.orderWord}", "ver mi ${vocab.orderWord}", "¿qué llevo?", "nada más", "eso es todo", "quiero confirmar", "finalizar", "quiero terminar", "confirmo mi ${vocab.orderWord}", "cómo termino la orden?"
 
     ## REGLAS
 
@@ -155,6 +155,7 @@ function createRouterAgentPrompt(
       - "agrega", "pon", "dame", "quita", "saca" → cart_agent
       - "quiero ver", "busco", "¿qué tienen?" → search_agent
       - "mi nombre es", "soy" → cart_agent
+      - "mostrame mi ${vocab.orderWord}", "ver mi ${vocab.orderWord}", "¿qué llevo?" → ask_final_confirmation
       - "nada más", "eso es todo", "quiero confirmar", "finalizar" → ask_final_confirmation
       - ${vocab.productName} solo (sin verbo) → ask_clarification
 
@@ -197,9 +198,11 @@ function createRouterAgentPrompt(
     "Agregame 2 ${productExample1}s" → cart_agent [add]
     "1 ${productExample2}" → cart_agent [add]
     "Quitame ${productExample1}" → cart_agent [remove]
-    "Mostrame mi ${vocab.orderWord}" → cart_agent [view]
+    "Mostrame mi ${vocab.orderWord}" → ask_final_confirmation [view]
+    "¿Qué llevo?" → ask_final_confirmation [view]
     "${productExample1}" → ask_clarification
     "Mi nombre es César" → cart_agent [enterUsername]
+    "Confirmo mi ${vocab.orderWord}" → ask_final_confirmation [confirm]
 
     Si HuboAgregadoReciente: SÍ:
       "Nada más, eso es todo" → ask_final_confirmation
@@ -228,7 +231,7 @@ function createRouterAgentPrompt(
     ÚltimoAgente = "cart_agent":
     - "también quiero ${productExample2}" → cart_agent
     - "mejor muestra otras" → search_agent
-    - "ok listo" → cart_agent (confirmar)
+    - "ok listo", "nada más", "mostrame mi ${vocab.orderWord}" → ask_final_confirmation
 
     ## CLARIFICACIÓN
 

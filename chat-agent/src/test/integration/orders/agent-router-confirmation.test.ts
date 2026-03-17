@@ -233,6 +233,54 @@ describe("Router Agent - Confirmación final de pedidos", () => {
       // O puede enviar a cart_agent para que verifique el carrito primero
       expect(["cart_agent", "ask_final_confirmation"]).toContain(result);
     }, 30_000);
+
+    test("debe retornar ask_final_confirmation cuando usuario dice 'mostrame mi pedido' CON historial de agregados", async () => {
+      await cacheAdapter.save(
+        `product-order:${BUSINESS_ID}:${CUSTOMER_PHONE}`,
+        { status: "ORDER_STARTED" },
+        60 * 60,
+      );
+
+      // Configurar historial con agregado reciente
+      await productOrderStateManager.saveRouterHistory(
+        `product-order:${BUSINESS_ID}:${CUSTOMER_PHONE}`,
+        {
+          agent: "cart_agent",
+          userMessage: "Agrega una pizza",
+          action: "add",
+          toolName: "addProduct",
+        },
+      );
+
+      const ctx = createCtx("Muéstrame mi pedido");
+      const result = await routerAgent(ctx, []);
+
+      expect(result).toBe("ask_final_confirmation");
+    }, 30_000);
+
+    test("debe retornar ask_final_confirmation cuando usuario dice '¿qué llevo?' CON historial de agregados", async () => {
+      await cacheAdapter.save(
+        `product-order:${BUSINESS_ID}:${CUSTOMER_PHONE}`,
+        { status: "ORDER_STARTED" },
+        60 * 60,
+      );
+
+      // Configurar historial con agregado reciente
+      await productOrderStateManager.saveRouterHistory(
+        `product-order:${BUSINESS_ID}:${CUSTOMER_PHONE}`,
+        {
+          agent: "cart_agent",
+          userMessage: "Agrega dos tacos",
+          action: "add",
+          toolName: "addProduct",
+        },
+      );
+
+      const ctx = createCtx("¿Qué llevo?");
+      const result = await routerAgent(ctx, []);
+
+      expect(result).toBe("ask_final_confirmation");
+    }, 30_000);
   });
 
   describe("Flujo completo con confirmación final", () => {

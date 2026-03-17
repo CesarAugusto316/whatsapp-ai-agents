@@ -576,7 +576,7 @@ describe("Router Agent - Clasificación directa de intenciones", () => {
       expect(result).toBe("cart_agent");
     }, 30_000);
 
-    test("debe retornar cart_agent con 'muéstrame mi pedido'", async () => {
+    test("debe retornar ask_final_confirmation con 'muéstrame mi pedido'", async () => {
       await cacheAdapter.save(
         `product-order:${BUSINESS_ID}:${CUSTOMER_PHONE}`,
         { status: "ORDER_STARTED" },
@@ -586,7 +586,7 @@ describe("Router Agent - Clasificación directa de intenciones", () => {
       const ctx = createCtx("Muéstrame mi pedido");
       const result = await routerAgent(ctx, []);
 
-      expect(result).toBe("cart_agent");
+      expect(result).toBe("ask_final_confirmation");
     }, 30_000);
 
     test("debe retornar cart_agent con 'quiero 2...'", async () => {
