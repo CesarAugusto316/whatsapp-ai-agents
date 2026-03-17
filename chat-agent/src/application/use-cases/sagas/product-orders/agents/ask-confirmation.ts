@@ -140,7 +140,6 @@ export const confirmationAgent = async (ctx: DomainCtx) => {
     ctx.productOrderKey,
     true,
   );
-
   return formatSagaOutput(finalResponse, "confirmation agent", {
     systemPrompt,
   });

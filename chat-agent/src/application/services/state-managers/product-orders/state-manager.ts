@@ -383,6 +383,7 @@ class ProductOrderStateManager {
     const prev = (await this.getState(key)) ?? ({} as ProductOrderState);
     await cacheAdapter.save<ProductOrderState>(key, {
       ...prev,
+      products: [],
       routerHistory: [],
     });
   }

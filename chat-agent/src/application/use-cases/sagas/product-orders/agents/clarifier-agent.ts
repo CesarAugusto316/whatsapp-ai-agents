@@ -1,12 +1,14 @@
 import { formatSagaOutput } from "@/application/patterns";
 import { productOrderStateManager } from "@/application/services/state-managers";
-import { DomainCtx } from "@/domain/booking";
+import { businessInfoChunck, DomainCtx } from "@/domain/booking";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { RouterOutput } from "./router-agent";
 import { BookingSagaResult } from "../../booking/booking-saga";
 import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { ragService } from "@/application/services/rag";
+import { InformationalIntentKey } from "@/application/services/pomdp";
 
 /**
  *
@@ -21,6 +23,39 @@ export const clarifierAgent = async (
 ): Promise<BookingSagaResult> => {
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
+
+  const limit = 1;
+  const { points } = await ragService.searchIntent(
+    ctx.customerMessage,
+    ["informational"], // ej: ["informational", "booking", "products"],
+    domain,
+    limit,
+    0.7,
+  );
+
+  const intent = points[0].payload;
+
+  if (intent.module === "informational") {
+    const key = intent.intentKey as InformationalIntentKey;
+    const systemPrompt = businessInfoChunck(key, ctx);
+    const ASSISTANT_MSG = await aiAdapter.handleChatMessage({
+      systemPrompt,
+      msg: ctx.customerMessage,
+      chatHistory,
+      useAuxModel: true,
+    });
+    await chatHistoryAdapter.push(
+      ctx.chatKey,
+      ctx.customerMessage,
+      ASSISTANT_MSG,
+    );
+    return formatSagaOutput(
+      ASSISTANT_MSG,
+      intent?.intentKey, // optional
+      { systemPrompt },
+    );
+  }
+
   const vocab = DOMAIN_VOCABULARY[domain];
   const productExample1 = vocab.productExamples[0];
   const productExample2 = vocab.productExamples[1] || productExample1;

@@ -1,5 +1,5 @@
 import { productOrderStateManager } from "@/application/services/state-managers";
-import { DomainCtx } from "@/domain/booking";
+import { DomainCtx, WRITING_STYLE } from "@/domain/booking";
 import {
   cmsAdapter,
   Customer,
@@ -47,7 +47,8 @@ const processOrder = async (ctx: DomainCtx) => {
   if (!customerId) {
     return {
       success: false,
-      error: "Customer does not exist",
+      error:
+        "Customer does not exist. No customer name provided, ask the user for their name",
     };
   }
 
@@ -90,6 +91,8 @@ const orderProcessPrompt = (
       - Indica el tiempo estimado de preparación/entrega si aplica al negocio
       - Ofrece ayuda adicional si necesita algo más
       - Mantén un tono cálido y profesional
+
+      ${WRITING_STYLE}
     `.trim();
   }
 
@@ -129,6 +132,8 @@ const orderProcessPrompt = (
     - Pide la información faltante si es necesario
     - Mantén un tono empático y profesional
     - Asegúrate de que el usuario sepa que estás aquí para ayudarle
+
+    ${WRITING_STYLE}
   `.trim();
 };
 
@@ -137,7 +142,10 @@ const orderProcessPrompt = (
  * @param ctx
  * @returns
  */
-export const processOrderAgent = async (ctx: DomainCtx) => {
+export const processOrderAgent = async (
+  ctx: DomainCtx,
+  chatHistory: ChatMessage[],
+) => {
   //
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
@@ -147,33 +155,64 @@ export const processOrderAgent = async (ctx: DomainCtx) => {
 
   if (skip && kind === "conversational-signal") {
     isConfirmed = msg === "signal:affirmation";
-  }
+  } else {
+    const limit = 1;
+    const { points } = await ragService.searchIntent(
+      ctx.customerMessage,
+      ["conversational-signal"], // ej: ["informational", "booking", "products"],
+      domain,
+      limit,
+    );
+    const intent = points[0].payload;
 
-  const limit = 1;
-  const { points } = await ragService.searchIntent(
-    ctx.customerMessage,
-    ["conversational-signal"], // ej: ["informational", "booking", "products"],
-    domain,
-    limit,
-  );
-
-  const intent = points[0].payload;
-
-  if (intent.module === "conversational-signal") {
-    const key = intent.intentKey as "signal:negation" | "signal:affirmation";
-
-    isConfirmed = key === "signal:affirmation";
+    if (intent.module === "conversational-signal") {
+      const key = intent.intentKey as "signal:negation" | "signal:affirmation";
+      isConfirmed = key === "signal:affirmation";
+    }
   }
 
   if (!isConfirmed) {
-    // return {
-    //   success: false,
-    //   error: "Order not confirmed, Que deseas hacer ahora?",
-    // };
+    // Usuario no confirmó - preguntar si desea algo más
+    const vocab = DOMAIN_VOCABULARY[domain];
+    const simplePrompt = `
+      El usuario no confirmó su ${vocab.orderWord}.
+
+      ${WRITING_STYLE}
+
+      ## Instrucciones:
+      - Responde de forma simple y amable
+      - Pregunta si desea algo más o si tiene alguna otra consulta
+      - No menciones el ${vocab.orderWord} ni presiones al usuario
+
+      Ejemplos:
+      - "¡No hay problema! ¿En qué más puedo ayudarte?"
+      - "¡Claro! ¿Hay algo más en lo que pueda ayudarte?"
+      - "¡Perfecto! ¿Tienes alguna otra consulta?"
+    `.trim();
+
+    const messages: ChatMessage[] = [
+      { role: "system", content: simplePrompt },
+      ...chatHistory,
+      { role: "user", content: userMessage },
+    ];
+
+    const finalResponse = await aiAdapter.generateText({
+      temperature: 0,
+      useAuxModel: true,
+      messages,
+    });
+
+    await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
+    await productOrderStateManager.setHasAskedForConfirmation(
+      ctx.productOrderKey,
+      false,
+    );
+    return formatSagaOutput(finalResponse, "order not confirmed ❌", {
+      systemPrompt: simplePrompt,
+    });
   }
 
   const order = await processOrder(ctx);
-
   const systemPrompt = orderProcessPrompt(domain, order);
 
   const messages: ChatMessage[] = [
@@ -188,12 +227,10 @@ export const processOrderAgent = async (ctx: DomainCtx) => {
   });
 
   await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
-
   await productOrderStateManager.setHasAskedForConfirmation(
     ctx.productOrderKey,
     false,
   );
-
   return formatSagaOutput(finalResponse, "order completed ✅", {
     systemPrompt,
   });
