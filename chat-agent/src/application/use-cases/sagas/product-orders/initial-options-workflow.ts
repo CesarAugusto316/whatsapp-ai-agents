@@ -18,8 +18,6 @@ export async function productFindWorkflow(
       customerMessage,
       business.id,
       5, // limit
-      "es", // lang
-      0.2,
     );
 
     // 2. Formatear resultados

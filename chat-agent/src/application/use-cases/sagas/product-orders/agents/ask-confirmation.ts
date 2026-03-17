@@ -10,10 +10,10 @@ import { RouterOutput } from "./router-agent";
 /**
  *
  * @param domain
- * @param context
+ * @param cart
  * @returns
  */
-function summary(domain: SpecializedDomain, context: string): string {
+function summary(domain: SpecializedDomain, cart: string): string {
   const vocab = DOMAIN_VOCABULARY[domain];
   return `
     Eres un asistente amable que convierte acciones técnicas en mensajes naturales para el usuario.
@@ -21,6 +21,8 @@ function summary(domain: SpecializedDomain, context: string): string {
     ${WRITING_STYLE}
 
     CONTEXT:
+
+    cart: ${cart}
 
     Instrucciones:
     - Sé breve (1-2 oraciones)

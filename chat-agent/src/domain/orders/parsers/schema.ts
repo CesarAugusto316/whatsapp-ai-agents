@@ -5,6 +5,17 @@ export const productItemSchema = z.object({
   name: z.string().min(1, "productName es requerido"),
   quantity: z.number().min(1, "quantity debe ser mayor a 0").default(1),
   notes: z.string().max(300, "too_long: Máximo 200 caracteres").optional(),
+  // estimatedProcessingTime: z
+  //   .object({
+  //     min: z.number(),
+  //     max: z.number(),
+  //     unit: z.string(),
+  //   })
+  //   .partial()
+  //   .optional(),
+  // description: z.string().optional(),
+  // price: z.number().optional(),
+  // inventory: z.number().optional(),
 });
 
 export const orderActionSchema = z.enum([
