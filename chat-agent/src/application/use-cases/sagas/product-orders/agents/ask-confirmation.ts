@@ -1,4 +1,4 @@
-import { SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { Product, SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
@@ -40,9 +40,24 @@ export const confirmationAgent = async (
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
 
-  const products = ctx.productOrderState?.products;
+  const searchProducts = ctx.productOrderState?.searchedProducts ?? [];
+  const products = ctx.productOrderState?.products ?? [];
 
-  const systemPrompt = summary(domain, JSON.stringify(products));
+  const summayProducts = products.map((item) => {
+    const foundProduct = searchProducts.find((p) => p.id === item.id);
+
+    const payload = {
+      estimatedProcessingTime: foundProduct?.payload?.estimatedProcessingTime,
+      price: foundProduct?.payload?.price,
+      isAvailable: foundProduct?.payload?.enabled,
+    };
+    return {
+      ...item,
+      ...payload,
+    };
+  });
+
+  const systemPrompt = summary(domain, JSON.stringify(summayProducts));
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
