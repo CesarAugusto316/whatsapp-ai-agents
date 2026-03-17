@@ -7,13 +7,11 @@ import { searchAgent } from "./search-agent";
 import { clarifierAgent } from "./clarifier-agent";
 import { ragService } from "@/application/services/rag";
 import { SpecializedDomain } from "@/infraestructure/adapters/cms";
-import {
-  InformationalIntentKey,
-  shouldSkipEmbedding,
-} from "@/application/services/pomdp";
+import { InformationalIntentKey } from "@/application/services/pomdp";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { formatSagaOutput } from "@/application/patterns";
 import { confirmationAgent } from "./ask-confirmation";
+import { processOrderAgent } from "./confirm-order";
 
 /**
  * Maneja el flujo completo de tool calling para pedidos de productos
@@ -26,42 +24,8 @@ export async function productOrderWorkflow(
   const hasAskedForConfirmation =
     ctx.productOrderState?.hasAskedForConfirmation ?? false; //
 
-  // when user has confirmed after hasAskedForConfirmation=true debemos ejecutar
-  // de forma determinista sin LLM (en la medida de lo posible)
   if (hasAskedForConfirmation) {
-    const { skip, kind, msg } = shouldSkipEmbedding(ctx.customerMessage);
-
-    if (
-      skip &&
-      kind === "conversational-signal" &&
-      msg === "signal:affirmation"
-    ) {
-      //
-      // cmsAdapter.createProductOrder
-      // return;
-    }
-
-    if (skip && kind === "conversational-signal" && msg === "signal:negation") {
-      // DEBEMOS ACTUALIZAR: ctx.productOrderState?.hasAskedForConfirmation = false
-      // return;
-    }
-
-    const limit = 1;
-    const domain: SpecializedDomain = ctx.business.general.businessType; // ej: restaurant | retail | real-estate
-    const { points } = await ragService.searchIntent(
-      ctx.customerMessage,
-      ["conversational-signal"], // ej: ["informational", "booking", "products"],
-      domain,
-      limit,
-    );
-
-    const intent = points[0].payload;
-
-    if (intent.module === "conversational-signal") {
-      const key = intent.intentKey;
-    }
-
-    // USE an LLM to infer intention and other doubts
+    return processOrderAgent(ctx);
   }
 
   // 1. ROUTER AGENT

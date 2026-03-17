@@ -3,17 +3,21 @@ import { DomainCtx } from "@/domain/booking";
 import {
   cmsAdapter,
   Customer,
+  ProductOrder,
   SpecializedDomain,
 } from "@/infraestructure/adapters/cms";
 import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
 import { formatSagaOutput } from "@/application/patterns";
+import { shouldSkipEmbedding } from "@/application/services/pomdp";
+import { ragService } from "@/application/services/rag";
 
-export const processOrder = async (ctx: DomainCtx) => {
+const processOrder = async (ctx: DomainCtx) => {
   const businessId = ctx.businessId;
   const customerPhone = ctx.customerPhone;
   const orderKey = ctx.productOrderKey;
+
   const cartPayload = await productOrderStateManager.viewCart(orderKey);
 
   if (!cartPayload.customerName) {
@@ -66,14 +70,35 @@ export const processOrder = async (ctx: DomainCtx) => {
   return { success: true, data: result };
 };
 
-/**
- *
- * Genera un prompt para manejar errores de forma amable y contextual al dominio
- */
-function errorPrompt(domain: SpecializedDomain): string {
+const orderProcessPrompt = (
+  domain: SpecializedDomain,
+  order: { success: boolean; data?: ProductOrder; error?: string },
+) => {
   const vocab = DOMAIN_VOCABULARY[domain];
+
+  if (order.success) {
+    return `
+      Tu ${vocab.orderWord} ha sido confirmado con éxito ✅
+
+      ## Detalles del ${vocab.orderWord}:
+      - Productos: ${order.data?.cart.items.map((item) => `${item.quantity}x ${item.productName}`).join(", ")}
+      - Total: $ ${order.data?.cart.total}
+
+      ## Instrucciones:
+      - Informa al usuario que su ${vocab.orderWord} fue procesado correctamente
+      - Menciona los detalles principales del ${vocab.orderWord} de forma clara y amable
+      - Indica el tiempo estimado de preparación/entrega si aplica al negocio
+      - Ofrece ayuda adicional si necesita algo más
+      - Mantén un tono cálido y profesional
+    `.trim();
+  }
+
+  // Error case
   return `
-    Tu respuesta anterior causó un error. Analiza el error y responde al usuario en español de forma amable y clara.
+    No pudimos procesar tu ${vocab.orderWord} ❌
+
+    ## Razón del error:
+    ${order.error || "Error desconocido"}
 
     ## Tipos de errores comunes:
 
@@ -97,17 +122,13 @@ function errorPrompt(domain: SpecializedDomain): string {
       → Explica que hubo un problema y pide el nombre nuevamente
       → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
 
-    ## Reglas:
-    - Sé amable y profesional
-    - No menciones errores técnicos o de validación
-    - Haz una pregunta clara para que el usuario pueda continuar o complete la información faltante
-    - Mantén el contexto del ${vocab.orderWord}.
-`.trim();
-}
-
-const orderProcessPrompt = (domain: SpecializedDomain) => {
-  return `
-
+    ## Instrucciones:
+    - Informa al usuario de forma amable que hubo un problema con su ${vocab.orderWord}
+    - Explica la razón del error en términos sencillos (sin tecnicismos)
+    - Ofrece una solución o alternativa para resolver el problema
+    - Pide la información faltante si es necesario
+    - Mantén un tono empático y profesional
+    - Asegúrate de que el usuario sepa que estás aquí para ayudarle
   `.trim();
 };
 
@@ -120,6 +141,36 @@ export const processOrderAgent = async (ctx: DomainCtx) => {
   //
   const userMessage = ctx.customerMessage!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
+
+  let isConfirmed = false;
+  const { skip, kind, msg } = shouldSkipEmbedding(ctx.customerMessage);
+
+  if (skip && kind === "conversational-signal") {
+    isConfirmed = msg === "signal:affirmation";
+  }
+
+  const limit = 1;
+  const { points } = await ragService.searchIntent(
+    ctx.customerMessage,
+    ["conversational-signal"], // ej: ["informational", "booking", "products"],
+    domain,
+    limit,
+  );
+
+  const intent = points[0].payload;
+
+  if (intent.module === "conversational-signal") {
+    const key = intent.intentKey as "signal:negation" | "signal:affirmation";
+
+    isConfirmed = key === "signal:affirmation";
+  }
+
+  if (!isConfirmed) {
+    // return {
+    //   success: false,
+    //   error: "Order not confirmed, Que deseas hacer ahora?",
+    // };
+  }
 
   const order = await processOrder(ctx);
 
@@ -137,9 +188,10 @@ export const processOrderAgent = async (ctx: DomainCtx) => {
   });
 
   await chatHistoryAdapter.push(ctx.chatKey, userMessage, finalResponse);
+
   await productOrderStateManager.setHasAskedForConfirmation(
     ctx.productOrderKey,
-    true,
+    false,
   );
 
   return formatSagaOutput(finalResponse, "order completed ✅", {
