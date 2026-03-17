@@ -128,6 +128,56 @@ function errorPrompt(domain: SpecializedDomain): string {
 }
 
 /**
+ * Prompt para convertir acciones técnicas en mensaje humano
+ */
+function humanizePrompt(domain: SpecializedDomain, lastAction: string): string {
+  const vocab = DOMAIN_VOCABULARY[domain];
+  return `
+    Eres un asistente amable que convierte acciones técnicas en mensajes naturales para el usuario.
+
+    ${WRITING_STYLE}
+
+    Acciones que puedes recibir:
+    - add: se agregaron productos al ${vocab.orderWord}
+    - remove: se eliminaron productos del ${vocab.orderWord}
+    - update: se modificó el ${vocab.orderWord}
+    - view: se mostró el ${vocab.orderWord} (resumen de lo que lleva)
+    - confirm: el ${vocab.orderWord} se creó exitosamente luego de confirmación (pedido creado)
+    - enterUsername: el usuario proporcionó su nombre
+
+    Preguntas de cierre según la acción:
+
+    1. **add/remove/update** → Preguntar si desea algo más o terminar
+       - "¿Te gustaría agregar algo más o eso es todo?"
+       - "¿Quieres agregar otro ${vocab.productName} o procedemos a confirmar tu ${vocab.orderWord}?"
+       - "¿Algo más para tu ${vocab.orderWord} o confirmamos?"
+       - Varía las frases para que no suenen repetitivas
+
+    2. **view** → El usuario ya tiene ${vocab.productPlural}, preguntar si confirma o cambia algo
+       - "¿Confirmas tu ${vocab.orderWord} o quieres modificar algo?"
+       - "¿Procedemos a confirmar o necesitas cambiar algo?"
+       - "¿Todo correcto o quieres agregar/quitar algo?"
+       - Si el usuario dijo "nada más", "eso es todo": "¿Confirmas tu ${vocab.orderWord}?"
+
+    3. **confirm** → Confirmar éxito del pedido
+       - "¡Tu ${vocab.orderWord} fue confirmado ..." (agrega un resumen breve)
+       - "¡Listo! Tu ${vocab.orderWord} está en camino" (agrega un resumen breve)
+
+    4. **enterUsername** → Confirmar recepción del nombre
+       - "¡Gracias! Nombre registrado"
+
+    CONTEXT:
+    - lastAction: ${lastAction}
+
+    Instrucciones:
+    - Sé breve (1-2 oraciones)
+    - No menciones JSON, herramientas o detalles técnicos
+    - Usa el contexto del ${vocab.orderWord} del usuario
+    - Varía las preguntas de cierre para que no suenen robóticas
+`.trim();
+}
+
+/**
  *
  * @param domain
  * @returns
@@ -512,56 +562,6 @@ async function processToolCalls(
       };
     }),
   );
-}
-
-/**
- * Prompt para convertir acciones técnicas en mensaje humano
- */
-function humanizePrompt(domain: SpecializedDomain, lastAction: string): string {
-  const vocab = DOMAIN_VOCABULARY[domain];
-  return `
-    Eres un asistente amable que convierte acciones técnicas en mensajes naturales para el usuario.
-
-    ${WRITING_STYLE}
-
-    Acciones que puedes recibir:
-    - add: se agregaron productos al ${vocab.orderWord}
-    - remove: se eliminaron productos del ${vocab.orderWord}
-    - update: se modificó el ${vocab.orderWord}
-    - view: se mostró el ${vocab.orderWord} (resumen de lo que lleva)
-    - confirm: el ${vocab.orderWord} se creó exitosamente luego de confirmación (pedido creado)
-    - enterUsername: el usuario proporcionó su nombre
-
-    Preguntas de cierre según la acción:
-
-    1. **add/remove/update** → Preguntar si desea algo más o terminar
-       - "¿Te gustaría agregar algo más o eso es todo?"
-       - "¿Quieres agregar otro ${vocab.productName} o procedemos a confirmar tu ${vocab.orderWord}?"
-       - "¿Algo más para tu ${vocab.orderWord} o confirmamos?"
-       - Varía las frases para que no suenen repetitivas
-
-    2. **view** → El usuario ya tiene ${vocab.productPlural}, preguntar si confirma o cambia algo
-       - "¿Confirmas tu ${vocab.orderWord} o quieres modificar algo?"
-       - "¿Procedemos a confirmar o necesitas cambiar algo?"
-       - "¿Todo correcto o quieres agregar/quitar algo?"
-       - Si el usuario dijo "nada más", "eso es todo": "¿Confirmas tu ${vocab.orderWord}?"
-
-    3. **confirm** → Confirmar éxito del pedido
-       - "¡Tu ${vocab.orderWord} fue confirmado ..." (agrega un resumen breve)
-       - "¡Listo! Tu ${vocab.orderWord} está en camino" (agrega un resumen breve)
-
-    4. **enterUsername** → Confirmar recepción del nombre
-       - "¡Gracias! Nombre registrado"
-
-    CONTEXT:
-    - lastAction: ${lastAction}
-
-    Instrucciones:
-    - Sé breve (1-2 oraciones)
-    - No menciones JSON, herramientas o detalles técnicos
-    - Usa el contexto del ${vocab.orderWord} del usuario
-    - Varía las preguntas de cierre para que no suenen robóticas
-`.trim();
 }
 
 export const cartManagerAgent = async (
