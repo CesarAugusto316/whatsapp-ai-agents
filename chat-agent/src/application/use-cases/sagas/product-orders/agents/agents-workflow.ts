@@ -13,6 +13,7 @@ import {
 } from "@/application/services/pomdp";
 import { aiAdapter } from "@/infraestructure/adapters/ai";
 import { formatSagaOutput } from "@/application/patterns";
+import { confirmationAgent } from "./ask-confirmation";
 
 /**
  * Maneja el flujo completo de tool calling para pedidos de productos
@@ -104,9 +105,7 @@ export async function productOrderWorkflow(
   }
 
   if (router === "ask_final_confirmation") {
-    // DEBEMOS ACTUALIZAR: ctx.productOrderState?.hasAskedForConfirmation = true
-    // HACER UN summary: call manage_cart -> view
-    return cartManagerAgent(ctx, chatHistory, router);
+    return confirmationAgent(ctx, chatHistory);
   }
 
   // 2. CART AGENT (incluye ask_final_confirmation)

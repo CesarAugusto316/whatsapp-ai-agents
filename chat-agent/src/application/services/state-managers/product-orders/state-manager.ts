@@ -344,6 +344,14 @@ class ProductOrderStateManager {
     return cacheAdapter.getObj<ProductOrderState>(key);
   }
 
+  async setHasAskedForConfirmation(key: string, hasAsked: boolean) {
+    const prev = await this.getState(key);
+    await cacheAdapter.save<Partial<ProductOrderState>>(key, {
+      ...prev,
+      hasAskedForConfirmation: hasAsked,
+    });
+  }
+
   async saveRouterHistory(
     key: string,
     { agent, action, userMessage, toolName }: HistoryArg,
