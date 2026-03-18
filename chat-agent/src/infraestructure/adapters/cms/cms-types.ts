@@ -1,3 +1,5 @@
+import { isWorkflowActive } from "node_modules/@dbos-inc/dbos-sdk/dist/src/workflow";
+
 export type WeekDay = Omit<
   Business["schedule"],
   "maxDurationTime" | "minDurationTime"
@@ -214,6 +216,12 @@ export interface BusinessesMedia {
   height?: number | null;
 }
 
+export type EstimatedProcessingTime = {
+  min: number;
+  max: number;
+  unit: "minutes" | "hours" | "days";
+};
+
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
@@ -226,11 +234,7 @@ export interface Product {
   enabled: boolean;
   description: string;
   business: string | Business;
-  estimatedProcessingTime: {
-    min: number;
-    max: number;
-    unit?: ("minutes" | "hours" | "days") | null;
-  };
+  estimatedProcessingTime: EstimatedProcessingTime;
   updatedAt: string;
   createdAt: string;
 }
@@ -256,6 +260,17 @@ export interface ProductsMedia {
   height?: number | null;
 }
 
+export type CartItem = {
+  productId: string;
+  productName: string;
+  quantity: number;
+  price: number;
+  subTotal: number;
+  observations: string;
+  estimatedProcessingTime: EstimatedProcessingTime;
+  isAvailable: boolean;
+};
+
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "product-order".
@@ -264,14 +279,8 @@ export interface ProductOrder {
   id: string;
   description?: string;
   cart: {
-    items: {
-      productId: string;
-      productName: string;
-      quantity: number;
-      price?: number;
-      subTotal?: number;
-      observations?: string;
-    }[];
+    items: CartItem[];
+    estimatedProcessingTime: EstimatedProcessingTime;
     total?: number;
   };
   status: "confirmed" | "cancelled" | "completed";

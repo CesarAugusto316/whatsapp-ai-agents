@@ -1,4 +1,4 @@
-import { SpecializedDomain } from "@/infraestructure/adapters/cms";
+import { CartItem, SpecializedDomain } from "@/infraestructure/adapters/cms";
 import { DOMAIN_VOCABULARY } from "./domain-vocabulary";
 import { aiAdapter, ChatMessage } from "@/infraestructure/adapters/ai";
 import { chatHistoryAdapter } from "@/infraestructure/adapters/cache";
@@ -55,14 +55,7 @@ function buildEmptyCartPrompt(
   `.trim();
 }
 
-function buildProductsSummary(
-  products: Array<{
-    name: string;
-    quantity: number;
-    price?: number | null;
-    isAvailable?: boolean;
-  }>,
-) {
+function buildProductsSummary(products: CartItem[]) {
   let total = 0;
   const summary = products
     .map((item) => {
@@ -72,9 +65,9 @@ function buildProductsSummary(
       const isAvailable = item.isAvailable !== false;
 
       if (!isAvailable) {
-        return `  • ${item.quantity}× ${item.name} - $${price} c/u = $${itemTotal} ⚠️ AGOTADO`;
+        return `  • ${item.quantity}× ${item.productName} - $${price} c/u = $${itemTotal} ⚠️ AGOTADO`;
       }
-      return `  • ${item.quantity}× ${item.name} - $${price} c/u = $${itemTotal}`;
+      return `  • ${item.quantity}× ${item.productName} - $${price} c/u = $${itemTotal}`;
     })
     .join("\n");
 
@@ -100,12 +93,7 @@ function getRandomEmptyCartMessage(
  */
 function createConfirmationPrompt(
   domain: SpecializedDomain,
-  products: Array<{
-    name: string;
-    quantity: number;
-    price?: number | null;
-    isAvailable?: boolean;
-  }>,
+  products: CartItem[],
 ): string {
   const vocab = DOMAIN_VOCABULARY[domain];
 
@@ -156,27 +144,11 @@ function createConfirmationPrompt(
 export const confirmationAgent = async (ctx: DomainCtx) => {
   //
   const userMessage = ctx.customerMessage!;
+  const orderKey = ctx.productOrderKey!;
   const domain: SpecializedDomain = ctx.business.general.businessType;
 
-  const searchProducts = ctx.productOrderState?.searchedProducts ?? [];
-  const products = ctx.productOrderState?.products ?? [];
-
-  // Enriquecer productos con información de disponibilidad y precio
-  const summaryProducts = products.map((item) => {
-    const foundProduct = searchProducts.find((p) => p.id === item.id);
-
-    const payload = {
-      estimatedProcessingTime: foundProduct?.payload?.estimatedProcessingTime,
-      price: foundProduct?.payload?.price,
-      isAvailable: foundProduct?.payload?.enabled,
-    };
-    return {
-      ...item,
-      ...payload,
-    };
-  });
-
-  const systemPrompt = createConfirmationPrompt(domain, summaryProducts);
+  const { summary } = await productOrderStateManager.viewCart(orderKey);
+  const systemPrompt = createConfirmationPrompt(domain, summary);
 
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },

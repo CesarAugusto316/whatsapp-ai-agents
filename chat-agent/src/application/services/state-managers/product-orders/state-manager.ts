@@ -4,7 +4,11 @@ import {
   FMStatus,
   BookingStatuses,
 } from "@/domain/booking";
-import { Product, SpecializedDomain } from "@/infraestructure/adapters/cms";
+import {
+  CartItem,
+  Product,
+  SpecializedDomain,
+} from "@/infraestructure/adapters/cms";
 import { stateMessages } from "./messages";
 import { ProductItem, ProductOrderState } from "@/domain/orders";
 import { QuadrantPoint } from "@/infraestructure/adapters/vector-store";
@@ -202,9 +206,9 @@ class ProductOrderStateManager {
 
     const searchedProducts = prev?.searchedProducts ?? [];
 
-    const productExists = searchedProducts.findLast((p) =>
-      fuzzyMatch(p.payload?.name!, product.name),
-    );
+    const productExists = searchedProducts
+      .filter((p) => p.payload.enabled)
+      .findLast((p) => fuzzyMatch(p.payload?.name!, product.name));
 
     if (!productExists) {
       const { points } = await ragService.searchProducts(
@@ -212,7 +216,10 @@ class ProductOrderStateManager {
         businessId,
         1,
       );
-      const productFound = points[0];
+      const productFound = points.filter((p) => p.payload.enabled)?.[0];
+
+      if (!productFound) return { products: prev?.products };
+
       const payload = {
         ...product,
         id: productFound.payload.id!,
@@ -264,6 +271,7 @@ class ProductOrderStateManager {
     const found = prevProducts.findLast((p) =>
       fuzzyMatch(p.name, product.name),
     );
+
     const updated = prevProducts
       .map((p) => {
         if (p.name === found?.name) {
@@ -323,9 +331,33 @@ class ProductOrderStateManager {
 
   async viewCart(key: string) {
     const prev = await this.getState(key);
+
+    const summary: CartItem[] = (prev?.products ?? []).map((p) => {
+      const found = prev?.searchedProducts.findLast(
+        (sp) => sp.id === p.id,
+      )?.payload;
+
+      return {
+        productId: found?.id!,
+        productName: found?.name!,
+        quantity: p.quantity ?? 1,
+        observations: p.notes ?? "",
+        price: found?.price ?? 0,
+        subTotal: p.quantity * (found?.price ?? 0),
+        estimatedProcessingTime: found?.estimatedProcessingTime!,
+        isAvailable: found?.enabled ?? false,
+      };
+    });
+
+    const orderItems = summary.toSorted(
+      (a, b) => b.estimatedProcessingTime.max - a.estimatedProcessingTime.max,
+    );
+
     return {
+      summary,
+      estimatedProcessingTime: orderItems[0]?.estimatedProcessingTime,
+      searchedProducts: prev?.searchedProducts ?? [],
       products: prev?.products ?? [],
-      totalItems: prev?.products?.length ?? 0,
       customerName: prev?.customerName,
       customerId: prev?.customerId,
     };

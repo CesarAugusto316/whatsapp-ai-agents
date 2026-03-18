@@ -52,15 +52,23 @@ const processOrder = async (ctx: DomainCtx) => {
     };
   }
 
+  if (!cartPayload.summary.length) {
+    return {
+      success: false,
+      error: "No products in the cart",
+    };
+  }
+
   const result = await cmsAdapter.createProductOrder({
     business: businessId,
     cart: {
-      items: cartPayload.products.map((p) => ({
-        productId: p.id!,
-        productName: p.name,
-        quantity: p.quantity,
-        observations: p.notes,
-      })),
+      items: cartPayload.summary,
+      estimatedProcessingTime: cartPayload.estimatedProcessingTime ?? {
+        max: 60,
+        min: 30,
+        unit: "minutes",
+      },
+      total: cartPayload.summary.reduce((acc, item) => acc + item.subTotal, 0),
     },
     customer: customerId,
   });
@@ -82,15 +90,17 @@ const orderProcessPrompt = (
       Tu ${vocab.orderWord} ha sido confirmado con éxito ✅
 
       ## Detalles del ${vocab.orderWord}:
-      - Productos: ${order.data?.cart.items.map((item) => `${item.quantity}x ${item.productName}`).join(", ")}
+      - ID de la orden: ${order.data?.id} (Sirve para retirar)
+      - Productos:
+         ${order.data?.cart.items.map((item) => `- ${item.quantity} ${item.productName} x ${item.price} = ${item.subTotal}`).join(", ")}
       - Total: $ ${order.data?.cart.total}
+      - Tiempo estimado: ${order.data?.cart.estimatedProcessingTime ? "" : "No disponible"}
 
       ## Instrucciones:
       - Informa al usuario que su ${vocab.orderWord} fue procesado correctamente
       - Menciona los detalles principales del ${vocab.orderWord} de forma clara y amable
       - Indica el tiempo estimado de preparación/entrega si aplica al negocio
       - Ofrece ayuda adicional si necesita algo más
-      - Mantén un tono cálido y profesional
 
       ${WRITING_STYLE}
     `.trim();
@@ -125,13 +135,15 @@ const orderProcessPrompt = (
       → Explica que hubo un problema y pide el nombre nuevamente
       → Ej: "Tuvimos un problema. ¿Me podrías confirmar tu nombre?"
 
+    6. **No products in the cart**: Si el error dice "No products in the cart"
+      → Explica que el carrito está vacío y pide al usuario que agregue productos
+      → Ej: "Tu carrito está vacío. ¿Quieres ver nuestro ${vocab.menuWord} y ${vocab.actionVerb} algo?"
+
     ## Instrucciones:
     - Informa al usuario de forma amable que hubo un problema con su ${vocab.orderWord}
     - Explica la razón del error en términos sencillos (sin tecnicismos)
     - Ofrece una solución o alternativa para resolver el problema
     - Pide la información faltante si es necesario
-    - Mantén un tono empático y profesional
-    - Asegúrate de que el usuario sepa que estás aquí para ayudarle
 
     ${WRITING_STYLE}
   `.trim();
@@ -211,6 +223,7 @@ export const processOrderAgent = async (
       systemPrompt: simplePrompt,
     });
   }
+  // isConfirmed=true
 
   const order = await processOrder(ctx);
   const systemPrompt = orderProcessPrompt(domain, order);

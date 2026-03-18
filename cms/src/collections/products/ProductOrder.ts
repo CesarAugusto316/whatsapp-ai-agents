@@ -126,9 +126,14 @@ export const ProductOrder: CollectionConfig = {
        *      quantity: number,
        *      price: number,
        *      subTotal: number,
-       *      observations: string
+       *      observations: string,
        *    } [],
        *    total: number
+       *    estimatedProcessingTime: {
+       *        min: number,
+       *        max: number,
+       *        unit: "minutes" | "hours" | "days",
+       *      }
        *  }
        */
       type: "json",
