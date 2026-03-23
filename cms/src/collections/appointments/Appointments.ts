@@ -1,16 +1,12 @@
-import type { CollectionConfig, CollectionSlug } from "payload";
-import { Business } from "../Businesses";
-import { Customers } from "../Costumers";
-import { Appointment, Business as IBusiness } from "@/payload-types";
+import type { CollectionConfig } from "payload";
+import { AvailabilityRequest } from "./check-availability";
 import {
-  AppointmentSlot,
-  AvailabilityRequest,
-  AvailabilityResponse,
-  calculateAvailability,
-  suggestAlternativeTimes,
-} from "./check-availability";
+  checkAvailabilityService,
+  getSlotsByDayService,
+  suggestSlotsService,
+} from "./Appointment.service";
+import { formatInTimeZone } from "date-fns-tz";
 
-/** @todo corregir en el dashboard para que muestre año/mes/dia en la tabla de reservas */
 export const Appointments: CollectionConfig = {
   slug: "appointments",
   labels: {
@@ -24,6 +20,18 @@ export const Appointments: CollectionConfig = {
     },
   },
   admin: {
+    group: {
+      en: "My businesses",
+      es: "Mis negocios",
+    },
+    hideAPIURL: true,
+    defaultColumns: [
+      "customerName",
+      "startDateTime",
+      "status",
+      "numberOfPeople",
+      "business",
+    ],
     useAsTitle: "customerName", // header title is taken from "name" field
   },
   timestamps: true,
@@ -32,9 +40,7 @@ export const Appointments: CollectionConfig = {
       if (req.user?.collection === "third-party-access") {
         return true;
       }
-      if (req?.user?.collection === "users") {
-        return req?.user?.role === "admin";
-      }
+      return false;
     }, // bot
     // Función read corregida:
     read: async ({ req }) => {
@@ -71,196 +77,97 @@ export const Appointments: CollectionConfig = {
       return false;
     },
   },
+  hooks: process.env.IS_CLI
+    ? undefined
+    : {
+        afterRead: [
+          async ({ doc, req }) => {
+            const isADminPanel =
+              req.url.includes("/admin/collections") ||
+              req.url.includes("/admin");
+
+            if (!isADminPanel) return doc;
+
+            // when requests goes to the admin panel, then apply business timezone
+            const timezone = doc.timezone || "Europe/Madrid"; // Valor por defecto
+            return {
+              ...doc,
+              startDateTime: doc.startDateTime
+                ? formatInTimeZone(
+                    doc.startDateTime,
+                    timezone,
+                    "yyyy-MM-dd HH:mm",
+                  )
+                : undefined,
+              endDateTime: doc.endDateTime
+                ? formatInTimeZone(
+                    doc.endDateTime,
+                    timezone,
+                    "yyyy-MM-dd HH:mm",
+                  )
+                : undefined,
+            };
+          },
+        ],
+      },
   endpoints: [
     {
-      path: "/check-availability",
+      path: "/suggest-slots",
       method: "get",
       handler: async (req) => {
         try {
           const { where } = req.query as unknown as AvailabilityRequest;
-
-          const { business, endDateTime, numberOfPeople, startDateTime } =
-            where;
-
-          // Validar parámetros requeridos
-          if (!business.equals || !startDateTime.equals) {
-            return Response.json(
-              {
-                success: false,
-                message: "Se requiere businessId y startDateTime",
-              },
-              { status: 400 },
-            );
-          }
-
-          // Obtener el negocio
-          const businessFound: IBusiness = await req.payload.findByID({
-            collection: "businesses",
-            id: business.equals,
-          });
-
-          if (!businessFound) {
-            return Response.json(
-              {
-                success: false,
-                message: "Negocio no encontrado",
-              },
-              { status: 404 },
-            );
-          }
-
-          const maxCapacityPerHour = businessFound.general.tables || 20;
-
-          // Parsear fechas (Payload usa UTC)
-          const startDate = new Date(startDateTime.equals);
-          const endDate = endDateTime
-            ? new Date(endDateTime.equals)
-            : new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hora por defecto
-
-          // Obtener reservas existentes para el rango solicitado
-          // Necesitamos un rango más amplio para calcular superposiciones correctamente
-          const searchStart = new Date(startDate);
-          searchStart.setHours(searchStart.getHours() - 1); // Incluir 1 hora antes
-          searchStart.setMinutes(0, 0, 0);
-
-          const searchEnd = new Date(endDate);
-          searchEnd.setHours(searchEnd.getHours() + 1); // Incluir 1 hora después
-          searchEnd.setMinutes(0, 0, 0);
-
-          const existingAppointments: { docs: Appointment[] } =
-            await req.payload.find({
-              collection: "appointments",
-              where: {
-                and: [
-                  {
-                    business,
-                  },
-                  {
-                    status: {
-                      in: ["confirmed", "pending"],
-                    },
-                  },
-                  {
-                    startDateTime: {
-                      // less_than_equal: searchEnd.toISOString(), // UTC
-                      greater_than_equal: searchStart.toISOString(), // UTC
-                    },
-                  },
-                  {
-                    or: [
-                      {
-                        endDateTime: {
-                          // greater_than_equal: searchStart.toISOString(), // UTC
-                          less_than_equal: searchEnd.toISOString(), // UTC
-                        },
-                      },
-                      {
-                        endDateTime: {
-                          equals: null,
-                        },
-                      },
-                    ],
-                  },
-                ],
-              },
-              limit: 1000,
-            });
-
-          // Convertir a formato AppointmentSlot para usar la lógica pura
-          const appointmentSlots: AppointmentSlot[] =
-            existingAppointments.docs.map((doc) => ({
-              startDateTime: doc.startDateTime,
-              endDateTime: doc.endDateTime || undefined,
-              numberOfPeople: doc.numberOfPeople || 0,
-              status: doc.status,
-            }));
-
-          // Calcular disponibilidad usando la función pura
-          const { timeSlots, isFullyAvailable } = calculateAvailability(
-            appointmentSlots,
-            maxCapacityPerHour,
-            startDate,
-            endDate,
-            +numberOfPeople.equals,
-          );
-
-          // Si no hay disponibilidad, obtener más datos para sugerencias
-          let suggestedTimes: string[] = [];
-          // if (!isFullyAvailable && +numberOfPeople.equals) {
-          // }
-
-          // Obtener más reservas para las próximas horas para sugerencias
-          const startForSuggestions = new Date(
-            startDate.getTime() + 3 * 60 * 60 * 1000,
-          ); // +3 horas
-          const endDateForSuggestions = new Date(
-            startDate.getTime() + 4 * 60 * 60 * 1000,
-          ); // +4 horas
-
-          const appointmentsForSuggestions: { docs: Appointment[] } =
-            await req.payload.find({
-              collection: "appointments",
-              where: {
-                and: [
-                  {
-                    business,
-                  },
-                  {
-                    status: {
-                      in: ["confirmed", "pending"],
-                    },
-                  },
-                  {
-                    startDateTime: {
-                      greater_than_equal: startForSuggestions.toISOString(),
-                    },
-                  },
-                  {
-                    startDateTime: {
-                      less_than_equal: endDateForSuggestions.toISOString(),
-                    },
-                  },
-                ],
-              },
-              limit: 1000,
-            });
-
-          const allAppointmentSlots: AppointmentSlot[] =
-            appointmentsForSuggestions.docs.map((doc) => ({
-              startDateTime: doc.startDateTime,
-              endDateTime: doc.endDateTime || undefined,
-              numberOfPeople: doc.numberOfPeople || 0,
-              status: doc.status,
-            }));
-
-          // Usar función pura para sugerencias
-          suggestedTimes = suggestAlternativeTimes({
-            existingAppointments: allAppointmentSlots,
-            maxCapacityPerHour,
-            originalStart: startDate,
-            numberOfPeople: +numberOfPeople.equals,
-          });
-
-          const response: AvailabilityResponse = {
-            success: true,
-            businessId: business.equals,
-            requestedStart: startDate.toISOString(),
-            requestedEnd: endDate.toISOString(),
-            requestedPeople: +numberOfPeople.equals,
-            totalCapacityPerHour: maxCapacityPerHour,
-            availableSlotsPerHour: timeSlots,
-            isFullyAvailable,
-            suggestedTimes,
-          };
-
+          const response = await suggestSlotsService(where); // business query param only
           return Response.json(response, { status: 200 });
         } catch (error) {
           console.error("Error checking availability:", error);
           return Response.json(
             {
               success: false,
-              message: "Error al verificar disponibilidad",
+              message: "Error al sugerir disponibilidad",
               error: (error as Error).message,
+            },
+            { status: 500 },
+          );
+        }
+      },
+    },
+    {
+      path: "/get-slots-by-day",
+      method: "get",
+      handler: async (req) => {
+        try {
+          const { where } = req.query as unknown as AvailabilityRequest;
+          const response = await getSlotsByDayService(where);
+          return Response.json(response, { status: 200 });
+        } catch (error) {
+          console.error("Error checking availability:", error);
+          return Response.json(
+            {
+              success: false,
+              message: "Error al sugerir disponibilidad",
+              error: (error as Error).message,
+            },
+            { status: 500 },
+          );
+        }
+      },
+    },
+    {
+      path: "/check-availability",
+      method: "get",
+      handler: async (req) => {
+        try {
+          const { where } = req.query as unknown as AvailabilityRequest;
+          const response = await checkAvailabilityService(where);
+          return Response.json(response, { status: 200 });
+        } catch (error) {
+          console.error("Error checking availability:", error);
+          return Response.json(
+            {
+              success: false,
+              message:
+                (error as Error).message || "Error al verificar disponibilidad",
             },
             { status: 500 },
           );
@@ -271,57 +178,104 @@ export const Appointments: CollectionConfig = {
   fields: [
     // businessId
     {
-      name: "business",
-      type: "relationship",
-      index: true,
-      label: {
-        en: "Business",
-        es: "Negocio",
-      },
+      type: "row",
+      fields: [
+        {
+          name: "business",
+          type: "relationship",
+          index: true,
+          label: {
+            en: "Business",
+            es: "Negocio",
+          },
+          admin: {
+            readOnly: true,
+          },
+          required: true,
+          relationTo: "businesses",
+          access: {
+            update: ({ req }) => {
+              if (req?.user?.collection === "third-party-access") {
+                return true;
+              }
+              return (
+                req?.user?.collection === "users" && req?.user?.role === "admin"
+              );
+            },
+          },
+        },
+        // customerId
+        {
+          name: "customer",
+          index: true,
+          type: "relationship",
+          admin: {
+            width: "50%",
+            readOnly: true,
+          },
+          label: {
+            en: "Customer",
+            es: "Cliente",
+          },
+          required: true,
+          relationTo: "customers",
+          access: {
+            update: ({ req }) => {
+              if (req.user?.collection === "third-party-access") {
+                return true;
+              }
+              return (
+                req?.user?.collection === "users" && req?.user?.role === "admin"
+              );
+            },
+          },
+        },
+      ],
+    },
+
+    {
+      type: "row",
+      fields: [
+        // customerName
+        {
+          name: "customerName",
+          access: {
+            update: ({ req }) => {
+              if (req?.user?.collection === "third-party-access") {
+                return true;
+              }
+              return (
+                req?.user?.collection === "users" &&
+                (req?.user?.role === "admin" || req?.user?.role === "business")
+              );
+            },
+          },
+          type: "text",
+          label: { en: "Customer Name", es: "A nombre de" },
+          admin: { width: "50%" },
+        },
+        // number of people
+        {
+          type: "number",
+          name: "numberOfPeople",
+          defaultValue: 1,
+          admin: {
+            width: "50%",
+            readOnly: true,
+          },
+          label: { en: "Number of People", es: "Número de Personas" },
+          min: 1,
+          max: 100,
+        },
+      ],
+    },
+
+    // time-zone
+    {
+      name: "timezone",
       admin: {
         readOnly: true,
       },
-      required: true,
-      relationTo: Business.slug as CollectionSlug,
-      access: {
-        update: ({ req }) => {
-          if (req?.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
-          );
-        },
-      },
-    },
-    // customerId
-    {
-      name: "customer",
-      index: true,
-      type: "relationship",
-      admin: {
-        readOnly: true,
-      },
-      label: {
-        en: "Customer",
-        es: "Cliente",
-      },
-      required: true,
-      relationTo: Customers.slug as CollectionSlug,
-      access: {
-        update: ({ req }) => {
-          if (req.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" && req?.user?.role === "admin"
-          );
-        },
-      },
-    },
-    // customerName
-    {
-      name: "customerName",
       access: {
         update: ({ req }) => {
           if (req?.user?.collection === "third-party-access") {
@@ -334,7 +288,8 @@ export const Appointments: CollectionConfig = {
         },
       },
       type: "text",
-      label: { en: "Customer Name", es: "A nombre de" },
+      label: { en: "Time zone", es: "Zona horaria" },
+      required: true,
     },
     // time: startDateTime - endDateTime
     {
@@ -361,10 +316,12 @@ export const Appointments: CollectionConfig = {
             },
           },
           admin: {
+            width: "50%",
+            readOnly: true,
             date: {
-              pickerAppearance: "timeOnly",
-              timeFormat: "HH:mm",
-              displayFormat: "HH:mm",
+              displayFormat: "d MMM yyy HH:mm", // Formato de 24 horas
+              timeFormat: "HH:mm", // Formato de 24 horas para el selector de hora
+              pickerAppearance: "dayAndTime",
             },
           },
         },
@@ -389,10 +346,12 @@ export const Appointments: CollectionConfig = {
             },
           },
           admin: {
+            width: "50%",
+            readOnly: true,
             date: {
-              pickerAppearance: "timeOnly",
-              timeFormat: "HH:mm",
-              displayFormat: "HH:mm",
+              displayFormat: "d MMM yyy HH:mm", // Formato de 24 horas
+              timeFormat: "HH:mm", // Formato de 24 horas para el selector de hora
+              pickerAppearance: "dayAndTime",
             },
           },
         },
@@ -426,36 +385,7 @@ export const Appointments: CollectionConfig = {
         { value: "completed", label: { en: "Completed", es: "Completada" } },
       ],
     },
-    // number of people
-    {
-      type: "number",
-      name: "numberOfPeople",
-      defaultValue: 1,
-      admin: {
-        readOnly: true,
-        // condition: (data) => {
-        //   console.log({ data });
-        //   // data: {
-        //   //    id: 'c948628b-02d0-4088-84df-b1c8b91b1c9d',
-        //   //    business: '71358eb4-b61e-418d-a2fe-e34b8e5c5e6c',
-        //   //    customer: '1cf18943-2a2b-46de-b9fb-5407afce47ae',
-        //   //    customerName: 'Cesar',
-        //   //    day: '2025-12-31T00:00:00.000Z',
-        //   //    startDateTime: '2025-12-31T16:00:00.000Z',
-        //   //    endDateTime: '2025-12-31T17:00:00.000Z',
-        //   //    status: 'confirmed',
-        //   //    numberOfPeople: 3,
-        //   //    notes: null,
-        //   //    updatedAt: '2025-12-26T18:57:52.198Z',
-        //   //    createdAt: '2025-12-26T18:57:52.197Z'
-        //   //  }
-        //   return true;
-        // },
-      },
-      label: { en: "Number of People", es: "Número de Personas" },
-      min: 1,
-      max: 100,
-    },
+
     // notes
     {
       name: "notes",

@@ -23,6 +23,7 @@ import {
   pgEnum,
 } from "@payloadcms/db-postgres/drizzle/pg-core";
 import { sql, relations } from "@payloadcms/db-postgres/drizzle";
+import { geometryColumn } from "@payloadcms/db-postgres";
 export const enum_users_role = pgEnum("enum_users_role", ["admin", "business"]);
 export const enum_appointments_status = pgEnum("enum_appointments_status", [
   "pending",
@@ -30,9 +31,23 @@ export const enum_appointments_status = pgEnum("enum_appointments_status", [
   "cancelled",
   "completed",
 ]);
+export const enum_businesses_currency = pgEnum("enum_businesses_currency", [
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "CAD",
+  "MXN",
+  "COL",
+  "PEN",
+]);
 export const enum_businesses_general_business_type = pgEnum(
   "enum_businesses_general_business_type",
-  ["restaurant", "medical", "legal", "real_estate"],
+  ["restaurant", "medical", "legal", "real_estate", "erotic"],
+);
+export const enum_businesses_general_country = pgEnum(
+  "enum_businesses_general_country",
+  ["ES", "COL", "MEX", "PE", "EC", "US", "CA"],
 );
 export const enum_businesses_general_timezone = pgEnum(
   "enum_businesses_general_timezone",
@@ -44,6 +59,22 @@ export const enum_businesses_general_timezone = pgEnum(
     "America/New_York",
     "Asia/Tokyo",
   ],
+);
+export const enum_products_estimated_processing_time_unit = pgEnum(
+  "enum_products_estimated_processing_time_unit",
+  ["minutes", "hours", "days"],
+);
+export const enum_payload_jobs_log_task_slug = pgEnum(
+  "enum_payload_jobs_log_task_slug",
+  ["inline", "semanticSync"],
+);
+export const enum_payload_jobs_log_state = pgEnum(
+  "enum_payload_jobs_log_state",
+  ["failed", "succeeded"],
+);
+export const enum_payload_jobs_task_slug = pgEnum(
+  "enum_payload_jobs_task_slug",
+  ["inline", "semanticSync"],
 );
 
 export const users_sessions = pgTable(
@@ -119,6 +150,78 @@ export const users = pgTable(
   ],
 );
 
+export const third_party_access_sessions = pgTable(
+  "third_party_access_sessions",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    createdAt: timestamp("created_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    }),
+    expiresAt: timestamp("expires_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    }).notNull(),
+  },
+  (columns) => [
+    index("third_party_access_sessions_order_idx").on(columns._order),
+    index("third_party_access_sessions_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [third_party_access.id],
+      name: "third_party_access_sessions_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const third_party_access = pgTable(
+  "third_party_access",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    updatedAt: timestamp("updated_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    enableAPIKey: boolean("enable_a_p_i_key"),
+    apiKey: varchar("api_key"),
+    apiKeyIndex: varchar("api_key_index"),
+    email: varchar("email").notNull(),
+    resetPasswordToken: varchar("reset_password_token"),
+    resetPasswordExpiration: timestamp("reset_password_expiration", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    }),
+    salt: varchar("salt"),
+    hash: varchar("hash"),
+    loginAttempts: numeric("login_attempts", { mode: "number" }).default(0),
+    lockUntil: timestamp("lock_until", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    }),
+  },
+  (columns) => [
+    index("third_party_access_updated_at_idx").on(columns.updatedAt),
+    index("third_party_access_created_at_idx").on(columns.createdAt),
+    uniqueIndex("third_party_access_email_idx").on(columns.email),
+  ],
+);
+
 export const appointments = pgTable(
   "appointments",
   {
@@ -133,21 +236,20 @@ export const appointments = pgTable(
       .references(() => customers.id, {
         onDelete: "set null",
       }),
+    customerName: varchar("customer_name"),
+    timezone: varchar("timezone").notNull(),
     startDateTime: timestamp("start_date_time", {
       mode: "string",
       withTimezone: true,
       precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T08:00:00.000"),
+    }).notNull(),
     endDateTime: timestamp("end_date_time", {
       mode: "string",
       withTimezone: true,
       precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T17:00:00.000"),
+    }),
     status: enum_appointments_status("status").notNull().default("pending"),
+    numberOfPeople: numeric("number_of_people", { mode: "number" }).default(1),
     notes: varchar("notes"),
     updatedAt: timestamp("updated_at", {
       mode: "string",
@@ -167,6 +269,8 @@ export const appointments = pgTable(
   (columns) => [
     index("appointments_business_idx").on(columns.business),
     index("appointments_customer_idx").on(columns.customer),
+    index("appointments_start_date_time_idx").on(columns.startDateTime),
+    index("appointments_end_date_time_idx").on(columns.endDateTime),
     index("appointments_updated_at_idx").on(columns.updatedAt),
     index("appointments_created_at_idx").on(columns.createdAt),
   ],
@@ -201,6 +305,7 @@ export const customers = pgTable(
       .notNull(),
   },
   (columns) => [
+    index("customers_phone_number_idx").on(columns.phoneNumber),
     index("customers_business_idx").on(columns.business),
     index("customers_updated_at_idx").on(columns.updatedAt),
     index("customers_created_at_idx").on(columns.createdAt),
@@ -217,16 +322,12 @@ export const businesses_general_next_holiday = pgTable(
       mode: "string",
       withTimezone: true,
       precision: 3,
-    })
-      .notNull()
-      .default("2025-12-06T05:15:40.635Z"),
+    }).notNull(),
     endDate: timestamp("end_date", {
       mode: "string",
       withTimezone: true,
       precision: 3,
-    })
-      .notNull()
-      .default("2025-12-06T05:15:40.635Z"),
+    }).notNull(),
   },
   (columns) => [
     index("businesses_general_next_holiday_order_idx").on(columns._order),
@@ -247,20 +348,8 @@ export const businesses_schedule_monday = pgTable(
     _order: integer("_order").notNull(),
     _parentID: uuid("_parent_id").notNull(),
     id: varchar("id").primaryKey(),
-    startTime: timestamp("start_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T08:00:00.000"),
-    endTime: timestamp("end_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T17:00:00.000"),
+    open: numeric("open", { mode: "number" }).notNull(),
+    close: numeric("close", { mode: "number" }).notNull(),
   },
   (columns) => [
     index("businesses_schedule_monday_order_idx").on(columns._order),
@@ -279,20 +368,8 @@ export const businesses_schedule_tuesday = pgTable(
     _order: integer("_order").notNull(),
     _parentID: uuid("_parent_id").notNull(),
     id: varchar("id").primaryKey(),
-    startTime: timestamp("start_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T08:00:00.000"),
-    endTime: timestamp("end_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T17:00:00.000"),
+    open: numeric("open", { mode: "number" }).notNull(),
+    close: numeric("close", { mode: "number" }).notNull(),
   },
   (columns) => [
     index("businesses_schedule_tuesday_order_idx").on(columns._order),
@@ -311,20 +388,8 @@ export const businesses_schedule_wednesday = pgTable(
     _order: integer("_order").notNull(),
     _parentID: uuid("_parent_id").notNull(),
     id: varchar("id").primaryKey(),
-    startTime: timestamp("start_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T08:00:00.000"),
-    endTime: timestamp("end_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T17:00:00.000"),
+    open: numeric("open", { mode: "number" }).notNull(),
+    close: numeric("close", { mode: "number" }).notNull(),
   },
   (columns) => [
     index("businesses_schedule_wednesday_order_idx").on(columns._order),
@@ -343,20 +408,8 @@ export const businesses_schedule_thursday = pgTable(
     _order: integer("_order").notNull(),
     _parentID: uuid("_parent_id").notNull(),
     id: varchar("id").primaryKey(),
-    startTime: timestamp("start_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T08:00:00.000"),
-    endTime: timestamp("end_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T17:00:00.000"),
+    open: numeric("open", { mode: "number" }).notNull(),
+    close: numeric("close", { mode: "number" }).notNull(),
   },
   (columns) => [
     index("businesses_schedule_thursday_order_idx").on(columns._order),
@@ -375,20 +428,8 @@ export const businesses_schedule_friday = pgTable(
     _order: integer("_order").notNull(),
     _parentID: uuid("_parent_id").notNull(),
     id: varchar("id").primaryKey(),
-    startTime: timestamp("start_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T08:00:00.000"),
-    endTime: timestamp("end_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T17:00:00.000"),
+    open: numeric("open", { mode: "number" }).notNull(),
+    close: numeric("close", { mode: "number" }).notNull(),
   },
   (columns) => [
     index("businesses_schedule_friday_order_idx").on(columns._order),
@@ -407,20 +448,8 @@ export const businesses_schedule_saturday = pgTable(
     _order: integer("_order").notNull(),
     _parentID: uuid("_parent_id").notNull(),
     id: varchar("id").primaryKey(),
-    startTime: timestamp("start_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T08:00:00.000"),
-    endTime: timestamp("end_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T17:00:00.000"),
+    open: numeric("open", { mode: "number" }).notNull(),
+    close: numeric("close", { mode: "number" }).notNull(),
   },
   (columns) => [
     index("businesses_schedule_saturday_order_idx").on(columns._order),
@@ -439,20 +468,8 @@ export const businesses_schedule_sunday = pgTable(
     _order: integer("_order").notNull(),
     _parentID: uuid("_parent_id").notNull(),
     id: varchar("id").primaryKey(),
-    startTime: timestamp("start_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T08:00:00.000"),
-    endTime: timestamp("end_time", {
-      mode: "string",
-      withTimezone: true,
-      precision: 3,
-    })
-      .notNull()
-      .default("2000-01-01T17:00:00.000"),
+    open: numeric("open", { mode: "number" }).notNull(),
+    close: numeric("close", { mode: "number" }).notNull(),
   },
   (columns) => [
     index("businesses_schedule_sunday_order_idx").on(columns._order),
@@ -465,36 +482,93 @@ export const businesses_schedule_sunday = pgTable(
   ],
 );
 
+export const businesses_faq_for_faq = pgTable(
+  "businesses_faq_for_faq",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    question: varchar("question"),
+    answer: varchar("answer"),
+  },
+  (columns) => [
+    index("businesses_faq_for_faq_order_idx").on(columns._order),
+    index("businesses_faq_for_faq_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_faq_for_faq_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const businesses_questions_for_review_to_review = pgTable(
+  "businesses_questions_for_review_to_review",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    customerRealquestion: varchar("customer_realquestion"),
+    agentAnswer: varchar("agent_answer"),
+    correctAnswer: varchar("correct_answer"),
+    approved: boolean("approved").default(false),
+  },
+  (columns) => [
+    index("businesses_questions_for_review_to_review_order_idx").on(
+      columns._order,
+    ),
+    index("businesses_questions_for_review_to_review_parent_id_idx").on(
+      columns._parentID,
+    ),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [businesses.id],
+      name: "businesses_questions_for_review_to_review_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
 export const businesses = pgTable(
   "businesses",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name").notNull(),
-    general_phoneNumber: varchar("general_phone_number")
-      .notNull()
-      .default("+34"),
+    assistantName: varchar("assistant_name").notNull(),
+    currency: enum_businesses_currency("currency").notNull().default("USD"),
+    taxes: numeric("taxes", { mode: "number" }),
+    general_isActive: boolean("general_is_active").default(true),
     general_requireAppointmentApproval: boolean(
       "general_require_appointment_approval",
     ).default(true),
+    general_phoneNumber: varchar("general_phone_number").default("+34"),
     general_businessType: enum_businesses_general_business_type(
       "general_business_type",
     )
       .notNull()
       .default("restaurant"),
-    general_tables: numeric("general_tables", { mode: "number" }).default(1),
-    general_description: varchar("general_description"),
+    general_maxCapacity: numeric("general_max_capacity", {
+      mode: "number",
+    }).default(10),
     general_user: uuid("general_user_id")
       .notNull()
       .references(() => users.id, {
         onDelete: "set null",
       }),
+    general_description: varchar("general_description"),
+    general_country: enum_businesses_general_country("general_country"),
+    general_address: varchar("general_address"),
     general_timezone: enum_businesses_general_timezone("general_timezone")
       .notNull()
       .default("Europe/Madrid"),
-    general_isActive: boolean("general_is_active").default(true),
-    schedule_averageTime: numeric("schedule_average_time", { mode: "number" })
+    general_location: geometryColumn("general_location"),
+    schedule_minDurationTime: numeric("schedule_min_duration_time", {
+      mode: "number",
+    })
       .notNull()
-      .default(1),
+      .default(60),
+    schedule_maxDurationTime: numeric("schedule_max_duration_time", {
+      mode: "number",
+    }).default(60),
     updatedAt: timestamp("updated_at", {
       mode: "string",
       withTimezone: true,
@@ -511,12 +585,218 @@ export const businesses = pgTable(
       .notNull(),
   },
   (columns) => [
-    uniqueIndex("businesses_general_general_phone_number_idx").on(
-      columns.general_phoneNumber,
-    ),
     index("businesses_general_general_user_idx").on(columns.general_user),
     index("businesses_updated_at_idx").on(columns.updatedAt),
     index("businesses_created_at_idx").on(columns.createdAt),
+  ],
+);
+
+export const businesses_media = pgTable(
+  "businesses_media",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    alt: varchar("alt").notNull(),
+    business: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, {
+        onDelete: "set null",
+      }),
+    prefix: varchar("prefix").default("business-media"),
+    updatedAt: timestamp("updated_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    url: varchar("url"),
+    thumbnailURL: varchar("thumbnail_u_r_l"),
+    filename: varchar("filename"),
+    mimeType: varchar("mime_type"),
+    filesize: numeric("filesize", { mode: "number" }),
+    width: numeric("width", { mode: "number" }),
+    height: numeric("height", { mode: "number" }),
+  },
+  (columns) => [
+    index("businesses_media_business_idx").on(columns.business),
+    index("businesses_media_updated_at_idx").on(columns.updatedAt),
+    index("businesses_media_created_at_idx").on(columns.createdAt),
+    uniqueIndex("businesses_media_filename_idx").on(columns.filename),
+  ],
+);
+
+export const products = pgTable(
+  "products",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    enabled: boolean("enabled").notNull().default(true),
+    name: varchar("name").notNull(),
+    price: numeric("price", { mode: "number" }).notNull(),
+    inventory: numeric("inventory", { mode: "number" }),
+    business: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, {
+        onDelete: "set null",
+      }),
+    description: varchar("description").notNull(),
+    estimatedProcessingTime_min: numeric("estimated_processing_time_min", {
+      mode: "number",
+    }),
+    estimatedProcessingTime_max: numeric("estimated_processing_time_max", {
+      mode: "number",
+    }),
+    estimatedProcessingTime_unit: enum_products_estimated_processing_time_unit(
+      "estimated_processing_time_unit",
+    ).default("minutes"),
+    updatedAt: timestamp("updated_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (columns) => [
+    index("products_business_idx").on(columns.business),
+    index("products_updated_at_idx").on(columns.updatedAt),
+    index("products_created_at_idx").on(columns.createdAt),
+  ],
+);
+
+export const products_media = pgTable(
+  "products_media",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    alt: varchar("alt").notNull(),
+    product: uuid("product_id")
+      .notNull()
+      .references(() => products.id, {
+        onDelete: "set null",
+      }),
+    business: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, {
+        onDelete: "set null",
+      }),
+    prefix: varchar("prefix").default("business-products"),
+    updatedAt: timestamp("updated_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    url: varchar("url"),
+    thumbnailURL: varchar("thumbnail_u_r_l"),
+    filename: varchar("filename"),
+    mimeType: varchar("mime_type"),
+    filesize: numeric("filesize", { mode: "number" }),
+    width: numeric("width", { mode: "number" }),
+    height: numeric("height", { mode: "number" }),
+  },
+  (columns) => [
+    index("products_media_product_idx").on(columns.product),
+    index("products_media_business_idx").on(columns.business),
+    index("products_media_updated_at_idx").on(columns.updatedAt),
+    index("products_media_created_at_idx").on(columns.createdAt),
+    uniqueIndex("products_media_filename_idx").on(columns.filename),
+  ],
+);
+
+export const product_orders = pgTable(
+  "product_orders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    description: varchar("description").notNull(),
+    business: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, {
+        onDelete: "set null",
+      }),
+    customer: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id, {
+        onDelete: "set null",
+      }),
+    updatedAt: timestamp("updated_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (columns) => [
+    index("product_orders_business_idx").on(columns.business),
+    index("product_orders_customer_idx").on(columns.customer),
+    index("product_orders_updated_at_idx").on(columns.updatedAt),
+    index("product_orders_created_at_idx").on(columns.createdAt),
+  ],
+);
+
+export const product_carts = pgTable(
+  "product_carts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    quantity: numeric("quantity", { mode: "number" }),
+    product: uuid("product_id")
+      .notNull()
+      .references(() => products.id, {
+        onDelete: "set null",
+      }),
+    order: uuid("order_id")
+      .notNull()
+      .references(() => product_orders.id, {
+        onDelete: "set null",
+      }),
+    updatedAt: timestamp("updated_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (columns) => [
+    index("product_carts_product_idx").on(columns.product),
+    index("product_carts_order_idx").on(columns.order),
+    index("product_carts_updated_at_idx").on(columns.updatedAt),
+    index("product_carts_created_at_idx").on(columns.createdAt),
   ],
 );
 
@@ -528,6 +808,89 @@ export const payload_kv = pgTable(
     data: jsonb("data").notNull(),
   },
   (columns) => [uniqueIndex("payload_kv_key_idx").on(columns.key)],
+);
+
+export const payload_jobs_log = pgTable(
+  "payload_jobs_log",
+  {
+    _order: integer("_order").notNull(),
+    _parentID: uuid("_parent_id").notNull(),
+    id: varchar("id").primaryKey(),
+    executedAt: timestamp("executed_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    }).notNull(),
+    completedAt: timestamp("completed_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    }).notNull(),
+    taskSlug: enum_payload_jobs_log_task_slug("task_slug").notNull(),
+    taskID: varchar("task_i_d").notNull(),
+    input: jsonb("input"),
+    output: jsonb("output"),
+    state: enum_payload_jobs_log_state("state").notNull(),
+    error: jsonb("error"),
+  },
+  (columns) => [
+    index("payload_jobs_log_order_idx").on(columns._order),
+    index("payload_jobs_log_parent_id_idx").on(columns._parentID),
+    foreignKey({
+      columns: [columns["_parentID"]],
+      foreignColumns: [payload_jobs.id],
+      name: "payload_jobs_log_parent_id_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const payload_jobs = pgTable(
+  "payload_jobs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    input: jsonb("input"),
+    completedAt: timestamp("completed_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    }),
+    totalTried: numeric("total_tried", { mode: "number" }).default(0),
+    hasError: boolean("has_error").default(false),
+    error: jsonb("error"),
+    taskSlug: enum_payload_jobs_task_slug("task_slug"),
+    queue: varchar("queue").default("default"),
+    waitUntil: timestamp("wait_until", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    }),
+    processing: boolean("processing").default(false),
+    updatedAt: timestamp("updated_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "string",
+      withTimezone: true,
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (columns) => [
+    index("payload_jobs_completed_at_idx").on(columns.completedAt),
+    index("payload_jobs_total_tried_idx").on(columns.totalTried),
+    index("payload_jobs_has_error_idx").on(columns.hasError),
+    index("payload_jobs_task_slug_idx").on(columns.taskSlug),
+    index("payload_jobs_queue_idx").on(columns.queue),
+    index("payload_jobs_wait_until_idx").on(columns.waitUntil),
+    index("payload_jobs_processing_idx").on(columns.processing),
+    index("payload_jobs_updated_at_idx").on(columns.updatedAt),
+    index("payload_jobs_created_at_idx").on(columns.createdAt),
+  ],
 );
 
 export const payload_locked_documents = pgTable(
@@ -565,15 +928,24 @@ export const payload_locked_documents_rels = pgTable(
     parent: uuid("parent_id").notNull(),
     path: varchar("path").notNull(),
     usersID: uuid("users_id"),
+    "third-party-accessID": uuid("third_party_access_id"),
     appointmentsID: uuid("appointments_id"),
     customersID: uuid("customers_id"),
     businessesID: uuid("businesses_id"),
+    "businesses-mediaID": uuid("businesses_media_id"),
+    productsID: uuid("products_id"),
+    "products-mediaID": uuid("products_media_id"),
+    "product-ordersID": uuid("product_orders_id"),
+    "product-cartsID": uuid("product_carts_id"),
   },
   (columns) => [
     index("payload_locked_documents_rels_order_idx").on(columns.order),
     index("payload_locked_documents_rels_parent_idx").on(columns.parent),
     index("payload_locked_documents_rels_path_idx").on(columns.path),
     index("payload_locked_documents_rels_users_id_idx").on(columns.usersID),
+    index("payload_locked_documents_rels_third_party_access_id_idx").on(
+      columns["third-party-accessID"],
+    ),
     index("payload_locked_documents_rels_appointments_id_idx").on(
       columns.appointmentsID,
     ),
@@ -582,6 +954,21 @@ export const payload_locked_documents_rels = pgTable(
     ),
     index("payload_locked_documents_rels_businesses_id_idx").on(
       columns.businessesID,
+    ),
+    index("payload_locked_documents_rels_businesses_media_id_idx").on(
+      columns["businesses-mediaID"],
+    ),
+    index("payload_locked_documents_rels_products_id_idx").on(
+      columns.productsID,
+    ),
+    index("payload_locked_documents_rels_products_media_id_idx").on(
+      columns["products-mediaID"],
+    ),
+    index("payload_locked_documents_rels_product_orders_id_idx").on(
+      columns["product-ordersID"],
+    ),
+    index("payload_locked_documents_rels_product_carts_id_idx").on(
+      columns["product-cartsID"],
     ),
     foreignKey({
       columns: [columns["parent"]],
@@ -592,6 +979,11 @@ export const payload_locked_documents_rels = pgTable(
       columns: [columns["usersID"]],
       foreignColumns: [users.id],
       name: "payload_locked_documents_rels_users_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [columns["third-party-accessID"]],
+      foreignColumns: [third_party_access.id],
+      name: "payload_locked_documents_rels_third_party_access_fk",
     }).onDelete("cascade"),
     foreignKey({
       columns: [columns["appointmentsID"]],
@@ -607,6 +999,31 @@ export const payload_locked_documents_rels = pgTable(
       columns: [columns["businessesID"]],
       foreignColumns: [businesses.id],
       name: "payload_locked_documents_rels_businesses_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [columns["businesses-mediaID"]],
+      foreignColumns: [businesses_media.id],
+      name: "payload_locked_documents_rels_businesses_media_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [columns["productsID"]],
+      foreignColumns: [products.id],
+      name: "payload_locked_documents_rels_products_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [columns["products-mediaID"]],
+      foreignColumns: [products_media.id],
+      name: "payload_locked_documents_rels_products_media_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [columns["product-ordersID"]],
+      foreignColumns: [product_orders.id],
+      name: "payload_locked_documents_rels_product_orders_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [columns["product-cartsID"]],
+      foreignColumns: [product_carts.id],
+      name: "payload_locked_documents_rels_product_carts_fk",
     }).onDelete("cascade"),
   ],
 );
@@ -647,12 +1064,16 @@ export const payload_preferences_rels = pgTable(
     parent: uuid("parent_id").notNull(),
     path: varchar("path").notNull(),
     usersID: uuid("users_id"),
+    "third-party-accessID": uuid("third_party_access_id"),
   },
   (columns) => [
     index("payload_preferences_rels_order_idx").on(columns.order),
     index("payload_preferences_rels_parent_idx").on(columns.parent),
     index("payload_preferences_rels_path_idx").on(columns.path),
     index("payload_preferences_rels_users_id_idx").on(columns.usersID),
+    index("payload_preferences_rels_third_party_access_id_idx").on(
+      columns["third-party-accessID"],
+    ),
     foreignKey({
       columns: [columns["parent"]],
       foreignColumns: [payload_preferences.id],
@@ -662,6 +1083,11 @@ export const payload_preferences_rels = pgTable(
       columns: [columns["usersID"]],
       foreignColumns: [users.id],
       name: "payload_preferences_rels_users_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [columns["third-party-accessID"]],
+      foreignColumns: [third_party_access.id],
+      name: "payload_preferences_rels_third_party_access_fk",
     }).onDelete("cascade"),
   ],
 );
@@ -708,6 +1134,24 @@ export const relations_users = relations(users, ({ many }) => ({
     relationName: "sessions",
   }),
 }));
+export const relations_third_party_access_sessions = relations(
+  third_party_access_sessions,
+  ({ one }) => ({
+    _parentID: one(third_party_access, {
+      fields: [third_party_access_sessions._parentID],
+      references: [third_party_access.id],
+      relationName: "sessions",
+    }),
+  }),
+);
+export const relations_third_party_access = relations(
+  third_party_access,
+  ({ many }) => ({
+    sessions: many(third_party_access_sessions, {
+      relationName: "sessions",
+    }),
+  }),
+);
 export const relations_appointments = relations(appointments, ({ one }) => ({
   business: one(businesses, {
     fields: [appointments.business],
@@ -807,6 +1251,26 @@ export const relations_businesses_schedule_sunday = relations(
     }),
   }),
 );
+export const relations_businesses_faq_for_faq = relations(
+  businesses_faq_for_faq,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_faq_for_faq._parentID],
+      references: [businesses.id],
+      relationName: "faq_forFaq",
+    }),
+  }),
+);
+export const relations_businesses_questions_for_review_to_review = relations(
+  businesses_questions_for_review_to_review,
+  ({ one }) => ({
+    _parentID: one(businesses, {
+      fields: [businesses_questions_for_review_to_review._parentID],
+      references: [businesses.id],
+      relationName: "questions-for-review_toReview",
+    }),
+  }),
+);
 export const relations_businesses = relations(businesses, ({ one, many }) => ({
   general_user: one(users, {
     fields: [businesses.general_user],
@@ -837,8 +1301,91 @@ export const relations_businesses = relations(businesses, ({ one, many }) => ({
   schedule_sunday: many(businesses_schedule_sunday, {
     relationName: "schedule_sunday",
   }),
+  faq_forFaq: many(businesses_faq_for_faq, {
+    relationName: "faq_forFaq",
+  }),
+  "questions-for-review_toReview": many(
+    businesses_questions_for_review_to_review,
+    {
+      relationName: "questions-for-review_toReview",
+    },
+  ),
+}));
+export const relations_businesses_media = relations(
+  businesses_media,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [businesses_media.business],
+      references: [businesses.id],
+      relationName: "business",
+    }),
+  }),
+);
+export const relations_products = relations(products, ({ one }) => ({
+  business: one(businesses, {
+    fields: [products.business],
+    references: [businesses.id],
+    relationName: "business",
+  }),
+}));
+export const relations_products_media = relations(
+  products_media,
+  ({ one }) => ({
+    product: one(products, {
+      fields: [products_media.product],
+      references: [products.id],
+      relationName: "product",
+    }),
+    business: one(businesses, {
+      fields: [products_media.business],
+      references: [businesses.id],
+      relationName: "business",
+    }),
+  }),
+);
+export const relations_product_orders = relations(
+  product_orders,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [product_orders.business],
+      references: [businesses.id],
+      relationName: "business",
+    }),
+    customer: one(customers, {
+      fields: [product_orders.customer],
+      references: [customers.id],
+      relationName: "customer",
+    }),
+  }),
+);
+export const relations_product_carts = relations(product_carts, ({ one }) => ({
+  product: one(products, {
+    fields: [product_carts.product],
+    references: [products.id],
+    relationName: "product",
+  }),
+  order: one(product_orders, {
+    fields: [product_carts.order],
+    references: [product_orders.id],
+    relationName: "order",
+  }),
 }));
 export const relations_payload_kv = relations(payload_kv, () => ({}));
+export const relations_payload_jobs_log = relations(
+  payload_jobs_log,
+  ({ one }) => ({
+    _parentID: one(payload_jobs, {
+      fields: [payload_jobs_log._parentID],
+      references: [payload_jobs.id],
+      relationName: "log",
+    }),
+  }),
+);
+export const relations_payload_jobs = relations(payload_jobs, ({ many }) => ({
+  log: many(payload_jobs_log, {
+    relationName: "log",
+  }),
+}));
 export const relations_payload_locked_documents_rels = relations(
   payload_locked_documents_rels,
   ({ one }) => ({
@@ -851,6 +1398,11 @@ export const relations_payload_locked_documents_rels = relations(
       fields: [payload_locked_documents_rels.usersID],
       references: [users.id],
       relationName: "users",
+    }),
+    "third-party-accessID": one(third_party_access, {
+      fields: [payload_locked_documents_rels["third-party-accessID"]],
+      references: [third_party_access.id],
+      relationName: "third-party-access",
     }),
     appointmentsID: one(appointments, {
       fields: [payload_locked_documents_rels.appointmentsID],
@@ -866,6 +1418,31 @@ export const relations_payload_locked_documents_rels = relations(
       fields: [payload_locked_documents_rels.businessesID],
       references: [businesses.id],
       relationName: "businesses",
+    }),
+    "businesses-mediaID": one(businesses_media, {
+      fields: [payload_locked_documents_rels["businesses-mediaID"]],
+      references: [businesses_media.id],
+      relationName: "businesses-media",
+    }),
+    productsID: one(products, {
+      fields: [payload_locked_documents_rels.productsID],
+      references: [products.id],
+      relationName: "products",
+    }),
+    "products-mediaID": one(products_media, {
+      fields: [payload_locked_documents_rels["products-mediaID"]],
+      references: [products_media.id],
+      relationName: "products-media",
+    }),
+    "product-ordersID": one(product_orders, {
+      fields: [payload_locked_documents_rels["product-ordersID"]],
+      references: [product_orders.id],
+      relationName: "product-orders",
+    }),
+    "product-cartsID": one(product_carts, {
+      fields: [payload_locked_documents_rels["product-cartsID"]],
+      references: [product_carts.id],
+      relationName: "product-carts",
     }),
   }),
 );
@@ -890,6 +1467,11 @@ export const relations_payload_preferences_rels = relations(
       references: [users.id],
       relationName: "users",
     }),
+    "third-party-accessID": one(third_party_access, {
+      fields: [payload_preferences_rels["third-party-accessID"]],
+      references: [third_party_access.id],
+      relationName: "third-party-access",
+    }),
   }),
 );
 export const relations_payload_preferences = relations(
@@ -908,10 +1490,18 @@ export const relations_payload_migrations = relations(
 type DatabaseSchema = {
   enum_users_role: typeof enum_users_role;
   enum_appointments_status: typeof enum_appointments_status;
+  enum_businesses_currency: typeof enum_businesses_currency;
   enum_businesses_general_business_type: typeof enum_businesses_general_business_type;
+  enum_businesses_general_country: typeof enum_businesses_general_country;
   enum_businesses_general_timezone: typeof enum_businesses_general_timezone;
+  enum_products_estimated_processing_time_unit: typeof enum_products_estimated_processing_time_unit;
+  enum_payload_jobs_log_task_slug: typeof enum_payload_jobs_log_task_slug;
+  enum_payload_jobs_log_state: typeof enum_payload_jobs_log_state;
+  enum_payload_jobs_task_slug: typeof enum_payload_jobs_task_slug;
   users_sessions: typeof users_sessions;
   users: typeof users;
+  third_party_access_sessions: typeof third_party_access_sessions;
+  third_party_access: typeof third_party_access;
   appointments: typeof appointments;
   customers: typeof customers;
   businesses_general_next_holiday: typeof businesses_general_next_holiday;
@@ -922,8 +1512,17 @@ type DatabaseSchema = {
   businesses_schedule_friday: typeof businesses_schedule_friday;
   businesses_schedule_saturday: typeof businesses_schedule_saturday;
   businesses_schedule_sunday: typeof businesses_schedule_sunday;
+  businesses_faq_for_faq: typeof businesses_faq_for_faq;
+  businesses_questions_for_review_to_review: typeof businesses_questions_for_review_to_review;
   businesses: typeof businesses;
+  businesses_media: typeof businesses_media;
+  products: typeof products;
+  products_media: typeof products_media;
+  product_orders: typeof product_orders;
+  product_carts: typeof product_carts;
   payload_kv: typeof payload_kv;
+  payload_jobs_log: typeof payload_jobs_log;
+  payload_jobs: typeof payload_jobs;
   payload_locked_documents: typeof payload_locked_documents;
   payload_locked_documents_rels: typeof payload_locked_documents_rels;
   payload_preferences: typeof payload_preferences;
@@ -931,6 +1530,8 @@ type DatabaseSchema = {
   payload_migrations: typeof payload_migrations;
   relations_users_sessions: typeof relations_users_sessions;
   relations_users: typeof relations_users;
+  relations_third_party_access_sessions: typeof relations_third_party_access_sessions;
+  relations_third_party_access: typeof relations_third_party_access;
   relations_appointments: typeof relations_appointments;
   relations_customers: typeof relations_customers;
   relations_businesses_general_next_holiday: typeof relations_businesses_general_next_holiday;
@@ -941,8 +1542,17 @@ type DatabaseSchema = {
   relations_businesses_schedule_friday: typeof relations_businesses_schedule_friday;
   relations_businesses_schedule_saturday: typeof relations_businesses_schedule_saturday;
   relations_businesses_schedule_sunday: typeof relations_businesses_schedule_sunday;
+  relations_businesses_faq_for_faq: typeof relations_businesses_faq_for_faq;
+  relations_businesses_questions_for_review_to_review: typeof relations_businesses_questions_for_review_to_review;
   relations_businesses: typeof relations_businesses;
+  relations_businesses_media: typeof relations_businesses_media;
+  relations_products: typeof relations_products;
+  relations_products_media: typeof relations_products_media;
+  relations_product_orders: typeof relations_product_orders;
+  relations_product_carts: typeof relations_product_carts;
   relations_payload_kv: typeof relations_payload_kv;
+  relations_payload_jobs_log: typeof relations_payload_jobs_log;
+  relations_payload_jobs: typeof relations_payload_jobs;
   relations_payload_locked_documents_rels: typeof relations_payload_locked_documents_rels;
   relations_payload_locked_documents: typeof relations_payload_locked_documents;
   relations_payload_preferences_rels: typeof relations_payload_preferences_rels;

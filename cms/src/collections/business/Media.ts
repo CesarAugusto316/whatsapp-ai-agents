@@ -1,0 +1,167 @@
+import type { CollectionConfig } from "payload";
+
+export const BusinessMedia: CollectionConfig = {
+  slug: "businesses-media",
+  labels: {
+    singular: {
+      en: "Media",
+      es: "Elemento de Galería",
+    },
+    plural: {
+      en: "Media",
+      es: "Galería",
+    },
+  },
+  access: {
+    // Función read corregida:
+    read: async ({ req }) => {
+      if (req?.user?.collection === "third-party-access") {
+        return true;
+      }
+      const { user } = req;
+      if (user?.collection === "users") {
+        if (user?.role === "admin") {
+          return true;
+        }
+        if (user?.role === "business") {
+          // En lugar de hacer una consulta, filtramos por "negocios del usuario actual"
+          // Esto requiere que la relación "business" esté configurada correctamente
+          return {
+            or: [
+              {
+                // Filtra por negocios que tengan este usuario como propietario
+                // (Requiere que Payload pueda hacer joins en las queries)
+                "business.general.user": {
+                  equals: user.id,
+                },
+              },
+              // Permite ver interfaz aunque no tenga citas
+              {
+                id: {
+                  exists: false,
+                },
+              },
+            ],
+          };
+        }
+      }
+      return false;
+    },
+  },
+  timestamps: true,
+  hooks: process.env.IS_CLI
+    ? undefined
+    : {
+        afterChange: [
+          async ({ doc, operation, req }) => {
+            await req.payload.jobs.queue({
+              task: "semanticSync",
+              input: {
+                docId: doc.id,
+                collection: "businesses-media",
+                businessId:
+                  typeof doc.business === "string"
+                    ? doc.business
+                    : doc.business.id,
+                operation: operation, // create | update
+              },
+              queue: "oneMinute",
+            });
+            return doc;
+          },
+        ],
+        afterDelete: [
+          async ({ doc, req }) => {
+            await req.payload.jobs.queue({
+              task: "semanticSync",
+              input: {
+                docId: doc.id,
+                collection: "businesses-media",
+                businessId:
+                  typeof doc.business === "string"
+                    ? doc.business
+                    : doc.business.id,
+                operation: "delete",
+              },
+              queue: "oneMinute",
+            });
+            return doc;
+          },
+        ],
+      },
+  fields: [
+    {
+      name: "alt",
+      type: "text",
+      label: {
+        en: "Description",
+        es: "Descripción",
+      },
+      admin: {
+        description: {
+          en: "Description text for the image or video",
+          es: "Descripción para la imagen o video",
+        },
+        placeholder: {
+          en: "Use keywords to describe the image or video",
+          es: "Usa palabras clave para describir la imagen o video",
+        },
+      },
+      required: true,
+    },
+    {
+      name: "business",
+      type: "relationship",
+      index: true,
+      label: {
+        en: "Business",
+        es: "Negocio",
+      },
+      admin: {
+        description: {
+          en: "Business associated with the media",
+          es: "Negocio asociado con la foto o video",
+        },
+      },
+      required: true,
+      relationTo: "businesses",
+      access: {
+        update: ({ req }) => {
+          if (req?.user?.collection === "third-party-access") {
+            return true;
+          }
+          return (
+            req?.user?.collection === "users" && req?.user?.role === "admin"
+          );
+        },
+      },
+    },
+  ],
+  admin: {
+    // preview: (doc, { req, locale, token }) =>
+    //   `${req.protocol}//${req.host}/${doc.slug}`,
+    description: {
+      en: "Photo or video gallery of businesses",
+      es: "Galería de fotos o videos de negocios",
+    },
+    hideAPIURL: true,
+    group: {
+      en: "My businesses",
+      es: "Mis negocios",
+    },
+  },
+  upload: {
+    // disableLocalStorage: env.NODE_ENV === "production",
+    // staticDir: path.resolve(__dirname, "../media"),
+    formatOptions: {
+      format: "webp", // Convert uploads to WebP
+      options: {
+        quality: 80,
+      },
+    },
+    mimeTypes: ["image/*", "video/*"],
+    // These are not supported on Workers yet due to lack of sharp
+    crop: false,
+    focalPoint: false,
+  },
+};

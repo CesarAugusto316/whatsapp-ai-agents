@@ -1,0 +1,43 @@
+import { Handler } from "hono/types";
+import { ModuleCtx, DomainCtx } from "@/domain/booking";
+import { whatsappSagaOrchestrator } from "@/application/use-cases/sagas";
+
+export const whatsappBookingHandler: Handler<ModuleCtx> = async (c) => {
+  const ctx = {
+    session: c.get("session"),
+    whatsappEvent: c.get("whatsappEvent"),
+    customerMessage: c.get("customerMessage"),
+    customerPhone: c.get("customerPhone"),
+    business: c.get("business"),
+    customer: c.get("customer"),
+    businessId: c.get("businessId"),
+    chatKey: c.get("chatKey"),
+
+    // domain driven
+    activeModules: c.get("activeModules"),
+    beliefState: c.get("beliefState"),
+    beliefKey: c.get("beliefKey"),
+    bookingKey: c.get("bookingKey"),
+    bookingState: c.get("bookingState"),
+    productOrderKey: c.get("productOrderKey"),
+    productOrderState: c.get("productOrderState"),
+  } satisfies DomainCtx;
+
+  if (ctx.whatsappEvent !== "message") {
+    return c.json({ message: "Invalid event" });
+  }
+
+  const { bag, lastStepResult } = await whatsappSagaOrchestrator(
+    Object.freeze(structuredClone(ctx)),
+  );
+
+  const message =
+    bag?.["execute:reservationFlow"].text ||
+    lastStepResult?.compensate?.result ||
+    "Ocurrio un error, vuelva a intentarlo más tarde";
+
+  return c.json({
+    received: true,
+    message,
+  });
+};

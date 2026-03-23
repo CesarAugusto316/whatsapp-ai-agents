@@ -1,8 +1,9 @@
 import { describe, test, expect, beforeEach, beforeAll } from "bun:test";
-import { redisClient } from "@/infraestructure/cache/redis.client";
+import { cacheAdapter } from "@/infraestructure/adapters/cache";
+import { env } from "bun";
 
 // Constants from the logs
-const BUSINESS_ID = "71358eb4-b61e-418d-a2fe-e34b8e5c5e6c";
+const BUSINESS_ID = env.BUSINESS_ID_TEST;
 const CUSTOMER_PHONE = "+3455555555";
 
 describe("Real integration: Empty message error", () => {
@@ -13,15 +14,17 @@ describe("Real integration: Empty message error", () => {
   beforeEach(async () => {
     // Clean up Redis keys for this business and customer before each test
     const chatKey = `chat:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
-    const reservationKey = `reservation:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
-    await redisClient.del(chatKey);
-    await redisClient.del(reservationKey);
+    const bookingKey = `booking:${BUSINESS_ID}:${CUSTOMER_PHONE}`;
+    await cacheAdapter.delete(chatKey);
+    await cacheAdapter.delete(bookingKey);
   });
 
   test(
     "should return 400 when message is empty",
     async () => {
       const payload = {
+        event: "message",
+        session: "default",
         payload: {
           body: "", // Empty message
           from: CUSTOMER_PHONE,

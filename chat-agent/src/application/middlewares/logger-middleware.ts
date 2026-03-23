@@ -1,8 +1,7 @@
 import { MiddlewareHandler } from "hono";
 import { env } from "bun";
-import { DomainCtx } from "@/domain";
-import { ReservationState } from "@/domain/restaurant/reservations";
-import { RestaurantCtx } from "@/domain/restaurant";
+import { BookingState } from "@/domain/booking";
+import { ModuleCtx } from "@/domain/booking";
 
 // Tipos para diferentes niveles de log
 type LogLevel = "INFO" | "WARN" | "ERROR" | "DEBUG";
@@ -24,13 +23,11 @@ type LogData = {
   userAgent?: string;
   error?: string;
   traceId?: string;
-  state?: Partial<ReservationState>;
+  state?: Partial<BookingState>;
   response?: unknown;
 };
 
-export const loggerMiddleware = (): MiddlewareHandler<
-  DomainCtx<RestaurantCtx>
-> => {
+export const loggerMiddleware = (): MiddlewareHandler<ModuleCtx> => {
   return async (c, next) => {
     const start = performance.now(); // Más preciso que Date.now()
     const method = c.req.method;
@@ -80,7 +77,7 @@ export const loggerMiddleware = (): MiddlewareHandler<
             ? userAgent.substring(0, 50) + (userAgent.length > 50 ? "..." : "")
             : undefined,
         traceId,
-        state: c.get("RESERVATION_STATE"),
+        state: c.get("bookingState"),
         response: await c.res.clone().json(),
       };
 
@@ -150,7 +147,7 @@ export const loggerMiddleware = (): MiddlewareHandler<
         durationHuman: `${Math.round(elapsed)}ms`,
         ip,
         traceId,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? JSON.stringify(error) : "Unknown error",
       };
 
       if (env.NODE_ENV === "production") {

@@ -73,7 +73,12 @@ export interface Config {
     appointments: Appointment;
     customers: Customer;
     businesses: Business;
+    'businesses-media': BusinessesMedia;
+    products: Product;
+    'products-media': ProductsMedia;
+    'product-orders': ProductOrder;
     'payload-kv': PayloadKv;
+    'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -85,7 +90,12 @@ export interface Config {
     appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     businesses: BusinessesSelect<false> | BusinessesSelect<true>;
+    'businesses-media': BusinessesMediaSelect<false> | BusinessesMediaSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
+    'products-media': ProductsMediaSelect<false> | ProductsMediaSelect<true>;
+    'product-orders': ProductOrdersSelect<false> | ProductOrdersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -104,7 +114,13 @@ export interface Config {
         collection: 'third-party-access';
       });
   jobs: {
-    tasks: unknown;
+    tasks: {
+      semanticSync: TaskSemanticSync;
+      inline: {
+        input: unknown;
+        output: unknown;
+      };
+    };
     workflows: unknown;
   };
 }
@@ -207,36 +223,59 @@ export interface Appointment {
   business: string | Business;
   customer: string | Customer;
   customerName?: string | null;
+  numberOfPeople?: number | null;
+  timezone: string;
   startDateTime: string;
   endDateTime?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  numberOfPeople?: number | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Manage your businesses here
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "businesses".
  */
 export interface Business {
   id: string;
+  /**
+   * The name of the business
+   */
   name: string;
+  /**
+   * The name of the AI assistant
+   */
+  assistantName: string;
+  currency: 'USD' | 'EUR' | 'GBP' | 'JPY' | 'CAD' | 'MXN' | 'COL' | 'PEN';
+  /**
+   * The taxes/IVA percentage
+   */
+  taxes?: number | null;
   general: {
-    phoneNumber: string;
     /**
-     * Use this field to indicate whether the business requires appointment approval or not. Tell the chatbot to disable it or do it manually here.
-     */
-    requireAppointmentApproval?: boolean | null;
-    businessType: 'restaurant' | 'medical' | 'legal' | 'real_estate';
-    tables?: number | null;
-    description?: string | null;
-    user: string | User;
-    timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
-    /**
-     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here. Use it for holidays, etc.
+     * Use this field to mark the business as active or inactive. Tell the chatbot to disable it or do it manually here.
      */
     isActive?: boolean | null;
+    /**
+     * Use this field to indicate whether the business requires appointment approval or not.
+     */
+    requireAppointmentApproval?: boolean | null;
+    phoneNumber?: string | null;
+    businessType: 'restaurant' | 'medical' | 'legal' | 'real-estate' | 'erotic';
+    maxCapacity?: number | null;
+    user: string | User;
+    description?: string | null;
+    country?: ('ES' | 'COL' | 'MEX' | 'PE' | 'EC' | 'US' | 'CA') | null;
+    address?: string | null;
+    shortUrlVirtual?: string | null;
+    timezone: 'Europe/Madrid' | 'Europe/Paris' | 'Europe/London' | 'America/Lima' | 'America/New_York' | 'Asia/Tokyo';
+    /**
+     * @minItems 2
+     * @maxItems 2
+     */
+    location?: [number, number] | null;
     nextHoliday?:
       | {
           startDate: string;
@@ -246,7 +285,8 @@ export interface Business {
       | null;
   };
   schedule: {
-    averageTime: number;
+    minDurationTime: number;
+    maxDurationTime?: number | null;
     monday?:
       | {
           open: number;
@@ -297,6 +337,44 @@ export interface Business {
         }[]
       | null;
   };
+  faq?: {
+    /**
+     * FAQ questions
+     */
+    forFaq?:
+      | {
+          question?: string | null;
+          answer?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Questions that need to be reviewed by an admin
+   */
+  'questions-for-review'?: {
+    toReview?:
+      | {
+          /**
+           * The question asked by the customer
+           */
+          customerRealquestion?: string | null;
+          /**
+           * The answer provided by the agent
+           */
+          agentAnswer?: string | null;
+          /**
+           * The correct answer to the question
+           */
+          correctAnswer?: string | null;
+          /**
+           * Mark this question as approved. Upon saving, it will move to the FAQ tab.
+           */
+          approved?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -318,6 +396,136 @@ export interface Customer {
   createdAt: string;
 }
 /**
+ * Photo or video gallery of businesses
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "businesses-media".
+ */
+export interface BusinessesMedia {
+  id: string;
+  /**
+   * Description text for the image or video
+   */
+  alt: string;
+  /**
+   * Business associated with the media
+   */
+  business: string | Business;
+  prefix?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: string;
+  /**
+   * Choose whether the product is available
+   */
+  enabled: boolean;
+  /**
+   * The name of the product
+   */
+  name: string;
+  /**
+   * The price of the product
+   */
+  price: number;
+  /**
+   * The inventory of the product
+   */
+  inventory?: number | null;
+  /**
+   * The business that owns the product
+   */
+  business: string | Business;
+  /**
+   * The description of the product
+   */
+  description?: string | null;
+  /**
+   * Approximate time range needed to process this item before it is ready. This is informational only.
+   */
+  estimatedProcessingTime?: {
+    /**
+     * The minimum estimated processing time
+     */
+    min?: number | null;
+    /**
+     * The maximum estimated processing time
+     */
+    max?: number | null;
+    unit?: ('minutes' | 'hours' | 'days') | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Photo or video gallery of products
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products-media".
+ */
+export interface ProductsMedia {
+  id: string;
+  /**
+   * Description text for the image or video
+   */
+  alt: string;
+  /**
+   * The product that owns the media
+   */
+  product: string | Product;
+  business: string | Business;
+  prefix?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-orders".
+ */
+export interface ProductOrder {
+  id: string;
+  /**
+   * Order Description
+   */
+  description?: string | null;
+  business: string | Business;
+  customer: string | Customer;
+  cart:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Status of the order
+   */
+  status: 'confirmed' | 'cancelled' | 'completed';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -333,6 +541,98 @@ export interface PayloadKv {
     | number
     | boolean
     | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs".
+ */
+export interface PayloadJob {
+  id: string;
+  /**
+   * Input data provided to the job
+   */
+  input?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  taskStatus?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedAt?: string | null;
+  totalTried?: number | null;
+  /**
+   * If hasError is true this job will not be retried
+   */
+  hasError?: boolean | null;
+  /**
+   * If hasError is true, this is the error that caused it
+   */
+  error?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Task execution log
+   */
+  log?:
+    | {
+        executedAt: string;
+        completedAt: string;
+        taskSlug: 'inline' | 'semanticSync';
+        taskID: string;
+        input?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        output?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        state: 'failed' | 'succeeded';
+        error?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  taskSlug?: ('inline' | 'semanticSync') | null;
+  queue?: string | null;
+  waitUntil?: string | null;
+  processing?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -360,6 +660,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'businesses';
         value: string | Business;
+      } | null)
+    | ({
+        relationTo: 'businesses-media';
+        value: string | BusinessesMedia;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: string | Product;
+      } | null)
+    | ({
+        relationTo: 'products-media';
+        value: string | ProductsMedia;
+      } | null)
+    | ({
+        relationTo: 'product-orders';
+        value: string | ProductOrder;
       } | null);
   globalSlug?: string | null;
   user:
@@ -471,10 +787,11 @@ export interface AppointmentsSelect<T extends boolean = true> {
   business?: T;
   customer?: T;
   customerName?: T;
+  numberOfPeople?: T;
+  timezone?: T;
   startDateTime?: T;
   endDateTime?: T;
   status?: T;
-  numberOfPeople?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -498,17 +815,24 @@ export interface CustomersSelect<T extends boolean = true> {
  */
 export interface BusinessesSelect<T extends boolean = true> {
   name?: T;
+  assistantName?: T;
+  currency?: T;
+  taxes?: T;
   general?:
     | T
     | {
-        phoneNumber?: T;
-        requireAppointmentApproval?: T;
-        businessType?: T;
-        tables?: T;
-        description?: T;
-        user?: T;
-        timezone?: T;
         isActive?: T;
+        requireAppointmentApproval?: T;
+        phoneNumber?: T;
+        businessType?: T;
+        maxCapacity?: T;
+        user?: T;
+        description?: T;
+        country?: T;
+        address?: T;
+        shortUrlVirtual?: T;
+        timezone?: T;
+        location?: T;
         nextHoliday?:
           | T
           | {
@@ -520,7 +844,8 @@ export interface BusinessesSelect<T extends boolean = true> {
   schedule?:
     | T
     | {
-        averageTime?: T;
+        minDurationTime?: T;
+        maxDurationTime?: T;
         monday?:
           | T
           | {
@@ -571,6 +896,101 @@ export interface BusinessesSelect<T extends boolean = true> {
               id?: T;
             };
       };
+  faq?:
+    | T
+    | {
+        forFaq?:
+          | T
+          | {
+              question?: T;
+              answer?: T;
+              id?: T;
+            };
+      };
+  'questions-for-review'?:
+    | T
+    | {
+        toReview?:
+          | T
+          | {
+              customerRealquestion?: T;
+              agentAnswer?: T;
+              correctAnswer?: T;
+              approved?: T;
+              id?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "businesses-media_select".
+ */
+export interface BusinessesMediaSelect<T extends boolean = true> {
+  alt?: T;
+  business?: T;
+  prefix?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  enabled?: T;
+  name?: T;
+  price?: T;
+  inventory?: T;
+  business?: T;
+  description?: T;
+  estimatedProcessingTime?:
+    | T
+    | {
+        min?: T;
+        max?: T;
+        unit?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products-media_select".
+ */
+export interface ProductsMediaSelect<T extends boolean = true> {
+  alt?: T;
+  product?: T;
+  business?: T;
+  prefix?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-orders_select".
+ */
+export interface ProductOrdersSelect<T extends boolean = true> {
+  description?: T;
+  business?: T;
+  customer?: T;
+  cart?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -581,6 +1001,37 @@ export interface BusinessesSelect<T extends boolean = true> {
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T;
   data?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs_select".
+ */
+export interface PayloadJobsSelect<T extends boolean = true> {
+  input?: T;
+  taskStatus?: T;
+  completedAt?: T;
+  totalTried?: T;
+  hasError?: T;
+  error?: T;
+  log?:
+    | T
+    | {
+        executedAt?: T;
+        completedAt?: T;
+        taskSlug?: T;
+        taskID?: T;
+        input?: T;
+        output?: T;
+        state?: T;
+        error?: T;
+        id?: T;
+      };
+  taskSlug?: T;
+  queue?: T;
+  waitUntil?: T;
+  processing?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -613,6 +1064,19 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSemanticSync".
+ */
+export interface TaskSemanticSync {
+  input: {
+    docId: string;
+    collection: string;
+    businessId: string;
+    operation: string;
+  };
+  output?: unknown;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -1,5 +1,5 @@
 import { RetryConfig, retryQuery } from "./retry-query.strategy";
-import { CircuitBreaker } from "./circut-braker/circut-braker";
+import { CircuitBreaker } from "../circut-braker/circut-braker";
 
 // Configuración específica para LLMs
 const llmCircuitBreaker = new CircuitBreaker(

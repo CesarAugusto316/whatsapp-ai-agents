@@ -1,193 +1,135 @@
+import { Appointment, Business } from "@/payload-types";
+
 export interface AvailabilityRequest {
   depth: string;
   where: {
     business: { equals: string };
-    startDateTime: { equals: string };
-    endDateTime: { equals: string };
+    startDateTime: { equals: string }; // UTC format
+    endDateTime: { equals: string }; // UTC format
     numberOfPeople: { equals: string };
   };
-}
-
-interface TimeSlot {
-  hour: string;
-  availableSlots: number;
-  isAvailable: boolean;
 }
 
 export interface AvailabilityResponse {
   success: boolean;
   message?: string;
   businessId: string;
-  requestedStart: string;
-  requestedEnd: string;
-  requestedPeople?: number;
-  totalCapacityPerHour: number;
-  availableSlotsPerHour: TimeSlot[];
-  isFullyAvailable: boolean;
-  suggestedTimes?: string[];
+  startDate?: string;
+  endDate?: string;
+  numberOfPeople?: number;
+  maxCapacityPerHour: number;
+  isSlotAvailable?: boolean;
+  availableSlots?: TimeRangeWindow[];
+  slotsByTimeRange?: TimeRangeWindow[];
+  weekDay?: string;
+  weekDaySchedule?: {
+    open: string;
+    close: string;
+  }[];
 }
 
-export interface AppointmentSlot {
-  startDateTime: string;
-  endDateTime?: string;
-  numberOfPeople: number;
-  status?: string;
+export interface TimeRangeWindow {
+  from: string;
+  to: string;
+  totalPeople: number;
+  slots: AppointmentSlot[];
 }
 
-export interface AvailabilityResult {
-  timeSlots: TimeSlot[];
-  isFullyAvailable: boolean;
-}
+export type AppointmentSlot = Pick<
+  Appointment,
+  | "startDateTime"
+  | "endDateTime"
+  | "numberOfPeople"
+  | "status"
+  | "createdAt"
+  | "customer"
+  | "id"
+>;
+
+type WeekDay = Omit<
+  Business["schedule"],
+  "minDurationTime" | "maxDurationTime"
+>;
+export type WeekDayKey = keyof WeekDay;
 
 /**
  *
- * Calcula la disponibilidad puramente basado en datos existentes
- * Esta función NO hace llamadas a la base de datos
+ * @link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getDay
  */
-export function calculateAvailability(
-  existingAppointments: AppointmentSlot[],
-  maxCapacityPerHour: number,
-  startDate: Date,
-  endDate: Date,
-  numberOfPeople: number = 1,
-): AvailabilityResult {
-  // Filtramos solo reservas confirmadas o pendientes
-  const relevantAppointments = existingAppointments.filter(
-    (appt) => appt.status === "confirmed" || appt.status === "pending",
-  );
-  const timeSlots: TimeSlot[] = [];
-
-  // Normalizar fechas: inicio hacia abajo, fin hacia arriba
-  const normalizedStart = new Date(startDate);
-  normalizedStart.setMinutes(0, 0, 0);
-
-  const normalizedEnd = new Date(endDate);
-  // Redondear fin hacia arriba si no es hora exacta
-  if (
-    normalizedEnd.getMinutes() > 0 ||
-    normalizedEnd.getSeconds() > 0 ||
-    normalizedEnd.getMilliseconds() > 0
-  ) {
-    normalizedEnd.setHours(normalizedEnd.getHours() + 1);
-  }
-  normalizedEnd.setMinutes(0, 0, 0);
-  let currentHour = new Date(normalizedStart);
-
-  while (currentHour < normalizedEnd) {
-    const hourStart = new Date(currentHour);
-    const hourEnd = new Date(currentHour.getTime() + 60 * 60 * 1000);
-
-    // Encontrar reservas que se superponen con esta hora
-    const overlappingAppointments = relevantAppointments.filter(
-      (appointment) => {
-        const apptStart = new Date(appointment.startDateTime);
-        const apptEnd = appointment.endDateTime
-          ? new Date(appointment.endDateTime)
-          : new Date(apptStart.getTime() + 60 * 60 * 1000); // 1 hora por defecto
-
-        // Verificar si la reserva se superpone con esta hora
-        return apptStart < hourEnd && apptEnd > hourStart;
-      },
-    );
-
-    // Sumar personas ya reservadas en esta hora
-    const reservedPeople = overlappingAppointments.reduce(
-      (sum, appt) => sum + (appt.numberOfPeople || 0),
-      0,
-    );
-
-    const availableSlots = maxCapacityPerHour - reservedPeople;
-    const isAvailable = availableSlots >= numberOfPeople;
-    timeSlots.push({
-      hour: hourStart.toISOString(),
-      availableSlots,
-      isAvailable,
-    });
-
-    // Avanzar a la siguiente hora
-    currentHour = hourEnd;
-  }
-  const isFullyAvailable = timeSlots.every((slot) => slot.isAvailable);
-
-  return { timeSlots, isFullyAvailable };
-}
-
-type AlternativeArgs = {
-  existingAppointments: AppointmentSlot[];
-  maxCapacityPerHour: number;
-  originalStart: Date;
-  numberOfPeople: number;
-  hoursToCheck: number;
-  intervalMinutes: number;
+export const DayMap: Record<number, WeekDayKey> = {
+  0: "sunday",
+  1: "monday",
+  2: "tuesday",
+  3: "wednesday",
+  4: "thursday",
+  5: "friday",
+  6: "saturday",
 };
 
-/**
- *
- * Genera sugerencias de horarios alternativos (pura)
- * Esta versión NO hace llamadas a la base de datos
- */
-export function suggestAlternativeTimes({
-  existingAppointments,
-  hoursToCheck,
-  intervalMinutes,
-  maxCapacityPerHour,
-  numberOfPeople,
-  originalStart,
-}: Partial<AlternativeArgs>): string[] {
+// Helper functions for schedule and timezone handling
+export function getCurrentDaySchedule(
+  business: Business,
+  utcdate: Date,
+): { daySchedule: { open: number; close: number }[]; weekDay?: WeekDayKey } {
   //
-  const suggestedTimes: string[] = [];
-  const now = new Date();
+  const zonedDate = new Date(utcdate); // we copy the date to avoid mutating the original
 
-  // Convertir horas a verificar a milisegundos
-  const endSearchTime = originalStart.getTime() + hoursToCheck * 60 * 60 * 1000;
+  // Get day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = zonedDate.getDay();
+  const weekday = DayMap[dayOfWeek] satisfies WeekDayKey;
 
-  // Empezar desde el primer intervalo después del horario original
-  let checkTime = new Date(
-    originalStart.getTime() + intervalMinutes * 60 * 1000,
-  );
+  // Get schedule for the day, ensuring it's an array
+  const daySchedule = business.schedule[weekday];
+  if (!daySchedule || !Array.isArray(daySchedule)) {
+    return { daySchedule: [] };
+  }
+  return { daySchedule, weekDay: weekday };
+}
 
-  while (checkTime.getTime() <= endSearchTime) {
-    // No sugerir tiempos en el pasado
-    if (checkTime < now) {
-      checkTime = new Date(checkTime.getTime() + intervalMinutes * 60 * 1000);
+export function calcSlotsByHour(
+  openRange: string, // UTC format
+  closeRange: string, // UTC format
+  slots: AppointmentSlot[],
+): TimeRangeWindow[] {
+  //
+  const HOUR = 60 * 60 * 1000;
+  const globalOpen = new Date(openRange).getTime();
+  const globalClose = new Date(closeRange).getTime();
+
+  const events = slots.map((e) => ({
+    ...e,
+    _start: new Date(e.startDateTime).getTime(),
+    _end: new Date(e.endDateTime).getTime(),
+  }));
+
+  const result = [];
+
+  for (let slotStart = globalOpen; slotStart < globalClose; slotStart += HOUR) {
+    const slotEnd = slotStart + HOUR;
+
+    const inside = events.filter(
+      (e) => e._start < slotEnd && e._end > slotStart,
+    );
+
+    if (inside.length === 0) {
+      result.push({
+        from: new Date(slotStart).toISOString(),
+        to: new Date(slotEnd).toISOString(),
+        totalPeople: 0,
+        slots: [],
+      } satisfies TimeRangeWindow);
       continue;
     }
 
-    // Para cada hora de verificación, calcular disponibilidad para esa hora específica
-    const hourStart = new Date(checkTime);
-    hourStart.setMinutes(0, 0, 0);
-    const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+    const totalPeople = inside.reduce((sum, e) => sum + e.numberOfPeople, 0);
 
-    // Encontrar reservas que se superponen con esta hora
-    const overlappingAppointments = existingAppointments.filter(
-      (appointment) => {
-        const apptStart = new Date(appointment.startDateTime);
-        const apptEnd = appointment.endDateTime
-          ? new Date(appointment.endDateTime)
-          : new Date(apptStart.getTime() + 60 * 60 * 1000);
-
-        // Verificar superposición
-        return apptStart < hourEnd && apptEnd > hourStart;
-      },
-    );
-
-    // Calcular personas ya reservadas en esta hora
-    const reservedPeople = overlappingAppointments.reduce(
-      (sum, appt) => sum + (appt.numberOfPeople || 0),
-      0,
-    );
-
-    // Verificar si hay disponibilidad
-    if (maxCapacityPerHour - reservedPeople >= numberOfPeople) {
-      suggestedTimes.push(checkTime.toISOString());
-
-      // Limitar a 3 sugerencias
-      if (suggestedTimes.length >= 3) break;
-    }
-
-    // Avanzar al siguiente intervalo
-    checkTime = new Date(checkTime.getTime() + intervalMinutes * 60 * 1000);
+    result.push({
+      from: new Date(slotStart).toISOString(), // UTC format
+      to: new Date(slotEnd).toISOString(), // UTC format
+      totalPeople,
+      slots: inside.map(({ _start, _end, ...rest }) => rest),
+    } satisfies TimeRangeWindow);
   }
 
-  return suggestedTimes;
+  return result;
 }

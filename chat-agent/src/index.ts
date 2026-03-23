@@ -4,18 +4,23 @@ import { env } from "bun";
 import { rateLimiter } from "hono-rate-limiter";
 import * as Sentry from "@sentry/bun";
 import { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
-import { DomainCtx } from "@/domain";
-import { RestaurantCtx } from "@/domain/restaurant";
 import {
   loggerMiddleware,
   bootstrapMiddleware,
 } from "@/application/middlewares";
 import {
-  whatsappReservationHandler,
-  testReservationHandler,
-} from "@/application/handlers/restaurant";
+  whatsappBookingHandler,
+  testBookingHandler,
+} from "@/application/handlers";
+import { contentSyncStateHandler } from "./application/handlers/content-sync";
+import { ragService } from "@/application/services/rag";
 
-const app = new Hono<DomainCtx<RestaurantCtx>>();
+const app = new Hono();
+
+// Inicializar colecciones vectoriales una vez al inicio
+ragService.init().catch((err) => {
+  console.error("Failed to initialize RAG service:", err);
+});
 
 Sentry.init({
   dsn: env?.SENTRY_DSN,
@@ -42,7 +47,7 @@ app.use(
   rateLimiter({
     // handler
     windowMs: 10 * 60 * 1000, // 10 minutes
-    limit: 200, // Limit each client to 100 requests per window
+    limit: 200, // Limit each client to 200 requests per window
     keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "", // Use IP address as key
   }),
 );
@@ -50,10 +55,12 @@ app.use(
 app.post(
   "/received-messages/:businessId",
   bootstrapMiddleware(),
-  whatsappReservationHandler,
+  whatsappBookingHandler,
 );
 
-app.post("/test-ai/:businessId", bootstrapMiddleware(), testReservationHandler);
+app.post("/test-ai/:businessId", bootstrapMiddleware(), testBookingHandler);
+
+app.post("/content/sync-state/:businessId", contentSyncStateHandler);
 
 app.get("/test-sentry-async-error", async (c) => {
   await Promise.reject(new Error("Second error"));

@@ -416,20 +416,23 @@ describe("SagaOrchestrator", () => {
       jest.clearAllMocks();
 
       // Resetear mocks antes de cada test
-      mock.module("@/infraestructure/http/whatsapp/whatsapp.client", () => ({
-        default: {
-          sendSeen: jest.fn().mockResolvedValue({ ok: true, text: "seen" }),
-          sendStartTyping: jest
-            .fn()
-            .mockResolvedValue({ ok: true, text: "typing started" }),
-          sendStopTyping: jest
-            .fn()
-            .mockResolvedValue({ ok: true, text: "typing stopped" }),
-          sendMsgText: jest
-            .fn()
-            .mockResolvedValue({ ok: true, text: "message sent" }),
-        },
-      }));
+      mock.module(
+        "@/infraestructure/adapters/whatsapp/whatsapp.adapter",
+        () => ({
+          default: {
+            sendSeen: jest.fn().mockResolvedValue({ ok: true, text: "seen" }),
+            sendStartTyping: jest
+              .fn()
+              .mockResolvedValue({ ok: true, text: "typing started" }),
+            sendStopTyping: jest
+              .fn()
+              .mockResolvedValue({ ok: true, text: "typing stopped" }),
+            sendMsgText: jest
+              .fn()
+              .mockResolvedValue({ ok: true, text: "message sent" }),
+          },
+        }),
+      );
     });
 
     // test("debe ejecutar flujo completo de whatsapp exitosamente", async () => {
@@ -472,7 +475,7 @@ describe("SagaOrchestrator", () => {
 
     //   // Obtener el mock actualizado
     //   const { default: mockWhatsappService } =
-    //     await import("@/infraestructure/http/whatsapp/whatsapp.client");
+    //     await import("@/infraestructure/adapters/whatsapp/whatsapp.adapter");
 
     //   orchestrator
     //     .addStep(sendSeen)
@@ -524,7 +527,7 @@ describe("SagaOrchestrator", () => {
 
     //   // Obtener el mock actualizado
     //   const { default: mockWhatsappService } =
-    //     await import("@/infraestructure/http/whatsapp/whatsapp.client");
+    //     await import("@/infraestructure/adapters/whatsapp/whatsapp.adapter");
 
     //   // Verificar que sendSeen se ejecutó
     //   expect(mockWhatsappService.sendSeen).toHaveBeenCalled();

@@ -1,5 +1,5 @@
-import { RestaurantCtx } from "@/domain/restaurant";
-import { whatsappClient } from "@/infraestructure/http/whatsapp";
+import { DomainCtx } from "@/domain/booking";
+import { whatsappAdapter } from "@/infraestructure/adapters/whatsapp";
 import {
   FuncSagaStep,
   ISagaStep,
@@ -7,7 +7,7 @@ import {
   SagaOrchestrator,
   stepConfig,
 } from "@/application/patterns";
-import { reservationStateOrchestrator } from "../reservations/reservation-state-orchestrator";
+import { stateOrchestrator } from "../state-orchestrator";
 
 /**
  * Defines all possible step names in the WhatsApp saga workflow.
@@ -33,7 +33,7 @@ interface WhatsappSagaResults extends SagaBag {
  * Ensures all steps use consistent typing for context, results, and keys.
  */
 type WhatsappSagaStep = ISagaStep<
-  RestaurantCtx,
+  DomainCtx,
   WhatsappSagaResults,
   WhatappStepName
 >;
@@ -56,7 +56,7 @@ const sendSeen: WhatsappSagaStep = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return whatsappClient.sendSeen(args);
+    return whatsappAdapter.sendSeen(args);
   },
 };
 
@@ -70,7 +70,7 @@ const sendSeen: WhatsappSagaStep = {
  * execute functions. This implements the "undo" capability of the Saga pattern.
  */
 const sendStopTypingCompensate: FuncSagaStep<
-  RestaurantCtx,
+  DomainCtx,
   WhatsappSagaResults,
   WhatappStepName
 > = async ({ ctx, getStepResult }) => {
@@ -82,7 +82,7 @@ const sendStopTypingCompensate: FuncSagaStep<
     session: ctx.session,
     chatId: ctx.customerPhone,
   };
-  return whatsappClient.sendStopTyping(args);
+  return whatsappAdapter.sendStopTyping(args);
 };
 
 /**
@@ -108,7 +108,7 @@ const sendStartTyping: WhatsappSagaStep = {
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return whatsappClient.sendStartTyping(args);
+    return whatsappAdapter.sendStartTyping(args);
   },
   compensate: sendStopTypingCompensate,
 };
@@ -125,18 +125,21 @@ const sendStartTyping: WhatsappSagaStep = {
  * Note: This step doesn't have direct WhatsApp API calls but produces
  * the text result that will be sent in the final step.
  */
-const reservationSagaStep: WhatsappSagaStep = {
+const businessSagaStep: WhatsappSagaStep = {
   config: {
     execute: { name: "reservationFlow", ...stepConfig },
   },
   execute: async ({ ctx }) => {
-    const { lastStepResult } = await reservationStateOrchestrator(ctx);
+    const { lastStepResult } = await stateOrchestrator(ctx);
     const result =
       lastStepResult?.execute?.result ||
       lastStepResult?.compensate?.result ||
       "Ocurrio un error, vuelva a intentarlo más tarde";
 
-    return { text: result, continue: true };
+    const files =
+      lastStepResult?.execute?.files || lastStepResult?.compensate?.files || [];
+
+    return { text: result, continue: true, files };
   },
 };
 
@@ -180,27 +183,43 @@ const sendMsgText: WhatsappSagaStep = {
   execute: async ({ ctx, getStepResult }) => {
     // Retrieve the text result from the reservationFlow step
     const text = getStepResult("execute:reservationFlow")?.text ?? "";
+    const files = getStepResult("execute:reservationFlow")?.files ?? [];
     const args = {
-      text,
       session: ctx.session,
       chatId: ctx.customerPhone,
     };
-    return whatsappClient.sendMsgText(args);
+    await whatsappAdapter.sendMsgText({ ...args, text });
+
+    await Promise.all(
+      files.map((file) =>
+        file.mimetype.startsWith("image/")
+          ? whatsappAdapter.sendImage({
+              ...args,
+              caption: file.alt,
+              file,
+            })
+          : file.mimetype.startsWith("video/")
+            ? whatsappAdapter.sendVideo({
+                ...args,
+                caption: file.alt,
+                file,
+              })
+            : null,
+      ),
+    );
+
+    return { text };
   },
 };
 
 // 1. Initialize the WhatsApp Saga
-export const whatsappSagaOrchestrator = async (ctx: RestaurantCtx) => {
-  return new SagaOrchestrator<
-    RestaurantCtx,
-    WhatsappSagaResults,
-    WhatappStepName
-  >({
+export const whatsappSagaOrchestrator = async (ctx: DomainCtx) => {
+  return new SagaOrchestrator<DomainCtx, WhatsappSagaResults, WhatappStepName>({
     ctx,
   })
     .addStep(sendSeen)
     .addStep(sendStartTyping)
-    .addStep(reservationSagaStep)
+    .addStep(businessSagaStep)
     .addStep(sendStopTyping)
     .addStep(sendMsgText)
     .start();
@@ -212,5 +231,5 @@ export {
   sendStartTyping,
   sendStopTyping,
   sendMsgText,
-  reservationSagaStep,
+  businessSagaStep as bookingSagaStep,
 };

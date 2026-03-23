@@ -1,5 +1,4 @@
-import { CollectionConfig, CollectionSlug } from "payload";
-import { Business } from "./Businesses";
+import { CollectionConfig } from "payload";
 
 export const Customers: CollectionConfig = {
   slug: "customers",
@@ -14,6 +13,11 @@ export const Customers: CollectionConfig = {
     },
   },
   admin: {
+    group: {
+      en: "My businesses",
+      es: "Mis negocios",
+    },
+    hideAPIURL: true,
     useAsTitle: "name", // header title is taken from "name" field
   },
   access: {
@@ -21,7 +25,7 @@ export const Customers: CollectionConfig = {
       if (req?.user?.collection === "third-party-access") {
         return true;
       }
-      return req?.user?.collection === "users" && req?.user?.role === "admin";
+      return false;
     },
     read: async ({ req }) => {
       if (req?.user?.collection === "third-party-access") {
@@ -91,7 +95,7 @@ export const Customers: CollectionConfig = {
         en: "Business",
         es: "Negocio",
       },
-      relationTo: Business.slug as CollectionSlug,
+      relationTo: "businesses",
       required: true,
       admin: {
         readOnly: true,
@@ -111,6 +115,9 @@ export const Customers: CollectionConfig = {
       name: "name",
       type: "text",
       required: true,
+      admin: {
+        readOnly: true,
+      },
       label: { en: "Full Name", es: "Nombre Completo" },
       access: {
         update: ({ req }) => {

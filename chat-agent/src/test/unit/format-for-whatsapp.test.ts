@@ -1,4 +1,4 @@
-import { formatForWhatsApp } from "@/infraestructure/http/whatsapp";
+import { formatForWhatsApp } from "@/infraestructure/adapters/whatsapp";
 import { describe, expect, test } from "bun:test";
 
 describe("formatForWhatsApp", () => {
