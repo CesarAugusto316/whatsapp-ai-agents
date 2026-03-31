@@ -22,7 +22,7 @@ services:
 
     ports:
       # - "127.0.0.1:3000:3000/tcp"
-      - "3000:3000" # Expone en todas las interfaces
+      - "3002:3000" # Expone en todas las interfaces
       # - "3001:3001"
 
     volumes:
