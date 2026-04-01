@@ -115,20 +115,9 @@ export const Customers: CollectionConfig = {
       name: "name",
       type: "text",
       required: true,
-      admin: {
-        readOnly: true,
-      },
       label: { en: "Full Name", es: "Nombre Completo" },
       access: {
-        update: ({ req }) => {
-          if (req?.user?.collection === "third-party-access") {
-            return true;
-          }
-          return (
-            req?.user?.collection === "users" &&
-            (req?.user?.role === "admin" || req?.user?.role === "business")
-          );
-        },
+        update: () => true,
       },
     },
     {

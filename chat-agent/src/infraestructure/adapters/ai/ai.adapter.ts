@@ -80,7 +80,6 @@ class AiAdapter implements IAiAdapter {
     //       Authorization: "",
     //       "Content-Type": "application/json",
     //     },
-    //     provider: "ollama" as const,
     //   };
     // }
 
@@ -99,7 +98,6 @@ class AiAdapter implements IAiAdapter {
           Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
           "Content-Type": "application/json",
         },
-        provider: "cloudflare" as const,
       };
     }
 
@@ -142,7 +140,6 @@ class AiAdapter implements IAiAdapter {
           Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
         },
-        provider: "openrouter" as const,
       };
     }
 
@@ -158,7 +155,6 @@ class AiAdapter implements IAiAdapter {
         Authorization: `Bearer ${env.CLOUDFLARE_AUTH_TOKEN}`,
         "Content-Type": "application/json",
       },
-      provider: "cloudflare" as const,
     };
   })();
 
@@ -304,7 +300,7 @@ class AiAdapter implements IAiAdapter {
     systemPrompt,
     msg,
     chatHistory = [],
-    useAuxModel = false,
+    useAuxModel = true,
   }: HandleMessageSendArgs = defaultConfig) {
     //
     // Defense in depth: Ensure no system prompts leaked into chat history

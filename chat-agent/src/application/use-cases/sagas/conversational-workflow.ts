@@ -189,6 +189,7 @@ export async function conversationalWorkflow(
     systemPrompt,
     msg: ctx.customerMessage,
     chatHistory,
+    useAuxModel: true,
   });
   await chatHistoryAdapter.push(
     ctx.chatKey,

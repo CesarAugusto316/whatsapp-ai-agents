@@ -272,18 +272,6 @@ export const routerAgent = async (
     messages,
     temperature: 0,
     max_tokens: 4_096,
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        type: "string",
-        enum: [
-          "search_agent",
-          "cart_agent",
-          "ask_clarification",
-          "ask_final_confirmation",
-        ] satisfies RouterOutput[],
-      },
-    },
   });
 
   return validateRouter(response);

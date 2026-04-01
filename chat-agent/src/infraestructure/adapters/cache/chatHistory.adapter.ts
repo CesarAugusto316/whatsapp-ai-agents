@@ -34,11 +34,18 @@ class ChatHistory {
     const messages = rawHistory
       .map((item) => {
         const msg: StoredMessage = JSON.parse(item);
+        if (msg.name && msg.tool_call_id) {
+          return {
+            role: msg.role,
+            content: msg.content,
+            name: msg.name,
+            tool_call_id: msg.tool_call_id,
+          } satisfies ChatMessage;
+        }
+
         return {
           role: msg.role,
           content: msg.content,
-          name: msg.name,
-          tool_call_id: msg.tool_call_id,
         } satisfies ChatMessage;
       })
       .filter((msg) => msg.role !== "system"); // ← CRITICAL: Never persist system prompts
@@ -72,7 +79,9 @@ class ChatHistory {
   ) {
     //
     const toolMessages = toolCalls
-      ? toolCalls.map((call) => JSON.stringify({ call, timestamp: Date.now() }))
+      ? toolCalls.map((call) =>
+          JSON.stringify({ ...call, timestamp: Date.now() }),
+        )
       : undefined;
 
     // Validate: Never store system prompts
